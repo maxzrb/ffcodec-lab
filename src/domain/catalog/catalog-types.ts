@@ -4,6 +4,36 @@
 // All cross-referenced by ID; no hardcoded values in UI.
 // ============================================================
 
+// -- source authority & verification ---------------------------
+
+/**
+ * Where the primary parameter data originated.
+ * Distinct from VerificationLevel — a parameter may come from
+ * FFmpegFreeUI but not yet be cross-verified against official docs.
+ */
+export type SourceAuthority =
+  | 'ffmpeg-official'
+  | 'encoder-official'
+  | 'ffmpegfreeui'
+  | 'community'
+  | 'unknown'
+
+/**
+ * Degree of cross-verification against official documentation.
+ * - official: confirmed against FFmpeg or encoder official docs
+ * - cross-verified: confirmed against multiple independent sources
+ * - project-derived: sourced from FFmpegFreeUI or internal analysis,
+ *   not yet confirmed against official docs
+ * - pending: not yet verified against any source
+ * - deprecated: was once verified but known to be outdated
+ */
+export type VerificationLevel =
+  | 'official'
+  | 'cross-verified'
+  | 'project-derived'
+  | 'pending'
+  | 'deprecated'
+
 // -- source reference -----------------------------------------
 
 export interface SourceRef {
@@ -13,6 +43,7 @@ export interface SourceRef {
   file: string
   symbol?: string
   url?: string
+  /** Legacy field — prefer sourceAuthority on the owning definition */
   sourceType: 'ffmpegfreeui' | 'ffmpeg-official' | 'encoder-official' | 'manual-note'
   note?: string
 }
@@ -30,6 +61,13 @@ export interface ParameterDefinition {
   rangeSource?: RangeSource
   explanationId: string
   sourceRefs: SourceRef[]
+  /** Primary origin of the parameter data */
+  sourceAuthority: SourceAuthority
+  /** Degree of cross-verification against official docs */
+  verificationLevel: VerificationLevel
+  /** True when sourced from non-official channels and awaiting cross-verification */
+  needsCrossVerification: boolean
+  /** @deprecated — use verificationLevel instead */
   status: 'verified' | 'experimental' | 'unverified'
 }
 
@@ -112,6 +150,10 @@ export interface EncoderDefinition {
 
   explanationId: string
   sourceRefs: SourceRef[]
+  sourceAuthority: SourceAuthority
+  verificationLevel: VerificationLevel
+  needsCrossVerification: boolean
+  /** @deprecated — use verificationLevel instead */
   status: 'verified' | 'experimental' | 'unverified'
 }
 

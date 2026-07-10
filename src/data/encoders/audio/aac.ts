@@ -125,5 +125,8 @@ export const aac: EncoderDefinition = {
       url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/aacenc.c',
     },
   ],
+  sourceAuthority: 'ffmpegfreeui',
+  verificationLevel: 'project-derived',
+  needsCrossVerification: true,
   status: 'verified',
 }

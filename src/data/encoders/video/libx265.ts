@@ -295,5 +295,8 @@ export const libx265: EncoderDefinition = {
       url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c',
     },
   ],
+  sourceAuthority: 'ffmpegfreeui',
+  verificationLevel: 'project-derived',
+  needsCrossVerification: true,
   status: 'verified',
 }

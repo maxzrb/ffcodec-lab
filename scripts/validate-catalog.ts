@@ -35,6 +35,53 @@ function checkSourceRefs(item: { id: string; sourceRefs?: unknown[]; status?: st
   }
 }
 
+// -- Verification level / source authority consistency -----------
+interface VerifiableItem {
+  id: string
+  sourceAuthority?: string
+  verificationLevel?: string
+  needsCrossVerification?: boolean
+  status?: string
+}
+
+function checkVerificationLevel(item: VerifiableItem) {
+  const { id, sourceAuthority, verificationLevel, needsCrossVerification } = item
+
+  // Must have the new fields
+  if (!sourceAuthority) {
+    errors.push(`[verify] Item "${id}" is missing sourceAuthority`)
+  }
+  if (!verificationLevel) {
+    errors.push(`[verify] Item "${id}" is missing verificationLevel`)
+  }
+  if (needsCrossVerification === undefined) {
+    errors.push(`[verify] Item "${id}" is missing needsCrossVerification`)
+  }
+
+  // Illegal combinations
+  if (needsCrossVerification === true && verificationLevel === 'official') {
+    errors.push(`[verify] Item "${id}": needsCrossVerification=true conflicts with verificationLevel=official`)
+  }
+  if (needsCrossVerification === true && verificationLevel === 'cross-verified') {
+    errors.push(`[verify] Item "${id}": needsCrossVerification=true conflicts with verificationLevel=cross-verified`)
+  }
+  if (needsCrossVerification === false && verificationLevel === 'pending') {
+    errors.push(`[verify] Item "${id}": needsCrossVerification=false conflicts with verificationLevel=pending`)
+  }
+
+  // sourceAuthority must be valid
+  const validAuthorities = ['ffmpeg-official', 'encoder-official', 'ffmpegfreeui', 'community', 'unknown']
+  if (sourceAuthority && !validAuthorities.includes(sourceAuthority)) {
+    errors.push(`[verify] Item "${id}" has invalid sourceAuthority: "${sourceAuthority}"`)
+  }
+
+  // verificationLevel must be valid
+  const validLevels = ['official', 'cross-verified', 'project-derived', 'pending', 'deprecated']
+  if (verificationLevel && !validLevels.includes(verificationLevel)) {
+    errors.push(`[verify] Item "${id}" has invalid verificationLevel: "${verificationLevel}"`)
+  }
+}
+
 // -- Default value in range -------------------------------------
 function checkDefaultInRange(def: { id: string; range?: { min?: number; max?: number }; defaultValue?: unknown }) {
   if (def.range && def.defaultValue !== undefined && def.defaultValue !== null && typeof def.defaultValue === 'number') {
@@ -57,6 +104,7 @@ function checkExplanationId(id: string, ownerId: string) {
 // -- Validate encoders -------------------------------------------
 function validateEncoder(encoder: EncoderDefinition, type: string) {
   checkSourceRefs(encoder)
+  checkVerificationLevel(encoder as unknown as VerifiableItem)
 
   // Must have at least one quality mode
   if (encoder.qualityModes.length === 0) {
@@ -126,6 +174,7 @@ function validateContainer(container: ContainerDefinition) {
 // -- Validate parameters -----------------------------------------
 function validateParameter(param: ParameterDefinition) {
   checkSourceRefs(param)
+  checkVerificationLevel(param as unknown as VerifiableItem)
   checkExplanationId(param.explanationId, param.id)
 
   if (param.optionsSource?.type === 'static' && param.optionsSource.options) {

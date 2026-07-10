@@ -159,5 +159,8 @@ export const libopus: EncoderDefinition = {
       url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libopusenc.c',
     },
   ],
+  sourceAuthority: 'ffmpegfreeui',
+  verificationLevel: 'project-derived',
+  needsCrossVerification: true,
   status: 'verified',
 }

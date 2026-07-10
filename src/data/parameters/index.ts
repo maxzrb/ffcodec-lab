@@ -30,6 +30,9 @@ export const parameters: Record<string, ParameterDefinition> = {
         note: '本项目新增参数，FFmpegFreeUI 无此功能',
       },
     ],
+    sourceAuthority: 'unknown',
+    verificationLevel: 'project-derived',
+    needsCrossVerification: false,
     status: 'verified',
   },
 
@@ -55,6 +58,9 @@ export const parameters: Record<string, ParameterDefinition> = {
         sourceType: 'ffmpegfreeui',
       },
     ],
+    sourceAuthority: 'ffmpegfreeui',
+    verificationLevel: 'project-derived',
+    needsCrossVerification: true,
     status: 'verified',
   },
 
@@ -82,6 +88,9 @@ export const parameters: Record<string, ParameterDefinition> = {
         sourceType: 'ffmpegfreeui',
       },
     ],
+    sourceAuthority: 'ffmpegfreeui',
+    verificationLevel: 'project-derived',
+    needsCrossVerification: true,
     status: 'verified',
   },
 
@@ -111,6 +120,9 @@ export const parameters: Record<string, ParameterDefinition> = {
         sourceType: 'ffmpegfreeui',
       },
     ],
+    sourceAuthority: 'ffmpegfreeui',
+    verificationLevel: 'project-derived',
+    needsCrossVerification: true,
     status: 'verified',
   },
 
@@ -135,6 +147,9 @@ export const parameters: Record<string, ParameterDefinition> = {
         sourceType: 'ffmpegfreeui',
       },
     ],
+    sourceAuthority: 'ffmpegfreeui',
+    verificationLevel: 'project-derived',
+    needsCrossVerification: true,
     status: 'verified',
   },
 
@@ -164,6 +179,9 @@ export const parameters: Record<string, ParameterDefinition> = {
         sourceType: 'ffmpegfreeui',
       },
     ],
+    sourceAuthority: 'ffmpegfreeui',
+    verificationLevel: 'project-derived',
+    needsCrossVerification: true,
     status: 'verified',
   },
 
@@ -188,6 +206,9 @@ export const parameters: Record<string, ParameterDefinition> = {
         sourceType: 'ffmpegfreeui',
       },
     ],
+    sourceAuthority: 'ffmpegfreeui',
+    verificationLevel: 'project-derived',
+    needsCrossVerification: true,
     status: 'verified',
   },
 }

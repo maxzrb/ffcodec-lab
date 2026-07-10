@@ -215,5 +215,8 @@ export const libsvtav1: EncoderDefinition = {
       url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libsvtav1.c',
     },
   ],
+  sourceAuthority: 'ffmpegfreeui',
+  verificationLevel: 'project-derived',
+  needsCrossVerification: true,
   status: 'verified',
 }

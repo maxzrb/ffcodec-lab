@@ -295,5 +295,8 @@ export const libx264: EncoderDefinition = {
       url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx264.c',
     },
   ],
+  sourceAuthority: 'ffmpegfreeui',
+  verificationLevel: 'project-derived',
+  needsCrossVerification: true,
   status: 'verified',
 }
