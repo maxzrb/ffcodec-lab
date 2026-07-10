@@ -38,12 +38,14 @@ function readConfigValue(config: ProjectConfig, path: string): unknown {
 export function resolveControlField(
   ctrl: ControlDefinition,
   config: ProjectConfig,
-  configPath: string,
+  _configPath: string,
   fieldStates: Record<string, FieldState>,
   encoder?: EncoderDefinition,
 ): ResolvedField {
   const state = findFieldState(fieldStates, ctrl.id)
-  const value = readConfigValue(config, configPath) ?? ctrl.defaultValue
+  // Prefer control's configBinding path for reading; fall back to legacy configPath param
+  const readPath = ctrl.configBinding?.path ?? _configPath
+  const value = readConfigValue(config, readPath) ?? ctrl.defaultValue
 
   return {
     id: ctrl.id,
@@ -64,6 +66,7 @@ export function resolveControlField(
     needsCrossVerification: encoder?.needsCrossVerification ?? true,
     commandOrigins: [],
     diagnostics: [],
+    configBinding: ctrl.configBinding,
   }
 }
 

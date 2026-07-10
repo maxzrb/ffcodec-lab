@@ -1,0 +1,214 @@
+// ============================================================
+// apply-field-change — unified field change entry point.
+//
+// React components call applyFieldChange(field.id, nextValue)
+// and must NOT:
+//   - parse ConfigPath
+//   - modify ProjectConfig deep objects
+//   - branch on encoder ID
+//   - concatenate argument names
+// ============================================================
+
+import type { ConfigPath } from '../config/config-path'
+import type { ResolvedField } from './resolved-field'
+
+// -- types ------------------------------------------------------
+
+export interface FieldChangeNotice {
+  code: string
+  message: string
+  originIds: string[]
+}
+
+export interface AppliedFieldChange {
+  /** The validated ConfigPath to write to */
+  path: ConfigPath | null
+  /** The value to write (undefined = clear) */
+  value: unknown
+  /** Notices about the change (validation, type coercion, etc.) */
+  notices: FieldChangeNotice[]
+  /** Whether the value was accepted */
+  accepted: boolean
+}
+
+// -- entry point ------------------------------------------------
+
+/**
+ * Resolve a field change into a ConfigPath write.
+ * React components call this — they never parse paths themselves.
+ *
+ * @param fieldId - The ResolvedField.id
+ * @param nextValue - The new value from user input
+ * @param fieldIndex - The view's fieldIndex for looking up the binding
+ */
+export function applyFieldChange(
+  fieldId: string,
+  nextValue: unknown,
+  fieldIndex: Record<string, ResolvedField>,
+): AppliedFieldChange {
+  const notices: FieldChangeNotice[] = []
+
+  // Look up the field
+  const field = fieldIndex[fieldId]
+  if (!field) {
+    return {
+      path: null,
+      value: nextValue,
+      accepted: true,
+      notices: [
+        {
+          code: 'FIELD_NOT_RESOLVED',
+          message: `Field "${fieldId}" not found in resolved view — applying with raw ID as path`,
+          originIds: [fieldId],
+        },
+      ],
+    }
+  }
+
+  // Use explicit configBinding if present
+  if (field.configBinding?.path) {
+    const coerced = coerceValue(nextValue, field)
+    if (coerced.notice) notices.push(coerced.notice)
+
+    return {
+      path: field.configBinding.path,
+      value: coerced.value,
+      accepted: true,
+      notices,
+    }
+  }
+
+  // Fallback: use the field's ID as a config path
+  // (for dynamic subtitle track fields and other non-binding paths)
+  if (isValidDynamicPath(fieldId)) {
+    return {
+      path: fieldId as ConfigPath,
+      value: nextValue,
+      accepted: true,
+      notices,
+    }
+  }
+
+  // No binding and no valid dynamic path — reject
+  return {
+    path: null,
+    value: nextValue,
+    accepted: false,
+    notices: [
+      {
+        code: 'NO_CONFIG_BINDING',
+        message: `Field "${fieldId}" has no configBinding and is not a recognized dynamic path — change not applied`,
+        originIds: [fieldId],
+      },
+    ],
+  }
+}
+
+// -- helpers ----------------------------------------------------
+
+function coerceValue(
+  value: unknown,
+  field: ResolvedField,
+): { value: unknown; notice?: FieldChangeNotice } {
+  switch (field.controlType) {
+    case 'switch':
+      // Ensure boolean
+      if (typeof value !== 'boolean') {
+        return {
+          value: Boolean(value),
+          notice: {
+            code: 'COERCED_TO_BOOLEAN',
+            message: `Value "${String(value)}" coerced to boolean for switch field "${field.id}"`,
+            originIds: [field.id],
+          },
+        }
+      }
+      return { value }
+
+    case 'number':
+      // Ensure number or undefined
+      if (value === '' || value === null || value === undefined) {
+        return { value: undefined }
+      }
+      if (typeof value === 'number') {
+        // Enforce range
+        if (field.min !== undefined && value < field.min) {
+          return {
+            value: field.min,
+            notice: {
+              code: 'CLAMPED_TO_MIN',
+              message: `Value ${value} clamped to minimum ${field.min} for field "${field.id}"`,
+              originIds: [field.id],
+            },
+          }
+        }
+        if (field.max !== undefined && value > field.max) {
+          return {
+            value: field.max,
+            notice: {
+              code: 'CLAMPED_TO_MAX',
+              message: `Value ${value} clamped to maximum ${field.max} for field "${field.id}"`,
+              originIds: [field.id],
+            },
+          }
+        }
+        return { value }
+      }
+      // Try to parse
+      const num = parseFloat(String(value))
+      if (isNaN(num)) {
+        return {
+          value: undefined,
+          notice: {
+            code: 'INVALID_NUMBER',
+            message: `Value "${String(value)}" is not a valid number for field "${field.id}"`,
+            originIds: [field.id],
+          },
+        }
+      }
+      return { value: num }
+
+    case 'select':
+      // Ensure value is a valid option
+      if (field.options && field.options.length > 0) {
+        const validValues = field.options.map((o) => String(o.value))
+        if (!validValues.includes(String(value))) {
+          return {
+            value: field.defaultValue ?? field.options[0].value,
+            notice: {
+              code: 'INVALID_OPTION',
+              message: `Value "${String(value)}" is not a valid option for "${field.id}"; reset to default`,
+              originIds: [field.id],
+            },
+          }
+        }
+      }
+      return { value }
+
+    default:
+      return { value }
+  }
+}
+
+/**
+ * Checks whether a fieldId looks like a valid dynamic config path
+ * (subtitle track fields, special parameters, etc.)
+ */
+function isValidDynamicPath(fieldId: string): boolean {
+  // Subtitle track dynamic fields
+  if (/^subtitle\.tracks\.[a-zA-Z0-9_-]+\./.test(fieldId)) {
+    return true
+  }
+  // Special parameters
+  if (/^video\.specialParameters\./.test(fieldId)) {
+    return true
+  }
+  if (/^audio\.qualityValues\./.test(fieldId)) {
+    return true
+  }
+  // Custom args
+  if (/^customArgs\./.test(fieldId)) {
+    return true
+  }
+  return false
+}

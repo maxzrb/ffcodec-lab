@@ -133,7 +133,7 @@ export function resolveVideoSection(
     const activeMode = qualityModes.find((qm) => qm.id === rcMode)
     if (activeMode) {
       for (const ctrl of activeMode.controls) {
-        const configPath = mapQualityControlToConfigPath(ctrl.id, rcMode)
+        const configPath = resolveQualityControlConfigPath(ctrl, rcMode)
         fields.push(resolveControlField(ctrl, config, configPath, fieldStates, encoder))
       }
     }
@@ -158,21 +158,31 @@ export function resolveVideoSection(
   return { id: 'section.video', label: '视频编码', fields }
 }
 
-function mapQualityControlToConfigPath(controlId: string, _mode: string): string {
-  // Map encoder-specific quality control IDs to ProjectConfig paths
-  if (controlId.includes('crf.value') || controlId.includes('cqp.value')) {
+/**
+ * Resolve the config path for a quality control using its configBinding.
+ * Uses the control's explicit configBinding if present; falls back to
+ * pattern matching (for backwards compatibility with any remaining
+ * controls that haven't been migrated).
+ */
+function resolveQualityControlConfigPath(ctrl: { id: string; configBinding?: { path: string } }, _mode: string): string {
+  // Use explicit configBinding path if present
+  if (ctrl.configBinding?.path) {
+    return ctrl.configBinding.path
+  }
+  // Fallback: pattern matching (for any unmigrated controls)
+  if (ctrl.id.includes('crf.value') || ctrl.id.includes('cqp.value')) {
     return 'video.rateControl.qualityValue'
   }
-  if (controlId.includes('bitrate')) {
+  if (ctrl.id.includes('bitrate')) {
     return 'video.rateControl.bitrate'
   }
-  if (controlId.includes('maxrate')) {
+  if (ctrl.id.includes('maxrate')) {
     return 'video.rateControl.maxRate'
   }
-  if (controlId.includes('bufsize')) {
+  if (ctrl.id.includes('bufsize')) {
     return 'video.rateControl.bufferSize'
   }
-  return `video.rateControl.additionalValues.${controlId}`
+  return `video.rateControl.additionalValues.${ctrl.id}`
 }
 
 export function resolveFrameSection(

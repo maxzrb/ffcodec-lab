@@ -10,6 +10,7 @@ import { usePipeline } from '../../store/pipeline'
 import { loadCatalog } from '../../domain/catalog/catalog-loader'
 import { CatalogIndex } from '../../domain/catalog/catalog-index'
 import { resolveBuilderView } from '../../domain/presentation/resolve-builder-view'
+import { applyFieldChange } from '../../domain/presentation/apply-field-change'
 import type { ShellKind } from '../../domain/config/project-config'
 import { ParameterSection } from './components/ParameterSection'
 import { CommandPreview } from './components/CommandPreview'
@@ -45,11 +46,14 @@ export function BuilderPage() {
 
   const handleFieldChange = useCallback(
     (fieldId: string, value: unknown) => {
-      // Map resolved field IDs back to config paths
-      const configPath = mapFieldIdToConfigPath(fieldId)
-      setConfigValue(configPath, value)
+      // Use domain-level applyFieldChange — React never parses ConfigPath
+      const result = applyFieldChange(fieldId, value, view.fieldIndex)
+      if (result.accepted && result.path) {
+        setConfigValue(result.path, result.value)
+      }
+      // Notices are logged in dev mode by InteractionDebugPanel
     },
-    [setConfigValue],
+    [setConfigValue, view.fieldIndex],
   )
 
   const handleTokenClick = useCallback(
@@ -185,54 +189,3 @@ export function BuilderPage() {
   )
 }
 
-/**
- * Maps resolved field IDs back to ProjectConfig dot-paths.
- * This is the inverse of what the resolver does when reading config values.
- */
-function mapFieldIdToConfigPath(fieldId: string): string {
-  // Direct config path mappings
-  const directMappings: Record<string, string> = {
-    'input.path': 'input.path',
-    'output.path': 'output.path',
-    'output.overwrite': 'output.overwrite',
-    'video.mode': 'video.mode',
-    'video.encoderId': 'video.encoderId',
-    'video.preset': 'video.preset',
-    'video.profile': 'video.profile',
-    'video.tune': 'video.tune',
-    'video.pixelFormat': 'video.pixelFormat',
-    'video.rateControl.mode': 'video.rateControl.mode',
-    'video.rateControl.qualityValue': 'video.rateControl.qualityValue',
-    'video.rateControl.bitrate': 'video.rateControl.bitrate',
-    'video.rateControl.maxRate': 'video.rateControl.maxRate',
-    'video.rateControl.bufferSize': 'video.rateControl.bufferSize',
-    'frame.resolution.mode': 'frame.resolution.mode',
-    'frame.resolution.width': 'frame.resolution.width',
-    'frame.resolution.height': 'frame.resolution.height',
-    'frame.frameRate.mode': 'frame.frameRate.mode',
-    'frame.frameRate.value': 'frame.frameRate.value',
-    'audio.mode': 'audio.mode',
-    'audio.encoderId': 'audio.encoderId',
-    'audio.bitrate': 'audio.bitrate',
-    'audio.channelLayout': 'audio.channelLayout',
-    'audio.sampleRate': 'audio.sampleRate',
-    'subtitle.mux.enabled': 'subtitle.mux.enabled',
-    'subtitle.mux.source': 'subtitle.mux.source',
-    'subtitle.mux.externalPath': 'subtitle.mux.externalPath',
-    'subtitle.mux.codecMode': 'subtitle.mux.codecMode',
-    'subtitle.burn.enabled': 'subtitle.burn.enabled',
-    'subtitle.burn.source': 'subtitle.burn.source',
-    'subtitle.burn.externalPath': 'subtitle.burn.externalPath',
-    'subtitle.burn.streamIndex': 'subtitle.burn.streamIndex',
-    'subtitle.burn.style.fontName': 'subtitle.burn.style.fontName',
-    'subtitle.burn.style.fontSize': 'subtitle.burn.style.fontSize',
-    'output.containerId': 'output.containerId',
-  }
-
-  if (directMappings[fieldId]) {
-    return directMappings[fieldId]
-  }
-
-  // For encoder special parameters and other dynamic paths, use the fieldId directly
-  return fieldId
-}

@@ -4,7 +4,7 @@
 // encoder definitions, or rule results directly.
 // ============================================================
 
-import type { SourceRef, VerificationLevel } from '../catalog/catalog-types'
+import type { ConfigBinding, SourceRef, VerificationLevel } from '../catalog/catalog-types'
 import type { Diagnostic } from '../rules/rule-types'
 
 /** A single option in a select/multiselect control */
@@ -64,6 +64,8 @@ export interface ResolvedField {
   commandOrigins: string[]
   /** Validation warnings/errors related to this field */
   diagnostics: Diagnostic[]
+  /** Config binding for write-back (maps field back to ProjectConfig path) */
+  configBinding?: ConfigBinding
 }
 
 /**
