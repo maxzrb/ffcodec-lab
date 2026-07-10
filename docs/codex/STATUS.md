@@ -1,22 +1,25 @@
 # Project Status
 
-Last updated: 2026-07-10 16:50
+Last updated: 2026-07-10 17:05
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
 - Current objective: 第四阶段开发 — 架构收口 + 交互完整性修复 + PresetManager UI + Intel QSV + E2E 测试 + v0.4.0
-- Current state: Phase 4 已完成约 60%。TypeScript 0 错误、目录审计 0 错误 0 警告、193 单元测试通过、生产构建成功。
-  - Section 3-5 ✓: v0.3.0 基线 + warning 治理 + configBinding 全量迁移
-  - Section 6-11 ✓: 交互完整性修复 + applyFieldChange + 审计清单 + 调试面板 + 契约测试
-  - Section 14 ✓: PresetManager 正式 UI
-  - Section 15-21: QSV 待开始
-  - Section 22-27: E2E + 文档 + 发布待开始
+- Current state: Phase 4 核心完成 (~80%)。TypeScript 0 错误、目录审计 0 错误 0 警告、245 单元测试通过、生产构建成功。
+  - Section 3-4 ✓: v0.3.0 基线 + warning 治理
+  - Section 5 ✓: configBinding 全量迁移
+  - Section 6-11 ✓: 交互完整性修复
+  - Section 14 ✓: PresetManager UI
+  - Section 15-21 ✓: QSV 编码器 (h264_qsv + hevc_qsv)
+  - Section 22-27: E2E + 文档 + 发布 待开始
 - v0.4.0 至今指标:
   - tsc: 0 errors
-  - vitest: 193/193 passed (12 files, +56 new)
+  - vitest: 245/245 passed (13 files, +108 new)
   - audit: 0 errors, 0 warnings (5 warning 修复)
-  - build: 297 KB JS + 1.3 KB CSS
+  - build: 403 KB JS + 1.3 KB CSS (+106KB from QSV explanations)
+- Video encoders: libx264, libx265, libsvtav1, h264_nvenc, hevc_nvenc, h264_qsv, hevc_qsv (7 total)
+- Last active agent: Claude Code
 - Last active agent: Claude Code
 - Likely next agent: Claude Code
 - Next recommended step: Intel QSV (h264_qsv + hevc_qsv) 编码器接入
@@ -376,3 +379,42 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Environment notes: 不涉及环境变化
 - Git status: 4 commits (0ba8726, df728e5, 41e95bf, 396ae9c), working tree clean
 - Next step: QSV 编码器接入 (h264_qsv + hevc_qsv) 或按用户指示
+
+### 2026-07-10 17:05 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 第四阶段 Part 2/2 — QSV 编码器接入
+- Work completed:
+  1. **RateControlModeId 扩展**: 6 个 QSV 专用模式 ID
+  2. **h264_qsv 编码器**: 6 种质量模式 (CQP/ICQ/LA_ICQ/VBR/CBR/LA_VBR)、QSV 专用 preset/profile/pixelFormat、5 个特殊参数
+  3. **hevc_qsv 编码器**: 同 h264_qsv + HEVC 专用 profile (main10/rext)、B 帧 Skylake 以上
+  4. **25 条 QSV 解释条目**: 编码器、preset、profile、pixfmt、6 种模式及参数
+  5. **qsv.test.ts**: 28 个单元测试
+  6. **QSV vs NVENC 独立设计**: -qp/-global_quality (非 -rc)、QSV preset 值 (veryfast-veryslow)、零 NVENC 参数复用
+- Files changed:
+  - New: h264_qsv.ts, hevc_qsv.ts, qsv.test.ts
+  - Modified: video/index.ts, explanations/index.ts (25 新条目), catalog-types.ts (6 新 mode IDs)
+- Commands run:
+  - `npx tsc -b --noEmit`: 0 errors
+  - `npx vitest run`: 245/245 passed (13 files, +28 new)
+  - `npx tsx scripts/validate-catalog.ts`: 0 errors, 0 warnings
+  - `npx vite build`: 成功 (403KB JS, +106KB)
+- Verification:
+  - TypeScript strict 模式: 0 errors
+  - 目录审计: 0 errors, 0 warnings
+  - 单元测试: 245/245 passed (137 original + 108 new)
+  - 生产构建: 成功
+  - 原有 137 测试 0 弱化/删除
+  - QSV 编码器不包含 NVENC 专用参数 (spatial_aq, temporal_aq, -gpu)
+  - QSV preset 值不包含 x264 ultrafast/placebo 或 NVENC p1-p7
+  - 所有 QSV controls 具有 configBinding
+- TODO changes:
+  - 完成: QSV 编码器接入
+  - 保留: E2E 测试、14 个手工验收案例、文档、CHANGELOG、v0.4.0 发布
+- Decisions/risks:
+  - QSV preset 使用 x264 风格名称 (veryfast-veryslow)，内部映射不同 — 已在 capabilityScope 中说明
+  - LA_ICQ look_ahead_depth 仅通过 modeArguments 输出（默认 40），不作为用户可调控件 — 避免与 configBinding 模型不兼容
+  - QSV 质量模式 ID 均为 qsv- 前缀，与软件编码器和 NVENC 完全隔离
+  - 构建体积增加 106KB 主要来自解释条目文本 — 可后续优化
+- Environment notes: 不涉及环境变化
+- Git status: 5 commits (0ba8726, df728e5, 41e95bf, 396ae9c, 15763fc), working tree clean (STATUS.md 待提交)
+- Next step: E2E 测试、手工验收、文档、v0.4.0 发布
