@@ -1,18 +1,25 @@
 # Project Status
 
-Last updated: 2026-07-10 16:30
+Last updated: 2026-07-10 16:50
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
 - Current objective: 第四阶段开发 — 架构收口 + 交互完整性修复 + PresetManager UI + Intel QSV + E2E 测试 + v0.4.0
-- Current state: v0.3.0 基线已建立（tag: v0.3.0）。TypeScript 0 错误、目录审计 0 错误 5 警告（configBinding 遗留）、137 单元测试通过、生产构建 295.57 KB JS。
-- v0.3.0 基线指标:
+- Current state: Phase 4 已完成约 60%。TypeScript 0 错误、目录审计 0 错误 0 警告、193 单元测试通过、生产构建成功。
+  - Section 3-5 ✓: v0.3.0 基线 + warning 治理 + configBinding 全量迁移
+  - Section 6-11 ✓: 交互完整性修复 + applyFieldChange + 审计清单 + 调试面板 + 契约测试
+  - Section 14 ✓: PresetManager 正式 UI
+  - Section 15-21: QSV 待开始
+  - Section 22-27: E2E + 文档 + 发布待开始
+- v0.4.0 至今指标:
   - tsc: 0 errors
-  - vitest: 137/137 passed (11 files)
-  - audit: 0 errors, 5 warnings (libx264, libx265, libsvtav1, aac, libopus — configBinding)
-  - build: 295.57 KB JS + 1.26 KB CSS
+  - vitest: 193/193 passed (12 files, +56 new)
+  - audit: 0 errors, 0 warnings (5 warning 修复)
+  - build: 297 KB JS + 1.3 KB CSS
 - Last active agent: Claude Code
+- Likely next agent: Claude Code
+- Next recommended step: Intel QSV (h264_qsv + hevc_qsv) 编码器接入
 - Likely next agent: Claude Code
 - Next recommended step: 治理 5 条目录 warning → configBinding 全量迁移 → 交互控件完整性审计
 
@@ -317,3 +324,55 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - PATH must include `/c/Program Files/nodejs`
 - Git status: 15 modified + 11 new files, working tree NOT clean
 - Next step: 提交本阶段变更；交叉核验 5 项参数；实现 PresetManager UI；添加 FLAC
+
+### 2026-07-10 16:50 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 第四阶段 Part 1/2 — 架构收口 + 交互完整性 + PresetManager UI
+- Work completed:
+  1. **Section 3** — v0.3.0 基线: tag v0.3.0, tsc 0, vitest 137, audit 0/5, build 296KB
+  2. **Section 4** — Warning 治理: `docs/audit-warning-register.md`, 登记全部 5 条 W001-W005
+  3. **Section 5** — configBinding 全量迁移:
+     - 为 5 个软件编码器 22 个 controls 添加 configBinding
+     - 删除 command-builder.ts 旧 getControlValue 模式匹配回退
+     - 审计升级 warning→error: 0 errors, 0 warnings
+  4. **Section 6-11** — 交互完整性:
+     - `apply-field-change.ts`: 统一字段变更入口，React 不解析 ConfigPath
+     - ResolvedField 添加 configBinding 字段
+     - 删除 BuilderPage `mapFieldIdToConfigPath` 硬编码映射
+     - resolve-section.ts: 使用 configBinding 替代模式匹配
+     - `control-interaction-audit.md`: 全量控件审计清单
+     - `InteractionDebugPanel.tsx`: 开发模式调试面板
+     - `control-binding-contract.test.ts`: 56 契约测试
+     - 复选框审计: checked/e.target.checked/?? 全部正确
+  5. **Section 14** — PresetManager UI:
+     - PresetManager/PresetList/PresetEditorDialog/PresetImportDialog
+     - resolve-preset-summary: catalog-driven 预设摘要
+     - BuilderPage 集成（💾 预设按钮）
+- Files changed:
+  - Modified: STATUS.md, validate-catalog.ts, command-builder.ts, BuilderPage.tsx, resolved-field.ts, resolve-field.ts, resolve-section.ts, presentation/index.ts
+  - New: audit-warning-register.md, control-interaction-audit.md
+  - New: apply-field-change.ts, InteractionDebugPanel.tsx, control-binding-contract.test.ts
+  - New: PresetManager.tsx, PresetList.tsx, PresetEditorDialog.tsx, PresetImportDialog.tsx, resolve-preset-summary.ts
+  - Encoder configBinding: libx264.ts, libx265.ts, libsvtav1.ts, aac.ts, libopus.ts
+- Commands run:
+  - `npx tsc -b --noEmit`: 0 errors（多次）
+  - `npx vitest run`: 193/193 passed (12 files, +56 new)
+  - `npx tsx scripts/validate-catalog.ts`: 0 errors, 0 warnings
+  - `npx vite build`: 成功 (297KB JS)
+- Verification:
+  - TypeScript strict 模式: 0 errors
+  - 目录审计: 0 errors, 0 warnings (5 warning → 已修复)
+  - 单元测试: 193/193 passed (137 original + 56 new)
+  - 生产构建: 成功
+  - 原有 137 测试 0 弱化/删除
+- TODO changes:
+  - 完成: configBinding 迁移, 交互完整性修复, PresetManager UI
+  - 新增: QSV 编码器接入, E2E 测试, 文档
+- Decisions/risks:
+  - applyFieldChange 统一入口: React 零 ConfigPath 解析
+  - configBinding 全量覆盖: 所有 encoder qualityModes controls
+  - InteractionDebugPanel 仅开发模式启用 (?debugInteractions=1)
+  - specialParameters 写入/读取路径不一致（sp.id vs snake_case key）— 标记为待修复
+- Environment notes: 不涉及环境变化
+- Git status: 4 commits (0ba8726, df728e5, 41e95bf, 396ae9c), working tree clean
+- Next step: QSV 编码器接入 (h264_qsv + hevc_qsv) 或按用户指示
