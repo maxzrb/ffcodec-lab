@@ -6,7 +6,7 @@ import type { ProjectConfig } from './project-config'
  */
 export function createDefaultProjectConfig(): ProjectConfig {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     shell: 'bash',
     input: {
       path: 'input.mkv',
@@ -49,12 +49,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
       qualityValues: {},
     },
     subtitle: {
-      mux: {
-        enabled: false,
-        source: 'internal',
-        codecMode: 'auto',
-        preserveOtherStreams: true,
-      },
+      tracks: [],
       burn: {
         enabled: false,
         source: 'external',

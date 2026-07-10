@@ -154,7 +154,7 @@ export const builtinRules: RuleDefinition[] = [
     ],
   },
 
-  // R12: mp4/mov → auto subtitle → mov_text
+  // R12: mp4/mov → suggest mov_text for subtitle tracks
   {
     id: 'R12.mp4.subtitle.movtext',
     priority: 50,
@@ -164,11 +164,6 @@ export const builtinRules: RuleDefinition[] = [
       values: ['mp4', 'mov'],
     },
     effects: [
-      {
-        type: 'resolveAuto',
-        target: 'subtitle.mux.codecMode',
-        resolverId: 'resolver.subtitle.mp4',
-      },
       {
         type: 'suggest',
         messageId: 'suggest.subtitle.movtext',
@@ -185,13 +180,12 @@ export const builtinRules: RuleDefinition[] = [
     ],
   },
 
-  // R13: webm → auto subtitle → webvtt
+  // R13: webm → suggest webvtt for subtitle tracks
   {
     id: 'R13.webm.subtitle.webvtt',
     priority: 50,
     when: { op: 'eq', path: 'output.containerId', value: 'webm' },
     effects: [
-      { type: 'resolveAuto', target: 'subtitle.mux.codecMode', resolverId: 'resolver.subtitle.webm' },
       { type: 'suggest', messageId: 'suggest.subtitle.webvtt' },
     ],
     sourceRefs: [
@@ -201,6 +195,34 @@ export const builtinRules: RuleDefinition[] = [
         snapshotDate: '2026-07-10',
         file: 'FFmpegFreeUI_参数树与网页首版裁剪方案.md',
         sourceType: 'ffmpegfreeui',
+      },
+    ],
+  },
+
+  // R16: subtitle copy + unknown source codec → warning
+  {
+    id: 'R16.subtitle.copy.unknown.sourcecodec',
+    priority: 60,
+    when: {
+      op: 'all',
+      rules: [
+        { op: 'exists', path: 'subtitle.tracks' },
+      ],
+    },
+    effects: [
+      {
+        type: 'warning',
+        messageId: 'warn.subtitle.copy.unknown.sourcecodec',
+        targets: ['subtitle.tracks'],
+      },
+    ],
+    sourceRefs: [
+      {
+        repository: 'manual-note',
+        snapshotDate: '2026-07-10',
+        file: 'FFCodec Lab 项目指令集',
+        sourceType: 'manual-note',
+        note: '当字幕源编码未知且选择 copy 时，无法确认兼容性',
       },
     ],
   },

@@ -138,20 +138,20 @@ describe('Rule Engine — Invariants', () => {
     expect(errors.some((e) => e.code === 'error.burn.requires.encode')).toBe(true)
   })
 
-  it('R12: MP4 container auto-resolves subtitle to mov_text', () => {
+  it('R12: MP4 container suggests mov_text for subtitle tracks', () => {
     const ctx = makeCtx({ output: { ...createDefaultProjectConfig().output, containerId: 'mp4' } })
     const ruleIndex = new RuleIndex()
     const result = evaluateRules(ruleIndex.getAll(), ctx)
 
-    expect(result.resolvedValues['subtitle.mux.codecMode']).toBe('resolver.subtitle.mp4')
+    expect(result.suggestions.some((s) => s.messageId === 'suggest.subtitle.movtext')).toBe(true)
   })
 
-  it('R13: WebM container auto-resolves subtitle to webvtt', () => {
+  it('R13: WebM container suggests webvtt for subtitle tracks', () => {
     const ctx = makeCtx({ output: { ...createDefaultProjectConfig().output, containerId: 'webm' } })
     const ruleIndex = new RuleIndex()
     const result = evaluateRules(ruleIndex.getAll(), ctx)
 
-    expect(result.resolvedValues['subtitle.mux.codecMode']).toBe('resolver.subtitle.webm')
+    expect(result.suggestions.some((s) => s.messageId === 'suggest.subtitle.webvtt')).toBe(true)
   })
 
   it('R15: WebM + libx264 produces error', () => {

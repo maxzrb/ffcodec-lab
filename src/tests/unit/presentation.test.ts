@@ -264,25 +264,32 @@ describe('Resolver — section resolution', () => {
     expect(hasEncoder).toBe(false)
   })
 
-  it('resolves subtitle section with mux and burn controls', () => {
+  it('resolves subtitle section with track and burn controls', () => {
     const config = makeConfig()
     const section = resolveSubtitleSection(config, catalog, {})
 
-    expect(section.fields.some((f) => f.id === 'subtitle.mux.enabled')).toBe(true)
+    expect(section.fields.some((f) => f.id === 'subtitle.tracks.count')).toBe(true)
     expect(section.fields.some((f) => f.id === 'subtitle.burn.enabled')).toBe(true)
   })
 
-  it('shows subtitle mux options when enabled', () => {
+  it('shows subtitle track options when tracks exist', () => {
     const config = makeConfig({
       subtitle: {
         ...createDefaultProjectConfig().subtitle,
-        mux: { ...createDefaultProjectConfig().subtitle.mux, enabled: true },
+        tracks: [{
+          id: 'test-track',
+          source: 'external' as const,
+          path: 'test.srt',
+          codecMode: 'copy' as const,
+          sourceCodecKnown: false,
+          disposition: {},
+        }],
       },
     })
     const section = resolveSubtitleSection(config, catalog, {})
 
-    expect(section.fields.some((f) => f.id === 'subtitle.mux.source')).toBe(true)
-    expect(section.fields.some((f) => f.id === 'subtitle.mux.codecMode')).toBe(true)
+    expect(section.fields.some((f) => f.id === 'subtitle.tracks.test-track.source')).toBe(true)
+    expect(section.fields.some((f) => f.id === 'subtitle.tracks.test-track.codecMode')).toBe(true)
   })
 
   it('resolves container section with dynamic options', () => {

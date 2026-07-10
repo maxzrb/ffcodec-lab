@@ -65,13 +65,24 @@ const subtitleBurnSchema = z.object({
   customFilter: z.string().optional(),
 })
 
-const subtitleMuxSchema = z.object({
-  enabled: z.boolean(),
-  source: z.enum(['internal', 'external']),
-  streamSelector: z.string().optional(),
-  externalPath: z.string().optional(),
-  codecMode: z.enum(['auto', 'copy', 'mov_text', 'webvtt', 'srt', 'ass', 'ssa']),
-  preserveOtherStreams: z.boolean(),
+const subtitleTrackSchema = z.object({
+  id: z.string().min(1),
+  source: z.enum(['input', 'external']),
+  mainStreamRelIndex: z.number().int().nonnegative().optional(),
+  path: z.string().optional(),
+  externalStreamIndex: z.number().int().nonnegative().optional(),
+  codecMode: z.enum(['copy', 'transcode']),
+  codec: z.string().optional(),
+  sourceCodec: z.string().optional(),
+  sourceCodecKnown: z.boolean(),
+  language: z.string().optional(),
+  title: z.string().optional(),
+  disposition: z.object({
+    default: z.boolean().optional(),
+    forced: z.boolean().optional(),
+    hearingImpaired: z.boolean().optional(),
+  }),
+  preserveOtherStreams: z.boolean().optional(),
 })
 
 const videoConfigSchema = z.object({
@@ -100,7 +111,7 @@ const audioConfigSchema = z.object({
 // -- top-level schema -----------------------------------------
 
 export const projectConfigSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
   shell: z.enum(['bash', 'powershell', 'cmd']),
   input: z.object({
     path: z.string(),
@@ -132,7 +143,7 @@ export const projectConfigSchema = z.object({
   }),
   audio: audioConfigSchema,
   subtitle: z.object({
-    mux: subtitleMuxSchema,
+    tracks: z.array(subtitleTrackSchema),
     burn: subtitleBurnSchema,
   }),
   customArgs: z.object({

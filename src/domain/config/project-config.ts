@@ -93,17 +93,41 @@ export interface AudioConfig {
 }
 
 export interface SubtitleConfig {
-  mux: SubtitleMuxConfig
+  tracks: SubtitleTrackConfig[]
   burn: SubtitleBurnConfig
 }
 
-export interface SubtitleMuxConfig {
-  enabled: boolean
-  source: 'internal' | 'external'
-  streamSelector?: string
-  externalPath?: string
-  codecMode: 'auto' | 'copy' | 'mov_text' | 'webvtt' | 'srt' | 'ass' | 'ssa'
-  preserveOtherStreams: boolean
+export interface SubtitleTrackConfig {
+  /** Stable unique ID within this config */
+  id: string
+  /** Source of the subtitle stream */
+  source: 'input' | 'external'
+  /** For source='input': relative stream index in the main input (0=s:0, 1=s:1) */
+  mainStreamRelIndex?: number
+  /** For source='external': file path to subtitle file */
+  path?: string
+  /** For source='external': stream index within the external file (0=first subtitle) */
+  externalStreamIndex?: number
+  /** Whether to copy or transcode the subtitle stream */
+  codecMode: 'copy' | 'transcode'
+  /** Target codec when transcoding (mov_text, webvtt, srt, ass, ssa) */
+  codec?: string
+  /** Known source codec name; undefined when unknown */
+  sourceCodec?: string
+  /** Whether the source codec has been identified */
+  sourceCodecKnown: boolean
+  /** ISO 639-2 language code */
+  language?: string
+  /** Metadata title for the subtitle stream */
+  title?: string
+  /** Disposition flags */
+  disposition: {
+    default?: boolean
+    forced?: boolean
+    hearingImpaired?: boolean
+  }
+  /** Legacy compatibility field for migration */
+  preserveOtherStreams?: boolean
 }
 
 export interface SubtitleBurnConfig {

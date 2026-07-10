@@ -103,14 +103,17 @@ function buildInputs(config: ProjectConfig): InputSpec[] {
     },
   ]
 
-  // Subtitle external inputs
-  if (config.subtitle.mux.enabled && config.subtitle.mux.source === 'external' && config.subtitle.mux.externalPath) {
-    inputs.push({
-      id: 'input.subtitle.mux',
-      argsBeforeInput: [],
-      path: config.subtitle.mux.externalPath,
-      originId: 'subtitle.mux.externalPath',
-    })
+  // Subtitle track external inputs
+  // Input indices: main=0, then external subtitle tracks in track array order
+  for (const track of config.subtitle.tracks) {
+    if (track.source === 'external' && track.path) {
+      inputs.push({
+        id: `input.subtitle.${track.id}`,
+        argsBeforeInput: [],
+        path: track.path,
+        originId: `subtitle.tracks.${track.id}.path`,
+      })
+    }
   }
 
   if (config.subtitle.burn.enabled && config.subtitle.burn.source === 'external' && config.subtitle.burn.externalPath) {
@@ -319,15 +322,85 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
     }
   }
 
-  // -- subtitle mux -------------------------------------------
-  if (config.subtitle.mux.enabled) {
-    if (config.subtitle.mux.codecMode !== 'auto') {
-      output.subtitleArgs.push({
-        id: 'subtitle.mux.codec',
-        originId: 'subtitle.mux.codecMode',
-        phase: 'SUBTITLE',
-        tokens: ['-c:s', config.subtitle.mux.codecMode],
+  // -- subtitle tracks -------------------------------------------
+  // Input index counter for external subtitle files
+  // Main input = 0, external tracks start at index 1
+  let subtitleInputIndex = 1
+
+  for (let i = 0; i < config.subtitle.tracks.length; i++) {
+    const track = config.subtitle.tracks[i]
+    const outputIndex = i // subtitle stream index in output
+
+    // -map
+    if (track.source === 'input') {
+      const spec = track.mainStreamRelIndex !== undefined
+        ? `0:s:${track.mainStreamRelIndex}`
+        : '0:s'
+      output.maps.push({
+        id: `map.subtitle.${track.id}`,
+        originId: `subtitle.tracks.${track.id}.map`,
+        phase: 'MAP',
+        tokens: ['-map', spec],
       })
+    } else if (track.source === 'external' && track.path) {
+      output.maps.push({
+        id: `map.subtitle.${track.id}`,
+        originId: `subtitle.tracks.${track.id}.map`,
+        phase: 'MAP',
+        tokens: ['-map', `${subtitleInputIndex}:s:${track.externalStreamIndex ?? 0}`],
+      })
+      subtitleInputIndex++
+    }
+
+    // -c:s:N (stream-specific, NOT global -c:s)
+    if (track.codecMode === 'copy') {
+      output.subtitleArgs.push({
+        id: `subtitle.${track.id}.codec`,
+        originId: `subtitle.tracks.${track.id}.codec`,
+        phase: 'SUBTITLE',
+        tokens: ['-c:s:' + String(outputIndex), 'copy'],
+      })
+    } else if (track.codecMode === 'transcode' && track.codec) {
+      output.subtitleArgs.push({
+        id: `subtitle.${track.id}.codec`,
+        originId: `subtitle.tracks.${track.id}.codec`,
+        phase: 'SUBTITLE',
+        tokens: ['-c:s:' + String(outputIndex), track.codec],
+      })
+    }
+
+    // -metadata:s:s:N
+    if (track.language) {
+      output.subtitleArgs.push({
+        id: `subtitle.${track.id}.lang`,
+        originId: `subtitle.tracks.${track.id}.language`,
+        phase: 'METADATA',
+        tokens: ['-metadata:s:s:' + String(outputIndex), `language=${track.language}`],
+      })
+    }
+    if (track.title) {
+      output.subtitleArgs.push({
+        id: `subtitle.${track.id}.title`,
+        originId: `subtitle.tracks.${track.id}.title`,
+        phase: 'METADATA',
+        tokens: ['-metadata:s:s:' + String(outputIndex), `title=${track.title}`],
+      })
+    }
+
+    // -disposition:s:N
+    if (track.disposition) {
+      const flags: string[] = []
+      if (track.disposition.default) flags.push('default')
+      if (track.disposition.forced) flags.push('forced')
+      if (track.disposition.hearingImpaired) flags.push('hearing_impaired')
+      if (flags.length > 0) {
+        output.subtitleArgs.push({
+          id: `subtitle.${track.id}.disposition`,
+          originId: `subtitle.tracks.${track.id}.disposition`,
+          phase: 'SUBTITLE',
+          tokens: ['-disposition:s:' + String(outputIndex), flags.join('+')],
+        })
+      }
     }
   }
 

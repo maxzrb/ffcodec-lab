@@ -101,13 +101,14 @@ const cases: AcceptanceCase[] = [
     config: makeConfig({
       output: { ...createDefaultProjectConfig().output, containerId: 'mkv' },
       subtitle: {
-        mux: {
-          enabled: true,
+        tracks: [{
+          id: 'sub-1',
           source: 'external',
-          externalPath: 'subtitles.srt',
+          path: 'subtitles.srt',
           codecMode: 'copy',
-          preserveOtherStreams: true,
-        },
+          sourceCodecKnown: false,
+          disposition: {},
+        }],
         burn: { ...createDefaultProjectConfig().subtitle.burn, enabled: false },
       },
     }),
@@ -118,13 +119,16 @@ const cases: AcceptanceCase[] = [
     config: makeConfig({
       output: { ...createDefaultProjectConfig().output, containerId: 'mp4' },
       subtitle: {
-        mux: {
-          enabled: true,
+        tracks: [{
+          id: 'sub-1',
           source: 'external',
-          externalPath: 'subtitles.srt',
-          codecMode: 'auto',
-          preserveOtherStreams: true,
-        },
+          path: 'subtitles.srt',
+          codecMode: 'transcode',
+          codec: 'mov_text',
+          sourceCodecKnown: true,
+          sourceCodec: 'srt',
+          disposition: {},
+        }],
         burn: { ...createDefaultProjectConfig().subtitle.burn, enabled: false },
       },
     }),
@@ -147,7 +151,7 @@ const cases: AcceptanceCase[] = [
         frameRate: { mode: 'value', value: 30 },
       },
       subtitle: {
-        mux: { ...createDefaultProjectConfig().subtitle.mux, enabled: false },
+        tracks: [],
         burn: {
           enabled: true,
           source: 'external',
@@ -272,7 +276,7 @@ for (const { c, r } of results) {
   report += `- 视频：${c.config.video.mode === 'encode' ? (c.config.video.encoderId ?? '?') + ' / ' + (c.config.video.rateControl?.mode ?? '?') : c.config.video.mode}\n`
   report += `- 音频：${c.config.audio.mode === 'encode' ? (c.config.audio.encoderId ?? '?') + ' ' + (c.config.audio.bitrate ?? '?') : c.config.audio.mode}\n`
   report += `- 容器：${c.config.output.containerId}\n`
-  report += `- 字幕：mux=${c.config.subtitle.mux.enabled ? c.config.subtitle.mux.codecMode : 'off'}, burn=${c.config.subtitle.burn.enabled ? 'on' : 'off'}\n`
+  report += `- 字幕：${c.config.subtitle.tracks.length} tracks, burn=${c.config.subtitle.burn.enabled ? 'on' : 'off'}\n`
   report += `- 帧：resolution=${c.config.frame.resolution.mode}, framerate=${c.config.frame.frameRate.mode}\n\n`
 
   // Messages

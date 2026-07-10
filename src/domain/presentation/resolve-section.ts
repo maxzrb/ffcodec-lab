@@ -379,26 +379,48 @@ export function resolveSubtitleSection(
   const container = catalog.containers[config.output.containerId]
   const fields: ResolvedField[] = []
 
-  // -- Subtitle mux ---------------------------------------------
-  fields.push(resolveSectionLabel('section.subtitle.mux', '字幕混流', fieldStates))
+  // -- Subtitle tracks (multi) -----------------------------------
+  fields.push(resolveSectionLabel('section.subtitle.tracks', '字幕轨道 (混流)', fieldStates))
 
-  fields.push(
-    resolveSwitchField(
-      'subtitle.mux.enabled',
-      '启用字幕混流',
-      config.subtitle.mux.enabled,
+  // Track count + add button hint
+  fields.push({
+    id: 'subtitle.tracks.count',
+    label: `字幕轨道 (${config.subtitle.tracks.length} 条)`,
+    controlType: 'text',
+    value: config.subtitle.tracks.length > 0
+      ? config.subtitle.tracks.map((t) => `${t.id}: ${t.source}/${t.codecMode}`).join(', ')
+      : '未添加字幕轨道',
+    visible: true,
+    disabled: false,
+    sourceRefs: [],
+    verificationLevel: 'project-derived',
+    needsCrossVerification: false,
+    commandOrigins: [],
+    diagnostics: [],
+  })
+
+  // Per-track fields
+  const subtitleCodecOptions = container
+    ? Object.entries(container.subtitleCodecs)
+        .filter(([, level]) => level === 'supported' || level === 'supported-with-caveat')
+        .map(([codec]) => ({ value: codec, label: codec }))
+    : []
+
+  for (const track of config.subtitle.tracks) {
+    fields.push(resolveSectionLabel(
+      `section.subtitle.track.${track.id}`,
+      `字幕: ${track.id}`,
       fieldStates,
-    ),
-  )
+    ))
 
-  if (config.subtitle.mux.enabled) {
+    // Source
     fields.push({
-      id: 'subtitle.mux.source',
-      label: '字幕来源',
+      id: `subtitle.tracks.${track.id}.source`,
+      label: '来源',
       controlType: 'select',
-      value: config.subtitle.mux.source,
+      value: track.source,
       options: [
-        { value: 'internal', label: '输入文件内字幕' },
+        { value: 'input', label: '输入文件中' },
         { value: 'external', label: '外挂字幕文件' },
       ],
       visible: true,
@@ -410,33 +432,43 @@ export function resolveSubtitleSection(
       diagnostics: [],
     })
 
-    if (config.subtitle.mux.source === 'external') {
-      fields.push(
-        resolveTextField(
-          'subtitle.mux.externalPath',
-          '外挂字幕路径',
-          config.subtitle.mux.externalPath,
-          fieldStates,
-        ),
-      )
+    if (track.source === 'input') {
+      fields.push({
+        id: `subtitle.tracks.${track.id}.mainStreamRelIndex`,
+        label: '流索引 (0=s:0)',
+        controlType: 'number',
+        value: track.mainStreamRelIndex ?? 0,
+        min: 0,
+        max: 32,
+        step: 1,
+        visible: true,
+        disabled: false,
+        sourceRefs: [],
+        verificationLevel: 'project-derived',
+        needsCrossVerification: false,
+        commandOrigins: [],
+        diagnostics: [],
+      })
     }
 
-    // Codec mode — options depend on container
-    const subtitleCodecOptions = container
-      ? Object.entries(container.subtitleCodecs)
-          .filter(([, level]) => level === 'supported' || level === 'supported-with-caveat')
-          .map(([codec]) => ({ value: codec, label: codec }))
-      : []
+    if (track.source === 'external') {
+      fields.push(resolveTextField(
+        `subtitle.tracks.${track.id}.path`,
+        '文件路径',
+        track.path,
+        fieldStates,
+      ))
+    }
 
+    // Codec mode
     fields.push({
-      id: 'subtitle.mux.codecMode',
-      label: '字幕编码',
+      id: `subtitle.tracks.${track.id}.codecMode`,
+      label: '编码方式',
       controlType: 'select',
-      value: config.subtitle.mux.codecMode,
+      value: track.codecMode,
       options: [
-        { value: 'auto', label: '自动' },
-        { value: 'copy', label: '复制原始字幕流' },
-        ...subtitleCodecOptions,
+        { value: 'copy', label: '复制原始流' },
+        { value: 'transcode', label: '转码' },
       ],
       visible: true,
       disabled: false,
@@ -446,6 +478,53 @@ export function resolveSubtitleSection(
       commandOrigins: [],
       diagnostics: [],
     })
+
+    if (track.codecMode === 'transcode') {
+      fields.push({
+        id: `subtitle.tracks.${track.id}.codec`,
+        label: '目标编码',
+        controlType: 'select',
+        value: track.codec ?? subtitleCodecOptions[0]?.value ?? 'mov_text',
+        options: subtitleCodecOptions,
+        visible: true,
+        disabled: false,
+        sourceRefs: [],
+        verificationLevel: 'project-derived',
+        needsCrossVerification: false,
+        commandOrigins: [],
+        diagnostics: [],
+      })
+    }
+
+    // Language
+    fields.push(resolveTextField(
+      `subtitle.tracks.${track.id}.language`,
+      '语言 (ISO 639-2)',
+      track.language,
+      fieldStates,
+    ))
+
+    // Title
+    fields.push(resolveTextField(
+      `subtitle.tracks.${track.id}.title`,
+      '标题',
+      track.title,
+      fieldStates,
+    ))
+
+    // Disposition
+    fields.push(resolveSwitchField(
+      `subtitle.tracks.${track.id}.disposition.default`,
+      '默认轨道',
+      track.disposition.default ?? false,
+      fieldStates,
+    ))
+    fields.push(resolveSwitchField(
+      `subtitle.tracks.${track.id}.disposition.forced`,
+      '强制字幕',
+      track.disposition.forced ?? false,
+      fieldStates,
+    ))
   }
 
   // -- Subtitle burn --------------------------------------------
