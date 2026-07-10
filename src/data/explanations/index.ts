@@ -1522,4 +1522,271 @@ export const explanations: Record<string, ExplanationDefinition> = {
       { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/flacenc.c', sourceType: 'ffmpeg-official' },
     ],
   },
+
+  // -- QSV encoders ---------------------------------------------
+  'expl.h264_qsv': {
+    id: 'expl.h264_qsv',
+    title: 'h264_qsv',
+    short: 'Intel Quick Sync Video H.264 硬件编码器。需要 Intel GPU 和 FFmpeg --enable-libmfx 编译。FFCodec 不检测本机硬件。',
+    detail: 'QSV H.264 编码器利用 Intel 集成/独立显卡硬件加速 H.264 编码。支持 CQP/ICQ/LA_ICQ/VBR/CBR 多种码率控制模式。ICQ (Intelligent Constant Quality) 是 QSV 特有模式，结合前瞻分析提供优秀的画质-码率平衡。',
+    effects: { quality: 4, fileSize: 3, speed: 4, compatibility: 3 },
+    warnings: ['QSV 可用性取决于 Intel 图形硬件和驱动，FFCodec 未检测本机环境', 'ICQ/LA_ICQ 需要 Haswell 以上，low_power 需要 Broadwell 以上'],
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc_h264.c', sourceType: 'ffmpeg-official' },
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.hevc_qsv': {
+    id: 'expl.hevc_qsv',
+    title: 'hevc_qsv',
+    short: 'Intel Quick Sync Video HEVC 硬件编码器。需要 Broadwell 以上 Intel GPU 和 FFmpeg --enable-libmfx 编译。FFCodec 不检测本机硬件。',
+    detail: 'QSV HEVC 编码器利用 Intel GPU 硬件加速 H.265/HEVC 编码。支持 8-bit 和 10-bit 色深。Broadwell 代开始支持 HEVC 编码，Skylake 代增加了 B 帧支持。',
+    effects: { quality: 5, fileSize: 5, speed: 4, compatibility: 2 },
+    warnings: ['HEVC QSV 需要 Broadwell (5th Gen) 以上 Intel GPU', 'FFCodec 未检测本机硬件和驱动'],
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc_hevc.c', sourceType: 'ffmpeg-official' },
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.preset': {
+    id: 'expl.qsv.preset',
+    title: 'Preset',
+    short: 'QSV 编码速度预设。veryfast（最快）到 veryslow（最高质量）。默认 medium。与 x264 preset 名称相同但内部映射不同。',
+    effects: { quality: 3, fileSize: 2, speed: 5, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.profile': {
+    id: 'expl.qsv.profile',
+    title: 'Profile',
+    short: 'H.264/HEVC 编码配置文件，约束色深、色度采样等。auto 自动选择与输入匹配的 profile。',
+    effects: { quality: 1, fileSize: 1, speed: 0, compatibility: 4 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.pixfmt': {
+    id: 'expl.qsv.pixfmt',
+    title: '像素格式',
+    short: 'QSV 支持的像素格式。nv12/yuv420p 为 8-bit 4:2:0；p010le 为 10-bit；yuyv422 为 8-bit 4:2:2。',
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.cqp': {
+    id: 'expl.qsv.cqp',
+    title: 'CQP (恒定 QP)',
+    short: '恒定质量编码。使用 -qp 参数，低值=高画质大文件。范围 0-51，推荐 18（高质量）到 28（一般质量）。',
+    effects: { quality: 5, fileSize: 2, speed: 4, compatibility: 4 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.cqp.value': {
+    id: 'expl.qsv.cqp.value',
+    title: 'QP 值',
+    short: '量化参数值。0=无损，51=最大压缩。范围 0-51，步长 1。',
+    effects: { quality: 5, fileSize: 4, speed: 1, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.icq': {
+    id: 'expl.qsv.icq',
+    title: 'ICQ (智能恒定质量)',
+    short: 'Intel QSV 特有的智能质量模式。使用 -global_quality 参数 + look_ahead=1，根据帧内容动态调节。需要 Haswell 以上。',
+    detail: 'ICQ 是 QSV 推荐的画质优先模式。它利用硬件前瞻分析决定每帧的最优量化参数，在保证主观画质的同时尽可能减小文件大小。与 CRF 不同，ICQ 考虑了帧间依赖关系。',
+    effects: { quality: 5, fileSize: 3, speed: 4, compatibility: 3 },
+    sourceRefs: [
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.icq.value': {
+    id: 'expl.qsv.icq.value',
+    title: '全局质量',
+    short: 'ICQ/LA_ICQ 使用的全局质量参数。范围 1-51，推荐 18（高质量）到 28（一般质量）。',
+    effects: { quality: 5, fileSize: 4, speed: 1, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.laicq': {
+    id: 'expl.qsv.laicq',
+    title: 'LA-ICQ (前瞻智能恒定质量)',
+    short: 'ICQ + look_ahead_depth 前瞻深度。在 ICQ 基础上增加多帧前瞻分析，进一步优化码率分配。',
+    effects: { quality: 5, fileSize: 3, speed: 3, compatibility: 3 },
+    sourceRefs: [
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.laicq.value': {
+    id: 'expl.qsv.laicq.value',
+    title: '全局质量',
+    short: 'LA_ICQ 模式的全局质量参数。范围 1-51。',
+    effects: { quality: 5, fileSize: 4, speed: 1, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.lookaheaddepth': {
+    id: 'expl.qsv.lookaheaddepth',
+    title: '前瞻深度',
+    short: '用于 LA_ICQ 和 Look-ahead VBR 模式的前瞻帧数。范围 10-100，默认 40。值越大分析越多，质量和码率分配越优。',
+    effects: { quality: 2, fileSize: 2, speed: 4, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.vbr': {
+    id: 'expl.qsv.vbr',
+    title: 'VBR (可变码率)',
+    short: '可变码率编码。设置目标码率，编码器根据画面复杂度动态分配码率。适用于需要控制文件大小的场景。',
+    effects: { quality: 4, fileSize: 4, speed: 4, compatibility: 4 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.vbr.bitrate': {
+    id: 'expl.qsv.vbr.bitrate',
+    title: '目标码率',
+    short: 'VBR/CBR 模式的目标码率。格式如 5000k、2M 等。',
+    effects: { quality: 5, fileSize: 5, speed: 0, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.vbr.maxrate': {
+    id: 'expl.qsv.vbr.maxrate',
+    title: '最大码率',
+    short: '码率上限。限制编码器在复杂场景中使用的最大码率。',
+    effects: { quality: 3, fileSize: 4, speed: 0, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.vbr.bufsize': {
+    id: 'expl.qsv.vbr.bufsize',
+    title: '缓冲区大小',
+    short: '码率控制缓冲区大小。配合 maxrate 使用，控制码率波动幅度。',
+    effects: { quality: 2, fileSize: 3, speed: 0, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.cbr': {
+    id: 'expl.qsv.cbr',
+    title: 'CBR (恒定码率)',
+    short: '恒定码率编码。输出码率尽量保持在目标值。适用于实时流媒体传输。',
+    effects: { quality: 3, fileSize: 4, speed: 4, compatibility: 5 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.cbr.bitrate': {
+    id: 'expl.qsv.cbr.bitrate',
+    title: '目标码率',
+    short: 'CBR 模式的目标码率。格式如 5000k、2M 等。',
+    effects: { quality: 5, fileSize: 5, speed: 0, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.lavbr': {
+    id: 'expl.qsv.lavbr',
+    title: 'Look-ahead VBR',
+    short: '带前瞻的可变码率编码。结合 look_ahead 分析，在 VBR 基础上优化码率分配。',
+    effects: { quality: 5, fileSize: 4, speed: 3, compatibility: 3 },
+    sourceRefs: [
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.lavbr.bitrate': {
+    id: 'expl.qsv.lavbr.bitrate',
+    title: '目标码率',
+    short: 'Look-ahead VBR 模式的目标码率。',
+    effects: { quality: 5, fileSize: 5, speed: 0, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.lavbr.maxrate': {
+    id: 'expl.qsv.lavbr.maxrate',
+    title: '最大码率',
+    short: 'Look-ahead VBR 模式的码率上限。',
+    effects: { quality: 3, fileSize: 4, speed: 0, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'Intel/media-driver', snapshotDate: '2026-07-10', file: 'README.md', sourceType: 'encoder-official' },
+    ],
+  },
+
+  'expl.qsv.asyncdepth': {
+    id: 'expl.qsv.asyncdepth',
+    title: '异步深度',
+    short: 'QSV 硬件编码的异步管线深度。范围 1-20，默认 4。较大的值可提高吞吐量但增加显存占用。',
+    effects: { quality: 0, fileSize: 0, speed: 3, compatibility: 2 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.lowpower': {
+    id: 'expl.qsv.lowpower',
+    title: '低功耗模式',
+    short: '启用 QSV 低功耗编码模式。需要 Broadwell 以上 GPU。启用后功耗更低但质量可能略有下降。',
+    effects: { quality: 0, fileSize: 0, speed: 0, compatibility: 2 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.bf': {
+    id: 'expl.qsv.bf',
+    title: 'B 帧数',
+    short: '最大连续 B 帧数。范围 0-16，默认 3。B 帧可提高压缩效率但增加编码延迟。HEVC B 帧需要 Skylake 以上。',
+    effects: { quality: 2, fileSize: 3, speed: 2, compatibility: 2 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.gop': {
+    id: 'expl.qsv.gop',
+    title: 'GOP 大小',
+    short: '关键帧间隔。范围 1-600，默认 250。较小的 GOP 有利于快速搜索，较大的 GOP 有利于压缩效率。',
+    effects: { quality: 0, fileSize: 2, speed: 0, compatibility: 0 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.qsv.refs': {
+    id: 'expl.qsv.refs',
+    title: '参考帧数',
+    short: '编码参考帧数量。范围 1-16，默认 4。较多的参考帧可提高压缩效率但增加编码复杂度。',
+    effects: { quality: 2, fileSize: 2, speed: 2, compatibility: 2 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
 }

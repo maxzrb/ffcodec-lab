@@ -118,7 +118,12 @@ export type RateControlModeId =
   | 'cbr'
   | 'twoPass'
   | 'nvenc-cq'
-  // Future: 'qsv-cq', 'amf-cq', etc.
+  | 'qsv-cqp'
+  | 'qsv-icq'
+  | 'qsv-la-icq'
+  | 'qsv-vbr'
+  | 'qsv-cbr'
+  | 'qsv-la-vbr'
 
 // -- parameter definition -------------------------------------
 
