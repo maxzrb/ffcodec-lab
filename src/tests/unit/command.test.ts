@@ -1,0 +1,155 @@
+import { describe, it, expect } from 'vitest'
+import { buildCommandPlan } from '../../domain/command/command-builder'
+import { renderBash } from '../../domain/shell/bash-renderer'
+import { renderPowerShell } from '../../domain/shell/powershell-renderer'
+import { renderCmd } from '../../domain/shell/cmd-renderer'
+import type { ProjectConfig } from '../../domain/config/project-config'
+import { createDefaultProjectConfig } from '../../domain/config/defaults'
+import { loadCatalog } from '../../domain/catalog/catalog-loader'
+
+const catalog = loadCatalog()
+
+function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
+  return { ...createDefaultProjectConfig(), ...overrides } as ProjectConfig
+}
+
+describe('Command AST — Invariants', () => {
+  it('generates command for libx264 + CRF + AAC + MP4', () => {
+    const config = makeConfig()
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderBash(plan)
+
+    expect(rendered.text).toContain('ffmpeg')
+    expect(rendered.text).toContain('-c:v')
+    expect(rendered.text).toContain('libx264')
+    expect(rendered.text).toContain('-crf')
+    expect(rendered.text).toContain('-c:a')
+    expect(rendered.text).toContain('aac')
+    expect(rendered.text).toContain('-b:a')
+  })
+
+  it('video copy does NOT generate video quality or filter params', () => {
+    const config = makeConfig({
+      video: { ...createDefaultProjectConfig().video, mode: 'copy' },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderBash(plan)
+
+    expect(rendered.text).toContain('-c:v copy')
+    expect(rendered.text).not.toContain('-crf')
+    expect(rendered.text).not.toContain('-vf')
+  })
+
+  it('-vn generates no video params', () => {
+    const config = makeConfig({
+      video: { ...createDefaultProjectConfig().video, mode: 'disabled' },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderBash(plan)
+
+    expect(rendered.text).toContain('-vn')
+    expect(rendered.text).not.toContain('libx264')
+    expect(rendered.text).not.toContain('-crf')
+  })
+
+  it('-an generates no audio params', () => {
+    const config = makeConfig({
+      audio: { ...createDefaultProjectConfig().audio, mode: 'disabled' },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderBash(plan)
+
+    expect(rendered.text).toContain('-an')
+    expect(rendered.text).not.toContain('aac')
+  })
+
+  it('audio copy does not generate quality params', () => {
+    const config = makeConfig({
+      audio: { ...createDefaultProjectConfig().audio, mode: 'copy' },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderBash(plan)
+
+    expect(rendered.text).toContain('-c:a copy')
+    expect(rendered.text).not.toContain('-b:a')
+  })
+
+  it('all generated args have originId', () => {
+    const config = makeConfig()
+    const plan = buildCommandPlan(config, catalog, [])
+
+    for (const inv of plan.invocations) {
+      for (const arg of [
+        ...inv.globalArgs,
+        ...inv.output.codecArgs,
+        ...inv.output.qualityArgs,
+        ...inv.output.filterArgs,
+        ...inv.output.audioArgs,
+        ...inv.output.subtitleArgs,
+      ]) {
+        expect(arg.originId).toBeTruthy()
+      }
+      for (const input of inv.inputs) {
+        expect(input.originId).toBeTruthy()
+      }
+    }
+  })
+
+  it('at most one -vf is generated', () => {
+    const config = makeConfig({
+      frame: {
+        resolution: { mode: 'size', width: 1280, height: 720, keepAspect: true },
+        frameRate: { mode: 'value', value: 30 },
+      },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderBash(plan)
+
+    const vfCount = (rendered.text.match(/-vf/g) ?? []).length
+    expect(vfCount).toBeLessThanOrEqual(1)
+  })
+
+  it('Bash escapes paths with spaces', () => {
+    const config = makeConfig({
+      input: { ...createDefaultProjectConfig().input, path: 'my video.mp4' },
+      output: { ...createDefaultProjectConfig().output, path: 'output file.mkv' },
+    })
+    const rendered = renderBash(buildCommandPlan(config, catalog, []))
+
+    // Paths with spaces should be quoted
+    expect(rendered.text).toMatch(/'.*my video\.mp4.*'/)
+    expect(rendered.text).toMatch(/'.*output file\.mkv.*'/)
+  })
+
+  it('PowerShell renderer works', () => {
+    const config = makeConfig()
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderPowerShell(plan)
+
+    expect(rendered.text).toContain('ffmpeg')
+    expect(rendered.text).toContain('libx264')
+  })
+
+  it('CMD renderer works', () => {
+    const config = makeConfig()
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderCmd(plan)
+
+    expect(rendered.text).toContain('ffmpeg')
+    expect(rendered.text).toContain('libx264')
+  })
+
+  it('two-pass generates two invocations', () => {
+    const config = makeConfig({
+      video: {
+        ...createDefaultProjectConfig().video,
+        rateControl: { mode: 'twoPass', bitrate: '5000k', additionalValues: {} },
+      },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+
+    expect(plan.invocations.length).toBe(2)
+    expect(plan.invocations[0].purpose).toBe('pass-1')
+    expect(plan.invocations[1].purpose).toBe('pass-2')
+  })
+})

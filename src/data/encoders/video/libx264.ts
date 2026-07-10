@@ -1,0 +1,299 @@
+import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+
+export const libx264: EncoderDefinition = {
+  id: 'libx264',
+  label: 'libx264 (H.264/AVC)',
+  ffmpegName: 'libx264',
+  mediaType: 'video',
+  family: 'h264',
+  implementation: 'software',
+  availabilityNote:
+    'libx264 是 FFmpeg 最广泛使用的软件 H.264 编码器。可用性取决于本机 FFmpeg 构建。可运行 ffmpeg -encoders | grep x264 检查。',
+
+  capabilities: {
+    copy: false,
+    disabled: false,
+    supportsTwoPass: true,
+    supportsLossless: true,
+    supportedContainers: ['mp4', 'mkv', 'mov', 'flv', 'avi', 'mxf', 'ts'],
+  },
+
+  preset: {
+    id: 'libx264.preset',
+    label: '编码预设 (preset)',
+    control: 'select',
+    commandBinding: { argName: '-preset', prefix: '-preset', phase: 'VIDEO_CODEC' },
+    options: [
+      { value: 'ultrafast', label: 'ultrafast', description: '最快速度，最低压缩率' },
+      { value: 'superfast', label: 'superfast' },
+      { value: 'veryfast', label: 'veryfast' },
+      { value: 'faster', label: 'faster' },
+      { value: 'fast', label: 'fast' },
+      { value: 'medium', label: 'medium', description: '默认值，速度与压缩率平衡' },
+      { value: 'slow', label: 'slow' },
+      { value: 'slower', label: 'slower' },
+      { value: 'veryslow', label: 'veryslow' },
+      { value: 'placebo', label: 'placebo', description: '极慢，不推荐实际使用' },
+    ],
+    defaultValue: 'medium',
+    explanationId: 'expl.libx264.preset',
+  },
+
+  profile: {
+    id: 'libx264.profile',
+    label: '配置文件 (profile)',
+    control: 'select',
+    commandBinding: { argName: '-profile:v', prefix: '-profile:v', phase: 'VIDEO_PROFILE' },
+    options: [
+      { value: 'auto', label: '自动' },
+      { value: 'baseline', label: 'baseline' },
+      { value: 'main', label: 'main' },
+      { value: 'high', label: 'high' },
+      { value: 'high10', label: 'high10' },
+      { value: 'high422', label: 'high422' },
+      { value: 'high444', label: 'high444' },
+    ],
+    defaultValue: 'auto',
+    explanationId: 'expl.libx264.profile',
+  },
+
+  tune: {
+    id: 'libx264.tune',
+    label: '场景优化 (tune)',
+    control: 'select',
+    commandBinding: { argName: '-tune', prefix: '-tune', phase: 'VIDEO_CODEC' },
+    options: [
+      { value: 'auto', label: '无 (自动)' },
+      { value: 'film', label: 'film — 实拍影片' },
+      { value: 'animation', label: 'animation — 动画' },
+      { value: 'grain', label: 'grain — 胶片颗粒' },
+      { value: 'stillimage', label: 'stillimage — 静止图像' },
+      { value: 'psnr', label: 'psnr — PSNR 优化' },
+      { value: 'ssim', label: 'ssim — SSIM 优化' },
+      { value: 'fastdecode', label: 'fastdecode — 快速解码' },
+      { value: 'zerolatency', label: 'zerolatency — 零延迟' },
+    ],
+    defaultValue: 'auto',
+    explanationId: 'expl.libx264.tune',
+  },
+
+  pixelFormat: {
+    id: 'libx264.pixelFormat',
+    label: '像素格式 (pix_fmt)',
+    control: 'select',
+    commandBinding: { argName: '-pix_fmt', prefix: '-pix_fmt', phase: 'VIDEO_CODEC' },
+    options: [
+      { value: 'auto', label: '自动' },
+      { value: 'yuv420p', label: 'yuv420p' },
+      { value: 'yuv422p', label: 'yuv422p' },
+      { value: 'yuv444p', label: 'yuv444p' },
+      { value: 'yuv420p10le', label: 'yuv420p10le' },
+      { value: 'yuv422p10le', label: 'yuv422p10le' },
+      { value: 'yuv444p10le', label: 'yuv444p10le' },
+    ],
+    defaultValue: 'auto',
+    explanationId: 'expl.libx264.pixfmt',
+  },
+
+  qualityModes: [
+    {
+      id: 'crf',
+      label: 'CRF (恒定质量)',
+      emitterId: 'emitter.crf',
+      explanationId: 'expl.libx264.crf',
+      sourceRefs: [
+        {
+          repository: 'Lake1059/FFmpegFreeUI',
+          branch: 'main',
+          snapshotDate: '2026-07-10',
+          file: 'src/databases/video-encoders.json',
+          symbol: 'libx264.quality.crf',
+          sourceType: 'ffmpegfreeui',
+        },
+      ],
+      recommendedValues: [
+        { label: '视觉无损', value: 18, description: '几乎无法察觉的画质损失' },
+        { label: '默认', value: 23, description: '画质与体积的良好平衡' },
+        { label: '一般质量', value: 28, description: '文件较小，画质可接受' },
+      ],
+      controls: [
+        {
+          id: 'libx264.crf.value',
+          label: 'CRF 值',
+          control: 'number',
+          commandBinding: { argName: '-crf', prefix: '-crf', phase: 'VIDEO_RATE_CONTROL' },
+          range: { min: 0, max: 51, step: 0.1 },
+          defaultValue: 23,
+          explanationId: 'expl.libx264.crf.value',
+        },
+      ],
+    },
+    {
+      id: 'vbr',
+      label: 'VBR (动态码率)',
+      emitterId: 'emitter.vbr',
+      explanationId: 'expl.libx264.vbr',
+      sourceRefs: [
+        {
+          repository: 'Lake1059/FFmpegFreeUI',
+          branch: 'main',
+          snapshotDate: '2026-07-10',
+          file: 'src/databases/video-encoders.json',
+          symbol: 'libx264.quality.vbr',
+          sourceType: 'ffmpegfreeui',
+        },
+      ],
+      controls: [
+        {
+          id: 'libx264.vbr.bitrate',
+          label: '目标码率 (-b:v)',
+          control: 'text',
+          commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          defaultValue: '5000k',
+          explanationId: 'expl.libx264.vbr.bitrate',
+        },
+        {
+          id: 'libx264.vbr.maxrate',
+          label: '最大码率 (-maxrate)',
+          control: 'text',
+          commandBinding: { argName: '-maxrate', prefix: '-maxrate', phase: 'VIDEO_RATE_CONTROL' },
+          explanationId: 'expl.libx264.vbr.maxrate',
+        },
+        {
+          id: 'libx264.vbr.bufsize',
+          label: '缓冲区 (-bufsize)',
+          control: 'text',
+          commandBinding: { argName: '-bufsize', prefix: '-bufsize', phase: 'VIDEO_RATE_CONTROL' },
+          explanationId: 'expl.libx264.vbr.bufsize',
+        },
+      ],
+    },
+    {
+      id: 'cqp',
+      label: 'CQP (恒定量化)',
+      emitterId: 'emitter.cqp',
+      explanationId: 'expl.libx264.cqp',
+      sourceRefs: [
+        {
+          repository: 'Lake1059/FFmpegFreeUI',
+          branch: 'main',
+          snapshotDate: '2026-07-10',
+          file: 'src/databases/video-encoders.json',
+          symbol: 'libx264.quality.cqp',
+          sourceType: 'ffmpegfreeui',
+        },
+      ],
+      controls: [
+        {
+          id: 'libx264.cqp.value',
+          label: 'QP 值',
+          control: 'number',
+          commandBinding: { argName: '-qp', prefix: '-qp', phase: 'VIDEO_RATE_CONTROL' },
+          range: { min: 0, max: 69, step: 1 },
+          defaultValue: 23,
+          explanationId: 'expl.libx264.cqp.value',
+        },
+      ],
+    },
+    {
+      id: 'cbr',
+      label: 'CBR (恒定码率)',
+      emitterId: 'emitter.cbr',
+      explanationId: 'expl.libx264.cbr',
+      sourceRefs: [
+        {
+          repository: 'Lake1059/FFmpegFreeUI',
+          branch: 'main',
+          snapshotDate: '2026-07-10',
+          file: 'src/databases/video-encoders.json',
+          symbol: 'libx264.quality.cbr',
+          sourceType: 'ffmpegfreeui',
+        },
+      ],
+      controls: [
+        {
+          id: 'libx264.cbr.bitrate',
+          label: '目标码率 (-b:v)',
+          control: 'text',
+          commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          defaultValue: '5000k',
+          explanationId: 'expl.libx264.cbr.bitrate',
+        },
+      ],
+    },
+    {
+      id: 'twoPass',
+      label: '二次编码 (Two-Pass)',
+      emitterId: 'emitter.twoPass',
+      explanationId: 'expl.libx264.twopass',
+      sourceRefs: [
+        {
+          repository: 'Lake1059/FFmpegFreeUI',
+          branch: 'main',
+          snapshotDate: '2026-07-10',
+          file: 'src/databases/video-encoders.json',
+          symbol: 'libx264.quality.twoPass',
+          sourceType: 'ffmpegfreeui',
+        },
+      ],
+      controls: [
+        {
+          id: 'libx264.twopass.bitrate',
+          label: '目标码率 (-b:v)',
+          control: 'text',
+          commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          defaultValue: '5000k',
+          explanationId: 'expl.libx264.twopass.bitrate',
+        },
+      ],
+    },
+  ],
+
+  specialParameters: [
+    {
+      id: 'libx264.threads',
+      label: '编码线程数',
+      control: 'number',
+      commandBinding: { argName: '-threads', prefix: '-threads', phase: 'VIDEO_CODEC' },
+      range: { min: 1, max: 64 },
+      explanationId: 'expl.libx264.threads',
+    },
+    {
+      id: 'libx264.x264params',
+      label: 'x264 附加参数 (-x264-params)',
+      control: 'text',
+      commandBinding: { argName: '-x264-params', prefix: '-x264-params', phase: 'VIDEO_CODEC' },
+      explanationId: 'expl.libx264.x264params',
+    },
+  ],
+
+  requiredArguments: [],
+  defaultArguments: [
+    {
+      argName: '-threads',
+      value: 'auto',
+      phase: 'VIDEO_CODEC',
+    },
+  ],
+
+  explanationId: 'expl.libx264',
+  sourceRefs: [
+    {
+      repository: 'Lake1059/FFmpegFreeUI',
+      branch: 'main',
+      snapshotDate: '2026-07-10',
+      file: 'src/databases/video-encoders.json',
+      symbol: 'libx264',
+      sourceType: 'ffmpegfreeui',
+    },
+    {
+      repository: 'FFmpeg/FFmpeg',
+      branch: 'master',
+      snapshotDate: '2026-07-10',
+      file: 'libavcodec/libx264.c',
+      sourceType: 'ffmpeg-official',
+      url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx264.c',
+    },
+  ],
+  status: 'verified',
+}
