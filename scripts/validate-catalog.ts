@@ -215,15 +215,131 @@ function validateRules() {
   }
 }
 
+// -- Phase 3 audit: codec family & implementation -----------------
+const VALID_FAMILIES = new Set(['h264', 'hevc', 'av1', 'vp9', 'prores', 'aac', 'opus', 'flac', 'other'])
+const VALID_IMPLEMENTATIONS = new Set(['software', 'nvidia', 'intel', 'amd', 'apple', 'other'])
+const VALID_AVAILABILITY = new Set([
+  'generally-available', 'ffmpeg-build-dependent', 'hardware-dependent',
+  'driver-dependent', 'platform-dependent', 'experimental', 'deprecated',
+])
+
+function checkEncoderMetadata(encoder: EncoderDefinition) {
+  if (!VALID_FAMILIES.has(encoder.family)) {
+    errors.push(`[family] Encoder "${encoder.id}" has invalid family: "${encoder.family}"`)
+  }
+  if (!VALID_IMPLEMENTATIONS.has(encoder.implementation)) {
+    errors.push(`[impl] Encoder "${encoder.id}" has invalid implementation: "${encoder.implementation}"`)
+  }
+  if (!VALID_AVAILABILITY.has(encoder.availabilityClass)) {
+    errors.push(`[avail] Encoder "${encoder.id}" has invalid availabilityClass: "${encoder.availabilityClass}"`)
+  }
+
+  // hardware-dependent must have capabilityScope.hardware
+  if (encoder.availabilityClass === 'hardware-dependent') {
+    if (!encoder.capabilityScope?.hardware || encoder.capabilityScope.hardware.length === 0) {
+      errors.push(`[avail] Hardware-dependent encoder "${encoder.id}" is missing capabilityScope.hardware`)
+    }
+  }
+
+  // project-derived must not masquerade as official
+  if (encoder.verificationLevel === 'project-derived' && encoder.sourceAuthority === 'ffmpeg-official') {
+    errors.push(`[verify] Encoder "${encoder.id}": project-derived cannot claim ffmpeg-official authority`)
+  }
+  if (encoder.verificationLevel === 'project-derived' && encoder.sourceAuthority === 'encoder-official') {
+    errors.push(`[verify] Encoder "${encoder.id}": project-derived cannot claim encoder-official authority`)
+  }
+}
+
+function checkQualityModeArgs(encoder: EncoderDefinition) {
+  for (const qm of encoder.qualityModes) {
+    // modeArguments must reference valid phases
+    for (const tpl of qm.modeArguments ?? []) {
+      const validPhases = ['GLOBAL','PRE_INPUT','INPUT','MAP','VIDEO_CODEC','VIDEO_PROFILE',
+        'VIDEO_RATE_CONTROL','VIDEO_FILTER','AUDIO_CODEC','AUDIO_QUALITY',
+        'SUBTITLE','METADATA','MUXER','CUSTOM_OUTPUT','OUTPUT']
+      if (!validPhases.includes(tpl.phase)) {
+        errors.push(`[phase] ${encoder.id}/${qm.id} modeArgument "${tpl.argName}" has invalid phase: "${tpl.phase}"`)
+      }
+    }
+
+    // Same quality mode must not produce conflicting args
+    const prefixes = new Set<string>()
+    for (const ctrl of qm.controls) {
+      if (ctrl.commandBinding?.prefix) {
+        if (prefixes.has(ctrl.commandBinding.prefix)) {
+          errors.push(`[conflict] ${encoder.id}/${qm.id} has duplicate prefix "${ctrl.commandBinding.prefix}" in controls`)
+        }
+        prefixes.add(ctrl.commandBinding.prefix)
+      }
+    }
+    for (const tpl of qm.modeArguments ?? []) {
+      if (prefixes.has(tpl.argName)) {
+        errors.push(`[conflict] ${encoder.id}/${qm.id} modeArgument "${tpl.argName}" conflicts with control prefix`)
+      }
+    }
+  }
+}
+
+// Check configBinding paths
+import { isValidConfigPath } from '../src/domain/config/config-path'
+
+function checkConfigBindings(encoder: EncoderDefinition) {
+  let hasConfigBinding = false
+  for (const qm of encoder.qualityModes) {
+    for (const ctrl of qm.controls) {
+      if (ctrl.configBinding) {
+        hasConfigBinding = true
+        if (!isValidConfigPath(ctrl.configBinding.path)) {
+          errors.push(`[configpath] ${ctrl.id} has invalid configBinding.path: "${ctrl.configBinding.path}"`)
+        }
+      }
+    }
+  }
+  // Warn if no controls have configBinding (will be upgraded to error after legacy fallback removed)
+  if (encoder.qualityModes.length > 0 && !hasConfigBinding) {
+    warnings.push(`[configbinding] Encoder "${encoder.id}" has no controls with configBinding (legacy fallback in use)`)
+  }
+}
+
+// Check subtitle container matrix
+function checkSubtitleMatrix() {
+  for (const container of Object.values(containers)) {
+    for (const [codec, level] of Object.entries(container.subtitleCodecs)) {
+      if (codec === 'copy') continue
+      const validLevels = ['supported', 'supported-with-caveat', 'transcode-recommended', 'unsupported', 'unknown']
+      if (!validLevels.includes(level)) {
+        errors.push(`[subtitle] ${container.id}/subtitleCodecs.${codec} has invalid level: "${level}"`)
+      }
+    }
+    // Warn if container has no subtitle codec entries at all
+    if (Object.keys(container.subtitleCodecs).length === 0) {
+      warnings.push(`[subtitle] Container "${container.id}" has no subtitle codec entries`)
+    }
+  }
+}
+
+// Check built-in presets reference valid encoders
+function checkBuiltinPresets() {
+  // Dynamic import not possible in script; checked via test suite
+  // This is verified in presets.test.ts: "All built-in presets have valid configs"
+  // Placeholder for catalog-level check
+}
+
 // -- RUN ---------------------------------------------------------
 console.log('Catalog validation starting...\n')
 
 // Validate encoders
 for (const enc of Object.values(videoEncoders)) {
   validateEncoder(enc, 'video')
+  checkEncoderMetadata(enc)
+  checkQualityModeArgs(enc)
+  checkConfigBindings(enc)
 }
 for (const enc of Object.values(audioEncoders)) {
   validateEncoder(enc, 'audio')
+  checkEncoderMetadata(enc)
+  checkQualityModeArgs(enc)
+  checkConfigBindings(enc)
 }
 
 // Check for duplicate encoder IDs across types
@@ -247,6 +363,10 @@ for (const param of Object.values(parameters)) {
 
 // Validate rules
 validateRules()
+
+// Phase 3 checks
+checkSubtitleMatrix()
+checkBuiltinPresets()
 
 // Report
 console.log('===========================================')

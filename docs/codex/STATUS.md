@@ -1,53 +1,51 @@
 # Project Status
 
-Last updated: 2026-07-10 15:05
+Last updated: 2026-07-10 16:15
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: 第二阶段开发 — 完成可用 MVP（正式 BuilderPage、参数解释、字幕、命令预览、预设）
-- Current state: 第二阶段核心功能完成。TypeScript 0 错误、目录审计 0 错误 0 警告、76 单元测试通过、生产构建成功、10 项验收配置全部通过。
+- Current objective: 第三阶段开发 — 版本化能力目录 + NVENC + FLAC + 多字幕 + 诊断修复 + 分享配置
+- Current state: 第三阶段核心完成。TypeScript 0 错误、目录审计 0 错误 5 警告（configBinding 遗留，见 revision #19）、137 单元测试通过、生产构建成功。
 - Last active agent: Claude Code
 - Likely next agent: Claude Code
-- Next recommended step: 交叉核验 5 项待核验参数；添加 FLAC 编码器；实现 PresetManager UI 组件
+- Next recommended step: 为软件编码器添加 configBinding 以消除审计警告；实现 PresetManager UI；第四阶段 QSV/AMF 硬件编码器
 
 ## Active TODO
 
-- [ ] 交叉核验 5 项待核验参数（libx264 CQP、libsvtav1 QP/preset、libopus frame_duration、AAC aac_coder）
+- [ ] 为软件编码器（libx264, libx265, libsvtav1, aac, libopus）controls 添加 configBinding
   - Owner: pending
-  - Status: not started
-  - Relevant files: docs/source-map.md
-  - Notes/blockers: 需要 FFmpeg 官方文档或编码器官方文档
+  - Status: revision #19 — 旧回退删除后的清理任务
+  - Relevant files: src/data/encoders/video/*.ts, src/data/encoders/audio/*.ts
 
-- [ ] 实现 PresetManager UI 组件（预设管理面板）
+- [ ] 删除 getControlValue 旧模式匹配回退
   - Owner: pending
-  - Status: not started
-  - Relevant files: src/features/presets/PresetManager.tsx
-  - Notes/blockers: preset-service.ts 已完成，UI 组件待开发
+  - Status: 等待全部 controls 完成 configBinding
+  - Relevant files: src/domain/command/command-builder.ts
 
 - [ ] React Testing Library 集成测试
   - Owner: pending
   - Status: not started
-  - Relevant files: src/tests/
-  - Notes/blockers: 当前仅有单元测试（76 tests），需增加组件渲染测试
+  - Notes/blockers: 当前 137 测试全为单元测试
 
-- [ ] 添加 FLAC 编码器（可选扩展）
+- [ ] 实现 PresetManager UI 组件
   - Owner: pending
-  - Status: not started
-  - Relevant files: src/data/encoders/audio/
-  - Notes/blockers: FLAC 参数简单，前提是正式页面、预设均已完成后
+  - Relevant files: src/features/presets/PresetManager.tsx
+  - Notes/blockers: preset-service.ts 已完成
 
-- [ ] 添加硬件编码器数据（h264_nvenc, hevc_nvenc）
+- [ ] 第四阶段：QSV / AMF / VideoToolbox 硬件编码器
   - Owner: pending
-  - Status: not started
-  - Relevant files: src/data/encoders/video/
-  - Notes/blockers: 需核验 NVENC 参数范围和 preset 选项；需在纵向闭环验证通过后
+  - Notes/blockers: 需要先完成 configBinding 清理
 
 ## Recently Completed
 
-- 2026-07-10 14:55: 第二阶段核心开发完成 — SourceRef/VerificationLevel 类型模型分离、presentation 解析层（ResolvedField）、正式 BuilderPage + 7 个组件、解释面板、命令预览（多行/单行/复制/token点击/3种Shell）、视频/音频/字幕 UI（通过 resolved fields 渲染）、预设服务（CRUD + 导入导出 + Zod验证 + schema migration + 5个内置预设）、持久化层（localStorage适配器）、76 单元测试（+43 new）、10 项验收配置全部通过、mvp-acceptance.md
+- 2026-07-10 16:10: 第三阶段 Milestone B — 多字幕轨道（SubtitleTrackConfig[] + -c:s:N + -metadata:s:s:N + -disposition:s:N）、独立配置迁移模块（migrateConfig 共用管道）、诊断修复建议（code+context → fixes, 事务性应用）、可分享配置（ShareableProjectConfig, URL hash, JSON export）、审计扩展（11 新检查）、137 单元测试（+61 new）
 
-- 2026-07-10 14:25: 首轮开发完成 — 项目骨架、核心类型、编码器/容器/解释/参数数据、规则引擎 11 条规则、规范化器、兼容性校验器、视频滤镜构建器、Command AST 构建器、Bash/PowerShell/CMD 渲染器、Zustand store、开发验证页面、目录审计脚本、33 项单元测试、source-map.md、architecture.md
+- 2026-07-10 15:50: 第三阶段 Milestone A — 基础类型扩展（CodecFamily, EncoderImplementation, RateControlModeId, CapabilityScope, ConfigPath, Diagnostic）、5 项参数核验（libopus 枚举修正, AAC anmr 实验性）、NVENC 编码器（h264_nvenc + hevc_nvenc）、FLAC 编码器、OGG 容器、modeArguments + configBinding 命令构建器扩展
+
+- 2026-07-10 14:55: 第二阶段核心开发完成
+
+- 2026-07-10 14:25: 首轮开发完成
 
 ## Decisions
 
@@ -177,6 +175,58 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 开发命令: `npm run dev` / `npm run check`
 - Git status: 非 Git 仓库（not a git repository）
 - Next step: 实现参数解释面板 + 字幕 UI，或按用户指示进入第二阶段
+
+### 2026-07-10 16:15 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 第三阶段开发 — Milestone B + 诊断修复 + 分享配置 + 测试
+- Work completed:
+  1. **Phase 4** — 独立配置迁移模块: `src/domain/migration/` (migrateConfig, migration-registry, v1-to-v2)
+  2. **Phase 5** — 多字幕轨道: SubtitleTrackConfig[] 替换 SubtitleMuxConfig, -c:s:N/-metadata:s:s:N/-disposition:s:N, sourceCodec 未知 copy→warning, mainStreamRelIndex/externalStreamIndex 区分
+  3. **Phase 6** — 诊断修复建议: buildFixSuggestions (code+context→fixes), applyFix (白名单→schema→norm→rules→validation)
+  4. **Phase 7** — 可分享配置: ShareableProjectConfig (剔除本地路径), URL hash base64url, 长度上限 2000→JSON export, Zod验证+migration
+  5. **Phase 8** — 审计扩展 (11 新检查) + 61 新测试 (capability, nvenc, flac, subtitle-tracks, diagnostic-fix, share-config)
+- Files changed:
+  - Modified: STATUS.md, validate-catalog.ts, project-config.ts, config-schema.ts, defaults.ts, command-builder.ts, resolve-section.ts, rules/index.ts, acceptance-test.ts, rules.test.ts, presentation.test.ts
+  - New: src/domain/migration/ (4 files), src/domain/diagnostics/ (3 files), src/features/sharing/ (2 files), src/tests/unit/capability.test.ts, nvenc.test.ts, flac.test.ts, subtitle-tracks.test.ts, diagnostic-fix.test.ts, share-config.test.ts
+- Commands run:
+  - `npx tsc -b --noEmit`: 0 errors
+  - `npx vitest run`: 137/137 passed (11 files)
+  - `npx tsx scripts/validate-catalog.ts`: 0 errors, 5 warnings (configBinding legacy)
+  - `npx vite build`: 成功 (296KB JS)
+- Verification:
+  - TypeScript strict 模式: 0 errors
+  - 目录审计: 0 errors, 5 warnings (预期 — revision #19 configBinding 遗留)
+  - 单元测试: 137/137 passed (76 original + 61 new)
+  - 生产构建: 成功
+  - 原有 76 测试 0 弱化/删除
+- TODO changes:
+  - 完成: 5 项参数核验、NVENC+FLAC、多字幕轨道、配置迁移、诊断修复、分享配置
+  - 新增: 软件编码器 configBinding 清理、旧回退删除
+- Decisions/risks:
+  - SubtitleTrackConfig 不存储 inputIndex (由 Command Builder 分配)
+  - -c:s:N per-track (不用全局 -c:s)
+  - sourceCodec 未知 + copy → warning (非 error)
+  - ShareableProjectConfig 剔除 input/output/subtitle 路径
+  - 5 个 audit warnings 来自 revision #19 — 软件编码器 controls 尚未迁移到 configBinding
+- Environment notes: 不涉及环境变化
+- Git status: 36 modified + 21 new files, uncommitted
+- Next step: 提交 Phase 8 变更；为软件编码器添加 configBinding；第四阶段
+
+### 2026-07-10 15:50 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 第三阶段 Milestone A — 基础类型扩展 + 参数核验 + NVENC + FLAC
+- Work completed:
+  1. 13 个新类型: CodecFamily, EncoderImplementation, RateControlModeId, CapabilityScope, HardwareRequirement, AvailabilityClass, ConfigBinding, ConfigPath (受控路径), Diagnostic, DiagnosticCategory, DiagnosticFix, ConfigPatchOperation
+  2. 5 项参数核验: libx264 CQP 0-69 已确认, libsvtav1 QP/preset 已确认, libopus frame_duration 枚举修正, AAC anmr 实验性标记
+  3. NVENC: h264_nvenc + hevc_nvenc (细粒度硬件需求, modeArguments, configBinding)
+  4. FLAC: 无损编码, compression_level 0-12, MP4 supported-with-caveat
+  5. OGG 容器新增
+  6. command-builder: modeArguments + configBinding 支持
+  7. 呈现层: FLAC 无码率控件, 编码器分组/badge
+- Files changed: 36 files (+4 new: h264_nvenc.ts, hevc_nvenc.ts, flac.ts, config-path.ts)
+- Commands run: tsc 0, vitest 76/76, audit 0/0, build OK
+- Verification: TS 0, 76 tests, audit 0/0, build 293KB JS
+- Git status: committed (9de6228)
 
 ### 2026-07-10 15:05 - Claude Code (DeepSeek-v4-pro)
 
