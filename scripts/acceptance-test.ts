@@ -287,7 +287,7 @@ for (const { c, r } of results) {
   if (r.messages.length > 0) {
     report += '**规则消息**：\n'
     for (const m of r.messages) {
-      report += `- [${m.severity.toUpperCase()}] ${m.messageId} [${m.fieldIds.join(', ')}]\n`
+      report += `- [${m.severity.toUpperCase()}] ${m.code} [${m.originIds.join(', ')}]\n`
     }
     report += '\n'
   }
@@ -309,7 +309,7 @@ for (const { c, r } of results) {
   if (!r.passed) {
     report += '**发现的问题**：\n'
     for (const m of r.messages.filter((m) => m.severity === 'error')) {
-      report += `- ${m.messageId}\n`
+      report += `- ${m.code}\n`
     }
     report += '\n'
   }

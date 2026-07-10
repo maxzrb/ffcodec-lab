@@ -4,6 +4,67 @@
 // All cross-referenced by ID; no hardcoded values in UI.
 // ============================================================
 
+// -- codec family & implementation -----------------------------
+
+export type CodecFamily =
+  | 'h264'
+  | 'hevc'
+  | 'av1'
+  | 'vp9'
+  | 'prores'
+  | 'aac'
+  | 'opus'
+  | 'flac'
+  | 'other'
+
+export type EncoderImplementation =
+  | 'software'
+  | 'nvidia'
+  | 'intel'
+  | 'amd'
+  | 'apple'
+  | 'other'
+
+// -- availability ----------------------------------------------
+
+export type AvailabilityClass =
+  | 'generally-available'
+  | 'ffmpeg-build-dependent'
+  | 'hardware-dependent'
+  | 'driver-dependent'
+  | 'platform-dependent'
+  | 'experimental'
+  | 'deprecated'
+
+// -- capability scope ------------------------------------------
+
+export interface HardwareRequirement {
+  vendor: 'nvidia' | 'intel' | 'amd' | 'apple' | 'other'
+  feature: string
+  minimumGeneration?: string
+  minimumDriver?: string
+  operatingSystems?: string[]
+  verificationLevel: VerificationLevel
+  sourceRefs: SourceRef[]
+}
+
+export interface CapabilityScope {
+  ffmpeg?: {
+    minVersion?: string
+    maxVersion?: string
+    verifiedVersions?: string[]
+  }
+  library?: {
+    name: string
+    minVersion?: string
+    maxVersion?: string
+    verifiedVersions?: string[]
+  }
+  hardware?: HardwareRequirement[]
+  buildRequirements?: string[]
+  notes?: string[]
+}
+
 // -- source authority & verification ---------------------------
 
 /**
@@ -48,6 +109,17 @@ export interface SourceRef {
   note?: string
 }
 
+// -- rate control mode id --------------------------------------
+
+export type RateControlModeId =
+  | 'crf'
+  | 'vbr'
+  | 'cqp'
+  | 'cbr'
+  | 'twoPass'
+  | 'nvenc-cq'
+  // Future: 'qsv-cq', 'amf-cq', etc.
+
 // -- parameter definition -------------------------------------
 
 export interface ParameterDefinition {
@@ -67,6 +139,8 @@ export interface ParameterDefinition {
   verificationLevel: VerificationLevel
   /** True when sourced from non-official channels and awaiting cross-verification */
   needsCrossVerification: boolean
+  /** Per-parameter capability constraints (version, hardware, etc.) */
+  capabilityScope?: CapabilityScope
   /** @deprecated — use verificationLevel instead */
   status: 'verified' | 'experimental' | 'unverified'
 }
@@ -77,6 +151,15 @@ export interface CommandBinding {
   /** If true, value is appended directly after prefix with no space */
   compact?: boolean
   phase: ArgumentPhase
+}
+
+/**
+ * Maps a control to its value location in ProjectConfig.
+ * Used by getControlValue() in command-builder.ts to read
+ * the current value without encoder-specific branches.
+ */
+export interface ConfigBinding {
+  path: import('../config/config-path').ConfigPath
 }
 
 export interface OptionSource {
@@ -91,6 +174,8 @@ export interface SelectOption {
   value: string | number
   label: string
   description?: string
+  /** Per-option capability constraints (e.g. specific preset requires driver version) */
+  capabilityScope?: CapabilityScope
 }
 
 export interface RangeSource {
@@ -127,8 +212,12 @@ export interface EncoderDefinition {
   label: string
   ffmpegName: string
   mediaType: 'video' | 'audio' | 'image'
-  family: string
-  implementation: 'software' | 'nvidia' | 'intel' | 'amd' | 'other'
+  family: CodecFamily
+  implementation: EncoderImplementation
+  /** Encoder-level availability classification */
+  availabilityClass: AvailabilityClass
+  /** Version, hardware, and build constraints */
+  capabilityScope?: CapabilityScope
   availabilityNote?: string
 
   capabilities: {
@@ -161,18 +250,24 @@ export interface ControlDefinition {
   id: string
   label: string
   commandBinding?: CommandBinding
+  /** Maps this control to its value location in ProjectConfig */
+  configBinding?: ConfigBinding
   control: 'select' | 'number' | 'text' | 'switch'
   options?: SelectOption[]
   range?: { min?: number; max?: number; step?: number }
   defaultValue?: unknown
   explanationId: string
+  /** Per-control capability constraints (overrides encoder-level) */
+  capabilityScope?: CapabilityScope
 }
 
 export interface RateControlModeDefinition {
-  id: 'crf' | 'vbr' | 'cqp' | 'cbr' | 'twoPass'
+  id: RateControlModeId
   label: string
   controls: ControlDefinition[]
   emitterId: string
+  /** Extra args emitted before controls (e.g. -rc vbr for NVENC CQ) */
+  modeArguments?: ArgumentTemplate[]
   recommendedValues?: RecommendedValue[]
   explanationId: string
   sourceRefs: SourceRef[]

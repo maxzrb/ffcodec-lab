@@ -5,8 +5,14 @@ export const libx265: EncoderDefinition = {
   label: 'libx265 (H.265/HEVC)',
   ffmpegName: 'libx265',
   mediaType: 'video',
-  family: 'hevc',
-  implementation: 'software',
+  family: 'hevc' as const,
+  implementation: 'software' as const,
+  availabilityClass: 'ffmpeg-build-dependent',
+  capabilityScope: {
+    buildRequirements: ['--enable-libx265'],
+    library: { name: 'x265', minVersion: '3.0' },
+    notes: ['libx265 是 HEVC/H.265 软件编码器，需要 FFmpeg 编译时启用'],
+  },
   availabilityNote:
     'libx265 是 HEVC/H.265 软件编码器。可用性取决于本机 FFmpeg 构建。可运行 ffmpeg -encoders | grep x265 检查。',
 

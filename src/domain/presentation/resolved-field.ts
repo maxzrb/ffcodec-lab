@@ -5,13 +5,17 @@
 // ============================================================
 
 import type { SourceRef, VerificationLevel } from '../catalog/catalog-types'
-import type { ValidationMessage } from '../rules/rule-types'
+import type { Diagnostic } from '../rules/rule-types'
 
 /** A single option in a select/multiselect control */
 export interface ResolvedOption {
   value: string | number
   label: string
   description?: string
+  /** optgroup label for grouping by family/implementation */
+  group?: string
+  /** Implementation badge text, e.g. "NVIDIA", "Intel", "软件" */
+  badge?: string
 }
 
 /**
@@ -59,7 +63,7 @@ export interface ResolvedField {
   /** Origin IDs that this field contributes to in the command */
   commandOrigins: string[]
   /** Validation warnings/errors related to this field */
-  diagnostics: ValidationMessage[]
+  diagnostics: Diagnostic[]
 }
 
 /**
@@ -80,7 +84,7 @@ export interface ResolvedBuilderView {
   /** Flattened field lookup by ID */
   fieldIndex: Record<string, ResolvedField>
   /** All messages (errors, warnings, info) */
-  messages: ValidationMessage[]
+  messages: Diagnostic[]
   /** Whether any errors exist */
   hasErrors: boolean
 }

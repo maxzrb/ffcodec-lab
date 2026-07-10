@@ -58,7 +58,7 @@ export interface VideoConfig {
 }
 
 export interface RateControlConfig {
-  mode: 'crf' | 'vbr' | 'cqp' | 'cbr' | 'twoPass'
+  mode: import('../catalog/catalog-types').RateControlModeId
   qualityValue?: number
   bitrate?: string
   minRate?: string

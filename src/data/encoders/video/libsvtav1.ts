@@ -5,8 +5,17 @@ export const libsvtav1: EncoderDefinition = {
   label: 'libsvtav1 (AV1/SVT-AV1)',
   ffmpegName: 'libsvtav1',
   mediaType: 'video',
-  family: 'av1',
-  implementation: 'software',
+  family: 'av1' as const,
+  implementation: 'software' as const,
+  availabilityClass: 'ffmpeg-build-dependent',
+  capabilityScope: {
+    buildRequirements: ['--enable-libsvtav1'],
+    library: { name: 'SVT-AV1', minVersion: '1.0.0' },
+    notes: [
+      'SVT-AV1 编码器需要 FFmpeg 编译时启用 libsvtav1',
+      'SVT-AV1 v2.x preset 范围 0-9，v1.x 为 0-13',
+    ],
+  },
   availabilityNote:
     'SVT-AV1 编码器需要 FFmpeg 编译时启用 libsvtav1。可用性取决于本机 FFmpeg 构建、硬件和驱动。可运行 ffmpeg -encoders | grep svtav1 检查。',
 
@@ -35,6 +44,14 @@ export const libsvtav1: EncoderDefinition = {
     ],
     defaultValue: 6,
     explanationId: 'expl.libsvtav1.preset',
+    capabilityScope: {
+      library: { name: 'SVT-AV1', minVersion: '1.0.0', maxVersion: '1.x' },
+      notes: [
+        'SVT-AV1 v1.x preset 范围 0-13',
+        'SVT-AV1 v2.x 已重构 preset，范围缩减为 0-9',
+        '若使用 SVT-AV1 v2.x，请参考最新文档调整 preset',
+      ],
+    },
   },
 
   profile: {

@@ -1299,4 +1299,227 @@ export const explanations: Record<string, ExplanationDefinition> = {
       },
     ],
   },
+
+  // -- NVENC encoders ---------------------------------------------
+  'expl.h264_nvenc': {
+    id: 'expl.h264_nvenc',
+    title: 'h264_nvenc (NVIDIA NVENC H.264)',
+    short: 'NVIDIA 硬件 H.264 编码器。需要 NVIDIA GPU 和 FFmpeg --enable-nvenc 编译。FFCodec 不检测本机硬件。',
+    detail:
+      'h264_nvenc 利用 NVIDIA GPU 的 NVENC 专用编码芯片进行 H.264 硬件编码。编码速度远超 CPU 软件编码，但压缩效率通常略低于 libx264。使用 CQ 模式控制质量，p1-p7 preset 控制编码速度与压缩率的平衡。',
+    effects: { quality: 3, fileSize: 3, speed: 5, compatibility: 3 },
+    sourceRefs: [
+      {
+        repository: 'NVIDIA/Video_Codec_SDK',
+        snapshotDate: '2026-07-10',
+        file: 'NVENC_Programming_Guide.pdf',
+        sourceType: 'encoder-official',
+        url: 'https://developer.nvidia.com/video-codec-sdk',
+      },
+    ],
+  },
+
+  'expl.hevc_nvenc': {
+    id: 'expl.hevc_nvenc',
+    title: 'hevc_nvenc (NVIDIA NVENC HEVC)',
+    short: 'NVIDIA 硬件 HEVC 编码器。需要 Maxwell GM206+ GPU 和 FFmpeg --enable-nvenc 编译。FFCodec 不检测本机硬件。',
+    detail:
+      'hevc_nvenc 利用 NVIDIA GPU 进行 HEVC/H.265 硬件编码。支持 8-bit 和 10-bit 色深。HEVC 在相同画质下比 H.264 节省约 30-50% 码率。需要 Maxwell GM206 以上 GPU。',
+    effects: { quality: 3, fileSize: 4, speed: 5, compatibility: 2 },
+    sourceRefs: [
+      {
+        repository: 'NVIDIA/Video_Codec_SDK',
+        snapshotDate: '2026-07-10',
+        file: 'NVENC_Programming_Guide.pdf',
+        sourceType: 'encoder-official',
+      },
+    ],
+  },
+
+  'expl.nvenc.preset': {
+    id: 'expl.nvenc.preset',
+    title: 'NVENC 编码预设',
+    short: 'p1 (最快) 到 p7 (最慢/最高质量)。不同预设调整 NVENC 内部参数。',
+    effects: { quality: 3, fileSize: 3, speed: 4, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.profile': {
+    id: 'expl.nvenc.profile',
+    title: 'NVENC 编码配置 (profile)',
+    short: 'H.264/HEVC 编码规范级别。baseline/main/high 影响兼容性和功能。',
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.tune': {
+    id: 'expl.nvenc.tune',
+    title: 'NVENC 场景优化 (tune)',
+    short: 'hq (高质量)、ll (低延迟)、ull (超低延迟)、lossless (无损)。',
+    effects: { quality: 3, fileSize: 2, speed: 2, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.pixfmt': {
+    id: 'expl.nvenc.pixfmt',
+    title: 'NVENC 像素格式',
+    short: 'yuv420p, yuv444p, yuv420p10le, p010le (10-bit) 等。',
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.cq': {
+    id: 'expl.nvenc.cq',
+    title: 'NVENC CQ (恒定质量)',
+    short: 'NVENC 的恒定质量模式。通过 -rc vbr -cq N 实现。CQ 值范围 1-51，值越小质量越高。',
+    effects: { quality: 4, fileSize: 3, speed: 4, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.cq.value': {
+    id: 'expl.nvenc.cq.value',
+    title: 'CQ 值',
+    short: 'NVENC 恒定质量值。1 (最高质量) 到 51 (最低质量)，推荐 18-28。',
+    effects: { quality: 5, fileSize: 4, speed: 1, compatibility: 5 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.cqp': {
+    id: 'expl.nvenc.cqp',
+    title: 'NVENC CQP (恒定量化参数)',
+    short: '通过 -rc constqp -qp N 实现。每个帧使用相同的量化参数。QP 范围 0-51。',
+    effects: { quality: 3, fileSize: 3, speed: 4, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.cqp.value': {
+    id: 'expl.nvenc.cqp.value',
+    title: 'QP 值',
+    short: 'NVENC 恒定量化参数值。0 (无损) 到 51 (最低质量)。',
+    effects: { quality: 5, fileSize: 4, speed: 1, compatibility: 5 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.vbr': {
+    id: 'expl.nvenc.vbr',
+    title: 'NVENC VBR (可变码率)',
+    short: '通过 -rc vbr -b:v N -maxrate N -bufsize N 实现的可变码率模式。',
+    effects: { quality: 4, fileSize: 4, speed: 4, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.vbr.bitrate': {
+    id: 'expl.nvenc.vbr.bitrate',
+    title: 'NVENC VBR 目标码率',
+    short: '目标平均码率。例如 5000k 表示 5 Mbps。',
+    effects: { quality: 5, fileSize: 5, speed: 1, compatibility: 5 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.vbr.maxrate': {
+    id: 'expl.nvenc.vbr.maxrate',
+    title: 'NVENC VBR 最大码率',
+    short: '允许的最大瞬时码率。通常设为目标的 1.5-2 倍。',
+    effects: { quality: 4, fileSize: 4, speed: 1, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.vbr.bufsize': {
+    id: 'expl.nvenc.vbr.bufsize',
+    title: 'NVENC VBR 缓冲大小',
+    short: '码率控制缓冲区大小。影响码率波动的平滑度。',
+    effects: { quality: 3, fileSize: 2, speed: 1, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.cbr': {
+    id: 'expl.nvenc.cbr',
+    title: 'NVENC CBR (恒定码率)',
+    short: '通过 -rc cbr -b:v N 实现的恒定码率模式。适合流媒体直播。',
+    effects: { quality: 2, fileSize: 5, speed: 4, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.cbr.bitrate': {
+    id: 'expl.nvenc.cbr.bitrate',
+    title: 'NVENC CBR 目标码率',
+    short: '恒定输出码率。适用于需要控制带宽的场景。',
+    effects: { quality: 5, fileSize: 5, speed: 1, compatibility: 5 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.gpu': {
+    id: 'expl.nvenc.gpu',
+    title: 'GPU 选择 (-gpu)',
+    short: '选择用于编码的 GPU 设备索引。在多 GPU 系统中指定 0, 1, 2 等。',
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.rclookahead': {
+    id: 'expl.nvenc.rclookahead',
+    title: '码率控制前瞻 (-rc-lookahead)',
+    short: '前瞻帧数 (0-32)。启用后编码器可以预分析未来帧以优化码率分配。提升画质但增加延迟。',
+    effects: { quality: 3, fileSize: 3, speed: 1, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.spatialaq': {
+    id: 'expl.nvenc.spatialaq',
+    title: '空间自适应量化 (-spatial_aq)',
+    short: '根据画面空间复杂度动态分配码率。默认推荐开启。',
+    effects: { quality: 3, fileSize: 2, speed: 1, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.temporalaq': {
+    id: 'expl.nvenc.temporalaq',
+    title: '时间自适应量化 (-temporal_aq)',
+    short: '根据帧间变化动态调整量化。可能提升画质但增加编码复杂度。',
+    effects: { quality: 2, fileSize: 1, speed: 2, compatibility: 4 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  'expl.nvenc.bf': {
+    id: 'expl.nvenc.bf',
+    title: '最大 B 帧数 (-bf)',
+    short: '最大连续 B 帧数 (0-4)。B 帧提升压缩效率但增加编码延迟和 GPU 负担。',
+    effects: { quality: 2, fileSize: 3, speed: 2, compatibility: 3 },
+    sourceRefs: [{ repository: 'NVIDIA/Video_Codec_SDK', snapshotDate: '2026-07-10', file: 'NVENC_Programming_Guide.pdf', sourceType: 'encoder-official' }],
+  },
+
+  // -- FLAC encoder ------------------------------------------------
+  'expl.flac': {
+    id: 'expl.flac',
+    title: 'FLAC (Free Lossless Audio Codec)',
+    short: '开源无损音频编码器。压缩级别影响文件大小和编码速度，不影响解码后音频内容。',
+    detail:
+      'FLAC 是无损编码 — 解码后的音频与原始 PCM 完全一致。压缩级别 0 (最快/最大文件) 到 12 (最慢/最小文件)，默认 5。采样格式支持 s16/s24/s32。',
+    effects: { quality: 5, fileSize: 2, speed: 4, compatibility: 3 },
+    sourceRefs: [
+      {
+        repository: 'FFmpeg/FFmpeg',
+        snapshotDate: '2026-07-10',
+        file: 'libavcodec/flacenc.c',
+        sourceType: 'ffmpeg-official',
+        url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/flacenc.c',
+      },
+    ],
+  },
+
+  'expl.flac.compression': {
+    id: 'expl.flac.compression',
+    title: 'FLAC 压缩级别',
+    short: '0 (最快/无压缩) 到 12 (最高压缩/最慢)。默认 5。不影响音频质量。',
+    effects: { quality: 0, fileSize: 3, speed: 5, compatibility: 5 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/flacenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
+  'expl.flac.samplefmt': {
+    id: 'expl.flac.samplefmt',
+    title: 'FLAC 采样格式',
+    short: '音频采样位深。s16 (16-bit)、s24 (24-bit)、s32 (32-bit)。自动时保持源格式。',
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/flacenc.c', sourceType: 'ffmpeg-official' },
+    ],
+  },
 }

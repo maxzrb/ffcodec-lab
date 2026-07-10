@@ -106,8 +106,8 @@ function validateEncoder(encoder: EncoderDefinition, type: string) {
   checkSourceRefs(encoder)
   checkVerificationLevel(encoder as unknown as VerifiableItem)
 
-  // Must have at least one quality mode
-  if (encoder.qualityModes.length === 0) {
+  // Must have at least one quality mode, unless lossless (e.g. FLAC)
+  if (encoder.qualityModes.length === 0 && !encoder.capabilities.supportsLossless) {
     errors.push(`[encoder] ${type} "${encoder.id}" has no quality modes`)
   }
 

@@ -172,17 +172,19 @@ describe('ResolvedField — text and switch fields', () => {
     ]
     const messages = [
       {
-        id: 'msg1',
+        code: 'error.test',
         severity: 'error' as const,
-        messageId: 'error.test',
-        fieldIds: ['field.a'],
+        category: 'configuration' as const,
+        message: 'error.test',
+        originIds: ['field.a'],
+        context: {},
       },
     ]
 
     attachDiagnostics(fields, messages)
 
     expect(fields[0].diagnostics.length).toBe(1)
-    expect(fields[0].diagnostics[0].messageId).toBe('error.test')
+    expect(fields[0].diagnostics[0].code).toBe('error.test')
     expect(fields[1].diagnostics.length).toBe(0)
   })
 })

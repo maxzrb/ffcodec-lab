@@ -98,20 +98,24 @@ export function evaluateRules(
         }
         case 'error': {
           messages.push({
-            id: rule.id,
+            code: effect.messageId,
             severity: 'error',
-            messageId: effect.messageId,
-            fieldIds: effect.targets,
+            category: 'configuration',
+            message: effect.messageId,
+            originIds: effect.targets,
+            context: {},
             sourceRuleId: rule.id,
           })
           break
         }
         case 'warning': {
           messages.push({
-            id: rule.id,
+            code: effect.messageId,
             severity: 'warning',
-            messageId: effect.messageId,
-            fieldIds: effect.targets,
+            category: 'configuration',
+            message: effect.messageId,
+            originIds: effect.targets,
+            context: {},
             sourceRuleId: rule.id,
           })
           break

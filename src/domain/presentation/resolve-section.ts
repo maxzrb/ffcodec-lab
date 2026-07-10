@@ -72,7 +72,16 @@ export function resolveVideoSection(
   // Video encoder selector (only when mode=encode)
   const videoEncoderParam = catalog.parameters['param.video.encoder']
   if (videoEncoderParam) {
-    fields.push(resolveParameterField(videoEncoderParam, config, 'video.encoderId', fieldStates))
+    const encField = resolveParameterField(videoEncoderParam, config, 'video.encoderId', fieldStates)
+    // Populate with actual encoder list from catalog, grouped by family
+    encField.options = Object.values(catalog.encoders.video).map((enc) => ({
+      value: enc.id,
+      label: enc.label,
+      group: enc.family,
+      badge: enc.implementation === 'nvidia' ? 'NVIDIA' : '软件',
+      description: enc.availabilityNote?.slice(0, 80),
+    }))
+    fields.push(encField)
   }
 
   // Encoder-specific controls
@@ -299,7 +308,14 @@ export function resolveAudioSection(
   if (config.audio.mode === 'encode') {
     const audioEncoderParam = catalog.parameters['param.audio.encoder']
     if (audioEncoderParam) {
-      fields.push(resolveParameterField(audioEncoderParam, config, 'audio.encoderId', fieldStates))
+      const encField = resolveParameterField(audioEncoderParam, config, 'audio.encoderId', fieldStates)
+      // Populate with actual encoder list from catalog
+      encField.options = Object.values(catalog.encoders.audio).map((enc) => ({
+        value: enc.id,
+        label: enc.label,
+        badge: enc.family === 'flac' ? '无损' : undefined,
+      }))
+      fields.push(encField)
     }
 
     const audioEncoder = config.audio.encoderId
@@ -307,10 +323,12 @@ export function resolveAudioSection(
       : undefined
 
     if (audioEncoder) {
-      // Bitrate
-      fields.push(
-        resolveTextField('audio.bitrate', '音频码率 (-b:a)', config.audio.bitrate, fieldStates),
-      )
+      // Bitrate — only for encoders with quality modes (not lossless like FLAC)
+      if (audioEncoder.qualityModes.length > 0) {
+        fields.push(
+          resolveTextField('audio.bitrate', '音频码率 (-b:a)', config.audio.bitrate, fieldStates),
+        )
+      }
 
       // Channel layout
       fields.push(

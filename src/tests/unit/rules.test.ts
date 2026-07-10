@@ -120,7 +120,7 @@ describe('Rule Engine — Invariants', () => {
     const result = evaluateRules(ruleIndex.getAll(), ctx)
 
     const errors = result.messages.filter((m) => m.severity === 'error')
-    expect(errors.some((e) => e.messageId === 'error.resolution.requires.encode')).toBe(true)
+    expect(errors.some((e) => e.code === 'error.resolution.requires.encode')).toBe(true)
   })
 
   it('R08: subtitle burn with copy produces error', () => {
@@ -135,7 +135,7 @@ describe('Rule Engine — Invariants', () => {
     const result = evaluateRules(ruleIndex.getAll(), ctx)
 
     const errors = result.messages.filter((m) => m.severity === 'error')
-    expect(errors.some((e) => e.messageId === 'error.burn.requires.encode')).toBe(true)
+    expect(errors.some((e) => e.code === 'error.burn.requires.encode')).toBe(true)
   })
 
   it('R12: MP4 container auto-resolves subtitle to mov_text', () => {
@@ -163,7 +163,7 @@ describe('Rule Engine — Invariants', () => {
     const result = evaluateRules(ruleIndex.getAll(), ctx)
 
     const errors = result.messages.filter((m) => m.severity === 'error')
-    expect(errors.some((e) => e.messageId === 'error.webm.video.incompatible')).toBe(true)
+    expect(errors.some((e) => e.code === 'error.webm.video.incompatible')).toBe(true)
   })
 
   it('R15b: WebM + AAC produces error', () => {
@@ -175,6 +175,6 @@ describe('Rule Engine — Invariants', () => {
     const result = evaluateRules(ruleIndex.getAll(), ctx)
 
     const errors = result.messages.filter((m) => m.severity === 'error')
-    expect(errors.some((e) => e.messageId === 'error.webm.audio.incompatible')).toBe(true)
+    expect(errors.some((e) => e.code === 'error.webm.audio.incompatible')).toBe(true)
   })
 })

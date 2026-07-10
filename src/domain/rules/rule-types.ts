@@ -46,15 +46,8 @@ export interface FieldState {
   reason?: string
 }
 
-/** Validation message from rules or compatibility checks */
-export interface ValidationMessage {
-  id: string
-  severity: 'error' | 'warning' | 'info'
-  messageId: string
-  fieldIds: string[]
-  sourceRuleId?: string
-  details?: Record<string, unknown>
-}
+/** @deprecated — use Diagnostic instead */
+export type ValidationMessage = Diagnostic
 
 export interface Suggestion {
   messageId: string
@@ -72,7 +65,7 @@ export interface NormalizationNotice {
 /** Complete rule evaluation result */
 export interface EvaluationResult {
   fieldStates: Record<string, FieldState>
-  messages: ValidationMessage[]
+  messages: Diagnostic[]
   suggestions: Suggestion[]
   normalizationNotices: NormalizationNotice[]
   resolvedValues: Record<string, unknown>
@@ -82,4 +75,48 @@ export interface EvaluationResult {
 export interface RuleContext {
   config: ProjectConfig
   catalog: Catalog
+}
+
+// ============================================================
+// Diagnostic types — structured messages with fix suggestions
+// ============================================================
+
+export type DiagnosticCategory =
+  | 'configuration'
+  | 'syntax'
+  | 'compatibility'
+  | 'availability'
+  | 'verification'
+  | 'normalization'
+
+/** A structured diagnostic — stable code + context drives fix generation */
+export interface Diagnostic {
+  /** Stable machine-readable code, e.g. 'E_COMPAT_VIDEO_CONTAINER' */
+  code: string
+  severity: 'error' | 'warning' | 'info'
+  category: DiagnosticCategory
+  /** Human-readable message */
+  message: string
+  /** Related originIds (field IDs, encoder IDs, container IDs) */
+  originIds: string[]
+  /** Structured context for fix suggestion generation */
+  context: Record<string, unknown>
+  sourceRuleId?: string
+}
+
+/** A controlled config patch operation */
+export type ConfigPatchOperation =
+  | { op: 'set'; path: import('../config/config-path').ConfigPath; value: unknown }
+  | { op: 'clear'; path: import('../config/config-path').ConfigPath }
+
+/** A suggested fix for a diagnostic */
+export interface DiagnosticFix {
+  id: string
+  label: string
+  description: string
+  category: DiagnosticCategory
+  operations: ConfigPatchOperation[]
+  /** Safety classification for UI confirmation behavior */
+  safety: 'safe' | 'changes-output' | 'destructive'
+  sourceRuleId?: string
 }

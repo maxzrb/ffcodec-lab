@@ -1,5 +1,5 @@
 import type { ArgumentPhase } from '../catalog/catalog-types'
-import type { ValidationMessage } from '../rules/rule-types'
+import type { Diagnostic } from '../rules/rule-types'
 
 // ============================================================
 // Command AST — structured representation of an ffmpeg command.
@@ -8,7 +8,7 @@ import type { ValidationMessage } from '../rules/rule-types'
 
 export interface CommandPlan {
   invocations: CommandInvocation[]
-  messages: ValidationMessage[]
+  messages: Diagnostic[]
 }
 
 export interface CommandInvocation {

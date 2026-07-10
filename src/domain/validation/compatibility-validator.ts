@@ -1,24 +1,25 @@
 import type { ProjectConfig } from '../config/project-config'
 import type { Catalog } from '../catalog/catalog-types'
-import type { ValidationMessage } from '../rules/rule-types'
+import type { Diagnostic } from '../rules/rule-types'
 
 /**
  * Validates container ↔ encoder compatibility.
- * Pure function — reads config + catalog, returns messages.
+ * Pure function — reads config + catalog, returns diagnostics.
  */
 export function validateCompatibility(
   config: ProjectConfig,
   catalog: Catalog
-): ValidationMessage[] {
-  const messages: ValidationMessage[] = []
+): Diagnostic[] {
+  const messages: Diagnostic[] = []
   const container = catalog.containers[config.output.containerId]
   if (!container) {
     messages.push({
-      id: 'compat.unknown.container',
+      code: 'error.unknown.container',
       severity: 'error',
-      messageId: 'error.unknown.container',
-      fieldIds: ['output.containerId'],
-      details: { containerId: config.output.containerId },
+      category: 'compatibility',
+      message: `Unknown container: ${config.output.containerId}`,
+      originIds: ['output.containerId'],
+      context: { containerId: config.output.containerId },
     })
     return messages
   }
@@ -39,47 +40,53 @@ export function validateCompatibility(
 }
 
 function pushCompatMessage(
-  messages: ValidationMessage[],
+  messages: Diagnostic[],
   level: string,
   encoderId: string,
   kind: string,
   containerId: string
 ): void {
+  const originIds = [kind === 'video' ? 'video.encoderId' : 'audio.encoderId', 'output.containerId']
+  const context = { encoderId, containerId, mediaType: kind }
   switch (level) {
     case 'unsupported':
       messages.push({
-        id: `compat.${containerId}.${encoderId}.unsupported`,
+        code: 'error.compat.unsupported',
         severity: 'error',
-        messageId: 'error.compat.unsupported',
-        fieldIds: [kind === 'video' ? 'video.encoderId' : 'audio.encoderId', 'output.containerId'],
-        details: { encoderId, containerId, mediaType: kind },
+        category: 'compatibility',
+        message: `${kind === 'video' ? 'Video' : 'Audio'} encoder "${encoderId}" is not supported in container "${containerId}"`,
+        originIds,
+        context,
       })
       break
     case 'supported-with-caveat':
       messages.push({
-        id: `compat.${containerId}.${encoderId}.caveat`,
+        code: 'warn.compat.caveat',
         severity: 'warning',
-        messageId: 'warn.compat.caveat',
-        fieldIds: [kind === 'video' ? 'video.encoderId' : 'audio.encoderId', 'output.containerId'],
-        details: { encoderId, containerId, mediaType: kind },
+        category: 'compatibility',
+        message: `${kind === 'video' ? 'Video' : 'Audio'} encoder "${encoderId}" has limited support in container "${containerId}"`,
+        originIds,
+        context,
       })
       break
     case 'transcode-recommended':
       messages.push({
-        id: `compat.${containerId}.${encoderId}.transcode`,
+        code: 'info.compat.transcode',
         severity: 'info',
-        messageId: 'info.compat.transcode',
-        fieldIds: [kind === 'video' ? 'video.encoderId' : 'audio.encoderId', 'output.containerId'],
-        details: { encoderId, containerId, mediaType: kind },
+        category: 'compatibility',
+        message: `Transcoding recommended for "${encoderId}" in container "${containerId}"`,
+        originIds,
+        context,
       })
       break
     case 'unknown':
       messages.push({
-        id: `compat.${containerId}.${encoderId}.unknown`,
+        code: 'warn.compat.unknown',
         severity: 'warning',
-        messageId: 'warn.compat.unknown',
-        fieldIds: [kind === 'video' ? 'video.encoderId' : 'audio.encoderId', 'output.containerId'],
-        details: { encoderId, containerId, mediaType: kind },
+        category: 'compatibility',
+        message: `Compatibility unknown for "${encoderId}" in container "${containerId}"`,
+        originIds,
+        context,
       })
       break
   }

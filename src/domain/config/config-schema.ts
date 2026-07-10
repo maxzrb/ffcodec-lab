@@ -20,7 +20,7 @@ const frameRateSchema = z.discriminatedUnion('mode', [
 ])
 
 const rateControlSchema = z.object({
-  mode: z.enum(['crf', 'vbr', 'cqp', 'cbr', 'twoPass']),
+  mode: z.enum(['crf', 'vbr', 'cqp', 'cbr', 'twoPass', 'nvenc-cq']),
   qualityValue: z.number().optional(),
   bitrate: z.string().optional(),
   minRate: z.string().optional(),

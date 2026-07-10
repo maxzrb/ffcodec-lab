@@ -283,11 +283,11 @@ export function DevVerificationPage() {
               <strong style={{ textTransform: 'uppercase', fontSize: 11 }}>
                 {msg.severity}
               </strong>{' '}
-              {msg.messageId}
-              {msg.fieldIds.length > 0 && (
+              {msg.code}
+              {msg.originIds.length > 0 && (
                 <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>
                   {' '}
-                  [{msg.fieldIds.join(', ')}]
+                  [{msg.originIds.join(', ')}]
                 </span>
               )}
             </div>

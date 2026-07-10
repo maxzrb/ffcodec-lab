@@ -5,8 +5,14 @@ export const libopus: EncoderDefinition = {
   label: 'libopus (Opus)',
   ffmpegName: 'libopus',
   mediaType: 'audio',
-  family: 'opus',
-  implementation: 'software',
+  family: 'opus' as const,
+  implementation: 'software' as const,
+  availabilityClass: 'ffmpeg-build-dependent',
+  capabilityScope: {
+    buildRequirements: ['--enable-libopus'],
+    library: { name: 'libopus', minVersion: '1.3' },
+    notes: ['libopus 编码器需要 FFmpeg 编译时启用 libopus'],
+  },
   availabilityNote:
     'libopus 编码器需要 FFmpeg 编译时启用 libopus。可用性取决于本机 FFmpeg 构建。可运行 ffmpeg -encoders | grep opus 检查。',
 
@@ -121,19 +127,25 @@ export const libopus: EncoderDefinition = {
     },
     {
       id: 'libopus.frame_duration',
-      label: '帧时长',
+      label: '帧时长 (frame_duration)',
       control: 'select',
       commandBinding: { argName: '-frame_duration', prefix: '-frame_duration', phase: 'AUDIO_CODEC' },
       options: [
-        { value: '20', label: '20 ms (默认)' },
-        { value: '40', label: '40 ms' },
-        { value: '60', label: '60 ms' },
-        { value: '80', label: '80 ms' },
-        { value: '100', label: '100 ms' },
-        { value: '120', label: '120 ms' },
+        { value: 2.5, label: '2.5 ms' },
+        { value: 5, label: '5 ms' },
+        { value: 10, label: '10 ms' },
+        { value: 20, label: '20 ms (默认)', description: '平衡延迟与编码效率' },
+        { value: 40, label: '40 ms' },
+        { value: 60, label: '60 ms' },
       ],
-      defaultValue: '20',
+      defaultValue: 20,
       explanationId: 'expl.libopus.frame_duration',
+      capabilityScope: {
+        notes: [
+          'Opus 规范支持 2.5/5/10/20/40/60/80/100/120ms',
+          'FFmpeg libopus 封装层仅暴露 2.5/5/10/20/40/60ms 六个选项',
+        ],
+      },
     },
   ],
 

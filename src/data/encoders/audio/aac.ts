@@ -5,8 +5,12 @@ export const aac: EncoderDefinition = {
   label: 'FFmpeg 原生 AAC',
   ffmpegName: 'aac',
   mediaType: 'audio',
-  family: 'aac',
-  implementation: 'software',
+  family: 'aac' as const,
+  implementation: 'software' as const,
+  availabilityClass: 'generally-available',
+  capabilityScope: {
+    notes: ['FFmpeg 原生 AAC 编码器随 FFmpeg 主构建分发，无需额外编译选项'],
+  },
   availabilityNote:
     'FFmpeg 原生 AAC 编码器随 FFmpeg 主构建分发。可用性取决于本机 FFmpeg 构建。可运行 ffmpeg -encoders | grep aac 检查。',
 
@@ -97,6 +101,12 @@ export const aac: EncoderDefinition = {
         { value: 'auto', label: '自动' },
         { value: 'twoloop', label: 'twoloop — 标准质量' },
         { value: 'fast', label: 'fast — 快速编码' },
+        {
+          value: 'anmr',
+          label: 'anmr — 平均噪声掩蔽比',
+          description: '实验性算法，输出质量可能不稳定，不推荐用于生产编码',
+          capabilityScope: { notes: ['实验性选项 (experimental)，输出质量不稳定'] },
+        },
       ],
       defaultValue: 'auto',
       explanationId: 'expl.aac.profile',

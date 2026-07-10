@@ -6,7 +6,7 @@
 
 import type { ProjectConfig } from '../config/project-config'
 import type { Catalog } from '../catalog/catalog-types'
-import type { EvaluationResult, ValidationMessage } from '../rules/rule-types'
+import type { EvaluationResult, Diagnostic } from '../rules/rule-types'
 import type { ResolvedBuilderView, ResolvedField } from './resolved-field'
 import type { CommandPlan } from '../command/command-ast'
 import {
@@ -51,7 +51,7 @@ export function resolveBuilderView(
   attachCommandOrigins(allFields, commandPlan)
 
   // Attach diagnostics from evaluation result
-  const allMessages: ValidationMessage[] = [
+  const allMessages: Diagnostic[] = [
     ...evaluationResult.messages,
   ]
   attachDiagnostics(allFields, allMessages)

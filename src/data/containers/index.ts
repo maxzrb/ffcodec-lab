@@ -8,11 +8,14 @@ const mp4: ContainerDefinition = {
     libx264: 'supported',
     libx265: 'supported',
     libsvtav1: 'supported-with-caveat',
+    h264_nvenc: 'supported',
+    hevc_nvenc: 'supported',
     copy: 'supported',
   },
   audioCodecs: {
     aac: 'supported',
     libopus: 'supported-with-caveat',
+    flac: 'supported-with-caveat',
     copy: 'supported',
   },
   subtitleCodecs: {
@@ -45,11 +48,14 @@ const mkv: ContainerDefinition = {
     libx264: 'supported',
     libx265: 'supported',
     libsvtav1: 'supported',
+    h264_nvenc: 'supported',
+    hevc_nvenc: 'supported',
     copy: 'supported',
   },
   audioCodecs: {
     aac: 'supported',
     libopus: 'supported',
+    flac: 'supported',
     copy: 'supported',
   },
   subtitleCodecs: {
@@ -82,11 +88,14 @@ const webm: ContainerDefinition = {
     libsvtav1: 'supported',
     libx264: 'unsupported',
     libx265: 'unsupported',
+    h264_nvenc: 'unsupported',
+    hevc_nvenc: 'unsupported',
     copy: 'supported',
   },
   audioCodecs: {
     libopus: 'supported',
     aac: 'unsupported',
+    flac: 'unsupported',
     copy: 'supported',
   },
   subtitleCodecs: {
@@ -119,11 +128,14 @@ const mov: ContainerDefinition = {
     libx264: 'supported',
     libx265: 'supported',
     libsvtav1: 'supported-with-caveat',
+    h264_nvenc: 'supported',
+    hevc_nvenc: 'supported',
     copy: 'supported',
   },
   audioCodecs: {
     aac: 'supported',
     libopus: 'supported-with-caveat',
+    flac: 'supported-with-caveat',
     copy: 'supported',
   },
   subtitleCodecs: {
@@ -148,9 +160,37 @@ const mov: ContainerDefinition = {
   ],
 }
 
+const ogg: ContainerDefinition = {
+  id: 'ogg',
+  label: 'OGG',
+  extension: 'ogg',
+  videoCodecs: {
+    copy: 'supported',
+  },
+  audioCodecs: {
+    flac: 'supported',
+    libopus: 'supported',
+    copy: 'supported',
+  },
+  subtitleCodecs: {
+    copy: 'supported',
+  },
+  muxerArguments: [],
+  sourceRefs: [
+    {
+      repository: 'FFmpeg/FFmpeg',
+      snapshotDate: '2026-07-10',
+      file: 'libavformat/oggparseflac.c',
+      sourceType: 'ffmpeg-official',
+      note: 'OGG 容器原生支持 FLAC 和 Opus 音频编码',
+    },
+  ],
+}
+
 export const containers: Record<string, ContainerDefinition> = {
   mp4,
   mkv,
   webm,
   mov,
+  ogg,
 }

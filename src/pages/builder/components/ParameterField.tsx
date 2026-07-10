@@ -93,7 +93,7 @@ export function ParameterField({ field, onChange, onExplain, highlighted }: Para
                 marginBottom: 2,
               }}
             >
-              [{d.severity.toUpperCase()}] {d.messageId}
+              [{d.severity.toUpperCase()}] {d.code}
             </div>
           ))}
         </div>

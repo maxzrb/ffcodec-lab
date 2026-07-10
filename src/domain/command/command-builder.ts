@@ -1,6 +1,6 @@
 import type { ProjectConfig } from '../config/project-config'
 import type { Catalog } from '../catalog/catalog-types'
-import type { ValidationMessage } from '../rules/rule-types'
+import type { Diagnostic } from '../rules/rule-types'
 import {
   type CommandPlan,
   type CommandInvocation,
@@ -9,6 +9,7 @@ import {
   type CommandArg,
 } from './command-ast'
 import { buildVideoFilterChain, renderFilterChain } from '../filters/video-filter-builder'
+import { getByPath } from '../../utils/object-path'
 
 /**
  * Builds the CommandPlan from ProjectConfig + Catalog.
@@ -17,7 +18,7 @@ import { buildVideoFilterChain, renderFilterChain } from '../filters/video-filte
 export function buildCommandPlan(
   config: ProjectConfig,
   catalog: Catalog,
-  messages: ValidationMessage[]
+  messages: Diagnostic[]
 ): CommandPlan {
   const hasErrors = messages.some((m) => m.severity === 'error')
 
@@ -212,9 +213,19 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
       if (config.video.rateControl) {
         const qMode = encoder.qualityModes.find((m) => m.id === config.video.rateControl!.mode)
         if (qMode) {
+          // Emit mode-level arguments first (e.g. -rc vbr for NVENC CQ)
+          for (const tpl of qMode.modeArguments ?? []) {
+            output.qualityArgs.push({
+              id: `quality.mode.${tpl.argName}`,
+              originId: `qualityMode.${qMode.id}.args.${tpl.argName}`,
+              phase: tpl.phase,
+              tokens: tpl.value !== undefined ? [tpl.argName, String(tpl.value)] : [tpl.argName],
+            })
+          }
+          // Then emit per-control arguments
           for (const ctrl of qMode.controls) {
             if (ctrl.commandBinding) {
-              const val = getControlValue(config, ctrl.id)
+              const val = getControlValue(config, ctrl)
               if (val !== undefined && val !== null) {
                 output.qualityArgs.push({
                   id: `quality.${ctrl.id}`,
@@ -324,10 +335,25 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
 }
 
 /**
- * Resolves the value for a control by mapping the control ID to the config.
+ * Resolves the value for a control.
+ * Prefers configBinding.path (explicit mapping), falls back to pattern matching
+ * for legacy controls that haven't been migrated yet.
+ *
+ * TODO(revision-19): Remove pattern-matching fallback once all controls
+ * have configBinding. Audit script must verify no omissions.
  */
-function getControlValue(config: ProjectConfig, controlId: string): unknown {
-  // Map control IDs to values from the config
+function getControlValue(
+  config: ProjectConfig,
+  ctrl: { id: string; configBinding?: { path: string } },
+): unknown {
+  // NEW: explicit configBinding takes priority
+  if (ctrl.configBinding?.path) {
+    return getByPath(config, ctrl.configBinding.path)
+  }
+
+  // LEGACY FALLBACK: pattern matching on control ID
+  // Will be removed after all controls are migrated (revision #19)
+  const controlId = ctrl.id
   if (controlId.includes('.crf.value') || controlId.includes('.cqp.value')) {
     return config.video.rateControl?.qualityValue
   }

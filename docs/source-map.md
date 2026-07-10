@@ -57,17 +57,15 @@
 | 批处理/任务队列 | 首版不支持 |
 | 完全自写命令模式 | 首版仅支持受控插槽自定义参数 |
 
-## 未核验参数清单 (TODO)
+## 参数核验结论（2026-07-10 核验）
 
-以下参数在 FFmpegFreeUI 源码中有定义，但尚未通过 FFmpeg 官方文档核验：
-
-| 参数 | 编码器 | 状态 | 说明 |
-|---|---|---|---|
-| libx264 CQP 范围 0~69 | libx264 | unverified | 3FUI 定义为 0~69，需核验 x264 官方文档 |
-| libsvtav1 QP 范围 0~63 | libsvtav1 | unverified | 3FUI 定义，需核验 SVT-AV1 官方文档 |
-| libsvtav1 preset 数值 (0~13) | libsvtav1 | unverified | 3FUI 定义，不同 SVT-AV1 版本范围可能不同 |
-| libopus frame_duration 20~120 | libopus | unverified | 3FUI 定义，需核验 libopus 文档 |
-| AAC aac_coder 选项 | aac | unverified | 3FUI 定义，需核验 FFmpeg AAC 编码器文档 |
+| 参数 | 编码器 | 核验结论 | 来源 | 版本差异 |
+|---|---|---|---|---|
+| libx264 CQP 范围 0~69 | libx264 | ✅ 已确认 | `x264.h` — `i_qp_constant` 范围 0-69 | 无 |
+| libsvtav1 QP 范围 0~63 | libsvtav1 | ✅ 已确认 | SVT-AV1 v1.x 文档 — `qp` 范围 0-63 | SVT-AV1 v3.x 待核验 |
+| libsvtav1 preset 0~13 | libsvtav1 | ✅ 已确认 | SVT-AV1 v1.x 文档 — preset 0-13 | **重要**：v2.x 已重构为 0-9，v3.x 已进一步调整 |
+| libopus frame_duration | libopus | ✅ 已修正 | FFmpeg `libopusenc.c` — 仅暴露 2.5/5/10/20/40/60ms | 原 3FUI 建模为连续范围错误，已改为六值枚举 |
+| AAC aac_coder 选项 | aac | ✅ 已确认 | FFmpeg `aacenc.c` — 支持 twoloop/fast/anmr | `anmr` 标记为实验性，新增到选项列表 |
 
 ## 来源优先级（用于后续核验）
 

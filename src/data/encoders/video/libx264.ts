@@ -5,8 +5,14 @@ export const libx264: EncoderDefinition = {
   label: 'libx264 (H.264/AVC)',
   ffmpegName: 'libx264',
   mediaType: 'video',
-  family: 'h264',
-  implementation: 'software',
+  family: 'h264' as const,
+  implementation: 'software' as const,
+  availabilityClass: 'ffmpeg-build-dependent',
+  capabilityScope: {
+    buildRequirements: ['--enable-libx264'],
+    library: { name: 'x264', minVersion: 'r2200' },
+    notes: ['libx264 是 FFmpeg 最广泛使用的软件 H.264 编码器，但需要 FFmpeg 编译时启用'],
+  },
   availabilityNote:
     'libx264 是 FFmpeg 最广泛使用的软件 H.264 编码器。可用性取决于本机 FFmpeg 构建。可运行 ffmpeg -encoders | grep x264 检查。',
 
@@ -181,6 +187,15 @@ export const libx264: EncoderDefinition = {
           file: 'src/databases/video-encoders.json',
           symbol: 'libx264.quality.cqp',
           sourceType: 'ffmpegfreeui',
+        },
+        {
+          repository: 'x264/x264',
+          snapshotDate: '2026-07-10',
+          file: 'x264.h',
+          symbol: 'x264_param_t.i_qp_constant',
+          sourceType: 'encoder-official',
+          url: 'https://code.videolan.org/videolan/x264/-/blob/master/x264.h',
+          note: 'CQP 范围 0-69 已由 x264 官方头文件确认',
         },
       ],
       controls: [

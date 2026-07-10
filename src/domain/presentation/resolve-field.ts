@@ -193,7 +193,7 @@ export function attachDiagnostics(
 ): void {
   for (const field of fields) {
     field.diagnostics = messages.filter(
-      (m) => m.fieldIds.includes(field.id) || m.fieldIds.some((fid) => field.id.startsWith(fid)),
+      (m) => m.originIds.includes(field.id) || m.originIds.some((fid) => field.id.startsWith(fid)),
     )
   }
 }
