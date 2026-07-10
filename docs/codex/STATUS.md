@@ -1,15 +1,20 @@
 # Project Status
 
-Last updated: 2026-07-10 16:15
+Last updated: 2026-07-10 16:30
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: 第三阶段开发 — 版本化能力目录 + NVENC + FLAC + 多字幕 + 诊断修复 + 分享配置
-- Current state: 第三阶段核心完成。TypeScript 0 错误、目录审计 0 错误 5 警告（configBinding 遗留，见 revision #19）、137 单元测试通过、生产构建成功。
+- Current objective: 第四阶段开发 — 架构收口 + 交互完整性修复 + PresetManager UI + Intel QSV + E2E 测试 + v0.4.0
+- Current state: v0.3.0 基线已建立（tag: v0.3.0）。TypeScript 0 错误、目录审计 0 错误 5 警告（configBinding 遗留）、137 单元测试通过、生产构建 295.57 KB JS。
+- v0.3.0 基线指标:
+  - tsc: 0 errors
+  - vitest: 137/137 passed (11 files)
+  - audit: 0 errors, 5 warnings (libx264, libx265, libsvtav1, aac, libopus — configBinding)
+  - build: 295.57 KB JS + 1.26 KB CSS
 - Last active agent: Claude Code
 - Likely next agent: Claude Code
-- Next recommended step: 为软件编码器添加 configBinding 以消除审计警告；实现 PresetManager UI；第四阶段 QSV/AMF 硬件编码器
+- Next recommended step: 治理 5 条目录 warning → configBinding 全量迁移 → 交互控件完整性审计
 
 ## Active TODO
 

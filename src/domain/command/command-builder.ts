@@ -408,36 +408,15 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
 }
 
 /**
- * Resolves the value for a control.
- * Prefers configBinding.path (explicit mapping), falls back to pattern matching
- * for legacy controls that haven't been migrated yet.
- *
- * TODO(revision-19): Remove pattern-matching fallback once all controls
- * have configBinding. Audit script must verify no omissions.
+ * Resolves the value for a control via its configBinding path.
+ * All controls must have configBinding — no pattern-matching fallback.
  */
 function getControlValue(
   config: ProjectConfig,
   ctrl: { id: string; configBinding?: { path: string } },
 ): unknown {
-  // NEW: explicit configBinding takes priority
   if (ctrl.configBinding?.path) {
     return getByPath(config, ctrl.configBinding.path)
-  }
-
-  // LEGACY FALLBACK: pattern matching on control ID
-  // Will be removed after all controls are migrated (revision #19)
-  const controlId = ctrl.id
-  if (controlId.includes('.crf.value') || controlId.includes('.cqp.value')) {
-    return config.video.rateControl?.qualityValue
-  }
-  if (controlId.includes('.vbr.bitrate') || controlId.includes('.cbr.bitrate') || controlId.includes('.twopass.bitrate')) {
-    return config.video.rateControl?.bitrate
-  }
-  if (controlId.includes('.vbr.maxrate')) {
-    return config.video.rateControl?.maxRate
-  }
-  if (controlId.includes('.vbr.bufsize')) {
-    return config.video.rateControl?.bufferSize
   }
   return undefined
 }

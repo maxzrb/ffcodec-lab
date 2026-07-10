@@ -1,4 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+import { CONFIG_PATHS } from '../../../domain/config/config-path'
 
 export const aac: EncoderDefinition = {
   id: 'aac',
@@ -44,6 +45,7 @@ export const aac: EncoderDefinition = {
           label: '音频码率 (-b:a)',
           control: 'select',
           commandBinding: { argName: '-b:a', prefix: '-b:a', phase: 'AUDIO_QUALITY' },
+          configBinding: { path: CONFIG_PATHS.audio.bitrate },
           options: [
             { value: '96k', label: '96 kbps' },
             { value: '128k', label: '128 kbps', description: '常用默认值' },
@@ -77,6 +79,7 @@ export const aac: EncoderDefinition = {
           label: '音频码率 (-b:a)',
           control: 'select',
           commandBinding: { argName: '-b:a', prefix: '-b:a', phase: 'AUDIO_QUALITY' },
+          configBinding: { path: CONFIG_PATHS.audio.bitrate },
           options: [
             { value: '96k', label: '96 kbps' },
             { value: '128k', label: '128 kbps' },

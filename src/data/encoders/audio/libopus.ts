@@ -1,4 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+import { CONFIG_PATHS } from '../../../domain/config/config-path'
 
 export const libopus: EncoderDefinition = {
   id: 'libopus',
@@ -46,6 +47,7 @@ export const libopus: EncoderDefinition = {
           label: '音频码率 (-b:a)',
           control: 'select',
           commandBinding: { argName: '-b:a', prefix: '-b:a', phase: 'AUDIO_QUALITY' },
+          configBinding: { path: CONFIG_PATHS.audio.bitrate },
           options: [
             { value: '64k', label: '64 kbps' },
             { value: '96k', label: '96 kbps' },
@@ -82,6 +84,7 @@ export const libopus: EncoderDefinition = {
           label: '音频码率 (-b:a)',
           control: 'select',
           commandBinding: { argName: '-b:a', prefix: '-b:a', phase: 'AUDIO_QUALITY' },
+          configBinding: { path: CONFIG_PATHS.audio.bitrate },
           options: [
             { value: '64k', label: '64 kbps' },
             { value: '96k', label: '96 kbps' },

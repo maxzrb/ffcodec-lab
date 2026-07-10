@@ -2,7 +2,7 @@
 
 > 创建于：v0.4.0 Phase 4 — Section 4
 > 审计标准：0 errors, 0 unregistered warnings
-> 基线审计结果：0 errors, 5 warnings
+> 最新审计结果：0 errors, 0 warnings (全部 5 条 warning 已于 Section 5 修复)
 
 ---
 
@@ -10,11 +10,11 @@
 
 | # | ID | 编码器 | 状态 | 目标版本 |
 |---|-----|--------|------|----------|
-| 1 | `W001-libx264-configbinding` | libx264 | registered → fix in v0.4.0 | v0.4.0 |
-| 2 | `W002-libx265-configbinding` | libx265 | registered → fix in v0.4.0 | v0.4.0 |
-| 3 | `W003-libsvtav1-configbinding` | libsvtav1 | registered → fix in v0.4.0 | v0.4.0 |
-| 4 | `W004-aac-configbinding` | aac | registered → fix in v0.4.0 | v0.4.0 |
-| 5 | `W005-libopus-configbinding` | libopus | registered → fix in v0.4.0 | v0.4.0 |
+| 1 | `W001-libx264-configbinding` | libx264 | ✅ RESOLVED (v0.4.0) | v0.4.0 |
+| 2 | `W002-libx265-configbinding` | libx265 | ✅ RESOLVED (v0.4.0) | v0.4.0 |
+| 3 | `W003-libsvtav1-configbinding` | libsvtav1 | ✅ RESOLVED (v0.4.0) | v0.4.0 |
+| 4 | `W004-aac-configbinding` | aac | ✅ RESOLVED (v0.4.0) | v0.4.0 |
+| 5 | `W005-libopus-configbinding` | libopus | ✅ RESOLVED (v0.4.0) | v0.4.0 |
 
 ---
 
@@ -151,3 +151,4 @@ sourceRefs:
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | v0.4.0-dev | 2026-07-10 | 初始创建，登记 5 条 configBinding 遗留 warning |
+| v0.4.0-dev | 2026-07-10 | Section 5 全量迁移完成：5 条 warning 全部修复，旧 getControlValue 回退逻辑删除，审计升级为 error |

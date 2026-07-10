@@ -1,4 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+import { CONFIG_PATHS } from '../../../domain/config/config-path'
 
 export const libx265: EncoderDefinition = {
   id: 'libx265',
@@ -128,6 +129,7 @@ export const libx265: EncoderDefinition = {
           label: 'CRF 值',
           control: 'number',
           commandBinding: { argName: '-crf', prefix: '-crf', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.qualityValue },
           range: { min: 0, max: 51, step: 0.1 },
           defaultValue: 28,
           explanationId: 'expl.libx265.crf.value',
@@ -155,6 +157,7 @@ export const libx265: EncoderDefinition = {
           label: '目标码率 (-b:v)',
           control: 'text',
           commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
           defaultValue: '5000k',
           explanationId: 'expl.libx265.vbr.bitrate',
         },
@@ -163,6 +166,7 @@ export const libx265: EncoderDefinition = {
           label: '最大码率 (-maxrate)',
           control: 'text',
           commandBinding: { argName: '-maxrate', prefix: '-maxrate', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.maxRate },
           explanationId: 'expl.libx265.vbr.maxrate',
         },
         {
@@ -170,6 +174,7 @@ export const libx265: EncoderDefinition = {
           label: '缓冲区 (-bufsize)',
           control: 'text',
           commandBinding: { argName: '-bufsize', prefix: '-bufsize', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bufferSize },
           explanationId: 'expl.libx265.vbr.bufsize',
         },
       ],
@@ -195,6 +200,7 @@ export const libx265: EncoderDefinition = {
           label: 'QP 值 (-qp)',
           control: 'number',
           commandBinding: { argName: '-qp', prefix: '-qp', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.qualityValue },
           range: { min: 0, max: 51, step: 1 },
           defaultValue: 28,
           explanationId: 'expl.libx265.cqp.value',
@@ -222,6 +228,7 @@ export const libx265: EncoderDefinition = {
           label: '目标码率 (-b:v)',
           control: 'text',
           commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
           defaultValue: '5000k',
           explanationId: 'expl.libx265.cbr.bitrate',
         },
@@ -248,6 +255,7 @@ export const libx265: EncoderDefinition = {
           label: '目标码率 (-b:v)',
           control: 'text',
           commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
           defaultValue: '5000k',
           explanationId: 'expl.libx265.twopass.bitrate',
         },

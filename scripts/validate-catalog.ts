@@ -295,9 +295,10 @@ function checkConfigBindings(encoder: EncoderDefinition) {
       }
     }
   }
-  // Warn if no controls have configBinding (will be upgraded to error after legacy fallback removed)
+  // Error if any encoder has qualityModes but no controls with configBinding
+  // (legacy fallback has been removed — all controls must have configBinding)
   if (encoder.qualityModes.length > 0 && !hasConfigBinding) {
-    warnings.push(`[configbinding] Encoder "${encoder.id}" has no controls with configBinding (legacy fallback in use)`)
+    errors.push(`[configbinding] Encoder "${encoder.id}" has no controls with configBinding (all controls must use configBinding)`)
   }
 }
 

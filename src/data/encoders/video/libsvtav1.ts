@@ -1,4 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+import { CONFIG_PATHS } from '../../../domain/config/config-path'
 
 export const libsvtav1: EncoderDefinition = {
   id: 'libsvtav1',
@@ -113,6 +114,7 @@ export const libsvtav1: EncoderDefinition = {
           label: 'CRF 值',
           control: 'number',
           commandBinding: { argName: '-crf', prefix: '-crf', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.qualityValue },
           range: { min: 0, max: 63, step: 1 },
           defaultValue: 35,
           explanationId: 'expl.libsvtav1.crf.value',
@@ -140,6 +142,7 @@ export const libsvtav1: EncoderDefinition = {
           label: '目标码率 (-b:v)',
           control: 'text',
           commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
           defaultValue: '5000k',
           explanationId: 'expl.libsvtav1.vbr.bitrate',
         },
@@ -166,6 +169,7 @@ export const libsvtav1: EncoderDefinition = {
           label: 'QP 值',
           control: 'number',
           commandBinding: { argName: '-qp', prefix: '-qp', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.qualityValue },
           range: { min: 0, max: 63, step: 1 },
           defaultValue: 35,
           explanationId: 'expl.libsvtav1.cqp.value',
@@ -193,6 +197,7 @@ export const libsvtav1: EncoderDefinition = {
           label: '目标码率 (-b:v)',
           control: 'text',
           commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
           defaultValue: '5000k',
           explanationId: 'expl.libsvtav1.cbr.bitrate',
         },
