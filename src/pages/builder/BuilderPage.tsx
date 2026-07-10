@@ -12,9 +12,12 @@ import { CatalogIndex } from '../../domain/catalog/catalog-index'
 import { resolveBuilderView } from '../../domain/presentation/resolve-builder-view'
 import { applyFieldChange } from '../../domain/presentation/apply-field-change'
 import type { ShellKind } from '../../domain/config/project-config'
+import type { ProjectConfig } from '../../domain/config/project-config'
+import type { NormalizationNotice } from '../../domain/rules/rule-types'
 import { ParameterSection } from './components/ParameterSection'
 import { CommandPreview } from './components/CommandPreview'
 import { ExplanationPanel } from '../../features/explanations/ExplanationPanel'
+import { PresetManager } from '../../features/presets/PresetManager'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
@@ -22,6 +25,8 @@ const catalogIndex = new CatalogIndex(catalog)
 export function BuilderPage() {
   const config = useBuilderStore((s) => s.config)
   const setConfigValue = useBuilderStore((s) => s.setConfigValue)
+  const setConfig = useBuilderStore((s) => s.setConfig)
+  const resetConfig = useBuilderStore((s) => s.resetConfig)
   const expandedSections = useBuilderStore((s) => s.expandedSections)
   const toggleSection = useBuilderStore((s) => s.toggleSection)
   const selectedExplanationId = useBuilderStore((s) => s.selectedExplanationId)
@@ -43,6 +48,20 @@ export function BuilderPage() {
 
   // Track highlighted field from command token click
   const [highlightedFieldId, setHighlightedFieldId] = useState<string | undefined>()
+
+  // Preset manager
+  const [showPresetManager, setShowPresetManager] = useState(false)
+
+  const handleApplyPreset = useCallback(
+    (presetConfig: ProjectConfig, _notices: NormalizationNotice[]) => {
+      setConfig(presetConfig)
+    },
+    [setConfig],
+  )
+
+  const handleResetConfig = useCallback(() => {
+    resetConfig()
+  }, [resetConfig])
 
   const handleFieldChange = useCallback(
     (fieldId: string, value: unknown) => {
@@ -108,10 +127,29 @@ export function BuilderPage() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
-      <h1 style={{ fontSize: 22, marginBottom: 4 }}>FFmpeg 压制命令生成器</h1>
-      <p style={{ color: 'var(--text-dim)', marginBottom: 20, fontSize: 13 }}>
-        选择编码参数，实时生成可执行的 FFmpeg 命令。所有参数均来自已验证编码器目录。
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ fontSize: 22, marginBottom: 4 }}>FFmpeg 压制命令生成器</h1>
+          <p style={{ color: 'var(--text-dim)', marginBottom: 20, fontSize: 13 }}>
+            选择编码参数，实时生成可执行的 FFmpeg 命令。所有参数均来自已验证编码器目录。
+          </p>
+        </div>
+        <button
+          onClick={() => setShowPresetManager(true)}
+          style={{
+            padding: '6px 14px',
+            fontSize: 13,
+            background: 'var(--bg-input)',
+            border: '1px solid var(--border)',
+            borderRadius: 4,
+            cursor: 'pointer',
+            color: 'var(--text)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          💾 预设
+        </button>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* LEFT COLUMN: Parameter sections */}
@@ -185,6 +223,16 @@ export function BuilderPage() {
           )}
         </div>
       </div>
+
+      {/* Preset Manager */}
+      {showPresetManager && (
+        <PresetManager
+          onApply={handleApplyPreset}
+          onReset={handleResetConfig}
+          currentConfig={config}
+          onClose={() => setShowPresetManager(false)}
+        />
+      )}
     </div>
   )
 }
