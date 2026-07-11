@@ -117,6 +117,7 @@ export function resolveTextField(
   fieldStates: Record<string, FieldState>,
   explanationId?: string,
   sourceRefs?: ResolvedField['sourceRefs'],
+  configBinding?: ResolvedField['configBinding'],
 ): ResolvedField {
   const state = findFieldState(fieldStates, id)
   return {
@@ -133,6 +134,7 @@ export function resolveTextField(
     needsCrossVerification: false,
     commandOrigins: [],
     diagnostics: [],
+    configBinding,
   }
 }
 
@@ -145,6 +147,7 @@ export function resolveSwitchField(
   fieldStates: Record<string, FieldState>,
   explanationId?: string,
   sourceRefs?: ResolvedField['sourceRefs'],
+  configBinding?: ResolvedField['configBinding'],
 ): ResolvedField {
   const state = findFieldState(fieldStates, id)
   return {
@@ -162,6 +165,7 @@ export function resolveSwitchField(
     needsCrossVerification: false,
     commandOrigins: [],
     diagnostics: [],
+    configBinding,
   }
 }
 

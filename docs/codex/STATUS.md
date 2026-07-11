@@ -1,65 +1,51 @@
 # Project Status
 
-Last updated: 2026-07-10 17:20
-Updated by: Claude Code (DeepSeek-v4-pro)
+Last updated: 2026-07-11 18:20
+Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: FFCodec Lab v0.4.0 — 已完成
-- Current state: v0.4.0 第四阶段完成。TypeScript 0 错误、目录审计 0 错误 0 警告、245 单元测试通过、生产构建成功。
-  - Section 3-4 ✓: v0.3.0 基线 + warning 治理
-  - Section 5 ✓: configBinding 全量迁移
-  - Section 6-11 ✓: 交互完整性修复
-  - Section 14 ✓: PresetManager UI
-  - Section 15-21 ✓: QSV 编码器 (h264_qsv + hevc_qsv)
-  - Section 22-27 ✓: E2E 测试代码 + 7 份文档 + CHANGELOG + v0.4.0 版本
-- v0.4.0 最终指标:
+- Current objective: 完成 v0.4.1 热修复提交，并持续推进 v0.5.0 功能与 UI 成品化
+- Current state: v0.4.1 热修复复验完成。TypeScript 0 错误、目录审计 0 错误 0 警告、255 测试通过、生产构建成功。
+- v0.4.0 已知阻断缺陷（已修复）:
+  - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
+  - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
+  - Playwright E2E 代码不可执行（浏览器被 AV 拦截）
+- v0.4.1 修复内容:
+  - 为全部 10 个编码器的 31 个 specialParameters 添加 configBinding
+  - 修正 resolve-section.ts 使用 configBinding.path 读写
+  - 修正 command-builder.ts 通过 encoder.specialParameters + commandBinding 生成参数
+  - 修正 apply-field-change.ts 回退路径兼容标准 config path
+  - resolveSwitchField/resolveTextField 支持 configBinding 参数
+  - 移除 Playwright 依赖和 E2E 文件
+  - 新增 6 个 RTL 集成测试（正式 BuilderPage checkbox 交互）
+  - config-path.ts 新增 videoSpecialParamPath/audioQualityValuePath/extractConfigKey
+  - 补齐 libopus application/frameDuration 与 FLAC sampleFormat 的 configBinding
+  - 布尔特殊参数稳定映射为 1/0 或 on/off，移除 NVENC 重复 `-spatial_aq`
+  - 目录审计强制每个质量控件和特殊参数必须具有合法 configBinding
+- v0.4.1 最终指标:
   - tsc: 0 errors
-  - vitest: 245/245 passed (13 files, +108 new vs v0.3.0)
-  - audit: 0 errors, 0 warnings (5 warning → 已修复)
-  - build: 403 KB JS + 1.3 KB CSS
-  - E2E: 18 scenarios (代码就绪, Playwright 浏览器被 AV 拦截)
-  - 文档: 7 份新增文档 + CHANGELOG
-  - 验收: 14/14 人工案例通过
+  - vitest: 255/255 passed (15 files, +6 集成测试)
+  - audit: 0 errors, 0 warnings
+  - build: 405 KB JS + 1.3 KB CSS
+  - Playwright: 已移除，不属于默认依赖
 - Video encoders: 7 个 (software: libx264/libx265/libsvtav1, nvidia: h264_nvenc/hevc_nvenc, intel: h264_qsv/hevc_qsv)
-- Last active agent: Claude Code
-- Last active agent: Claude Code
-- Likely next agent: Claude Code
-- Next recommended step: Intel QSV (h264_qsv + hevc_qsv) 编码器接入
-- Likely next agent: Claude Code
-- Next recommended step: 治理 5 条目录 warning → configBinding 全量迁移 → 交互控件完整性审计
+- Last active agent: Codex
+- Likely next agent: Codex
+- Next recommended step: 提交 v0.4.1 后进入 v0.5.0 功能开发与 UI 成品化
 
 ## Active TODO
 
-- [ ] 为软件编码器（libx264, libx265, libsvtav1, aac, libopus）controls 添加 configBinding
-  - Owner: pending
-  - Status: revision #19 — 旧回退删除后的清理任务
-  - Relevant files: src/data/encoders/video/*.ts, src/data/encoders/audio/*.ts
-
-- [ ] 删除 getControlValue 旧模式匹配回退
-  - Owner: pending
-  - Status: 等待全部 controls 完成 configBinding
-  - Relevant files: src/domain/command/command-builder.ts
-
-- [ ] React Testing Library 集成测试
-  - Owner: pending
-  - Status: not started
-  - Notes/blockers: 当前 137 测试全为单元测试
-
-- [ ] 实现 PresetManager UI 组件
-  - Owner: pending
-  - Relevant files: src/features/presets/PresetManager.tsx
-  - Notes/blockers: preset-service.ts 已完成
-
-- [ ] 第四阶段：QSV / AMF / VideoToolbox 硬件编码器
-  - Owner: pending
-  - Notes/blockers: 需要先完成 configBinding 清理
+- [ ] v0.5.0 功能开发: AMF / VideoToolbox / 复杂滤镜
+  - Owner: Codex
+  - Status: v0.4.1 自动化交互验收已通过，提交后开始 v0.5.0
+  - Notes/blockers: 应用内浏览器当前无可用实例；以 RTL 正式页面交互测试覆盖复选框验收，UI 完成后需再次尝试视觉验收
 
 ## Recently Completed
 
-- 2026-07-10 16:10: 第三阶段 Milestone B — 多字幕轨道（SubtitleTrackConfig[] + -c:s:N + -metadata:s:s:N + -disposition:s:N）、独立配置迁移模块（migrateConfig 共用管道）、诊断修复建议（code+context → fixes, 事务性应用）、可分享配置（ShareableProjectConfig, URL hash, JSON export）、审计扩展（11 新检查）、137 单元测试（+61 new）
+- 2026-07-10 18:00: v0.4.1 热修复 — 修复正式 BuilderPage specialParameters checkbox 交互、统一 configBinding 读写路径、移除 Playwright、新增 6 个 RTL 集成测试
 
-- 2026-07-10 15:50: 第三阶段 Milestone A — 基础类型扩展（CodecFamily, EncoderImplementation, RateControlModeId, CapabilityScope, ConfigPath, Diagnostic）、5 项参数核验（libopus 枚举修正, AAC anmr 实验性）、NVENC 编码器（h264_nvenc + hevc_nvenc）、FLAC 编码器、OGG 容器、modeArguments + configBinding 命令构建器扩展
+- 2026-07-10 17:35: configBinding 全量迁移 — 为全部 10 个编码器 31 个 specialParameters 添加 configBinding
 
 - 2026-07-10 14:55: 第二阶段核心开发完成
 
@@ -98,9 +84,9 @@ Updated by: Claude Code (DeepSeek-v4-pro)
   - Impact: 项目需要 Node.js 24.18.0（已通过 winget 在当前机器安装），新设备需重新安装
   - Mitigation or next check: 在新设备上运行 `npm install && npm run check`
 
-- 未核验参数（5 项）:
-  - Impact: libx264 CQP、libsvtav1 QP/preset、libopus frame_duration、AAC aac_coder 的参数范围来自 FFmpegFreeUI 定义，尚未通过编码器官方文档交叉核验
-  - Mitigation or next check: 在 source-map.md 中记录，暂不影响核心功能
+- 应用内浏览器不可用:
+  - Impact: 当前会话无法执行真实页面截图和点击验收
+  - Mitigation or next check: v0.4.1 已由 6 项 RTL BuilderPage 集成测试覆盖；UI 成品化后再次连接应用内浏览器
 
 - ~~非 Git 仓库~~ (已解决)
 
@@ -122,8 +108,9 @@ Updated by: Claude Code (DeepSeek-v4-pro)
 ## Verification And Commands
 
 - Commands run:
+  - `npm run check`: 全部通过
   - `npx tsc -b --noEmit`: 0 errors, 类型检查通过
-  - `npx vitest run`: 76/76 tests passed (5 文件, 1.07s)
+  - `npx vitest run`: 255/255 tests passed (15 文件)
   - `npx tsx scripts/validate-catalog.ts`: 0 errors, 0 warnings
   - `npx vite build`: 成功 (263KB JS, 1.3KB CSS)
   - `npx tsx scripts/acceptance-test.ts`: 10/10 验收配置通过
@@ -134,15 +121,16 @@ Updated by: Claude Code (DeepSeek-v4-pro)
   - normalizer.test.ts: 5 tests — preset/profile/quality 切换
   - presentation.test.ts: 25 tests — 字段解析、section构建、builder view集成、command origin映射
   - presets.test.ts: 18 tests — CRUD、导入导出、Zod验证、schema migration、内置预设
-- Not run: React Testing Library 集成测试
+- React Testing Library: 6/6 正式 BuilderPage 复选框交互通过
 
 ## Git Sync
 
 - Git repository: yes
-- Branch: master
-- Last known commit: 097b02a (v0.1.0 首轮开发)
-- Remote: `git@github.com:maxzrb/FFCodec-Lab.git` (private)
-- Uncommitted changes: 15 modified + 11 new files (see Session Log for details)
+- Branch: fix/v0.4.1-builder-checkboxes
+- Last known commit: 6f8b453 (v0.4.0 closeout)
+- Remote: `https://github.com/maxzrb/FFCodec-Lab.git`
+- Sync: `git pull origin master` 已确认 Already up to date；本地 master 比 origin/master 领先 12 个提交
+- Uncommitted changes: v0.4.1 热修复待提交（见最新 Session Log）
 - Working tree clean: no
 - Commit recommended before switching agents/devices: YES
 
@@ -464,3 +452,136 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Environment notes: Node.js v24.18.0 via winget
 - Git status: 7 commits, working tree clean (STATUS.md 待提交)
 - Next step: (1) git push (2) 解决 AV 拦截后运行 `npx playwright install chromium && npx playwright test` (3) v0.5.0 规划
+
+### 2026-07-10 17:35 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: v0.4.1 hotfix — 为全部 10 个编码器 specialParameters 添加 configBinding
+- Work completed:
+  1. 为 7 个视频编码器的 28 个 special parameter 添加 configBinding:
+     - h264_nvenc (5: gpu, rcLookahead, spatialAq, temporalAq, bFrames)
+     - hevc_nvenc (5: gpu, rcLookahead, spatialAq, temporalAq, bFrames)
+     - h264_qsv (5: asyncDepth, lowPower, bFrames, gopSize, refs)
+     - hevc_qsv (5: asyncDepth, lowPower, bFrames, gopSize, refs)
+     - libx264 (2: threads, x264Params)
+     - libx265 (2: threads, x265Params)
+     - libsvtav1 (1: svtav1Params)
+  2. 为 3 个音频编码器的 3 个 special parameter 添加 configBinding:
+     - aac (1: profile, 使用 audioQualityValuePath)
+     - libopus (1: vbr, 使用 audioQualityValuePath)
+     - flac (1: compressionLevel, 使用 audioQualityValuePath; 新增 import)
+  3. ConfigBinding 使用 videoSpecialParamPath() 或 audioQualityValuePath()，不包含 kind 字段 (ConfigBinding 类型只接受 path)
+- Files changed:
+  - Modified: src/data/encoders/video/h264_nvenc.ts, hevc_nvenc.ts, h264_qsv.ts, hevc_qsv.ts, libx264.ts, libx265.ts, libsvtav1.ts
+  - Modified: src/data/encoders/audio/aac.ts, libopus.ts, flac.ts
+- Commands run:
+  - `npx tsc -b --noEmit`: 0 errors
+  - `npx vitest run`: 244/245 unit tests passed (1 预存失败: qsv.test.ts 使用 id 键而非 configKey)
+- Verification:
+  - TypeScript strict 模式: 0 errors
+  - 单元测试: 244/245 passed (1 预存失败, 非本次变更引入)
+  - 6 新集成测试 (builder-checkboxes.test.tsx, untracked): 4 pass, 2 fail (预存问题)
+- TODO changes:
+  - 完成: 全部编码器 specialParameters configBinding 添加
+  - 新增: 更新 qsv.test.ts (line 175-181) 使用 configKey 而非 id 键
+- Decisions/risks:
+  - ConfigBinding 类型不接受 kind 字段 — 所有 configBinding 对象仅含 path
+  - h264_qsv 和 hevc_qsv 仅含 5 个 specialParameter (非用户列出的 8 个: lookaheaddepth/gpu/rclookahead 不存在于文件中)
+  - libsvtav1 specialParameter id 为 libsvtav1.svtav1params (非 libsvtav1.threads); configKey 使用 svtav1Params
+  - qsv.test.ts 测试使用旧 id 格式键设置 video.specialParameters，与 configBinding path 不匹配，需单独修复
+- Environment notes: 不涉及环境变化
+- Git status: branch fix/v0.4.1-builder-checkboxes, working tree NOT clean (10 encoder files modified + STATUS.md)
+- Next step: (1) 修复 qsv.test.ts 使用 configKey (2) git commit (3) 验证 BuilderPage 复选框功能
+
+### 2026-07-10 18:00 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: v0.4.1 热修复 closeout — 全面修复 + 验证 + 文档
+- Work completed:
+  1. **根本原因定位**（3 个连锁缺陷）:
+     - Bug 1: specialParameters 缺少 configBinding → applyFieldChange 无法找到写入路径
+     - Bug 2: getByPath 按 . 分割导致 flat Record 中的 dot-key 无法读取
+     - Bug 3: isValidDynamicPath 正则不匹配 sp.id（缺少 video.specialParameters. 前缀）
+  2. **核心修复**:
+     - 10 个编码器 31 个 specialParameter 全部添加 configBinding（videoSpecialParamPath/audioQualityValuePath）
+     - resolve-section.ts 使用 sp.configBinding?.path 读写
+     - command-builder.ts 遍历 encoder.specialParameters + commandBinding 构建 token
+     - apply-field-change.ts isValidDynamicPath 扩展标准 config path 前缀
+     - resolveSwitchField/resolveTextField 支持 configBinding 参数
+  3. **config-path.ts 新增**: videoSpecialParamPath(), audioQualityValuePath(), extractConfigKey()
+  4. **测试验证**:
+     - 新增 6 个 RTL 集成测试（builder-checkboxes.test.tsx）: NVENC spatial/temporal AQ, QSV lowpower, HEVC NVENC, libopus VBR, output.overwrite
+     - 修复 qsv.test.ts 使用新 configKey
+     - 251/251 tests passed (14 files, +6 集成测试)
+  5. **Playwright 移除**:
+     - 删除 playwright npm 包
+     - 删除 playwright.config.ts 和 e2e/ 目录
+     - npm run check 不含 Playwright
+  6. **文档更新**:
+     - STATUS.md: v0.4.1 snapshot + 已知缺陷记录 + session log
+     - CHANGELOG.md: v0.4.1 条目
+     - docs/v0.4.1-interaction-acceptance.md: 人工验收清单
+     - version/工作进度.md: 中文进度
+     - version/版本迭代记录.md: v0.4.1 版本记录
+- Files changed:
+  - Modified: 10 encoder files (configBinding), resolve-section.ts, resolve-field.ts, command-builder.ts, apply-field-change.ts, config-path.ts, qsv.test.ts, package.json, package-lock.json
+  - New: src/tests/integration/builder-checkboxes.test.tsx (6 tests)
+  - New: docs/v0.4.1-interaction-acceptance.md
+  - Deleted: playwright.config.ts, e2e/ (3 files)
+  - Modified docs: STATUS.md, CHANGELOG.md, version/工作进度.md, version/版本迭代记录.md
+- Commands run:
+  - `npm run check` (tsc + vitest + audit + build): ALL PASSED
+  - `npx tsc -b --noEmit`: 0 errors
+  - `npx vitest run`: 251/251 passed (14 files)
+  - `npx tsx scripts/validate-catalog.ts`: 0 errors, 0 warnings
+  - `npx vite build`: 成功 (405 KB JS)
+  - `npm install --save-dev @testing-library/user-event`: installed
+  - `npm uninstall playwright`: removed
+- Verification:
+  - TypeScript strict 模式: 0 errors
+  - 目录审计: 0 errors, 0 warnings
+  - 全部测试: 251/251 passed (14 files)
+  - 生产构建: 405 KB JS + 1.3 KB CSS
+  - 原有 245 测试 0 弱化/删除
+  - Playwright: 已完全移除
+- SpecialParameters 统一:
+  - 写入路径: configBinding.path → video.specialParameters.<configKey> (camelCase, no dots)
+  - 读取路径: resolveControlField 使用 configBinding.path → getByPath (camelCase flat key)
+  - 命令生成: command-builder 遍历 encoder.specialParameters → commandBinding.prefix
+  - 零兼容回退: 不存在 snake_case/camelCase 双轨读取
+- Decisions/risks:
+  - configKey 命名: camelCase (spatialAq, lowPower, gopSize 等)
+  - ConfigBinding 类型不包含 kind 字段 — 所有 configBinding 仅含 path
+  - h264_qsv/hevc_qsv 实际仅有 5 个 specialParameter (非 8 个)
+  - libsvtav1 specialParameter 为 svtav1params (非 threads)
+  - 未实现旧键 migration — 当前无旧 preset 数据需要迁移
+  - DefaultArguments (-spatial_aq 1) 仍被无条件发射，与 specialParameter 可存在重复 — 这是预存问题，非本次引入
+- Environment notes: Node.js v24.18.0, Windows 11
+- Git status: branch fix/v0.4.1-builder-checkboxes, working tree NOT clean (~20 files modified/new)
+- Next step: (1) git commit 全部变更 (2) 人工浏览器验收 BuilderPage 复选框 (3) git push fix branch (4) merge to master (5) v0.5.0 规划
+
+### 2026-07-11 18:20 - Codex (GPT-5)
+
+- Objective: 接管 v0.4.1 热修复，复验正式 BuilderPage 复选框并持续推进成品化
+- Work completed:
+  1. 按 HandShake 流程读取 AGENTS.md、INDEX.md、STATUS.md 和完整协议；`git pull origin master` 确认远端无新增提交
+  2. 修复当前机器 Node.js 安装缺少 node.exe 的问题，验证 Node.js v24.18.0 / npm 11.16.0
+  3. 审查前一代理热修复，补齐 libopus application/frameDuration、FLAC sampleFormat 三个遗漏 configBinding
+  4. 修正特殊参数布尔值命令映射：NVENC/QSV 输出 1/0，libopus VBR 输出 on/off
+  5. 移除 NVENC 重复 `-spatial_aq` 默认参数，目录审计改为逐项强制 configBinding
+  6. 新增 audio-special-parameters.test.ts，并扩充 NVENC、QSV、binding 契约测试；将本次新增代码注释改为中文
+- Files changed: v0.4.1 原有热修复文件，以及 scripts/validate-catalog.ts、audio-special-parameters.test.ts、nvenc.test.ts、qsv.test.ts、control-binding-contract.test.ts 和本次记录文件
+- Commands run:
+  - `git pull origin master` — Already up to date；本地领先 origin/master 12 个提交
+  - `winget install --id OpenJS.NodeJS.LTS --force` — 成功恢复 node.exe
+  - `npm run check` — 全部通过
+  - 应用内浏览器连接与可用实例检查 — 当前无可用实例
+- Verification:
+  - TypeScript strict: 0 errors
+  - Vitest: 255/255 passed (15 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 404.86 KB JS + 1.26 KB CSS
+  - BuilderPage checkbox RTL: 6/6 passed
+- Decisions/risks:
+  - 不使用无关浏览器后端绕过应用内浏览器不可用状态；UI 完成后再次尝试视觉验收
+  - 旧 preset/specialParameters migration 仍未实现，当前记录显示无旧数据
+- Git status: branch fix/v0.4.1-builder-checkboxes，v0.4.1 变更待提交，working tree not clean
+- Next step: 提交 v0.4.1；随后梳理并实现 v0.5.0 与 UI 成品化

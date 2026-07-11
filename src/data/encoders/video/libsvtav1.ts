@@ -1,5 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
-import { CONFIG_PATHS } from '../../../domain/config/config-path'
+import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
 
 export const libsvtav1: EncoderDefinition = {
   id: 'libsvtav1',
@@ -210,6 +210,7 @@ export const libsvtav1: EncoderDefinition = {
       id: 'libsvtav1.svtav1params',
       label: 'SVT-AV1 附加参数 (-svtav1-params)',
       control: 'text',
+      configBinding: { path: videoSpecialParamPath('svtav1Params') },
       commandBinding: { argName: '-svtav1-params', prefix: '-svtav1-params', phase: 'VIDEO_CODEC' },
       explanationId: 'expl.libsvtav1.svtav1params',
     },

@@ -37,6 +37,22 @@ export function isValidConfigPath(path: string): boolean {
   return segments.every((s) => !FORBIDDEN.has(s) && SEGMENT_RE.test(s))
 }
 
+/** 为视频特殊参数创建 video.specialParameters.<key> 配置路径。 */
+export function videoSpecialParamPath(key: string): ConfigPath {
+  return configPath(['video', 'specialParameters', key])
+}
+
+/** 为音频特殊参数创建 audio.qualityValues.<key> 配置路径。 */
+export function audioQualityValuePath(key: string): ConfigPath {
+  return configPath(['audio', 'qualityValues', key])
+}
+
+/** 提取配置路径的最后一段，例如 spatialAq。 */
+export function extractConfigKey(path: ConfigPath): string {
+  const segments = path.split('.')
+  return segments[segments.length - 1]
+}
+
 // ============================================================
 // Pre-defined path constants — use these instead of raw strings
 // ============================================================

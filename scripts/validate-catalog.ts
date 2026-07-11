@@ -287,11 +287,13 @@ function checkConfigBindings(encoder: EncoderDefinition) {
   let hasConfigBinding = false
   for (const qm of encoder.qualityModes) {
     for (const ctrl of qm.controls) {
-      if (ctrl.configBinding) {
-        hasConfigBinding = true
-        if (!isValidConfigPath(ctrl.configBinding.path)) {
-          errors.push(`[configpath] ${ctrl.id} has invalid configBinding.path: "${ctrl.configBinding.path}"`)
-        }
+      if (!ctrl.configBinding) {
+        errors.push(`[configbinding] ${encoder.id}/${qm.id}/${ctrl.id} is missing configBinding`)
+        continue
+      }
+      hasConfigBinding = true
+      if (!isValidConfigPath(ctrl.configBinding.path)) {
+        errors.push(`[configpath] ${ctrl.id} has invalid configBinding.path: "${ctrl.configBinding.path}"`)
       }
     }
   }
@@ -299,6 +301,17 @@ function checkConfigBindings(encoder: EncoderDefinition) {
   // (legacy fallback has been removed — all controls must have configBinding)
   if (encoder.qualityModes.length > 0 && !hasConfigBinding) {
     errors.push(`[configbinding] Encoder "${encoder.id}" has no controls with configBinding (all controls must use configBinding)`)
+  }
+
+  // 特殊参数也必须显式绑定，禁止重新引入按 ID 猜测路径的兼容分支。
+  for (const sp of encoder.specialParameters) {
+    if (!sp.configBinding) {
+      errors.push(`[configbinding] ${encoder.id}/${sp.id} is missing configBinding`)
+      continue
+    }
+    if (!isValidConfigPath(sp.configBinding.path)) {
+      errors.push(`[configpath] ${sp.id} has invalid configBinding.path: "${sp.configBinding.path}"`)
+    }
   }
 }
 

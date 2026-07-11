@@ -82,6 +82,18 @@ describe('NVENC command generation', () => {
     expect(text).not.toContain('-crf')
   })
 
+  it('NVENC switch parameters emit one explicit 1/0 value without duplicates', () => {
+    const enabledText = renderBash(buildCommandPlan(nvencCqConfig(), catalog, [])).text
+    expect(enabledText).toContain('-spatial_aq 1')
+    expect(enabledText.split('-spatial_aq').length - 1).toBe(1)
+
+    const disabled = nvencCqConfig()
+    disabled.video.specialParameters = { spatialAq: false, temporalAq: true }
+    const disabledText = renderBash(buildCommandPlan(disabled, catalog, [])).text
+    expect(disabledText).toContain('-spatial_aq 0')
+    expect(disabledText).toContain('-temporal_aq 1')
+  })
+
   it('h264_nvenc CQP mode generates -rc constqp -qp N', () => {
     const config = makeConfig({
       video: {

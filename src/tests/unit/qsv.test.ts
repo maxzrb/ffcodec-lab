@@ -174,10 +174,11 @@ describe('h264_qsv Commands', () => {
 
   it('special parameters appear in command', () => {
     const base = h264QsvCqp()
-    base.video.specialParameters = { 'h264_qsv.asyncdepth': 8, 'h264_qsv.g': 120 }
+    base.video.specialParameters = { asyncDepth: 8, gopSize: 120, lowPower: true }
     const cmd = buildCommand(base)
-    expect(cmd).toContain('h264_qsv.asyncdepth 8')
-    expect(cmd).toContain('h264_qsv.g 120')
+    expect(cmd).toContain('-async_depth 8')
+    expect(cmd).toContain('-g 120')
+    expect(cmd).toContain('-low_power 1')
   })
 })
 

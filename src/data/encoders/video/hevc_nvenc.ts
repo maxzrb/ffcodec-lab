@@ -1,5 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
-import { CONFIG_PATHS } from '../../../domain/config/config-path'
+import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
 
 export const hevcNvenc: EncoderDefinition = {
   id: 'hevc_nvenc',
@@ -288,6 +288,7 @@ export const hevcNvenc: EncoderDefinition = {
       id: 'hevc_nvenc.gpu',
       label: 'GPU 设备索引 (-gpu)',
       control: 'number',
+      configBinding: { path: videoSpecialParamPath('gpu') },
       commandBinding: { argName: '-gpu', prefix: '-gpu', phase: 'VIDEO_CODEC' },
       range: { min: 0, max: 7 },
       explanationId: 'expl.nvenc.gpu',
@@ -296,6 +297,7 @@ export const hevcNvenc: EncoderDefinition = {
       id: 'hevc_nvenc.rclookahead',
       label: '码率控制前瞻 (-rc-lookahead)',
       control: 'number',
+      configBinding: { path: videoSpecialParamPath('rcLookahead') },
       commandBinding: { argName: '-rc-lookahead', prefix: '-rc-lookahead', phase: 'VIDEO_RATE_CONTROL' },
       range: { min: 0, max: 32 },
       defaultValue: 0,
@@ -305,7 +307,8 @@ export const hevcNvenc: EncoderDefinition = {
       id: 'hevc_nvenc.spatialaq',
       label: '空间自适应量化 (-spatial-aq)',
       control: 'switch',
-      commandBinding: { argName: '-spatial_aq', prefix: '-spatial_aq', compact: true, phase: 'VIDEO_CODEC' },
+      configBinding: { path: videoSpecialParamPath('spatialAq') },
+      commandBinding: { argName: '-spatial_aq', prefix: '-spatial_aq', phase: 'VIDEO_CODEC' },
       defaultValue: 1,
       explanationId: 'expl.nvenc.spatialaq',
     },
@@ -313,7 +316,8 @@ export const hevcNvenc: EncoderDefinition = {
       id: 'hevc_nvenc.temporalaq',
       label: '时间自适应量化 (-temporal-aq)',
       control: 'switch',
-      commandBinding: { argName: '-temporal_aq', prefix: '-temporal_aq', compact: true, phase: 'VIDEO_CODEC' },
+      configBinding: { path: videoSpecialParamPath('temporalAq') },
+      commandBinding: { argName: '-temporal_aq', prefix: '-temporal_aq', phase: 'VIDEO_CODEC' },
       defaultValue: 0,
       explanationId: 'expl.nvenc.temporalaq',
     },
@@ -321,6 +325,7 @@ export const hevcNvenc: EncoderDefinition = {
       id: 'hevc_nvenc.bf',
       label: '最大 B 帧数 (-bf)',
       control: 'number',
+      configBinding: { path: videoSpecialParamPath('bFrames') },
       commandBinding: { argName: '-bf', prefix: '-bf', phase: 'VIDEO_CODEC' },
       range: { min: 0, max: 4 },
       defaultValue: 2,
@@ -329,9 +334,7 @@ export const hevcNvenc: EncoderDefinition = {
   ],
 
   requiredArguments: [],
-  defaultArguments: [
-    { argName: '-spatial_aq', value: 1, phase: 'VIDEO_CODEC' },
-  ],
+  defaultArguments: [],
 
   explanationId: 'expl.hevc_nvenc',
   sourceRefs: [

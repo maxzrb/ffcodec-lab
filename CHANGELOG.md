@@ -1,5 +1,42 @@
 # Changelog
 
+## v0.4.1 (2026-07-10)
+
+### 热修复：正式 BuilderPage 复选框交互
+
+- **specialParameters configBinding 全量覆盖**：为 10 个编码器的 31 个 specialParameter 添加 configBinding（videoSpecialParamPath / audioQualityValuePath）
+- **统一读写路径**：resolve-section.ts 使用 configBinding.path 读写；command-builder.ts 遍历 encoder.specialParameters + commandBinding 生成 token
+- **根本原因**：specialParameters 缺少 configBinding → applyFieldChange 静默拒绝写入；getByPath 无法读取 flat Record 中的 dot-key
+- **apply-field-change 回退扩展**：isValidDynamicPath 兼容标准 config path 前缀
+- **resolveSwitchField/resolveTextField**：支持 configBinding 参数
+- **config-path.ts**：新增 videoSpecialParamPath(), audioQualityValuePath(), extractConfigKey()
+
+### Playwright 移除
+
+- Playwright 不再属于项目依赖、默认检查或发布阻断项
+- 删除 playwright.config.ts、e2e/ 目录、npm playwright 包
+- 迁移为 Vitest + React Testing Library 集成测试
+
+### 测试
+
+- **集成测试**：新增 6 个 RTL 测试（builder-checkboxes.test.tsx），覆盖 NVENC/QSV/libopus checkbox 交互
+- **特殊参数命令测试**：新增 libopus、FLAC、NVENC 与 QSV 的稳定配置键和布尔值映射测试
+- **总计**：255/255 测试通过（15 文件，+10 vs v0.4.0）
+- **修正**：qsv.test.ts 使用新 configKey
+
+### 补充修正
+
+- 补齐 libopus application/frameDuration 与 FLAC sampleFormat 的 configBinding
+- NVENC/QSV 布尔参数输出 1/0，libopus VBR 输出 on/off
+- 移除 NVENC defaultArguments 与 specialParameter 产生的重复 `-spatial_aq`
+- 目录审计升级为逐项检查所有质量控件和特殊参数的 configBinding
+
+### 已知限制
+
+- 旧 preset/specialParameters 无迁移路径 — 当前无旧数据
+
+---
+
 ## v0.4.0 (2026-07-10)
 
 ### 架构收口

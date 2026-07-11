@@ -1,5 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
-import { CONFIG_PATHS } from '../../../domain/config/config-path'
+import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
 
 export const libx264: EncoderDefinition = {
   id: 'libx264',
@@ -277,6 +277,7 @@ export const libx264: EncoderDefinition = {
       id: 'libx264.threads',
       label: '编码线程数',
       control: 'number',
+      configBinding: { path: videoSpecialParamPath('threads') },
       commandBinding: { argName: '-threads', prefix: '-threads', phase: 'VIDEO_CODEC' },
       range: { min: 1, max: 64 },
       explanationId: 'expl.libx264.threads',
@@ -285,6 +286,7 @@ export const libx264: EncoderDefinition = {
       id: 'libx264.x264params',
       label: 'x264 附加参数 (-x264-params)',
       control: 'text',
+      configBinding: { path: videoSpecialParamPath('x264Params') },
       commandBinding: { argName: '-x264-params', prefix: '-x264-params', phase: 'VIDEO_CODEC' },
       explanationId: 'expl.libx264.x264params',
     },

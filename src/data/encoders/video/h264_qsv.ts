@@ -1,5 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
-import { CONFIG_PATHS } from '../../../domain/config/config-path'
+import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
 
 export const h264Qsv: EncoderDefinition = {
   id: 'h264_qsv',
@@ -428,6 +428,7 @@ export const h264Qsv: EncoderDefinition = {
       id: 'h264_qsv.asyncdepth',
       label: '异步深度 (-async_depth)',
       control: 'number',
+      configBinding: { path: videoSpecialParamPath('asyncDepth') },
       commandBinding: { argName: '-async_depth', prefix: '-async_depth', phase: 'VIDEO_CODEC' },
       range: { min: 1, max: 20 },
       defaultValue: 4,
@@ -437,7 +438,8 @@ export const h264Qsv: EncoderDefinition = {
       id: 'h264_qsv.lowpower',
       label: '低功耗模式 (-low_power)',
       control: 'switch',
-      commandBinding: { argName: '-low_power', prefix: '-low_power', compact: true, phase: 'VIDEO_CODEC' },
+      configBinding: { path: videoSpecialParamPath('lowPower') },
+      commandBinding: { argName: '-low_power', prefix: '-low_power', phase: 'VIDEO_CODEC' },
       defaultValue: 0,
       explanationId: 'expl.qsv.lowpower',
       capabilityScope: {
@@ -464,6 +466,7 @@ export const h264Qsv: EncoderDefinition = {
       id: 'h264_qsv.bf',
       label: '最大 B 帧数 (-bf)',
       control: 'number',
+      configBinding: { path: videoSpecialParamPath('bFrames') },
       commandBinding: { argName: '-bf', prefix: '-bf', phase: 'VIDEO_CODEC' },
       range: { min: 0, max: 16 },
       defaultValue: 3,
@@ -473,6 +476,7 @@ export const h264Qsv: EncoderDefinition = {
       id: 'h264_qsv.g',
       label: 'GOP 大小 (-g)',
       control: 'number',
+      configBinding: { path: videoSpecialParamPath('gopSize') },
       commandBinding: { argName: '-g', prefix: '-g', phase: 'VIDEO_CODEC' },
       range: { min: 1, max: 600 },
       defaultValue: 250,
@@ -482,6 +486,7 @@ export const h264Qsv: EncoderDefinition = {
       id: 'h264_qsv.refs',
       label: '参考帧数 (-refs)',
       control: 'number',
+      configBinding: { path: videoSpecialParamPath('refs') },
       commandBinding: { argName: '-refs', prefix: '-refs', phase: 'VIDEO_CODEC' },
       range: { min: 1, max: 16 },
       defaultValue: 4,

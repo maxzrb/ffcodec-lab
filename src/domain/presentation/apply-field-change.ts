@@ -190,10 +190,7 @@ function coerceValue(
   }
 }
 
-/**
- * Checks whether a fieldId looks like a valid dynamic config path
- * (subtitle track fields, special parameters, etc.)
- */
+/** 判断字段 ID 是否为允许交给 setByPath 写入的配置路径。 */
 function isValidDynamicPath(fieldId: string): boolean {
   // Subtitle track dynamic fields
   if (/^subtitle\.tracks\.[a-zA-Z0-9_-]+\./.test(fieldId)) {
@@ -208,6 +205,10 @@ function isValidDynamicPath(fieldId: string): boolean {
   }
   // Custom args
   if (/^customArgs\./.test(fieldId)) {
+    return true
+  }
+  // 仅允许 ProjectConfig 中已知的根级命名空间。
+  if (/^(input|output|streams|video|frame|audio|subtitle|shell|schemaVersion)\./.test(fieldId)) {
     return true
   }
   return false

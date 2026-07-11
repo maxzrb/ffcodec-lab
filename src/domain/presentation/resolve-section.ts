@@ -150,7 +150,7 @@ export function resolveVideoSection(
 
     // Special parameters
     for (const sp of encoder.specialParameters) {
-      const configPath = `video.specialParameters.${sp.id}`
+      const configPath = sp.configBinding?.path ?? `video.specialParameters.${sp.id}`
       fields.push(resolveControlField(sp, config, configPath, fieldStates, encoder))
     }
   }
@@ -372,7 +372,7 @@ export function resolveAudioSection(
 
       // Encoder-specific special parameters
       for (const sp of audioEncoder.specialParameters) {
-        const configPath = `audio.qualityValues.${sp.id}`
+        const configPath = sp.configBinding?.path ?? `audio.qualityValues.${sp.id}`
         fields.push(resolveControlField(sp, config, configPath, fieldStates, audioEncoder))
       }
     }

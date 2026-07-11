@@ -1,5 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
-import { CONFIG_PATHS } from '../../../domain/config/config-path'
+import { CONFIG_PATHS, audioQualityValuePath } from '../../../domain/config/config-path'
 
 export const aac: EncoderDefinition = {
   id: 'aac',
@@ -99,6 +99,7 @@ export const aac: EncoderDefinition = {
       id: 'aac.profile',
       label: 'AAC 编码配置',
       control: 'select',
+      configBinding: { path: audioQualityValuePath('profile') },
       commandBinding: { argName: '-aac_coder', prefix: '-aac_coder', phase: 'AUDIO_CODEC' },
       options: [
         { value: 'auto', label: '自动' },

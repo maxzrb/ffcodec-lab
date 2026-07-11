@@ -1,5 +1,5 @@
 import type { ProjectConfig } from '../config/project-config'
-import type { Catalog } from '../catalog/catalog-types'
+import type { Catalog, ControlDefinition } from '../catalog/catalog-types'
 import type { Diagnostic } from '../rules/rule-types'
 import {
   type CommandPlan,
@@ -10,6 +10,7 @@ import {
 } from './command-ast'
 import { buildVideoFilterChain, renderFilterChain } from '../filters/video-filter-builder'
 import { getByPath } from '../../utils/object-path'
+import { extractConfigKey } from '../config/config-path'
 
 /**
  * Builds the CommandPlan from ProjectConfig + Catalog.
@@ -245,17 +246,23 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
         }
       }
 
-      // Special params
-      for (const [key, val] of Object.entries(config.video.specialParameters)) {
-        if (val !== undefined && val !== null && val !== '') {
-          output.codecArgs.push({
-            id: `codec.special.${key}`,
-            originId: `video.specialParameters.${key}`,
-            phase: 'VIDEO_CODEC',
-            tokens: [key, String(val)],
-            unsafe: true,
-          })
-        }
+      // 特殊参数必须以编码器目录为准，不能直接遍历配置中的任意键。
+      for (const sp of encoder.specialParameters) {
+        if (!sp.commandBinding) continue
+        const configKey = sp.configBinding?.path
+          ? extractConfigKey(sp.configBinding.path)
+          : sp.id
+        const val = config.video.specialParameters[configKey] ?? sp.defaultValue
+        if (val === undefined || val === null || val === '') continue
+        const tokens = buildSpecialParameterTokens(sp, val)
+        if (!tokens) continue
+        output.codecArgs.push({
+          id: `codec.special.${configKey}`,
+          originId: sp.id,
+          phase: sp.commandBinding.phase,
+          tokens,
+          explanationId: sp.explanationId,
+        })
       }
     }
   }
@@ -317,6 +324,25 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
           originId: 'audio.sampleRate',
           phase: 'AUDIO_QUALITY',
           tokens: ['-ar', String(config.audio.sampleRate)],
+        })
+      }
+
+      // 音频特殊参数同样通过目录定义生成，确保界面、配置和命令使用同一绑定。
+      for (const sp of aEncoder.specialParameters) {
+        if (!sp.commandBinding) continue
+        const configKey = sp.configBinding?.path
+          ? extractConfigKey(sp.configBinding.path)
+          : sp.id
+        const val = config.audio.qualityValues[configKey] ?? sp.defaultValue
+        if (val === undefined || val === null || val === '') continue
+        const tokens = buildSpecialParameterTokens(sp, val)
+        if (!tokens) continue
+        output.audioArgs.push({
+          id: `audio.special.${configKey}`,
+          originId: sp.id,
+          phase: sp.commandBinding.phase,
+          tokens,
+          explanationId: sp.explanationId,
         })
       }
     }
@@ -405,6 +431,39 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
   }
 
   return output
+}
+
+/**
+ * 将目录控件值转换成 FFmpeg 参数。布尔开关需要恢复为编码器接受的
+ * on/off 或 1/0，避免把界面布尔值直接输出成 true/false。
+ */
+function buildSpecialParameterTokens(
+  control: ControlDefinition,
+  value: unknown,
+): string[] | null {
+  const binding = control.commandBinding
+  if (!binding) return null
+  const prefix = binding.prefix ?? binding.argName
+
+  if (control.control !== 'switch') {
+    return [prefix, String(value)]
+  }
+
+  if (binding.compact) {
+    return value ? [prefix] : null
+  }
+
+  if (typeof value !== 'boolean') {
+    return [prefix, String(value)]
+  }
+
+  const optionValues = control.options?.map((option) => option.value) ?? []
+  if (value) {
+    const enabledValue = optionValues.includes('on') ? 'on' : 1
+    return [prefix, String(enabledValue)]
+  }
+  const disabledValue = optionValues.includes('off') ? 'off' : 0
+  return [prefix, String(disabledValue)]
 }
 
 /**

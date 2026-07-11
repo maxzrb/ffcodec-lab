@@ -1,5 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
-import { CONFIG_PATHS } from '../../../domain/config/config-path'
+import { CONFIG_PATHS, audioQualityValuePath } from '../../../domain/config/config-path'
 
 export const libopus: EncoderDefinition = {
   id: 'libopus',
@@ -106,6 +106,7 @@ export const libopus: EncoderDefinition = {
       id: 'libopus.vbr',
       label: 'VBR 开关',
       control: 'switch',
+      configBinding: { path: audioQualityValuePath('vbr') },
       commandBinding: { argName: '-vbr', prefix: '-vbr', phase: 'AUDIO_CODEC' },
       options: [
         { value: 'on', label: '开启 VBR' },
@@ -119,6 +120,7 @@ export const libopus: EncoderDefinition = {
       id: 'libopus.application',
       label: '编码应用类型',
       control: 'select',
+      configBinding: { path: audioQualityValuePath('application') },
       commandBinding: { argName: '-application', prefix: '-application', phase: 'AUDIO_CODEC' },
       options: [
         { value: 'audio', label: 'audio — 音乐', description: '适合音乐内容' },
@@ -132,6 +134,7 @@ export const libopus: EncoderDefinition = {
       id: 'libopus.frame_duration',
       label: '帧时长 (frame_duration)',
       control: 'select',
+      configBinding: { path: audioQualityValuePath('frameDuration') },
       commandBinding: { argName: '-frame_duration', prefix: '-frame_duration', phase: 'AUDIO_CODEC' },
       options: [
         { value: 2.5, label: '2.5 ms' },

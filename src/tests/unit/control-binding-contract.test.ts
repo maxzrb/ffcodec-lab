@@ -62,6 +62,14 @@ describe('Control Binding Contract', () => {
     }
   })
 
+  it('every special parameter has a configBinding', () => {
+    for (const enc of [...Object.values(catalog.encoders.video), ...Object.values(catalog.encoders.audio)]) {
+      for (const specialParameter of enc.specialParameters) {
+        expect(specialParameter.configBinding, `${enc.id}/${specialParameter.id}`).toBeDefined()
+      }
+    }
+  })
+
   it('all bound controls have valid config paths', () => {
     for (const { control } of boundControls) {
       const path = control.configBinding!.path

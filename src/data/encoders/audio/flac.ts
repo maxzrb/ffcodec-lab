@@ -1,4 +1,5 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+import { audioQualityValuePath } from '../../../domain/config/config-path'
 
 export const flac: EncoderDefinition = {
   id: 'flac',
@@ -35,6 +36,7 @@ export const flac: EncoderDefinition = {
       id: 'flac.compression_level',
       label: '压缩级别 (compression_level)',
       control: 'select',
+      configBinding: { path: audioQualityValuePath('compressionLevel') },
       commandBinding: { argName: '-compression_level', prefix: '-compression_level', phase: 'AUDIO_CODEC' },
       options: [
         { value: 0, label: '0 — 最快 (无压缩)' },
@@ -51,6 +53,7 @@ export const flac: EncoderDefinition = {
       id: 'flac.sampleFormat',
       label: '采样格式 (sample_fmt)',
       control: 'select',
+      configBinding: { path: audioQualityValuePath('sampleFormat') },
       commandBinding: { argName: '-sample_fmt', prefix: '-sample_fmt', phase: 'AUDIO_CODEC' },
       options: [
         { value: 'auto', label: '自动' },
