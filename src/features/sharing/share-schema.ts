@@ -91,6 +91,7 @@ export const shareableConfigSchema = z.object({
   m: z.object({
     videoStreamIndexes: z.array(z.number().int().nonnegative()),
     audioStreamIndexes: z.array(z.number().int().nonnegative()),
+    subtitleStreamIndexes: z.array(z.number().int().nonnegative()),
     preserveOtherVideoStreams: z.boolean(),
     preserveOtherAudioStreams: z.boolean(),
     preserveOtherSubtitleStreams: z.boolean(),

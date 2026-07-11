@@ -402,7 +402,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     })
   })
 
-  it('视频和音频流索引支持分别多选', async () => {
+  it('视频、音频和字幕流索引支持分别多选', async () => {
     useBuilderStore.setState({
       expandedSections: {
         'section.input': true,
@@ -414,17 +414,24 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
         'section.customArgs': false,
       },
     })
+    // 关闭"保留全部字幕流"以启用字幕多选复选框
+    const store = useBuilderStore.getState()
+    store.setConfigValue('streams.preserveOtherSubtitleStreams', false)
     render(<BuilderPage />)
 
     const videoField = document.querySelector('[data-field-id="streams.videoStreamIndexes"]')!
     const audioField = document.querySelector('[data-field-id="streams.audioStreamIndexes"]')!
+    const subtitleField = document.querySelector('[data-field-id="streams.subtitleStreamIndexes"]')!
     const videoOptions = videoField.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
     const audioOptions = audioField.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+    const subtitleOptions = subtitleField.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
 
     await userEvent.click(videoOptions[2])
     await userEvent.click(audioOptions[1])
+    await userEvent.click(subtitleOptions[3])
 
     expect(useBuilderStore.getState().config.streams.videoStreamIndexes).toEqual([0, 2])
     expect(useBuilderStore.getState().config.streams.audioStreamIndexes).toEqual([0, 1])
+    expect(useBuilderStore.getState().config.streams.subtitleStreamIndexes).toEqual([0, 3])
   })
 })

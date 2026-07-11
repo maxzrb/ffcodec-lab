@@ -98,10 +98,16 @@ export function resolveInputSection(
       commandOrigins: ['streams.audioStreamIndexes'], diagnostics: [],
     },
     {
-      id: 'streams.subtitleStreamIndex', label: '字幕流索引', controlType: 'number',
-      value: config.streams.subtitleStreamIndex ?? 0, min: 0, max: 64, step: 1,
-      visible: true, disabled: false, sourceRefs: [], verificationLevel: 'project-derived',
-      needsCrossVerification: false, commandOrigins: [], diagnostics: [],
+      id: 'streams.subtitleStreamIndexes', label: '保留的字幕流索引', controlType: 'multiselect',
+      description: '可勾选多个相对字幕流索引；至少保留一项。开启"保留全部字幕流"时忽略此项。',
+      value: (config.streams.subtitleStreamIndexes.length > 0
+        ? config.streams.subtitleStreamIndexes
+        : [config.streams.subtitleStreamIndex ?? 0]),
+      options: streamIndexOptions,
+      visible: true, disabled: config.streams.preserveOtherSubtitleStreams,
+      disabledReason: config.streams.preserveOtherSubtitleStreams ? '已选择保留全部字幕流' : undefined,
+      sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
+      commandOrigins: ['streams.subtitleStreamIndexes'], diagnostics: [],
     },
     preserveVideoField,
     preserveAudioField,

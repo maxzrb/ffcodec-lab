@@ -44,6 +44,9 @@ export interface StreamSelectionConfig {
   videoStreamIndex?: number
   /** 旧配置兼容字段；新界面使用 audioStreamIndexes。 */
   audioStreamIndex?: number
+  /** 要保留的相对字幕流索引，例如 [0, 2] 对应 0:s:0 与 0:s:2。 */
+  subtitleStreamIndexes: number[]
+  /** 旧配置兼容字段；新界面使用 subtitleStreamIndexes。 */
   subtitleStreamIndex?: number
   preserveOtherVideoStreams: boolean
   preserveOtherAudioStreams: boolean

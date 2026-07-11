@@ -31,6 +31,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
     streams: {
       videoStreamIndexes: [0],
       audioStreamIndexes: [0],
+      subtitleStreamIndexes: [0],
       preserveOtherVideoStreams: false,
       preserveOtherAudioStreams: false,
       preserveOtherSubtitleStreams: true,

@@ -34,6 +34,7 @@ describe('成品功能闭环', () => {
     const config = createDefaultProjectConfig()
     config.streams.videoStreamIndexes = [0, 2]
     config.streams.audioStreamIndexes = [0, 1, 3]
+    config.streams.subtitleStreamIndexes = [0, 1]
     config.streams.preserveOtherSubtitleStreams = false
     const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
     expect(tokens.filter((token) => token === '0:v:0?')).toHaveLength(1)
@@ -41,6 +42,8 @@ describe('成品功能闭环', () => {
     expect(tokens).toContain('0:a:0?')
     expect(tokens).toContain('0:a:1?')
     expect(tokens).toContain('0:a:3?')
+    expect(tokens).toContain('0:s:0?')
+    expect(tokens).toContain('0:s:1?')
   })
 
   it('可独立选择保留全部视频、音频或字幕流', () => {
@@ -82,6 +85,7 @@ describe('成品功能闭环', () => {
     config.frame.filters!.crop.width = 1280
     config.streams.videoStreamIndexes = [0, 2]
     config.streams.audioStreamIndexes = [1]
+    config.streams.subtitleStreamIndexes = [0, 3]
 
     const encoded = encodeConfigToShare(config)
     expect(encoded.kind).toBe('hash')
@@ -92,5 +96,6 @@ describe('成品功能闭环', () => {
     expect(decoded.config?.frame.filters?.crop.width).toBe(1280)
     expect(decoded.config?.streams.videoStreamIndexes).toEqual([0, 2])
     expect(decoded.config?.streams.audioStreamIndexes).toEqual([1])
+    expect(decoded.config?.streams.subtitleStreamIndexes).toEqual([0, 3])
   })
 })

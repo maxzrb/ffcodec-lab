@@ -71,6 +71,7 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
     m: {
       videoStreamIndexes: config.streams.videoStreamIndexes,
       audioStreamIndexes: config.streams.audioStreamIndexes,
+      subtitleStreamIndexes: config.streams.subtitleStreamIndexes,
       preserveOtherVideoStreams: config.streams.preserveOtherVideoStreams,
       preserveOtherAudioStreams: config.streams.preserveOtherAudioStreams,
       preserveOtherSubtitleStreams: config.streams.preserveOtherSubtitleStreams,
@@ -95,6 +96,7 @@ export function fromShareable(
     streams: shareable.m ?? {
       videoStreamIndexes: [0],
       audioStreamIndexes: [0],
+      subtitleStreamIndexes: [0],
       preserveOtherVideoStreams: false,
       preserveOtherAudioStreams: false,
       preserveOtherSubtitleStreams: true,

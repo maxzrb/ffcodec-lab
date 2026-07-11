@@ -158,6 +158,7 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
     || config.streams.audioStreamIndexes.length > 0
     || config.streams.videoStreamIndex !== undefined
     || config.streams.audioStreamIndex !== undefined
+    || config.streams.subtitleStreamIndexes.length > 0
     || config.streams.subtitleStreamIndex !== undefined
     || config.streams.preserveOtherVideoStreams
     || config.streams.preserveOtherAudioStreams
@@ -196,11 +197,21 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
         tokens: ['-map', selector],
       }))
     }
-    if (config.streams.preserveOtherSubtitleStreams || config.streams.subtitleStreamIndex !== undefined) {
-      const subtitleSelector = config.streams.preserveOtherSubtitleStreams
-        ? '0:s?'
-        : `0:s:${config.streams.subtitleStreamIndex ?? 0}?`
-      output.maps.push({ id: 'map.subtitle.input', originId: 'streams.subtitleStreamIndex', phase: 'MAP', tokens: ['-map', subtitleSelector] })
+    if (config.streams.preserveOtherSubtitleStreams || config.streams.subtitleStreamIndexes.length > 0 || config.streams.subtitleStreamIndex !== undefined) {
+      const subtitleIndexes = config.streams.subtitleStreamIndexes.length > 0
+        ? config.streams.subtitleStreamIndexes
+        : [config.streams.subtitleStreamIndex ?? 0]
+      const selectors = config.streams.preserveOtherSubtitleStreams
+        ? ['0:s?']
+        : subtitleIndexes.map((index) => `0:s:${index}?`)
+      selectors.forEach((selector, index) => output.maps.push({
+        id: `map.subtitle.${index}`,
+        originId: config.streams.preserveOtherSubtitleStreams
+          ? 'streams.preserveOtherSubtitleStreams'
+          : 'streams.subtitleStreamIndexes',
+        phase: 'MAP',
+        tokens: ['-map', selector],
+      }))
     }
   }
 
