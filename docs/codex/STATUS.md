@@ -1,12 +1,13 @@
 # Project Status
 
-Last updated: 2026-07-11 21:46
-Updated by: Codex (GPT-5)
+Last updated: 2026-07-11 23:02
+Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: 发布 v0.5.1 稳定性与易用性更新
-- Current state: v0.5.1 代码和本地验收完成；自定义参数崩溃、音频选项、流保留策略、默认命令显示和亮暗主题均已完成，302 项测试、目录审计 0/0、10/10 验收配置通过，待提交并更新私有站点。
+- Current objective: v0.5.2 容器/扩展名双向同步与多流索引多选 — 本地稳定提交
+- Current state: v0.5.2 已提交为 `cbb1c8d`，working tree clean。容器切换自动同步输出扩展名、输入已知扩展名反向同步容器、视频与音频各 0-15 多选索引复选框并为每个选中流生成独立 -map、分享 m 字段携带流选择配置、307 项测试全部通过、10/10 验收通过。
+- Next objective: 全量质量巡检后继续功能迭代或发布准备
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -41,12 +42,19 @@ Updated by: Codex (GPT-5)
   - Status: 已完成并发布 Sites 私有站点版本 2
   - Notes/blockers: 应用内浏览器仍无可用实例；297 项测试包含正式页面 RTL 与全字段写入契约，真实浏览器视觉巡检保留为环境限制
 
+- [x] v0.5.2 容器/扩展名双向同步与多流索引多选
+  - Owner: Claude Code
+  - Status: 已完成并提交 `cbb1c8d`，本地稳定点
+  - Notes/blockers: 无阻断；不部署到 Sites，仅本地提交
+
 - [ ] v0.5.1 稳定性与易用性更新
   - Owner: Codex
   - Status: 代码与本地验收完成，待 Git 提交和 Sites 重新发布
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
+
+- 2026-07-11 23:02: v0.5.2 容器/扩展名双向同步与多流索引多选 — 307/307 测试、0/0 审计、10/10 验收
 
 - 2026-07-10 18:00: v0.4.1 热修复 — 修复正式 BuilderPage specialParameters checkbox 交互、统一 configBinding 读写路径、移除 Playwright、新增 6 个 RTL 集成测试
 
@@ -113,31 +121,32 @@ Updated by: Codex (GPT-5)
 ## Verification And Commands
 
 - Commands run:
-  - `npm run check`: 全部通过
+  - `npm run check`: 全部通过 (ESLint 0/0, tsc 0, vitest 307/307, audit 0/0, build OK)
   - `npx tsc -b --noEmit`: 0 errors, 类型检查通过
-  - `npx vitest run`: 255/255 tests passed (15 文件)
+  - `npx vitest run`: 307/307 tests passed (19 文件)
   - `npx tsx scripts/validate-catalog.ts`: 0 errors, 0 warnings
-  - `npx vite build`: 成功 (263KB JS, 1.3KB CSS)
+  - `npx vite build`: 成功 (448KB JS, 16KB CSS)
   - `npx tsx scripts/acceptance-test.ts`: 10/10 验收配置通过
-  - `npm install --save-dev @types/node`: installed
 - Tests/checks:
   - rules.test.ts: 17 tests — 规则表达式求值 + R01-R15 不变量
-  - command.test.ts: 11 tests — 命令构建 + 快照 + 不变量 (originId, -vf 唯一性, 转义)
-  - normalizer.test.ts: 5 tests — preset/profile/quality 切换
+  - command.test.ts: 12 tests — 命令构建 + 快照 + 不变量 (originId, -vf 唯一性, 转义)
+  - normalizer.test.ts: 7 tests — preset/profile/quality 切换 + 容器/扩展名双向同步
   - presentation.test.ts: 25 tests — 字段解析、section构建、builder view集成、command origin映射
   - presets.test.ts: 18 tests — CRUD、导入导出、Zod验证、schema migration、内置预设
-- React Testing Library: 6/6 正式 BuilderPage 复选框交互通过
+- React Testing Library: 13/13 正式 BuilderPage 交互通过（含新增 2 项容器切换 + 多选复选框）
+- 新增 normalizer 测试: 容器→扩展名同步、扩展名→容器反向同步
+- 新增 product-completion 测试: 多流 map 生成、分享含流索引
 
 ## Git Sync
 
 - Git repository: yes
 - Branch: feat/v0.5.0-product
-- Last known commit: fa3dc9c (v0.5.0 closeout)
+- Last known commit: cbb1c8d (v0.5.2)
 - Remote: `https://github.com/maxzrb/FFCodec-Lab.git`
-- Sync: `git pull origin master` 已确认 Already up to date；本地 master 比 origin/master 领先 12 个提交
-- Uncommitted changes: v0.5.1 代码、测试、文档和状态记录待提交
-- Working tree clean: no
-- Commit recommended before switching agents/devices: YES
+- Sync: `git pull origin master` failed (no tracking), branch has no upstream
+- Uncommitted changes: STATUS.md 和版本记录更新（本次 closeout）
+- Working tree clean: yes (v0.5.2 已提交)
+- Commit recommended before switching agents/devices: STATUS.md 更新后建议 amend 或单独提交
 
 ## Session Log
 
@@ -671,3 +680,56 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 应用内浏览器仍无可用实例，未执行截图巡检
 - Git status: branch feat/v0.5.0-product，v0.5.1 变更待提交，working tree not clean
 - Next step: 提交 v0.5.1，推送站点专用仓库并部署新私有版本
+
+### 2026-07-11 23:02 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: v0.5.2 容器/扩展名双向同步 + 多流索引多选复选框，全量检查并整理为本地稳定提交
+- Work completed:
+  1. **容器 ↔ 扩展名双向同步** (`normalize-config.ts`):
+     - 切换输出容器 → 自动替换输出文件扩展名（`replaceOutputExtension`）
+     - 修改输出路径扩展名 → 反向匹配容器并同步（`getOutputExtension`）
+     - 兼容 Windows 与 POSIX 路径分隔符
+     - 已知扩展名：mp4/mkv/webm/mov/ogg/avi/ts/flv/m4a/mp3/wav/flac
+  2. **多流索引多选复选框** (`project-config.ts` + `resolve-section.ts` + `ParameterField.tsx`):
+     - 新增 `videoStreamIndexes: number[]` 和 `audioStreamIndexes: number[]` 字段
+     - 保留旧 `videoStreamIndex`/`audioStreamIndex` 兼容字段
+     - 0-15 共 16 个复选框，8 列网格布局（移动端 4 列）
+     - 至少保留一项不可取消，开启"保留全部"时自动禁用
+     - `apply-field-change.ts` 新增 `multiselect` coerceValue
+  3. **命令构建器多 map** (`command-builder.ts`):
+     - 每个 `videoStreamIndexes` 生成独立 `-map 0:v:N?`
+     - 每个 `audioStreamIndexes` 生成独立 `-map 0:a:N?`
+     - originId 正确指向 `streams.videoStreamIndexes` / `streams.audioStreamIndexes`
+     - 保留全部流时仍使用 `0:v?` / `0:a?`
+  4. **分享配置扩展** (`share-codec.ts` + `share-schema.ts`):
+     - 新增可选 `m` 字段携带流选择配置（videoStreamIndexes, audioStreamIndexes, preserve flags）
+     - 向后兼容：旧分享无 `m` 字段时使用默认值 `[0]`
+  5. **测试** (+5 new, 307/307 total):
+     - normalizer.test.ts: 容器同步扩展名 + 扩展名反向同步容器
+     - builder-checkboxes.test.tsx: 容器切换 UI + 多选复选框交互
+     - product-completion.test.ts: 多 map 生成 + 分享含流索引
+  6. **验收**: 10/10 通过，mvp-acceptance.md 已刷新
+- Files changed: 16 files, +303/-21 lines
+  - Modified: command-builder.ts, config-path.ts, config-schema.ts, defaults.ts, project-config.ts, normalize-config.ts, apply-field-change.ts, resolve-section.ts, share-codec.ts, share-schema.ts, index.css, ParameterField.tsx
+  - Modified tests: normalizer.test.ts, builder-checkboxes.test.tsx, product-completion.test.ts
+  - Modified docs: mvp-acceptance.md
+- Commands run:
+  - `npm run check`: ALL PASSED (ESLint 0/0, tsc 0, vitest 307/307, audit 0/0, build 448KB JS + 16KB CSS)
+  - `npx tsx scripts/acceptance-test.ts`: 10/10 passed
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 307/307 passed (19 files, +5 from v0.5.1)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 447.83 KB JS + 16.27 KB CSS
+  - Acceptance: 10/10 passed
+  - 原有 302 测试 0 弱化/删除
+- Decisions/risks:
+  - 新字段 `videoStreamIndexes`/`audioStreamIndexes` 与旧 `videoStreamIndex`/`audioStreamIndex` 共存 — 新 UI 写新字段，command-builder 优先读新字段
+  - 至少保留一项的设计防止用户误生成无流映射命令
+  - 分享 m 字段为 optional，维持与已发布 URL 的兼容性
+  - 不部署到 Sites，此提交作为本地稳定点
+  - 应用内浏览器仍无可用实例，UI 交互由 RTL 集成测试覆盖
+- Environment notes: Node.js v24.18.0, Windows 11
+- Git status: committed `cbb1c8d`, working tree clean (STATUS.md 待提交)
+- Next step: 全量质量巡检；若通过可考虑合并到 master 或继续功能迭代
