@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { ResolvedSection } from '../../../domain/presentation/resolved-field'
+import type { ReactNode } from 'react'
 import { ParameterField } from './ParameterField'
 
 interface ParameterSectionProps {
@@ -12,6 +13,7 @@ interface ParameterSectionProps {
   onFieldChange: (fieldId: string, value: unknown) => void
   onExplain: (fieldId: string) => void
   highlightedFieldId?: string
+  actions?: ReactNode
 }
 
 export function ParameterSection({
@@ -21,49 +23,30 @@ export function ParameterSection({
   onFieldChange,
   onExplain,
   highlightedFieldId,
+  actions,
 }: ParameterSectionProps) {
   return (
-    <div
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)',
-        marginBottom: 12,
-        overflow: 'hidden',
-      }}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        style={{
-          width: '100%',
-          padding: '10px 16px',
-          background: 'var(--bg-input)',
-          border: 'none',
-          borderBottom: expanded ? '1px solid var(--border)' : 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontSize: 14,
-          fontWeight: 600,
-          color: 'var(--text)',
-          textAlign: 'left',
-        }}
-      >
-        <span style={{ fontSize: 10, transition: 'transform 0.2s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-          ▶
-        </span>
-        {section.label}
-        {section.description && (
-          <span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400 }}>
-            — {section.description}
+    <section className="parameter-section">
+      <div className="parameter-section__header">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="parameter-section__toggle"
+          aria-expanded={expanded}
+        >
+          <span className={`parameter-section__chevron ${expanded ? 'parameter-section__chevron--open' : ''}`} aria-hidden="true">
+            ▶
           </span>
-        )}
-      </button>
+          <span className="parameter-section__title">{section.label}</span>
+          {section.description && (
+            <span className="parameter-section__description">— {section.description}</span>
+          )}
+        </button>
+        {actions && <div className="parameter-section__actions">{actions}</div>}
+      </div>
 
       {expanded && (
-        <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="parameter-section__body">
           {section.fields.map((field) => (
             <ParameterField
               key={field.id}
@@ -75,6 +58,6 @@ export function ParameterSection({
           ))}
         </div>
       )}
-    </div>
+    </section>
   )
 }

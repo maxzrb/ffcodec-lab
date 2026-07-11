@@ -12,45 +12,20 @@ interface ExplanationPanelProps {
 
 export function ExplanationPanel({ explanation, onClose }: ExplanationPanelProps) {
   return (
-    <div
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--accent)',
-        borderRadius: 'var(--radius)',
-        marginBottom: 12,
-        overflow: 'hidden',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 14px',
-          background: 'var(--bg-input)',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
-        <h3 style={{ fontSize: 14, margin: 0 }}>{explanation.title}</h3>
+    <section className="explanation-card">
+      <div className="explanation-card__header">
+        <h3>{explanation.title}</h3>
         <button
           type="button"
           onClick={onClose}
-          style={{
-            fontSize: 16,
-            padding: '2px 8px',
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-dim)',
-            cursor: 'pointer',
-          }}
+          className="icon-button"
+          aria-label="关闭参数说明"
         >
           ✕
         </button>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: 14, fontSize: 13, lineHeight: 1.6 }}>
+      <div className="explanation-card__body">
         <p style={{ margin: '0 0 8px' }}>{explanation.short}</p>
 
         {explanation.detail && (
@@ -120,7 +95,7 @@ export function ExplanationPanel({ explanation, onClose }: ExplanationPanelProps
           </div>
         )}
       </div>
-    </div>
+    </section>
   )
 }
 

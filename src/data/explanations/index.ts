@@ -1789,4 +1789,100 @@ export const explanations: Record<string, ExplanationDefinition> = {
       { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-10', file: 'libavcodec/qsvenc.c', sourceType: 'ffmpeg-official' },
     ],
   },
+
+  'expl.amf.encoder': {
+    id: 'expl.amf.encoder', title: 'AMD AMF 硬件编码器',
+    short: '通过 AMD Advanced Media Framework 执行 H.264 或 HEVC 硬件编码。',
+    detail: '可用性取决于 AMD GPU、驱动与 FFmpeg 构建；网页只生成命令，不检测本机硬件。',
+    effects: { quality: 3, fileSize: 3, speed: 5, compatibility: 3 },
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/doxygen/trunk/amfenc__h264_8c_source.html' }],
+  },
+  'expl.amf.preset': {
+    id: 'expl.amf.preset', title: 'AMF 质量预设', short: '在编码速度与压缩质量之间选择 speed、balanced 或 quality。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.profile': {
+    id: 'expl.amf.profile', title: 'AMF 编码配置', short: '选择 H.264 或 HEVC 码流配置；10-bit HEVC 应配合 Main 10 与 P010。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c / amfenc_hevc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.usage': {
+    id: 'expl.amf.usage', title: 'AMF 使用场景', short: '按通用转码、高质量或低延迟场景调整编码器内部策略。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.pixfmt': {
+    id: 'expl.amf.pixfmt', title: 'AMF 像素格式', short: 'NV12 适合 8-bit 硬件路径；P010 用于受支持的 10-bit HEVC 路径。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.vbr': {
+    id: 'expl.amf.vbr', title: 'AMF VBR Peak', short: '使用峰值约束的可变码率，目标码率控制平均体积，maxrate 限制瞬时峰值。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.cbr': {
+    id: 'expl.amf.cbr', title: 'AMF CBR', short: '面向带宽稳定的恒定码率模式。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.cqp': {
+    id: 'expl.amf.cqp', title: 'AMF CQP', short: '分别为 I、P、B 帧设置固定量化参数；数值越低，质量和体积通常越高。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.qp': {
+    id: 'expl.amf.qp', title: 'AMF 帧类型 QP', short: 'AMF 的 qp_i、qp_p、qp_b 范围为 0–51。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.bitrate': {
+    id: 'expl.amf.bitrate', title: 'AMF 码率约束', short: '目标码率、峰值码率和缓冲区共同约束 AMF 码率控制。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.vbaq': {
+    id: 'expl.amf.vbaq', title: 'VBAQ', short: '启用基于方差的自适应量化；是否受支持取决于 AMF 驱动与硬件。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.preencode': {
+    id: 'expl.amf.preencode', title: '预编码分析', short: '启用预编码辅助码率控制，可能提高分析开销与延迟。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.amf.asyncdepth': {
+    id: 'expl.amf.asyncdepth', title: 'AMF 异步深度', short: '控制最大编码并行度；较高值可能提高吞吐并增加延迟。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/amfenc_h264.c', sourceType: 'ffmpeg-official' }],
+  },
+
+  'expl.videotoolbox.encoder': {
+    id: 'expl.videotoolbox.encoder', title: 'Apple VideoToolbox 编码器',
+    short: '调用 macOS VideoToolbox 执行 H.264 或 HEVC 编码。',
+    detail: '实际硬件加速和可用选项取决于 Apple 设备、macOS 版本与 FFmpeg 构建。',
+    effects: { quality: 3, fileSize: 3, speed: 5, compatibility: 3 },
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/doxygen/trunk/videotoolboxenc_8c_source.html' }],
+  },
+  'expl.videotoolbox.profile': {
+    id: 'expl.videotoolbox.profile', title: 'VideoToolbox 编码配置', short: '选择硬件与目标设备支持的 H.264/HEVC profile。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.videotoolbox.pixfmt': {
+    id: 'expl.videotoolbox.pixfmt', title: 'VideoToolbox 像素格式', short: 'H.264 支持 NV12/YUV420P；HEVC 还可在受支持设备上使用 P010 10-bit。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.videotoolbox.vbr': {
+    id: 'expl.videotoolbox.vbr', title: 'VideoToolbox 平均码率', short: '通过 -b:v 设置平均码率，由 VideoToolbox 分配帧间码率。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.videotoolbox.cbr': {
+    id: 'expl.videotoolbox.cbr', title: 'VideoToolbox 恒定码率', short: '通过 constant_bit_rate 请求恒定码率；该选项要求 macOS 13 或更新版本。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.videotoolbox.bitrate': {
+    id: 'expl.videotoolbox.bitrate', title: 'VideoToolbox 目标码率', short: '设置编码目标码率，适合可预测文件体积或传输带宽。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.videotoolbox.realtime': {
+    id: 'expl.videotoolbox.realtime', title: '实时编码提示', short: '提示编码器以实时或更快速度处理，适合采集与直播场景。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.videotoolbox.allow_sw': {
+    id: 'expl.videotoolbox.allow_sw', title: '允许软件回退', short: '硬件编码不可用时允许 VideoToolbox 使用软件实现；速度与能力可能不同。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.videotoolbox.power': {
+    id: 'expl.videotoolbox.power', title: '节能优先', short: '在系统支持时优先选择更节能的编码路径。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
+  },
 }

@@ -26,4 +26,5 @@ export {
 export { resolveBuilderView } from './resolve-builder-view'
 
 export { applyFieldChange } from './apply-field-change'
+export { applyFieldChangeToConfig } from './apply-field-change'
 export type { FieldChangeNotice, AppliedFieldChange } from './apply-field-change'

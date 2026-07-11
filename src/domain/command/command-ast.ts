@@ -35,6 +35,8 @@ export interface OutputSpec {
   subtitleArgs: CommandArg[]
   muxerArgs: CommandArg[]
   customArgs: CommandArg[]
+  /** 输出文件路径之后的危险自定义 token。 */
+  tailArgs?: CommandArg[]
   path: string
 }
 

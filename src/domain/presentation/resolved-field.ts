@@ -31,7 +31,7 @@ export interface ResolvedField {
   /** Optional help text */
   description?: string
   /** Control type for rendering */
-  controlType: 'select' | 'number' | 'text' | 'switch' | 'multiselect' | 'color' | 'section'
+  controlType: 'select' | 'number' | 'text' | 'textarea' | 'switch' | 'multiselect' | 'color' | 'section'
   /** Current value from ProjectConfig */
   value: unknown
   /** Default value from catalog */

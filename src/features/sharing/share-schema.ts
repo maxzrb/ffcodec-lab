@@ -5,7 +5,7 @@
 
 import { z } from 'zod'
 
-export const SHARE_PAYLOAD_VERSION = 1
+export const SHARE_PAYLOAD_VERSION = 2
 
 /** Privacy-safe config subset: no input path, output path, or external subtitle paths */
 export const shareableConfigSchema = z.object({
@@ -27,6 +27,7 @@ export const shareableConfigSchema = z.object({
     profile: z.string().optional(),
     tune: z.string().optional(),
     pixelFormat: z.string().optional(),
+    specialParameters: z.record(z.unknown()).default({}),
   }),
   f: z.object({
     resolution: z.discriminatedUnion('mode', [
@@ -39,6 +40,19 @@ export const shareableConfigSchema = z.object({
       z.object({ mode: z.literal('source') }),
       z.object({ mode: z.literal('value'), value: z.number() }),
     ]),
+    filters: z.object({
+      crop: z.object({ enabled: z.boolean(), width: z.number(), height: z.number(), x: z.number(), y: z.number() }),
+      transform: z.object({
+        rotate: z.enum(['none', 'clockwise', 'counterclockwise', '180']),
+        horizontalFlip: z.boolean(),
+        verticalFlip: z.boolean(),
+      }),
+      adjustment: z.object({
+        enabled: z.boolean(), brightness: z.number(), contrast: z.number(), saturation: z.number(), gamma: z.number(),
+      }),
+      deinterlace: z.object({ enabled: z.boolean(), mode: z.enum(['send_frame', 'send_field']), parity: z.enum(['auto', 'tff', 'bff']) }),
+      sharpen: z.object({ enabled: z.boolean(), amount: z.number() }),
+    }).optional(),
   }),
   a: z.object({
     mode: z.enum(['encode', 'copy', 'disabled']),
@@ -46,6 +60,7 @@ export const shareableConfigSchema = z.object({
     bitrate: z.string().optional(),
     channelLayout: z.string().optional(),
     sampleRate: z.number().optional(),
+    qualityValues: z.record(z.unknown()).default({}),
   }),
   s: z.object({
     tracks: z.array(z.object({

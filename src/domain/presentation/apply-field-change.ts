@@ -10,7 +10,11 @@
 // ============================================================
 
 import type { ConfigPath } from '../config/config-path'
+import type { ProjectConfig } from '../config/project-config'
+import type { Catalog } from '../catalog/catalog-types'
 import type { ResolvedField } from './resolved-field'
+import { setByPath } from '../../utils/object-path'
+import { normalizeConfig } from '../normalization'
 
 // -- types ------------------------------------------------------
 
@@ -104,6 +108,38 @@ export function applyFieldChange(
   }
 }
 
+/**
+ * 将一次正式页面字段操作应用到完整配置，并执行编码器切换规范化。
+ * React 只提交字段 ID 与值，不解析配置路径或复制业务规则。
+ */
+export function applyFieldChangeToConfig(
+  previous: ProjectConfig,
+  fieldId: string,
+  nextValue: unknown,
+  fieldIndex: Record<string, ResolvedField>,
+  catalog: Catalog,
+): { config: ProjectConfig; change: AppliedFieldChange } {
+  const change = applyFieldChange(fieldId, nextValue, fieldIndex)
+  if (!change.accepted || !change.path) return { config: previous, change }
+
+  const next = setByPath(previous, change.path, change.value)
+  const normalized = normalizeConfig(previous, next, catalog)
+  return {
+    config: normalized.config,
+    change: {
+      ...change,
+      notices: [
+        ...change.notices,
+        ...normalized.notices.map((notice) => ({
+          code: 'NORMALIZED',
+          message: notice.reason,
+          originIds: [notice.fieldId],
+        })),
+      ],
+    },
+  }
+}
+
 // -- helpers ----------------------------------------------------
 
 function coerceValue(
@@ -111,6 +147,14 @@ function coerceValue(
   field: ResolvedField,
 ): { value: unknown; notice?: FieldChangeNotice } {
   switch (field.controlType) {
+    case 'textarea':
+      return {
+        value: String(value ?? '')
+          .split(/\r?\n/)
+          .map((token) => token.trim())
+          .filter(Boolean),
+      }
+
     case 'switch':
       // Ensure boolean
       if (typeof value !== 'boolean') {
@@ -125,7 +169,7 @@ function coerceValue(
       }
       return { value }
 
-    case 'number':
+    case 'number': {
       // Ensure number or undefined
       if (value === '' || value === null || value === undefined) {
         return { value: undefined }
@@ -167,6 +211,7 @@ function coerceValue(
         }
       }
       return { value: num }
+    }
 
     case 'select':
       // Ensure value is a valid option

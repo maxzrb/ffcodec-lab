@@ -1,7 +1,3 @@
-// ============================================================
-// ShellSelector — switch between Bash, PowerShell, and CMD.
-// ============================================================
-
 import type { ShellKind } from '../../../domain/config/project-config'
 
 interface ShellSelectorProps {
@@ -9,32 +5,24 @@ interface ShellSelectorProps {
   onChange: (shell: ShellKind) => void
 }
 
-const SHELL_OPTIONS: { value: ShellKind; label: string }[] = [
-  { value: 'bash', label: 'Bash / Zsh' },
+const shellOptions: { value: ShellKind; label: string }[] = [
+  { value: 'bash', label: 'Bash' },
   { value: 'powershell', label: 'PowerShell' },
-  { value: 'cmd', label: 'Windows CMD' },
+  { value: 'cmd', label: 'CMD' },
 ]
 
 export function ShellSelector({ value, onChange }: ShellSelectorProps) {
   return (
-    <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-      {SHELL_OPTIONS.map((opt) => (
+    <div className="shell-selector" role="group" aria-label="命令环境">
+      {shellOptions.map((option) => (
         <button
-          key={opt.value}
+          key={option.value}
           type="button"
-          onClick={() => onChange(opt.value)}
-          style={{
-            padding: '4px 14px',
-            fontSize: 12,
-            fontWeight: value === opt.value ? 600 : 400,
-            background: value === opt.value ? 'var(--accent)' : 'var(--bg-input)',
-            color: value === opt.value ? '#fff' : 'var(--text)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-          }}
+          onClick={() => onChange(option.value)}
+          className={`segmented-button ${value === option.value ? 'segmented-button--active' : ''}`}
+          aria-pressed={value === option.value}
         >
-          {opt.label}
+          {option.label}
         </button>
       ))}
     </div>

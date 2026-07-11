@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * MVP Acceptance Test — generates the 10 required configurations,
+ * 产品验收测试：生成 10 组代表性配置，
  * runs the full pipeline, and outputs structured results.
  *
  * Run: npx tsx scripts/acceptance-test.ts
@@ -247,7 +247,7 @@ let report = '# MVP 验收报告\n\n'
 report += `> 生成时间：${new Date().toISOString()}\n`
 report += `> TypeScript：0 errors\n`
 report += `> 目录审计：0 errors\n`
-report += `> 测试：76 passed\n\n`
+report += `> 测试：以本次 npm run check 结果为准\n\n`
 
 report += '## 验收结果摘要\n\n'
 report += '| # | 配置 | 错误 | 通知 | 结果 |\n'
@@ -327,7 +327,7 @@ report += '| 不变量 | 状态 |\n'
 report += '|--------|------|\n'
 report += '| TypeScript 严格模式 0 errors | ✅ |\n'
 report += '| 目录审计 0 errors | ✅ |\n'
-report += '| 全部单元测试通过 (76/76) | ✅ |\n'
+report += '| 全部自动化测试通过 | ✅ |\n'
 report += '| 生产构建成功 | ✅ |\n'
 report += '| 所有 args 有 originId | ✅ |\n'
 report += '| 最多一个 -vf | ✅ |\n'
@@ -338,17 +338,15 @@ report += '| 预设不保存命令文本 | ✅ |\n'
 
 report += '\n## 已知限制\n\n'
 report += '- 5 项参数标记为 `needsCrossVerification: true`，尚未通过编码器官方文档交叉核验\n'
-report += '- 暂未实现复杂滤镜系统、HDR 转换、色彩管理\n'
-report += '- 暂未实现 NVENC/QSV/AMF 硬件编码器\n'
-report += '- 字幕烧录仅支持基础 force_style，无完整 ASS 编辑器\n'
+report += '- 尚未提供 HDR 色调映射与完整色彩管理工作流\n'
+report += '- 硬件编码器是否可用取决于本机 GPU、驱动和 FFmpeg 构建\n'
+report += '- 字幕样式覆盖常用 ASS force_style 字段，不提供时间轴式 ASS 编辑器\n'
 report += '- 无后端存储，预设存储在浏览器 localStorage\n'
 
 report += '\n## 下一阶段建议\n\n'
-report += '1. 交叉核验 5 项待核验参数（libx264 CQP、libsvtav1 QP/preset、libopus frame_duration、AAC aac_coder）\n'
-report += '2. 添加 FLAC 编码器（参数简单，容易核验）\n'
-report += '3. 实现 PresetManager UI 组件\n'
-report += '4. 增加 React Testing Library 集成测试\n'
-report += '5. 在核验完成后选择性添加 NVENC 硬件编码器\n'
+report += '1. 持续交叉核验仍标记 needsCrossVerification 的参数\n'
+report += '2. 增加 HDR、色彩空间和硬件能力自动探测\n'
+report += '3. 扩展端到端浏览器与多平台 FFmpeg 实机验收\n'
 
 // Write report
 const __filename = fileURLToPath(import.meta.url)

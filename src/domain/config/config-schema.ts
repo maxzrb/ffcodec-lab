@@ -19,8 +19,42 @@ const frameRateSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('value'), value: z.number().positive() }),
 ])
 
+const advancedVideoFiltersSchema = z.object({
+  crop: z.object({
+    enabled: z.boolean(),
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    x: z.number().int().nonnegative(),
+    y: z.number().int().nonnegative(),
+  }),
+  transform: z.object({
+    rotate: z.enum(['none', 'clockwise', 'counterclockwise', '180']),
+    horizontalFlip: z.boolean(),
+    verticalFlip: z.boolean(),
+  }),
+  adjustment: z.object({
+    enabled: z.boolean(),
+    brightness: z.number().min(-1).max(1),
+    contrast: z.number().min(-2).max(2),
+    saturation: z.number().min(0).max(3),
+    gamma: z.number().min(0.1).max(10),
+  }),
+  deinterlace: z.object({
+    enabled: z.boolean(),
+    mode: z.enum(['send_frame', 'send_field']),
+    parity: z.enum(['auto', 'tff', 'bff']),
+  }),
+  sharpen: z.object({
+    enabled: z.boolean(),
+    amount: z.number().min(-2).max(5),
+  }),
+})
+
 const rateControlSchema = z.object({
-  mode: z.enum(['crf', 'vbr', 'cqp', 'cbr', 'twoPass', 'nvenc-cq']),
+  mode: z.enum([
+    'crf', 'vbr', 'cqp', 'cbr', 'twoPass', 'nvenc-cq',
+    'qsv-cqp', 'qsv-icq', 'qsv-la-icq', 'qsv-vbr', 'qsv-cbr', 'qsv-la-vbr',
+  ]),
   qualityValue: z.number().optional(),
   bitrate: z.string().optional(),
   minRate: z.string().optional(),
@@ -140,6 +174,13 @@ export const projectConfigSchema = z.object({
   frame: z.object({
     resolution: resolutionSchema,
     frameRate: frameRateSchema,
+    filters: advancedVideoFiltersSchema.default({
+      crop: { enabled: false, width: 1920, height: 1080, x: 0, y: 0 },
+      transform: { rotate: 'none', horizontalFlip: false, verticalFlip: false },
+      adjustment: { enabled: false, brightness: 0, contrast: 1, saturation: 1, gamma: 1 },
+      deinterlace: { enabled: false, mode: 'send_frame', parity: 'auto' },
+      sharpen: { enabled: false, amount: 1 },
+    }),
   }),
   audio: audioConfigSchema,
   subtitle: z.object({

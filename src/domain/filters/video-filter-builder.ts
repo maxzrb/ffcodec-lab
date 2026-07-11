@@ -1,172 +1,157 @@
 import type { ProjectConfig } from '../config/project-config'
 import type { CommandArg } from '../command/command-ast'
+import { createDefaultAdvancedVideoFilters } from '../config/defaults'
 
-// ============================================================
-// Contained video filter builder.
-// First version: only scale, framerate, subtitle burn.
-// Order: scale → framerate → subtitle burn → (reserved tail)
-// Produces at most ONE -vf parameter.
-// ============================================================
-
+// 所有画面处理都进入同一有序滤镜链，最终最多生成一个 -vf 参数。
 export type VideoFilterSpec =
-  | ScaleFilterSpec
-  | FrameRateFilterSpec
-  | SubtitleBurnFilterSpec
-  | CustomTailFilterSpec
+  | { type: 'yadif'; mode: 'send_frame' | 'send_field'; parity: 'auto' | 'tff' | 'bff' }
+  | { type: 'crop'; width: number; height: number; x: number; y: number }
+  | { type: 'scale'; width?: number; height?: number }
+  | { type: 'transpose'; direction: 'clock' | 'cclock' }
+  | { type: 'hflip' }
+  | { type: 'vflip' }
+  | { type: 'eq'; brightness: number; contrast: number; saturation: number; gamma: number }
+  | { type: 'unsharp'; amount: number }
+  | { type: 'fps'; fps: number }
+  | { type: 'subtitles' | 'ass'; filterString: string }
+  | { type: 'custom'; filterString: string }
 
-export interface ScaleFilterSpec {
-  type: 'scale'
-  width?: number
-  height?: number
-}
-
-export interface FrameRateFilterSpec {
-  type: 'fps'
-  fps: number
-}
-
-export interface SubtitleBurnFilterSpec {
-  type: 'subtitles' | 'ass'
-  /** Full filter string, e.g. "subtitles=sub.srt:force_style='...'" */
-  filterString: string
-}
-
-export interface CustomTailFilterSpec {
-  type: 'custom'
-  filterString: string
-}
-
-/**
- * Builds the ordered filter chain from config.
- * Returns empty array if no filters needed.
- */
+/** 按稳定顺序把配置转换为滤镜规格。 */
 export function buildVideoFilterChain(config: ProjectConfig): VideoFilterSpec[] {
   const chain: VideoFilterSpec[] = []
-
-  // Skip if video is not re-encoding
   if (config.video.mode !== 'encode') return chain
 
-  // 1. Scale
-  const res = config.frame.resolution
-  if (res.mode === 'size') {
-    chain.push({ type: 'scale', width: res.width, height: res.height })
-  } else if (res.mode === 'width') {
-    chain.push({ type: 'scale', width: res.width })
-  } else if (res.mode === 'height') {
-    chain.push({ type: 'scale', height: res.height })
+  const filters = config.frame.filters ?? createDefaultAdvancedVideoFilters()
+  if (filters.deinterlace.enabled) {
+    chain.push({
+      type: 'yadif',
+      mode: filters.deinterlace.mode,
+      parity: filters.deinterlace.parity,
+    })
   }
 
-  // 2. FPS
-  const fps = config.frame.frameRate
-  if (fps.mode === 'value') {
-    chain.push({ type: 'fps', fps: fps.value })
+  if (filters.crop.enabled) {
+    chain.push({ type: 'crop', ...filters.crop })
   }
 
-  // 3. Subtitle burn
+  const resolution = config.frame.resolution
+  if (resolution.mode === 'size') {
+    chain.push({ type: 'scale', width: resolution.width, height: resolution.height })
+  } else if (resolution.mode === 'width') {
+    chain.push({ type: 'scale', width: resolution.width })
+  } else if (resolution.mode === 'height') {
+    chain.push({ type: 'scale', height: resolution.height })
+  }
+
+  if (filters.transform.rotate === 'clockwise') {
+    chain.push({ type: 'transpose', direction: 'clock' })
+  } else if (filters.transform.rotate === 'counterclockwise') {
+    chain.push({ type: 'transpose', direction: 'cclock' })
+  } else if (filters.transform.rotate === '180') {
+    chain.push({ type: 'hflip' }, { type: 'vflip' })
+  }
+  if (filters.transform.horizontalFlip) chain.push({ type: 'hflip' })
+  if (filters.transform.verticalFlip) chain.push({ type: 'vflip' })
+
+  if (filters.adjustment.enabled) {
+    chain.push({ type: 'eq', ...filters.adjustment })
+  }
+  if (filters.sharpen.enabled) {
+    chain.push({ type: 'unsharp', amount: filters.sharpen.amount })
+  }
+
+  if (config.frame.frameRate.mode === 'value') {
+    chain.push({ type: 'fps', fps: config.frame.frameRate.value })
+  }
+
   if (config.subtitle.burn.enabled) {
-    const filterStr = buildSubtitleBurnFilter(config)
     chain.push({
       type: config.subtitle.burn.filterKind,
-      filterString: filterStr,
+      filterString: buildSubtitleBurnFilter(config),
     })
   }
 
   return chain
 }
 
-/**
- * Renders the filter chain into a single CommandArg (or null if empty).
- */
+/** 将滤镜规格渲染为一个可追溯的 CommandArg。 */
 export function renderFilterChain(
   chain: VideoFilterSpec[],
   originId: string,
 ): CommandArg | null {
   if (chain.length === 0) return null
 
-  const filterParts: string[] = []
-
-  for (const spec of chain) {
+  const parts = chain.map((spec) => {
     switch (spec.type) {
-      case 'scale': {
-        const w = spec.width ?? -2
-        const h = spec.height ?? -2
-        filterParts.push(`scale=${w}:${h}`)
-        break
-      }
-      case 'fps': {
-        filterParts.push(`fps=${spec.fps}`)
-        break
-      }
+      case 'yadif':
+        return `yadif=mode=${spec.mode}:parity=${spec.parity}:deint=all`
+      case 'crop':
+        return `crop=${spec.width}:${spec.height}:${spec.x}:${spec.y}`
+      case 'scale':
+        return `scale=${spec.width ?? -2}:${spec.height ?? -2}`
+      case 'transpose':
+        return `transpose=${spec.direction}`
+      case 'hflip':
+      case 'vflip':
+        return spec.type
+      case 'eq':
+        return `eq=brightness=${spec.brightness}:contrast=${spec.contrast}:saturation=${spec.saturation}:gamma=${spec.gamma}`
+      case 'unsharp':
+        return `unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=${spec.amount}`
+      case 'fps':
+        return `fps=${spec.fps}`
       case 'subtitles':
-      case 'ass': {
-        filterParts.push(spec.filterString)
-        break
-      }
-      case 'custom': {
-        filterParts.push(spec.filterString)
-        break
-      }
+      case 'ass':
+      case 'custom':
+        return spec.filterString
     }
-  }
+  })
 
   return {
     id: 'filter.vf',
     originId,
     phase: 'VIDEO_FILTER',
-    tokens: ['-vf', filterParts.join(',')],
+    tokens: ['-vf', parts.join(',')],
     explanationId: 'expl.filter.vf',
   }
 }
 
-/**
- * Builds the subtitle burn filter string from the burn config.
- */
+/** 根据字幕烧录配置构建 subtitles/ass 滤镜。 */
 function buildSubtitleBurnFilter(config: ProjectConfig): string {
   const burn = config.subtitle.burn
-  const filterKind = burn.filterKind // 'subtitles' or 'ass'
-
-  let source: string
+  let source = ''
   if (burn.source === 'internal' && burn.streamIndex !== undefined) {
     source = `si=${burn.streamIndex}`
   } else if (burn.source === 'external' && burn.externalPath) {
     source = `filename='${burn.externalPath}'`
-  } else {
-    source = ''
   }
 
-  let filterStr = `${filterKind}=${source}`
-
-  // Apply force_style if custom is provided — it overrides the style panel
+  let filterString = `${burn.filterKind}=${source}`
   if (burn.customForceStyle) {
-    filterStr += `:force_style='${burn.customForceStyle}'`
-  } else if (burn.customFilter) {
-    filterStr = burn.customFilter // fully custom overrides everything
-  } else {
-    const style: string[] = []
-    const s = burn.style
-    if (s.fontName) style.push(`FontName=${s.fontName}`)
-    if (s.fontSize) style.push(`FontSize=${s.fontSize}`)
-    if (s.bold) style.push('Bold=1')
-    if (s.italic) style.push('Italic=1')
-    if (s.underline) style.push('Underline=1')
-    if (s.strikeOut) style.push('StrikeOut=1')
-    if (s.primaryColor) style.push(`PrimaryColour=${s.primaryColor}`)
-    if (s.secondaryColor) style.push(`SecondaryColour=${s.secondaryColor}`)
-    if (s.outlineColor) style.push(`OutlineColour=${s.outlineColor}`)
-    if (s.backColor) style.push(`BackColour=${s.backColor}`)
-    if (s.borderStyle) style.push(`BorderStyle=${s.borderStyle}`)
-    if (s.outline !== undefined) style.push(`Outline=${s.outline}`)
-    if (s.shadow !== undefined) style.push(`Shadow=${s.shadow}`)
-    if (s.alignment) style.push(`Alignment=${s.alignment}`)
-    if (s.marginL !== undefined) style.push(`MarginL=${s.marginL}`)
-    if (s.marginR !== undefined) style.push(`MarginR=${s.marginR}`)
-    if (s.marginV !== undefined) style.push(`MarginV=${s.marginV}`)
-    if (s.spacing !== undefined) style.push(`Spacing=${s.spacing}`)
-
-    if (style.length > 0) {
-      filterStr += `:force_style='${style.join(',')}'`
-    }
+    return `${filterString}:force_style='${burn.customForceStyle}'`
   }
+  if (burn.customFilter) return burn.customFilter
 
-  return filterStr
+  const style: string[] = []
+  const value = burn.style
+  if (value.fontName) style.push(`FontName=${value.fontName}`)
+  if (value.fontSize) style.push(`FontSize=${value.fontSize}`)
+  if (value.bold) style.push('Bold=1')
+  if (value.italic) style.push('Italic=1')
+  if (value.underline) style.push('Underline=1')
+  if (value.strikeOut) style.push('StrikeOut=1')
+  if (value.primaryColor) style.push(`PrimaryColour=${value.primaryColor}`)
+  if (value.secondaryColor) style.push(`SecondaryColour=${value.secondaryColor}`)
+  if (value.outlineColor) style.push(`OutlineColour=${value.outlineColor}`)
+  if (value.backColor) style.push(`BackColour=${value.backColor}`)
+  if (value.borderStyle) style.push(`BorderStyle=${value.borderStyle}`)
+  if (value.outline !== undefined) style.push(`Outline=${value.outline}`)
+  if (value.shadow !== undefined) style.push(`Shadow=${value.shadow}`)
+  if (value.alignment) style.push(`Alignment=${value.alignment}`)
+  if (value.marginL !== undefined) style.push(`MarginL=${value.marginL}`)
+  if (value.marginR !== undefined) style.push(`MarginR=${value.marginR}`)
+  if (value.marginV !== undefined) style.push(`MarginV=${value.marginV}`)
+  if (value.spacing !== undefined) style.push(`Spacing=${value.spacing}`)
+  if (style.length > 0) filterString += `:force_style='${style.join(',')}'`
+  return filterString
 }

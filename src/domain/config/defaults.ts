@@ -1,4 +1,15 @@
-import type { ProjectConfig } from './project-config'
+import type { AdvancedVideoFiltersConfig, ProjectConfig } from './project-config'
+
+/** 为新配置或旧配置迁移创建独立的高级滤镜默认值。 */
+export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig {
+  return {
+    crop: { enabled: false, width: 1920, height: 1080, x: 0, y: 0 },
+    transform: { rotate: 'none', horizontalFlip: false, verticalFlip: false },
+    adjustment: { enabled: false, brightness: 0, contrast: 1, saturation: 1, gamma: 1 },
+    deinterlace: { enabled: false, mode: 'send_frame', parity: 'auto' },
+    sharpen: { enabled: false, amount: 1 },
+  }
+}
 
 /**
  * Produces the default ProjectConfig used when the app loads fresh.
@@ -39,6 +50,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
     frame: {
       resolution: { mode: 'source' },
       frameRate: { mode: 'source' },
+      filters: createDefaultAdvancedVideoFilters(),
     },
     audio: {
       mode: 'encode',

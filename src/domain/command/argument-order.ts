@@ -62,6 +62,18 @@ export function flattenInvocation(inv: CommandInvocation): OrderedToken[] {
   // Output path
   tokens.push({ text: inv.output.path, originId: 'output.path', argId: 'output.path' })
 
+  // 命令末尾参数必须位于输出路径之后，不能进入普通输出阶段排序。
+  for (const arg of inv.output.tailArgs ?? []) {
+    for (const token of arg.tokens) {
+      tokens.push({
+        text: token,
+        originId: arg.originId,
+        argId: arg.id,
+        unsafe: arg.unsafe,
+      })
+    }
+  }
+
   return tokens
 }
 

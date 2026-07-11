@@ -4,7 +4,9 @@
 // ============================================================
 
 import type { ProjectConfig } from '../config/project-config'
+import { createDefaultAdvancedVideoFilters } from '../config/defaults'
 import type { Catalog } from '../catalog/catalog-types'
+import type { SourceRef } from '../catalog/catalog-types'
 import type { FieldState } from '../rules/rule-types'
 import type { ResolvedField, ResolvedSection } from './resolved-field'
 import {
@@ -51,6 +53,36 @@ export function resolveInputSection(
       config.output.overwrite,
       fieldStates,
     ),
+    {
+      id: 'streams.videoStreamIndex', label: '视频流索引', controlType: 'number',
+      value: config.streams.videoStreamIndex ?? 0, min: 0, max: 64, step: 1,
+      visible: true, disabled: false, sourceRefs: [], verificationLevel: 'project-derived',
+      needsCrossVerification: false, commandOrigins: [], diagnostics: [],
+    },
+    {
+      id: 'streams.audioStreamIndex', label: '音频流索引', controlType: 'number',
+      value: config.streams.audioStreamIndex ?? 0, min: 0, max: 64, step: 1,
+      visible: true, disabled: false, sourceRefs: [], verificationLevel: 'project-derived',
+      needsCrossVerification: false, commandOrigins: [], diagnostics: [],
+    },
+    {
+      id: 'streams.subtitleStreamIndex', label: '字幕流索引', controlType: 'number',
+      value: config.streams.subtitleStreamIndex ?? 0, min: 0, max: 64, step: 1,
+      visible: true, disabled: false, sourceRefs: [], verificationLevel: 'project-derived',
+      needsCrossVerification: false, commandOrigins: [], diagnostics: [],
+    },
+    resolveSwitchField(
+      'streams.preserveOtherVideoStreams', '保留其他视频流',
+      config.streams.preserveOtherVideoStreams, fieldStates,
+    ),
+    resolveSwitchField(
+      'streams.preserveOtherAudioStreams', '保留其他音频流',
+      config.streams.preserveOtherAudioStreams, fieldStates,
+    ),
+    resolveSwitchField(
+      'streams.preserveOtherSubtitleStreams', '保留其他字幕流',
+      config.streams.preserveOtherSubtitleStreams, fieldStates,
+    ),
   ]
 
   return { id: 'section.input', label: '输入与输出', fields }
@@ -73,12 +105,20 @@ export function resolveVideoSection(
   const videoEncoderParam = catalog.parameters['param.video.encoder']
   if (videoEncoderParam) {
     const encField = resolveParameterField(videoEncoderParam, config, 'video.encoderId', fieldStates)
-    // Populate with actual encoder list from catalog, grouped by family
+    // 编码器选择器完全由目录生成，并保留实现厂商信息供界面展示。
+    const implementationLabels: Record<string, string> = {
+      software: '软件',
+      nvidia: 'NVIDIA',
+      intel: 'Intel',
+      amd: 'AMD',
+      apple: 'Apple',
+      other: '其他',
+    }
     encField.options = Object.values(catalog.encoders.video).map((enc) => ({
       value: enc.id,
       label: enc.label,
       group: enc.family,
-      badge: enc.implementation === 'nvidia' ? 'NVIDIA' : '软件',
+      badge: implementationLabels[enc.implementation] ?? enc.implementation,
       description: enc.availabilityNote?.slice(0, 80),
     }))
     fields.push(encField)
@@ -133,7 +173,7 @@ export function resolveVideoSection(
     const activeMode = qualityModes.find((qm) => qm.id === rcMode)
     if (activeMode) {
       for (const ctrl of activeMode.controls) {
-        const configPath = resolveQualityControlConfigPath(ctrl, rcMode)
+        const configPath = resolveQualityControlConfigPath(ctrl)
         fields.push(resolveControlField(ctrl, config, configPath, fieldStates, encoder))
       }
     }
@@ -164,7 +204,7 @@ export function resolveVideoSection(
  * pattern matching (for backwards compatibility with any remaining
  * controls that haven't been migrated).
  */
-function resolveQualityControlConfigPath(ctrl: { id: string; configBinding?: { path: string } }, _mode: string): string {
+function resolveQualityControlConfigPath(ctrl: { id: string; configBinding?: { path: string } }): string {
   // Use explicit configBinding path if present
   if (ctrl.configBinding?.path) {
     return ctrl.configBinding.path
@@ -298,6 +338,105 @@ export function resolveFrameSection(
     })
   }
 
+  const filterState = fieldStates['section.frame']
+  const filterSourceRefs: SourceRef[] = [{
+    repository: 'FFmpeg/FFmpeg',
+    branch: 'master',
+    snapshotDate: '2026-07-11',
+    file: 'doc/filters.texi',
+    sourceType: 'ffmpeg-official',
+    url: 'https://ffmpeg.org/ffmpeg-filters.html',
+  }]
+  const addFilterField = (
+    id: string,
+    label: string,
+    controlType: ResolvedField['controlType'],
+    value: unknown,
+    options?: ResolvedField['options'],
+    range?: { min?: number; max?: number; step?: number },
+  ) => {
+    fields.push({
+      id,
+      label,
+      controlType,
+      value,
+      options,
+      min: range?.min,
+      max: range?.max,
+      step: range?.step,
+      visible: filterState?.visible !== false,
+      disabled: filterState?.enabled === false,
+      disabledReason: filterState?.reason,
+      sourceRefs: filterSourceRefs,
+      verificationLevel: 'official',
+      needsCrossVerification: false,
+      commandOrigins: ['filter.chain'],
+      diagnostics: [],
+    })
+  }
+
+  const filters = config.frame.filters ?? createDefaultAdvancedVideoFilters()
+  addFilterField('frame.filters.crop.enabled', '启用裁剪', 'switch', filters.crop.enabled)
+  if (filters.crop.enabled) {
+    addFilterField('frame.filters.crop.width', '裁剪宽度', 'number', filters.crop.width, undefined, { min: 2, max: 7680, step: 2 })
+    addFilterField('frame.filters.crop.height', '裁剪高度', 'number', filters.crop.height, undefined, { min: 2, max: 4320, step: 2 })
+    addFilterField('frame.filters.crop.x', '裁剪起点 X', 'number', filters.crop.x, undefined, { min: 0, max: 7680, step: 2 })
+    addFilterField('frame.filters.crop.y', '裁剪起点 Y', 'number', filters.crop.y, undefined, { min: 0, max: 4320, step: 2 })
+  }
+
+  addFilterField(
+    'frame.filters.transform.rotate',
+    '旋转',
+    'select',
+    filters.transform.rotate,
+    [
+      { value: 'none', label: '不旋转' },
+      { value: 'clockwise', label: '顺时针 90°' },
+      { value: 'counterclockwise', label: '逆时针 90°' },
+      { value: '180', label: '旋转 180°' },
+    ],
+  )
+  addFilterField('frame.filters.transform.horizontalFlip', '水平镜像', 'switch', filters.transform.horizontalFlip)
+  addFilterField('frame.filters.transform.verticalFlip', '垂直镜像', 'switch', filters.transform.verticalFlip)
+
+  addFilterField('frame.filters.adjustment.enabled', '启用画面调整', 'switch', filters.adjustment.enabled)
+  if (filters.adjustment.enabled) {
+    addFilterField('frame.filters.adjustment.brightness', '亮度', 'number', filters.adjustment.brightness, undefined, { min: -1, max: 1, step: 0.05 })
+    addFilterField('frame.filters.adjustment.contrast', '对比度', 'number', filters.adjustment.contrast, undefined, { min: -2, max: 2, step: 0.05 })
+    addFilterField('frame.filters.adjustment.saturation', '饱和度', 'number', filters.adjustment.saturation, undefined, { min: 0, max: 3, step: 0.05 })
+    addFilterField('frame.filters.adjustment.gamma', '伽马', 'number', filters.adjustment.gamma, undefined, { min: 0.1, max: 10, step: 0.1 })
+  }
+
+  addFilterField('frame.filters.deinterlace.enabled', '启用去隔行', 'switch', filters.deinterlace.enabled)
+  if (filters.deinterlace.enabled) {
+    addFilterField(
+      'frame.filters.deinterlace.mode',
+      '去隔行输出模式',
+      'select',
+      filters.deinterlace.mode,
+      [
+        { value: 'send_frame', label: '每帧输出一帧' },
+        { value: 'send_field', label: '每场输出一帧（双帧率）' },
+      ],
+    )
+    addFilterField(
+      'frame.filters.deinterlace.parity',
+      '场序',
+      'select',
+      filters.deinterlace.parity,
+      [
+        { value: 'auto', label: '自动检测' },
+        { value: 'tff', label: '顶场优先' },
+        { value: 'bff', label: '底场优先' },
+      ],
+    )
+  }
+
+  addFilterField('frame.filters.sharpen.enabled', '启用锐化', 'switch', filters.sharpen.enabled)
+  if (filters.sharpen.enabled) {
+    addFilterField('frame.filters.sharpen.amount', '锐化强度', 'number', filters.sharpen.amount, undefined, { min: -2, max: 5, step: 0.1 })
+  }
+
   return { id: 'section.frame', label: '画面参数', fields }
 }
 
@@ -396,7 +535,7 @@ export function resolveSubtitleSection(
   fields.push({
     id: 'subtitle.tracks.count',
     label: `字幕轨道 (${config.subtitle.tracks.length} 条)`,
-    controlType: 'text',
+    controlType: 'section',
     value: config.subtitle.tracks.length > 0
       ? config.subtitle.tracks.map((t) => `${t.id}: ${t.source}/${t.codecMode}`).join(', ')
       : '未添加字幕轨道',
@@ -468,6 +607,22 @@ export function resolveSubtitleSection(
         track.path,
         fieldStates,
       ))
+      fields.push({
+        id: `subtitle.tracks.${track.id}.externalStreamIndex`,
+        label: '外挂文件内字幕流索引',
+        controlType: 'number',
+        value: track.externalStreamIndex ?? 0,
+        min: 0,
+        max: 32,
+        step: 1,
+        visible: true,
+        disabled: false,
+        sourceRefs: [],
+        verificationLevel: 'project-derived',
+        needsCrossVerification: false,
+        commandOrigins: [],
+        diagnostics: [],
+      })
     }
 
     // Codec mode
@@ -535,6 +690,12 @@ export function resolveSubtitleSection(
       track.disposition.forced ?? false,
       fieldStates,
     ))
+    fields.push(resolveSwitchField(
+      `subtitle.tracks.${track.id}.disposition.hearingImpaired`,
+      '听障辅助字幕',
+      track.disposition.hearingImpaired ?? false,
+      fieldStates,
+    ))
   }
 
   // -- Subtitle burn --------------------------------------------
@@ -552,6 +713,23 @@ export function resolveSubtitleSection(
   )
 
   if (config.subtitle.burn.enabled) {
+    fields.push({
+      id: 'subtitle.burn.filterKind',
+      label: '烧录滤镜',
+      controlType: 'select',
+      value: config.subtitle.burn.filterKind,
+      options: [
+        { value: 'subtitles', label: 'subtitles（通用字幕）' },
+        { value: 'ass', label: 'ass（ASS 字幕）' },
+      ],
+      visible: true,
+      disabled: false,
+      sourceRefs: [],
+      verificationLevel: 'official',
+      needsCrossVerification: false,
+      commandOrigins: ['filter.chain'],
+      diagnostics: [],
+    })
     fields.push({
       id: 'subtitle.burn.source',
       label: '字幕来源',
@@ -631,6 +809,74 @@ export function resolveSubtitleSection(
       commandOrigins: [],
       diagnostics: [],
     })
+
+    fields.push(resolveSwitchField('subtitle.burn.style.bold', '粗体', config.subtitle.burn.style.bold ?? false, fieldStates))
+    fields.push(resolveSwitchField('subtitle.burn.style.italic', '斜体', config.subtitle.burn.style.italic ?? false, fieldStates))
+    fields.push(resolveSwitchField('subtitle.burn.style.underline', '下划线', config.subtitle.burn.style.underline ?? false, fieldStates))
+    fields.push(resolveSwitchField('subtitle.burn.style.strikeOut', '删除线', config.subtitle.burn.style.strikeOut ?? false, fieldStates))
+
+    for (const [key, label] of [
+      ['primaryColor', '主要颜色（ASS ARGB）'],
+      ['secondaryColor', '次要颜色（ASS ARGB）'],
+      ['outlineColor', '描边颜色（ASS ARGB）'],
+      ['backColor', '背景颜色（ASS ARGB）'],
+    ] as const) {
+      fields.push(resolveTextField(
+        `subtitle.burn.style.${key}`,
+        label,
+        config.subtitle.burn.style[key] ?? '',
+        fieldStates,
+      ))
+    }
+
+    fields.push({
+      id: 'subtitle.burn.style.borderStyle', label: '边框样式', controlType: 'select',
+      value: config.subtitle.burn.style.borderStyle ?? 1,
+      options: [{ value: 1, label: '描边与阴影' }, { value: 3, label: '不透明背景框' }],
+      visible: true, disabled: false, sourceRefs: [], verificationLevel: 'official',
+      needsCrossVerification: false, commandOrigins: ['filter.chain'], diagnostics: [],
+    })
+    fields.push({
+      id: 'subtitle.burn.style.alignment', label: '字幕位置', controlType: 'select',
+      value: config.subtitle.burn.style.alignment ?? 2,
+      options: [
+        { value: 1, label: '左下' }, { value: 2, label: '中下' }, { value: 3, label: '右下' },
+        { value: 4, label: '左中' }, { value: 5, label: '居中' }, { value: 6, label: '右中' },
+        { value: 7, label: '左上' }, { value: 8, label: '中上' }, { value: 9, label: '右上' },
+      ],
+      visible: true, disabled: false, sourceRefs: [], verificationLevel: 'official',
+      needsCrossVerification: false, commandOrigins: ['filter.chain'], diagnostics: [],
+    })
+
+    const numericStyleFields: Array<[keyof ProjectConfig['subtitle']['burn']['style'], string, number, number, number]> = [
+      ['outline', '描边宽度', 0, 20, 0.5],
+      ['shadow', '阴影距离', 0, 20, 0.5],
+      ['marginL', '左边距', 0, 2000, 1],
+      ['marginR', '右边距', 0, 2000, 1],
+      ['marginV', '垂直边距', 0, 2000, 1],
+      ['spacing', '字距', -20, 100, 0.5],
+    ]
+    for (const [key, label, min, max, step] of numericStyleFields) {
+      fields.push({
+        id: `subtitle.burn.style.${key}`, label, controlType: 'number',
+        value: config.subtitle.burn.style[key] ?? 0, min, max, step,
+        visible: true, disabled: false, sourceRefs: [], verificationLevel: 'official',
+        needsCrossVerification: false, commandOrigins: ['filter.chain'], diagnostics: [],
+      })
+    }
+
+    fields.push(resolveTextField(
+      'subtitle.burn.customForceStyle',
+      '补充 force_style',
+      config.subtitle.burn.customForceStyle ?? '',
+      fieldStates,
+    ))
+    fields.push(resolveTextField(
+      'subtitle.burn.customFilter',
+      '完全自定义字幕滤镜（覆盖以上设置）',
+      config.subtitle.burn.customFilter ?? '',
+      fieldStates,
+    ))
   }
 
   return { id: 'section.subtitle', label: '字幕', fields }
@@ -656,4 +902,30 @@ export function resolveContainerSection(
   }
 
   return { id: 'section.container', label: '封装设置', fields }
+}
+
+export function resolveCustomArgsSection(config: ProjectConfig): ResolvedSection {
+  const definitions: Array<[keyof ProjectConfig['customArgs'], string]> = [
+    ['globalArgs', '全局参数'],
+    ['preInputArgs', '输入前参数'],
+    ['videoArgs', '视频参数'],
+    ['audioArgs', '音频参数'],
+    ['preOutputArgs', '输出前参数'],
+    ['tailArgs', '命令末尾参数'],
+  ]
+  const fields: ResolvedField[] = definitions.map(([key, label]) => ({
+    id: `customArgs.${key}`,
+    label,
+    description: '每行输入一个完整 token；系统仅负责 Shell 转义，不校验 FFmpeg 语义。',
+    controlType: 'textarea',
+    value: config.customArgs[key].join('\n'),
+    visible: true,
+    disabled: false,
+    sourceRefs: [],
+    verificationLevel: 'project-derived',
+    needsCrossVerification: false,
+    commandOrigins: [`customArgs.${key}`],
+    diagnostics: [],
+  }))
+  return { id: 'section.customArgs', label: '自定义参数（高级）', fields }
 }

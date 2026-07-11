@@ -188,17 +188,13 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
 
   const handleImport = useCallback(
     (json: string) => {
-      try {
-        const { preset, warnings } = presetService.importAndSave(json)
-        refreshList()
-        setNotices([
-          `已导入预设 "${preset.name}"`,
-          ...warnings,
-        ])
-        setShowImport(false)
-      } catch (e) {
-        throw e // Let the dialog handle display
-      }
+      const { preset, warnings } = presetService.importAndSave(json)
+      refreshList()
+      setNotices([
+        `已导入预设 "${preset.name}"`,
+        ...warnings,
+      ])
+      setShowImport(false)
     },
     [refreshList],
   )
@@ -210,72 +206,34 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
   }, [onReset, onClose])
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {/* Backdrop */}
+    <div className="modal-layer" role="dialog" aria-modal="true" aria-label="预设管理">
       <div
         onClick={onClose}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-        }}
+        className="modal-backdrop"
       />
 
-      {/* Modal */}
-      <div
-        style={{
-          position: 'relative',
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 8,
-          padding: 20,
-          width: 560,
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-          color: 'var(--text)',
-        }}
-      >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, margin: 0 }}>预设管理</h2>
+      <div className="modal-card">
+        <div className="modal-card__header">
+          <div>
+            <p className="eyebrow">Workspace presets</p>
+            <h2>预设管理</h2>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: 20,
-              cursor: 'pointer',
-              color: 'var(--text-dim)',
-            }}
+            className="icon-button"
+            aria-label="关闭预设管理"
           >
             ✕
           </button>
         </div>
 
-        {/* Notices */}
         {notices.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
+          <div className="modal-notices" role="status">
             {notices.map((n, i) => (
               <div
                 key={i}
-                style={{
-                  padding: '4px 8px',
-                  fontSize: 12,
-                  background: 'var(--bg-input)',
-                  borderRadius: 4,
-                  marginBottom: 4,
-                }}
+                className="modal-notice"
               >
                 {n}
               </div>
@@ -283,8 +241,7 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
           </div>
         )}
 
-        {/* Actions toolbar */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div className="modal-actions">
           <ToolbarButton label="+ 新建预设" onClick={handleCreate} />
           <ToolbarButton label="另存当前为…" onClick={handleSaveAs} />
           <ToolbarButton label="导入 JSON" onClick={() => setShowImport(true)} />
@@ -292,8 +249,7 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
           <ToolbarButton label="恢复默认" onClick={handleReset} danger />
         </div>
 
-        {/* Preset list (scrollable) */}
-        <div style={{ flex: 1, overflow: 'auto' }}>
+        <div className="modal-card__content">
           <PresetList
             builtinPresets={builtinPresets}
             userPresets={userPresets}

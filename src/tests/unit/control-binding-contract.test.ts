@@ -252,7 +252,7 @@ describe('Control Binding Contract', () => {
       }
       // Different quality modes may share the same binding (e.g. bitrate across VBR/CBR)
       // This is NOT an error — it's intentional aliasing
-      for (const [_path, sources] of pathsInEncoder) {
+      for (const sources of pathsInEncoder.values()) {
         if (sources.length > 1) {
           // Verify all sources are in different quality modes (aliasing is allowed across modes)
           const modes = new Set(sources.map((s) => s.split('/')[0]))

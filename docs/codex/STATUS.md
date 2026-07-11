@@ -1,12 +1,12 @@
 # Project Status
 
-Last updated: 2026-07-11 18:20
+Last updated: 2026-07-11 20:50
 Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: 完成 v0.4.1 热修复提交，并持续推进 v0.5.0 功能与 UI 成品化
-- Current state: v0.4.1 热修复复验完成。TypeScript 0 错误、目录审计 0 错误 0 警告、255 测试通过、生产构建成功。
+- Current objective: 发布 v0.5.0 可用成品并完成私有站点交付
+- Current state: v0.5.0 功能、UI、文档和本地生产构建已完成；297 项测试、目录审计 0/0、10/10 验收配置全部通过，正在执行 Git 与站点发布收尾。
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -29,17 +29,17 @@ Updated by: Codex (GPT-5)
   - audit: 0 errors, 0 warnings
   - build: 405 KB JS + 1.3 KB CSS
   - Playwright: 已移除，不属于默认依赖
-- Video encoders: 7 个 (software: libx264/libx265/libsvtav1, nvidia: h264_nvenc/hevc_nvenc, intel: h264_qsv/hevc_qsv)
+- Video encoders: 11 个 (software 3、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 提交 v0.4.1 后进入 v0.5.0 功能开发与 UI 成品化
+- Next recommended step: 提交 v0.5.0 精确源码，完成 Sites 私有部署并记录最终 URL
 
 ## Active TODO
 
-- [ ] v0.5.0 功能开发: AMF / VideoToolbox / 复杂滤镜
+- [x] v0.5.0 功能开发: AMF / VideoToolbox / 高级滤镜 / 字幕 / 分享 / 持久化 / UI
   - Owner: Codex
-  - Status: v0.4.1 自动化交互验收已通过，提交后开始 v0.5.0
-  - Notes/blockers: 应用内浏览器当前无可用实例；以 RTL 正式页面交互测试覆盖复选框验收，UI 完成后需再次尝试视觉验收
+  - Status: 本地成品与自动化验收完成，待 Git 提交和站点发布
+  - Notes/blockers: 应用内浏览器仍无可用实例；297 项测试包含正式页面 RTL 与全字段写入契约，真实浏览器视觉巡检保留为环境限制
 
 ## Recently Completed
 
@@ -126,11 +126,11 @@ Updated by: Codex (GPT-5)
 ## Git Sync
 
 - Git repository: yes
-- Branch: fix/v0.4.1-builder-checkboxes
-- Last known commit: 6f8b453 (v0.4.0 closeout)
+- Branch: feat/v0.5.0-product
+- Last known commit: 49b1525 (v0.4.1 hotfix)
 - Remote: `https://github.com/maxzrb/FFCodec-Lab.git`
 - Sync: `git pull origin master` 已确认 Already up to date；本地 master 比 origin/master 领先 12 个提交
-- Uncommitted changes: v0.4.1 热修复待提交（见最新 Session Log）
+- Uncommitted changes: v0.5.0 功能、UI、文档与发布配置待提交
 - Working tree clean: no
 - Commit recommended before switching agents/devices: YES
 
@@ -585,3 +585,33 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 旧 preset/specialParameters migration 仍未实现，当前记录显示无旧数据
 - Git status: branch fix/v0.4.1-builder-checkboxes，v0.4.1 变更待提交，working tree not clean
 - Next step: 提交 v0.4.1；随后梳理并实现 v0.5.0 与 UI 成品化
+
+### 2026-07-11 20:50 - Codex (GPT-5)
+
+- Objective: 修复正式页面全部无效控件，补齐剩余功能与 UI，并发布 v0.5.0 可用成品
+- Work completed:
+  1. v0.4.1 热修复提交为 `49b1525`，本地 master 快进后建立 `feat/v0.5.0-product`
+  2. 修复 ParameterDefinition 与通用 ControlDefinition 的正式页面配置绑定；编码器切换通过 `applyFieldChangeToConfig` 执行完整规范化
+  3. 新增全字段写入契约，覆盖 11 个视频编码器、全部音频编码器、高级滤镜、字幕和自定义参数
+  4. 新增 AMD AMF 与 Apple VideoToolbox H.264/HEVC，补齐容器矩阵与官方来源说明
+  5. 实现裁剪、旋转、镜像、画面调整、YADIF 去隔行、锐化，并保持单一 `-vf` 不变量
+  6. 实现流索引映射、字幕轨道增删/样式、六阶段自定义参数、浏览器持久化和隐私安全 URL Hash 分享
+  7. 完成响应式深色工作台 UI、README、用户指南、CHANGELOG、v0.5.0 版本记录与 ESLint 发布检查
+- Files changed: 约 50 个源代码、测试、样式和文档文件；详见本次 v0.5.0 Git 提交
+- Commands run:
+  - `npm run check` — ESLint、TypeScript、Vitest、目录审计、生产构建全部通过
+  - `npx tsx scripts/acceptance-test.ts` — 10/10 代表性配置通过并刷新验收报告
+  - `git diff --check` — 通过，仅显示 Git 行尾转换提示
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 297/297 passed (19 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 442.61 KB JS + 13.32 KB CSS
+  - Acceptance configurations: 10/10 passed
+- Decisions/risks:
+  - 应用内浏览器返回无可用实例，按 browser skill 要求未改用无关浏览器后端；视觉巡检仍为已知环境限制
+  - Sites 发布需要 Cloudflare Workers 兼容入口，将在不改变本地静态功能的前提下补充最小静态资源 Worker
+  - 硬件编码器实际可用性取决于目标机器 GPU、驱动和 FFmpeg 构建
+- Git status: branch feat/v0.5.0-product，v0.5.0 变更待提交，working tree not clean
+- Next step: 提交 v0.5.0；创建 Sites 项目、保存 hosting 配置、私有部署并记录发布结果

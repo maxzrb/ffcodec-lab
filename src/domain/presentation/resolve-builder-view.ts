@@ -16,6 +16,7 @@ import {
   resolveAudioSection,
   resolveSubtitleSection,
   resolveContainerSection,
+  resolveCustomArgsSection,
 } from './resolve-section'
 import { attachDiagnostics } from './resolve-field'
 
@@ -38,6 +39,7 @@ export function resolveBuilderView(
     resolveAudioSection(config, catalog, fieldStates),
     resolveSubtitleSection(config, catalog, fieldStates),
     resolveContainerSection(config, catalog, fieldStates),
+    resolveCustomArgsSection(config),
   ].filter((s) => s.fields.length > 0)
 
   // Collect all fields into a flat index

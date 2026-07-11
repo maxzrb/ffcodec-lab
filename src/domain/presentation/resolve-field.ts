@@ -14,6 +14,7 @@ import type {
 import type { FieldState } from '../rules/rule-types'
 import type { ResolvedField, ResolvedOption } from './resolved-field'
 import { getByPath } from '../../utils/object-path'
+import { configPath as createConfigPath } from '../config/config-path'
 
 // -- helpers ----------------------------------------------------
 
@@ -66,7 +67,9 @@ export function resolveControlField(
     needsCrossVerification: encoder?.needsCrossVerification ?? true,
     commandOrigins: [],
     diagnostics: [],
-    configBinding: ctrl.configBinding,
+    // 目录中的通用预设/档次/像素格式控件可能只声明命令绑定；
+    // 解析器仍必须把调用方给出的配置路径带给正式页面，确保控件可写。
+    configBinding: ctrl.configBinding ?? { path: createConfigPath(_configPath.split('.')) },
   }
 }
 
@@ -105,6 +108,7 @@ export function resolveParameterField(
     needsCrossVerification: param.needsCrossVerification,
     commandOrigins: [],
     diagnostics: [],
+    configBinding: { path: createConfigPath(configPath.split('.')) },
   }
 }
 

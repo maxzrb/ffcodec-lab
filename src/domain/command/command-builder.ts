@@ -104,6 +104,16 @@ function buildInputs(config: ProjectConfig): InputSpec[] {
     },
   ]
 
+  for (let index = 0; index < config.customArgs.preInputArgs.length; index++) {
+    inputs[0].argsBeforeInput.push({
+      id: `input.custom.${index}`,
+      originId: 'customArgs.preInputArgs',
+      phase: 'PRE_INPUT',
+      tokens: [config.customArgs.preInputArgs[index]],
+      unsafe: true,
+    })
+  }
+
   // Subtitle track external inputs
   // Input indices: main=0, then external subtitle tracks in track array order
   for (const track of config.subtitle.tracks) {
@@ -139,7 +149,36 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
     subtitleArgs: [],
     muxerArgs: [],
     customArgs: [],
+    tailArgs: [],
     path: config.output.path,
+  }
+
+  const explicitStreamMapping =
+    config.streams.videoStreamIndex !== undefined
+    || config.streams.audioStreamIndex !== undefined
+    || config.streams.subtitleStreamIndex !== undefined
+    || config.streams.preserveOtherVideoStreams
+    || config.streams.preserveOtherAudioStreams
+
+  if (explicitStreamMapping) {
+    if (config.video.mode !== 'disabled') {
+      const videoSelector = config.streams.preserveOtherVideoStreams
+        ? '0:v?'
+        : `0:v:${config.streams.videoStreamIndex ?? 0}?`
+      output.maps.push({ id: 'map.video', originId: 'streams.videoStreamIndex', phase: 'MAP', tokens: ['-map', videoSelector] })
+    }
+    if (config.audio.mode !== 'disabled') {
+      const audioSelector = config.streams.preserveOtherAudioStreams
+        ? '0:a?'
+        : `0:a:${config.streams.audioStreamIndex ?? 0}?`
+      output.maps.push({ id: 'map.audio', originId: 'streams.audioStreamIndex', phase: 'MAP', tokens: ['-map', audioSelector] })
+    }
+    if (config.streams.preserveOtherSubtitleStreams || config.streams.subtitleStreamIndex !== undefined) {
+      const subtitleSelector = config.streams.preserveOtherSubtitleStreams
+        ? '0:s?'
+        : `0:s:${config.streams.subtitleStreamIndex ?? 0}?`
+      output.maps.push({ id: 'map.subtitle.input', originId: 'streams.subtitleStreamIndex', phase: 'MAP', tokens: ['-map', subtitleSelector] })
+    }
   }
 
   // -- video --------------------------------------------------
@@ -229,7 +268,7 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
           // Then emit per-control arguments
           for (const ctrl of qMode.controls) {
             if (ctrl.commandBinding) {
-              const val = getControlValue(config, ctrl)
+              const val = getControlValue(config, ctrl) ?? ctrl.defaultValue
               if (val !== undefined && val !== null) {
                 output.qualityArgs.push({
                   id: `quality.${ctrl.id}`,
@@ -429,6 +468,36 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
       }
     }
   }
+
+  const customGroups: Array<{
+    values: string[]
+    originId: string
+    phase: CommandArg['phase']
+  }> = [
+    { values: config.customArgs.videoArgs, originId: 'customArgs.videoArgs', phase: 'VIDEO_CODEC' },
+    { values: config.customArgs.audioArgs, originId: 'customArgs.audioArgs', phase: 'AUDIO_CODEC' },
+    { values: config.customArgs.preOutputArgs, originId: 'customArgs.preOutputArgs', phase: 'CUSTOM_OUTPUT' },
+  ]
+  for (const group of customGroups) {
+    group.values.forEach((token, index) => {
+      output.customArgs.push({
+        id: `${group.originId}.${index}`,
+        originId: group.originId,
+        phase: group.phase,
+        tokens: [token],
+        unsafe: true,
+      })
+    })
+  }
+  config.customArgs.tailArgs.forEach((token, index) => {
+    output.tailArgs?.push({
+      id: `customArgs.tailArgs.${index}`,
+      originId: 'customArgs.tailArgs',
+      phase: 'OUTPUT',
+      tokens: [token],
+      unsafe: true,
+    })
+  })
 
   return output
 }

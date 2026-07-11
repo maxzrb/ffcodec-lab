@@ -5,7 +5,7 @@
 // ============================================================
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BuilderPage } from '../../pages/builder/BuilderPage'
 import { useBuilderStore } from '../../store'
@@ -301,5 +301,41 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       expect(checkbox!.checked).toBe(false)
     }, { timeout: 2000 })
     expect(useBuilderStore.getState().config.output.overwrite).toBe(false)
+  })
+
+  it('字幕轨道可从正式页面添加和删除', async () => {
+    useBuilderStore.setState({
+      expandedSections: {
+        'section.input': false,
+        'section.video': false,
+        'section.frame': false,
+        'section.audio': false,
+        'section.subtitle': true,
+        'section.container': false,
+      },
+    })
+    render(<BuilderPage />)
+
+    await userEvent.click(await screen.findByRole('button', { name: '添加轨道' }))
+    expect(useBuilderStore.getState().config.subtitle.tracks).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole('button', { name: '删除轨道' }))
+    expect(useBuilderStore.getState().config.subtitle.tracks).toHaveLength(0)
+  })
+
+  it('正式页面切换编码器会清理旧编码器特殊参数', async () => {
+    const config = makeConfig('h264_nvenc')
+    config.video.specialParameters = { spatialAq: true, temporalAq: true }
+    presetStore(config)
+    render(<BuilderPage />)
+
+    const encoderSelect = await screen.findByLabelText('视频编码器')
+    await userEvent.selectOptions(encoderSelect, 'h264_amf')
+
+    await waitFor(() => {
+      expect(useBuilderStore.getState().config.video.encoderId).toBe('h264_amf')
+      expect(useBuilderStore.getState().config.video.specialParameters).toEqual({})
+      expect(useBuilderStore.getState().config.video.rateControl?.mode).toBe('vbr')
+    })
   })
 })

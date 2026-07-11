@@ -103,6 +103,13 @@ export const builtinRules: RuleDefinition[] = [
           rules: [
             { op: 'neq', path: 'frame.resolution.mode', value: 'source' },
             { op: 'neq', path: 'frame.frameRate.mode', value: 'source' },
+            { op: 'eq', path: 'frame.filters.crop.enabled', value: true },
+            { op: 'neq', path: 'frame.filters.transform.rotate', value: 'none' },
+            { op: 'eq', path: 'frame.filters.transform.horizontalFlip', value: true },
+            { op: 'eq', path: 'frame.filters.transform.verticalFlip', value: true },
+            { op: 'eq', path: 'frame.filters.adjustment.enabled', value: true },
+            { op: 'eq', path: 'frame.filters.deinterlace.enabled', value: true },
+            { op: 'eq', path: 'frame.filters.sharpen.enabled', value: true },
           ],
         },
       ],

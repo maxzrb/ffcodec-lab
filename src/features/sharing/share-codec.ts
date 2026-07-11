@@ -28,10 +28,12 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       profile: config.video.profile,
       tune: config.video.tune,
       pixelFormat: config.video.pixelFormat,
+      specialParameters: config.video.specialParameters,
     },
     f: {
       resolution: config.frame.resolution,
       frameRate: config.frame.frameRate,
+      filters: config.frame.filters,
     },
     a: {
       mode: config.audio.mode,
@@ -39,6 +41,7 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       bitrate: config.audio.bitrate,
       channelLayout: config.audio.channelLayout,
       sampleRate: config.audio.sampleRate,
+      qualityValues: config.audio.qualityValues,
     },
     s: {
       tracks: config.subtitle.tracks.map((t) => ({
@@ -91,7 +94,7 @@ export function fromShareable(
       profile: shareable.v.profile,
       tune: shareable.v.tune,
       pixelFormat: shareable.v.pixelFormat,
-      specialParameters: {},
+      specialParameters: shareable.v.specialParameters,
     },
     frame: shareable.f as ProjectConfig['frame'],
     audio: {
@@ -100,7 +103,7 @@ export function fromShareable(
       bitrate: shareable.a.bitrate,
       channelLayout: shareable.a.channelLayout,
       sampleRate: shareable.a.sampleRate,
-      qualityValues: {},
+      qualityValues: shareable.a.qualityValues,
     },
     subtitle: {
       tracks: shareable.s.tracks.map((t) => ({

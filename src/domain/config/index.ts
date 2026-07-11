@@ -1,4 +1,5 @@
 export type { ProjectConfig } from './project-config'
 export { createDefaultProjectConfig } from './defaults'
+export { addSubtitleTrack, removeSubtitleTrack } from './project-actions'
 export { projectConfigSchema } from './config-schema'
 export type { ValidatedProjectConfig } from './config-schema'

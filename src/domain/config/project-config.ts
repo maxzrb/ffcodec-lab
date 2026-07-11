@@ -80,6 +80,38 @@ export type FrameRateConfig =
 export interface FrameConfig {
   resolution: ResolutionConfig
   frameRate: FrameRateConfig
+  filters?: AdvancedVideoFiltersConfig
+}
+
+export interface AdvancedVideoFiltersConfig {
+  crop: {
+    enabled: boolean
+    width: number
+    height: number
+    x: number
+    y: number
+  }
+  transform: {
+    rotate: 'none' | 'clockwise' | 'counterclockwise' | '180'
+    horizontalFlip: boolean
+    verticalFlip: boolean
+  }
+  adjustment: {
+    enabled: boolean
+    brightness: number
+    contrast: number
+    saturation: number
+    gamma: number
+  }
+  deinterlace: {
+    enabled: boolean
+    mode: 'send_frame' | 'send_field'
+    parity: 'auto' | 'tff' | 'bff'
+  }
+  sharpen: {
+    enabled: boolean
+    amount: number
+  }
 }
 
 export interface AudioConfig {

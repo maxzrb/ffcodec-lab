@@ -1,6 +1,8 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { ProjectConfig } from '../domain/config/project-config'
 import { createDefaultProjectConfig } from '../domain/config/defaults'
+import { projectConfigSchema } from '../domain/config/config-schema'
 
 // ============================================================
 // Zustand store — holds ProjectConfig and UI session state.
@@ -30,17 +32,17 @@ interface BuilderState {
   resetConfig: () => void
 }
 
-export const useBuilderStore = create<BuilderState>((set) => ({
+export const useBuilderStore = create<BuilderState>()(persist((set) => ({
   config: createDefaultProjectConfig(),
 
   expandedSections: {
-    video: true,
-    quality: true,
-    frame: false,
-    audio: true,
-    subtitle: false,
-    container: false,
-    custom: false,
+    'section.input': true,
+    'section.video': true,
+    'section.frame': false,
+    'section.audio': true,
+    'section.subtitle': false,
+    'section.container': false,
+    'section.customArgs': false,
   },
 
   selectedExplanationId: null,
@@ -108,6 +110,18 @@ export const useBuilderStore = create<BuilderState>((set) => ({
       encoderSessionCache: {},
       selectedExplanationId: null,
     }),
+}), {
+  name: 'ffcodec-builder-v2',
+  version: 2,
+  partialize: (state) => ({ config: state.config }) as BuilderState,
+  merge: (persistedState, currentState) => {
+    const persistedConfig = (persistedState as Partial<BuilderState>)?.config
+    const parsed = projectConfigSchema.safeParse(persistedConfig)
+    return {
+      ...currentState,
+      config: parsed.success ? parsed.data as ProjectConfig : currentState.config,
+    }
+  },
 }))
 
 // Deep path setter — works with ProjectConfig

@@ -1,9 +1,9 @@
 # MVP 验收报告
 
-> 生成时间：2026-07-10T07:01:59.965Z
+> 生成时间：2026-07-11T12:49:34.127Z
 > TypeScript：0 errors
 > 目录审计：0 errors
-> 测试：76 passed
+> 测试：以本次 npm run check 结果为准
 
 ## 验收结果摘要
 
@@ -32,25 +32,28 @@
 - 视频：libx264 / crf
 - 音频：aac 192k
 - 容器：mp4
-- 字幕：mux=off, burn=off
+- 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `single-pass`：7 个参数
+- `single-pass`：8 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -65,25 +68,28 @@ ffmpeg -i input.mkv -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac s
 - 视频：libx265 / crf
 - 音频：libopus 128k
 - 容器：mkv
-- 字幕：mux=off, burn=off
+- 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `single-pass`：9 个参数
+- `single-pass`：12 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -b:a 128k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -ac stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -b:a 128k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -ac stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -b:a 128k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -ac stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -98,25 +104,28 @@ ffmpeg -i input.mkv -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v ma
 - 视频：libsvtav1 / crf
 - 音频：libopus 128k
 - 容器：webm
-- 字幕：mux=off, burn=off
+- 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `single-pass`：7 个参数
+- `single-pass`：10 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -b:a 128k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -ac stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -b:a 128k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -ac stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -b:a 128k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -ac stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -131,8 +140,11 @@ ffmpeg -i input.mkv -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -b:a 128k -ac 
 - 视频：copy
 - 音频：copy
 - 容器：mkv
-- 字幕：mux=off, burn=off
+- 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
+
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
 
 **Command AST**：
 - `single-pass`：2 个参数
@@ -164,25 +176,28 @@ ffmpeg -i input.mkv -c:v copy -c:a copy output.mp4
 - 视频：libx264 / crf
 - 音频：aac 192k
 - 容器：mkv
-- 字幕：mux=copy, burn=off
+- 字幕：1 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `single-pass`：8 个参数
+- `single-pass`：9 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -i subtitles.srt -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 -c:s copy output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 -c:s:0 copy output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -i subtitles.srt -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 -c:s copy output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 -c:s:0 copy output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -i subtitles.srt -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 -c:s copy output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 -c:s:0 copy output.mp4
 ```
 
 **结果**：✅ 通过
@@ -197,25 +212,28 @@ ffmpeg -i input.mkv -i subtitles.srt -c:v libx264 -preset medium -crf 23 -c:a aa
 - 视频：libx264 / crf
 - 音频：aac 192k
 - 容器：mp4
-- 字幕：mux=auto, burn=off
+- 字幕：1 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `single-pass`：7 个参数
+- `single-pass`：9 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -i subtitles.srt -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 -c:s:0 mov_text output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -i subtitles.srt -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 -c:s:0 mov_text output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -i subtitles.srt -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 -c:s:0 mov_text output.mp4
 ```
 
 **结果**：✅ 通过
@@ -230,25 +248,28 @@ ffmpeg -i input.mkv -i subtitles.srt -c:v libx264 -preset medium -crf 23 -c:a aa
 - 视频：libx265 / crf
 - 音频：aac 192k
 - 容器：mkv
-- 字幕：mux=off, burn=on
+- 字幕：0 tracks, burn=on
 - 帧：resolution=size, framerate=value
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `single-pass`：8 个参数
+- `single-pass`：9 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -i subtitles.ass -c:v libx265 -preset medium -crf 24 -vf "scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24'" -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.ass -c:v libx265 -preset medium -crf 24 -vf "scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24'" -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -i subtitles.ass -c:v libx265 -preset medium -crf 24 -vf scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24' -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.ass -c:v libx265 -preset medium -crf 24 -vf scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24' -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -i subtitles.ass -c:v libx265 -preset medium -crf 24 -vf scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24' -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.ass -c:v libx265 -preset medium -crf 24 -vf scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24' -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -263,25 +284,28 @@ ffmpeg -i input.mkv -i subtitles.ass -c:v libx265 -preset medium -crf 24 -vf sca
 - 视频：disabled
 - 音频：aac 320k
 - 容器：mp4
-- 字幕：mux=off, burn=off
+- 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `single-pass`：5 个参数
+- `single-pass`：6 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -vn -c:a aac -b:a 320k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -vn -c:a aac -aac_coder auto -b:a 320k -ac stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -vn -c:a aac -b:a 320k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -vn -c:a aac -aac_coder auto -b:a 320k -ac stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -vn -c:a aac -b:a 320k -ac stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -vn -c:a aac -aac_coder auto -b:a 320k -ac stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -296,26 +320,29 @@ ffmpeg -i input.mkv -vn -c:a aac -b:a 320k -ac stereo -ar 48000 output.mp4
 - 视频：libx264 / twoPass
 - 音频：aac 192k
 - 容器：mp4
-- 字幕：mux=off, burn=off
+- 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `pass-1`：7 个参数
-- `pass-2`：7 个参数
+- `pass-1`：8 个参数
+- `pass-2`：8 个参数
 
 **Bash**：
 ```bash
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4 ;  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4 ;  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -b:a 192k -ac stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -330,25 +357,28 @@ ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -c:v libx264 -preset medium
 - 视频：libx264 / crf
 - 音频：aac 192k
 - 容器：mp4
-- 字幕：mux=off, burn=off
+- 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
+**规则消息**：
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+
 **Command AST**：
-- `single-pass`：7 个参数
+- `single-pass`：8 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i 'C:\My Videos\我的视频 文件.mp4' -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 'C:\Output\压制输出 (高清版).mkv'
+ffmpeg -i 'C:\My Videos\我的视频 文件.mp4' -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 'C:\Output\压制输出 (高清版).mkv'
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 "C:\Output\压制输出 (高清版).mkv"
+ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 "C:\Output\压制输出 (高清版).mkv"
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -ac stereo -ar 48000 "C:\Output\压制输出 (高清版).mkv"
+ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -ac stereo -ar 48000 "C:\Output\压制输出 (高清版).mkv"
 ```
 
 **结果**：✅ 通过
@@ -361,7 +391,7 @@ ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -c:v libx264 -preset medium -cr
 |--------|------|
 | TypeScript 严格模式 0 errors | ✅ |
 | 目录审计 0 errors | ✅ |
-| 全部单元测试通过 (76/76) | ✅ |
+| 全部自动化测试通过 | ✅ |
 | 生产构建成功 | ✅ |
 | 所有 args 有 originId | ✅ |
 | 最多一个 -vf | ✅ |
@@ -373,15 +403,13 @@ ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -c:v libx264 -preset medium -cr
 ## 已知限制
 
 - 5 项参数标记为 `needsCrossVerification: true`，尚未通过编码器官方文档交叉核验
-- 暂未实现复杂滤镜系统、HDR 转换、色彩管理
-- 暂未实现 NVENC/QSV/AMF 硬件编码器
-- 字幕烧录仅支持基础 force_style，无完整 ASS 编辑器
+- 尚未提供 HDR 色调映射与完整色彩管理工作流
+- 硬件编码器是否可用取决于本机 GPU、驱动和 FFmpeg 构建
+- 字幕样式覆盖常用 ASS force_style 字段，不提供时间轴式 ASS 编辑器
 - 无后端存储，预设存储在浏览器 localStorage
 
 ## 下一阶段建议
 
-1. 交叉核验 5 项待核验参数（libx264 CQP、libsvtav1 QP/preset、libopus frame_duration、AAC aac_coder）
-2. 添加 FLAC 编码器（参数简单，容易核验）
-3. 实现 PresetManager UI 组件
-4. 增加 React Testing Library 集成测试
-5. 在核验完成后选择性添加 NVENC 硬件编码器
+1. 持续交叉核验仍标记 needsCrossVerification 的参数
+2. 增加 HDR、色彩空间和硬件能力自动探测
+3. 扩展端到端浏览器与多平台 FFmpeg 实机验收
