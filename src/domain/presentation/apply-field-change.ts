@@ -85,9 +85,12 @@ export function applyFieldChange(
   // Fallback: use the field's ID as a config path
   // (for dynamic subtitle track fields and other non-binding paths)
   if (isValidDynamicPath(fieldId)) {
+    // 动态字段同样必须经过类型转换；自定义参数 textarea 需要由文本变为 token 数组。
+    const coerced = coerceValue(nextValue, field)
+    if (coerced.notice) notices.push(coerced.notice)
     return {
       path: fieldId as ConfigPath,
-      value: nextValue,
+      value: coerced.value,
       accepted: true,
       notices,
     }
@@ -216,8 +219,8 @@ function coerceValue(
     case 'select':
       // Ensure value is a valid option
       if (field.options && field.options.length > 0) {
-        const validValues = field.options.map((o) => String(o.value))
-        if (!validValues.includes(String(value))) {
+        const matchedOption = field.options.find((option) => String(option.value) === String(value))
+        if (!matchedOption) {
           return {
             value: field.defaultValue ?? field.options[0].value,
             notice: {
@@ -227,6 +230,8 @@ function coerceValue(
             },
           }
         }
+        // DOM select 总是返回字符串，这里恢复目录选项原始的 number/boolean 类型。
+        return { value: matchedOption.value }
       }
       return { value }
 

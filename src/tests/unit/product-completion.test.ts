@@ -30,6 +30,17 @@ describe('成品功能闭环', () => {
     expect(tokens).toContain('0:a:2?')
   })
 
+  it('可独立选择保留全部视频、音频或字幕流', () => {
+    const config = createDefaultProjectConfig()
+    config.streams.preserveOtherVideoStreams = true
+    config.streams.preserveOtherAudioStreams = false
+    config.streams.preserveOtherSubtitleStreams = true
+    const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
+    expect(tokens).toContain('0:v?')
+    expect(tokens).toContain('0:a:0?')
+    expect(tokens).toContain('0:s?')
+  })
+
   it('六类自定义参数按 AST 阶段输出，tail 位于输出路径之后', () => {
     const config = createDefaultProjectConfig()
     config.customArgs = {

@@ -27,6 +27,7 @@ npm run check
 - 多字幕轨道、常用 ASS 样式、流索引映射和六阶段高级自定义参数。
 - 浏览器本地持久化、预设导入导出、隐私安全的 URL Hash 配置分享。
 - Bash、PowerShell、CMD 命令预览，参数来源解释和错误诊断。
+- 默认亮色并支持持久化暗色主题；默认显示 PowerShell 单行命令。
 
 详细操作见 [用户指南](docs/user-guide.md)，发布变化见 [CHANGELOG](CHANGELOG.md)。
 

@@ -71,11 +71,6 @@ export function ParameterField({ field, onChange, onExplain, highlighted }: Para
         </div>
       )}
 
-      {field.needsCrossVerification && (
-        <div className="param-field__verification">
-          来源于 {field.verificationLevel === 'project-derived' ? 'FFmpegFreeUI' : field.verificationLevel}，尚未经过编码器官方文档交叉核验
-        </div>
-      )}
     </div>
   )
 }

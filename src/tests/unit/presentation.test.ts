@@ -250,7 +250,12 @@ describe('Resolver — section resolution', () => {
     const section = resolveAudioSection(config, catalog, {})
 
     expect(section.fields.some((f) => f.id === 'audio.bitrate')).toBe(true)
-    expect(section.fields.some((f) => f.id === 'audio.sampleRate')).toBe(true)
+    const channelLayout = section.fields.find((f) => f.id === 'audio.channelLayout')
+    const sampleRate = section.fields.find((f) => f.id === 'audio.sampleRate')
+    expect(channelLayout?.controlType).toBe('select')
+    expect(channelLayout?.options?.some((option) => option.value === '7.1')).toBe(true)
+    expect(sampleRate?.options?.length).toBeGreaterThanOrEqual(14)
+    expect(sampleRate?.options?.some((option) => option.value === 192000)).toBe(true)
   })
 
   it('hides audio quality controls in copy mode', () => {

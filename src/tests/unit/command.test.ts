@@ -130,6 +130,19 @@ describe('Command AST — Invariants', () => {
     expect(rendered.text).toContain('libx264')
   })
 
+  it('声道布局使用 FFmpeg 布局参数，跟随输入时不生成参数', () => {
+    const config = makeConfig()
+    config.audio.channelLayout = '5.1(side)'
+    let rendered = renderPowerShell(buildCommandPlan(config, catalog, []))
+    expect(rendered.text).toContain('-channel_layout:a')
+    expect(rendered.text).toContain('5.1(side)')
+    expect(rendered.text).not.toContain('-ac ')
+
+    config.audio.channelLayout = 'source'
+    rendered = renderPowerShell(buildCommandPlan(config, catalog, []))
+    expect(rendered.text).not.toContain('-channel_layout:a')
+  })
+
   it('CMD renderer works', () => {
     const config = makeConfig()
     const plan = buildCommandPlan(config, catalog, [])

@@ -159,6 +159,7 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
     || config.streams.subtitleStreamIndex !== undefined
     || config.streams.preserveOtherVideoStreams
     || config.streams.preserveOtherAudioStreams
+    || config.streams.preserveOtherSubtitleStreams
 
   if (explicitStreamMapping) {
     if (config.video.mode !== 'disabled') {
@@ -348,12 +349,12 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
         })
       }
 
-      if (config.audio.channelLayout) {
+      if (config.audio.channelLayout && config.audio.channelLayout !== 'source') {
         output.audioArgs.push({
           id: 'quality.a.ch',
           originId: 'audio.channelLayout',
           phase: 'AUDIO_QUALITY',
-          tokens: ['-ac', config.audio.channelLayout],
+          tokens: ['-channel_layout:a', config.audio.channelLayout],
         })
       }
 

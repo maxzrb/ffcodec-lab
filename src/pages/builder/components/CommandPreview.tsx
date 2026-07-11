@@ -21,7 +21,7 @@ export function CommandPreview({
   onShellChange,
   onTokenClick,
 }: CommandPreviewProps) {
-  const [multiline, setMultiline] = useState(true)
+  const [multiline, setMultiline] = useState(false)
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(async () => {

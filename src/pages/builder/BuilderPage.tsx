@@ -23,6 +23,7 @@ import { decodeConfigFromShare, encodeConfigToShare } from '../../features/shari
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
+type ThemeKind = 'light' | 'dark'
 
 export function BuilderPage() {
   const config = useBuilderStore((s) => s.config)
@@ -33,6 +34,14 @@ export function BuilderPage() {
   const toggleSection = useBuilderStore((s) => s.toggleSection)
   const selectedExplanationId = useBuilderStore((s) => s.selectedExplanationId)
   const selectExplanation = useBuilderStore((s) => s.selectExplanation)
+  const [theme, setTheme] = useState<ThemeKind>(() =>
+    window.localStorage.getItem('ffcodec-theme') === 'dark' ? 'dark' : 'light',
+  )
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    window.localStorage.setItem('ffcodec-theme', theme)
+  }, [theme])
 
   const pipeline = usePipeline(config, catalog)
 
@@ -186,6 +195,15 @@ export function BuilderPage() {
           </div>
         </div>
         <div className="product-header__actions">
+          <button
+            type="button"
+            onClick={() => setTheme((current) => current === 'light' ? 'dark' : 'light')}
+            className="button"
+            aria-pressed={theme === 'dark'}
+            aria-label={theme === 'light' ? '切换到暗色模式' : '切换到亮色模式'}
+          >
+            {theme === 'light' ? '暗色模式' : '亮色模式'}
+          </button>
           <button type="button" onClick={handleShare} className="button">
             分享配置
           </button>

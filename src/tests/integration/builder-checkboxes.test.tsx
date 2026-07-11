@@ -62,6 +62,7 @@ function presetStore(config: ProjectConfig) {
 
 describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   beforeEach(() => {
+    window.localStorage.removeItem('ffcodec-theme')
     // 每条用例结束后恢复默认状态。
     useBuilderStore.setState({
       config: createDefaultProjectConfig(),
@@ -337,5 +338,44 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       expect(useBuilderStore.getState().config.video.specialParameters).toEqual({})
       expect(useBuilderStore.getState().config.video.rateControl?.mode).toBe('vbr')
     })
+  })
+
+  it('输入自定义参数不会导致页面消失，并按行保存 token', async () => {
+    useBuilderStore.setState({
+      expandedSections: {
+        'section.input': false,
+        'section.video': false,
+        'section.frame': false,
+        'section.audio': false,
+        'section.subtitle': false,
+        'section.container': false,
+        'section.customArgs': true,
+      },
+    })
+    render(<BuilderPage />)
+
+    const textarea = await screen.findByLabelText('全局参数')
+    await userEvent.type(textarea, '-benchmark')
+
+    expect(screen.getByRole('heading', { name: 'FFmpeg 命令生成器' })).toBeInTheDocument()
+    expect(useBuilderStore.getState().config.customArgs.globalArgs).toEqual(['-benchmark'])
+  })
+
+  it('默认使用亮色主题，并可切换暗色主题', async () => {
+    render(<BuilderPage />)
+
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('light'))
+    await userEvent.click(screen.getByRole('button', { name: '切换到暗色模式' }))
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(window.localStorage.getItem('ffcodec-theme')).toBe('dark')
+  })
+
+  it('默认显示 PowerShell 单行命令且不显示来源核验提示', async () => {
+    render(<BuilderPage />)
+
+    expect(useBuilderStore.getState().config.shell).toBe('powershell')
+    expect(screen.getByRole('button', { name: 'PowerShell' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '单行' })).toHaveAttribute('aria-pressed', 'false')
+    expect(document.querySelector('.param-field__verification')).toBeNull()
   })
 })

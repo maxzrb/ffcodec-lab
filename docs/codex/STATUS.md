@@ -1,12 +1,12 @@
 # Project Status
 
-Last updated: 2026-07-11 21:06
+Last updated: 2026-07-11 21:46
 Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: v0.5.0 可用成品发布完成
-- Current state: v0.5.0 功能、UI、文档、生产构建与 Sites 私有部署全部完成；297 项测试、目录审计 0/0、10/10 验收配置通过。线上地址：https://ffcodec-lab.maxzhurb.chatgpt.site
+- Current objective: 发布 v0.5.1 稳定性与易用性更新
+- Current state: v0.5.1 代码和本地验收完成；自定义参数崩溃、音频选项、流保留策略、默认命令显示和亮暗主题均已完成，302 项测试、目录审计 0/0、10/10 验收配置通过，待提交并更新私有站点。
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -32,7 +32,7 @@ Updated by: Codex (GPT-5)
 - Video encoders: 11 个 (software 3、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 在目标浏览器可用时补做一次视觉巡检；需要对外公开时由用户明确授权后调整站点访问范围
+- Next recommended step: 提交 v0.5.1 并更新现有 Sites 私有部署；目标浏览器可用时补做视觉巡检
 
 ## Active TODO
 
@@ -40,6 +40,11 @@ Updated by: Codex (GPT-5)
   - Owner: Codex
   - Status: 已完成并发布 Sites 私有站点版本 2
   - Notes/blockers: 应用内浏览器仍无可用实例；297 项测试包含正式页面 RTL 与全字段写入契约，真实浏览器视觉巡检保留为环境限制
+
+- [ ] v0.5.1 稳定性与易用性更新
+  - Owner: Codex
+  - Status: 代码与本地验收完成，待 Git 提交和 Sites 重新发布
+  - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
 
@@ -127,12 +132,12 @@ Updated by: Codex (GPT-5)
 
 - Git repository: yes
 - Branch: feat/v0.5.0-product
-- Last known commit: 70e5283 (Sites production metadata fix; deployed source)
+- Last known commit: fa3dc9c (v0.5.0 closeout)
 - Remote: `https://github.com/maxzrb/FFCodec-Lab.git`
 - Sync: `git pull origin master` 已确认 Already up to date；本地 master 比 origin/master 领先 12 个提交
-- Uncommitted changes: 仅本次最终状态记录待提交
-- Working tree clean: no（最终记录提交后应为 yes）
-- Commit recommended before switching agents/devices: YES（执行最终记录提交）
+- Uncommitted changes: v0.5.1 代码、测试、文档和状态记录待提交
+- Working tree clean: no
+- Commit recommended before switching agents/devices: YES
 
 ## Session Log
 
@@ -634,3 +639,35 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 应用内浏览器无可用实例，无法调用浏览器打开部署 URL；Sites 服务端状态已明确成功
 - Git status: 最终状态记录待提交；提交后应 clean
 - Next step: 无阻断功能任务；目标浏览器可用时进行非阻断视觉巡检
+
+### 2026-07-11 21:46 - Codex (GPT-5)
+
+- Objective: 修复用户反馈的 5 项问题并新增主题与流保留能力，发布 v0.5.1
+- Work completed:
+  1. 新增 RTL 失败用例并稳定复现自定义参数输入导致 `config.customArgs[key].join is not a function`、React 根节点清空的问题
+  2. 动态路径字段统一执行 `coerceValue`，textarea 按行写入 token 数组；自定义参数解析增加防御性兼容
+  3. select 写入恢复选项原始 number/boolean 类型，避免采样率和数字枚举被 DOM 字符串污染
+  4. 声道布局改为标准选项并生成 `-channel_layout:a`；采样率扩展为跟随输入及 8000–192000 Hz 共 14 项
+  5. 视频、音频、内置字幕分别提供“保留全部流”开关，并修复仅保留字幕时未进入显式映射的问题
+  6. 默认 PowerShell 单行命令；默认亮色主题并提供浏览器持久化暗色切换
+  7. 删除全部正式页面来源交叉核验提示，保留内部来源审计数据
+- Files changed: 命令构建、默认配置、字段应用/解析、BuilderPage、CommandPreview、ParameterField、CSS、4 个测试文件及发布文档
+- Commands run:
+  - `git pull --ff-only origin master` — Already up to date
+  - 针对性 `tsc` + Vitest — 53/53 passed
+  - `npm run check` — 全部通过
+  - `npx tsx scripts/acceptance-test.ts` — 10/10 通过
+  - localhost HTTP 检查 — 200
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 302/302 passed (19 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 444.30 KB JS + 15.65 KB CSS
+  - 用户要求删除的核验提示文本: src 中 0 处
+- Decisions/risks:
+  - 声道布局依据 FFmpeg 官方 `-channel_layout` 输出选项实现，不再错误地把 stereo 等布局名称传给仅接受声道数的 `-ac`
+  - 主题属于浏览器本地 UI 偏好，不进入 ProjectConfig 或分享配置
+  - 应用内浏览器仍无可用实例，未执行截图巡检
+- Git status: branch feat/v0.5.0-product，v0.5.1 变更待提交，working tree not clean
+- Next step: 提交 v0.5.1，推送站点专用仓库并部署新私有版本

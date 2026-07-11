@@ -23,6 +23,22 @@ export function resolveInputSection(
   config: ProjectConfig,
   fieldStates: Record<string, FieldState>,
 ): ResolvedSection {
+  const preserveVideoField = resolveSwitchField(
+    'streams.preserveOtherVideoStreams', '保留全部视频流',
+    config.streams.preserveOtherVideoStreams, fieldStates,
+  )
+  preserveVideoField.description = '开启后保留输入中的所有视频流；关闭时仅保留上方索引选中的视频流。'
+  const preserveAudioField = resolveSwitchField(
+    'streams.preserveOtherAudioStreams', '保留全部音频流',
+    config.streams.preserveOtherAudioStreams, fieldStates,
+  )
+  preserveAudioField.description = '开启后保留输入中的所有音频流；关闭时仅保留上方索引选中的音频流。'
+  const preserveSubtitleField = resolveSwitchField(
+    'streams.preserveOtherSubtitleStreams', '保留全部内置字幕流',
+    config.streams.preserveOtherSubtitleStreams, fieldStates,
+  )
+  preserveSubtitleField.description = '开启后保留输入中的所有字幕流；关闭时仅按字幕流索引保留一条。'
+
   const fields: ResolvedField[] = [
     resolveTextField('input.path', '输入文件路径', config.input.path, fieldStates, undefined, [
       {
@@ -71,18 +87,9 @@ export function resolveInputSection(
       visible: true, disabled: false, sourceRefs: [], verificationLevel: 'project-derived',
       needsCrossVerification: false, commandOrigins: [], diagnostics: [],
     },
-    resolveSwitchField(
-      'streams.preserveOtherVideoStreams', '保留其他视频流',
-      config.streams.preserveOtherVideoStreams, fieldStates,
-    ),
-    resolveSwitchField(
-      'streams.preserveOtherAudioStreams', '保留其他音频流',
-      config.streams.preserveOtherAudioStreams, fieldStates,
-    ),
-    resolveSwitchField(
-      'streams.preserveOtherSubtitleStreams', '保留其他字幕流',
-      config.streams.preserveOtherSubtitleStreams, fieldStates,
-    ),
+    preserveVideoField,
+    preserveAudioField,
+    preserveSubtitleField,
   ]
 
   return { id: 'section.input', label: '输入与输出', fields }
@@ -479,15 +486,42 @@ export function resolveAudioSection(
         )
       }
 
-      // Channel layout
-      fields.push(
-        resolveTextField(
-          'audio.channelLayout',
-          '声道布局',
-          config.audio.channelLayout,
-          fieldStates,
-        ),
-      )
+      const audioSourceRefs: SourceRef[] = [{
+        repository: 'FFmpeg/FFmpeg',
+        branch: 'master',
+        snapshotDate: '2026-07-11',
+        file: 'doc/ffmpeg.texi',
+        sourceType: 'ffmpeg-official',
+        url: 'https://ffmpeg.org/ffmpeg.html#Audio-Options',
+      }]
+
+      // 使用 FFmpeg 标准布局名称，避免用户猜测自由文本。
+      fields.push({
+        id: 'audio.channelLayout',
+        label: '声道布局',
+        description: '选择“跟随输入”时不生成声道布局参数。',
+        controlType: 'select',
+        value: config.audio.channelLayout ?? 'source',
+        defaultValue: 'stereo',
+        options: [
+          { value: 'source', label: '跟随输入' },
+          { value: 'mono', label: '单声道 (mono)' },
+          { value: 'stereo', label: '立体声 (stereo)' },
+          { value: '2.1', label: '2.1 声道' },
+          { value: '3.0', label: '3.0 声道' },
+          { value: 'quad', label: '4.0 声道 (quad)' },
+          { value: '5.1', label: '5.1 声道' },
+          { value: '5.1(side)', label: '5.1 侧环绕' },
+          { value: '7.1', label: '7.1 声道' },
+        ],
+        visible: true,
+        disabled: false,
+        sourceRefs: audioSourceRefs,
+        verificationLevel: 'official',
+        needsCrossVerification: false,
+        commandOrigins: ['audio.channelLayout'],
+        diagnostics: [],
+      })
 
       // Sample rate
       fields.push({
@@ -496,14 +530,25 @@ export function resolveAudioSection(
         controlType: 'select',
         value: config.audio.sampleRate,
         options: [
+          { value: 0, label: '跟随输入' },
+          { value: 8000, label: '8000 Hz（电话语音）' },
+          { value: 11025, label: '11025 Hz' },
+          { value: 12000, label: '12000 Hz' },
+          { value: 16000, label: '16000 Hz（语音）' },
+          { value: 22050, label: '22050 Hz' },
+          { value: 24000, label: '24000 Hz' },
+          { value: 32000, label: '32000 Hz' },
           { value: 44100, label: '44100 Hz' },
           { value: 48000, label: '48000 Hz' },
+          { value: 88200, label: '88200 Hz' },
           { value: 96000, label: '96000 Hz' },
+          { value: 176400, label: '176400 Hz' },
+          { value: 192000, label: '192000 Hz' },
         ],
         visible: fieldStates['section.audio.samplerate']?.visible !== false,
         disabled: !(fieldStates['section.audio.samplerate']?.enabled !== false),
-        sourceRefs: [],
-        verificationLevel: 'project-derived',
+        sourceRefs: audioSourceRefs,
+        verificationLevel: 'official',
         needsCrossVerification: false,
         commandOrigins: [],
         diagnostics: [],
@@ -918,7 +963,9 @@ export function resolveCustomArgsSection(config: ProjectConfig): ResolvedSection
     label,
     description: '每行输入一个完整 token；系统仅负责 Shell 转义，不校验 FFmpeg 语义。',
     controlType: 'textarea',
-    value: config.customArgs[key].join('\n'),
+    value: Array.isArray(config.customArgs[key])
+      ? config.customArgs[key].join('\n')
+      : String(config.customArgs[key] ?? ''),
     visible: true,
     disabled: false,
     sourceRefs: [],
