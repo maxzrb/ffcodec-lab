@@ -154,7 +154,9 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
   }
 
   const explicitStreamMapping =
-    config.streams.videoStreamIndex !== undefined
+    config.streams.videoStreamIndexes.length > 0
+    || config.streams.audioStreamIndexes.length > 0
+    || config.streams.videoStreamIndex !== undefined
     || config.streams.audioStreamIndex !== undefined
     || config.streams.subtitleStreamIndex !== undefined
     || config.streams.preserveOtherVideoStreams
@@ -163,16 +165,36 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
 
   if (explicitStreamMapping) {
     if (config.video.mode !== 'disabled') {
-      const videoSelector = config.streams.preserveOtherVideoStreams
-        ? '0:v?'
-        : `0:v:${config.streams.videoStreamIndex ?? 0}?`
-      output.maps.push({ id: 'map.video', originId: 'streams.videoStreamIndex', phase: 'MAP', tokens: ['-map', videoSelector] })
+      const videoIndexes = config.streams.videoStreamIndexes.length > 0
+        ? config.streams.videoStreamIndexes
+        : [config.streams.videoStreamIndex ?? 0]
+      const selectors = config.streams.preserveOtherVideoStreams
+        ? ['0:v?']
+        : videoIndexes.map((index) => `0:v:${index}?`)
+      selectors.forEach((selector, index) => output.maps.push({
+        id: `map.video.${index}`,
+        originId: config.streams.preserveOtherVideoStreams
+          ? 'streams.preserveOtherVideoStreams'
+          : 'streams.videoStreamIndexes',
+        phase: 'MAP',
+        tokens: ['-map', selector],
+      }))
     }
     if (config.audio.mode !== 'disabled') {
-      const audioSelector = config.streams.preserveOtherAudioStreams
-        ? '0:a?'
-        : `0:a:${config.streams.audioStreamIndex ?? 0}?`
-      output.maps.push({ id: 'map.audio', originId: 'streams.audioStreamIndex', phase: 'MAP', tokens: ['-map', audioSelector] })
+      const audioIndexes = config.streams.audioStreamIndexes.length > 0
+        ? config.streams.audioStreamIndexes
+        : [config.streams.audioStreamIndex ?? 0]
+      const selectors = config.streams.preserveOtherAudioStreams
+        ? ['0:a?']
+        : audioIndexes.map((index) => `0:a:${index}?`)
+      selectors.forEach((selector, index) => output.maps.push({
+        id: `map.audio.${index}`,
+        originId: config.streams.preserveOtherAudioStreams
+          ? 'streams.preserveOtherAudioStreams'
+          : 'streams.audioStreamIndexes',
+        phase: 'MAP',
+        tokens: ['-map', selector],
+      }))
     }
     if (config.streams.preserveOtherSubtitleStreams || config.streams.subtitleStreamIndex !== undefined) {
       const subtitleSelector = config.streams.preserveOtherSubtitleStreams

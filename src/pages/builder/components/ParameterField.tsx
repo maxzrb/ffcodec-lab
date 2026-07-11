@@ -160,6 +160,34 @@ function renderControl(
         />
       )
 
+    case 'multiselect': {
+      const selectedValues = Array.isArray(field.value) ? field.value : []
+      return (
+        <div id={controlId} className="multiselect-grid" role="group" aria-label={field.label}>
+          {field.options?.map((option) => {
+            const checked = selectedValues.some((value) => String(value) === String(option.value))
+            const isOnlySelection = checked && selectedValues.length === 1
+            return (
+              <label key={String(option.value)} className="multiselect-option">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={disabled || isOnlySelection}
+                  onChange={(event) => {
+                    const nextValues = event.target.checked
+                      ? [...selectedValues, option.value]
+                      : selectedValues.filter((value) => String(value) !== String(option.value))
+                    onChange(nextValues)
+                  }}
+                />
+                <span>{option.label}</span>
+              </label>
+            )
+          })}
+        </div>
+      )
+    }
+
     default:
       return (
         <input

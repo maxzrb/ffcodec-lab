@@ -68,6 +68,13 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       overwrite: config.output.overwrite,
       // path intentionally excluded — privacy
     },
+    m: {
+      videoStreamIndexes: config.streams.videoStreamIndexes,
+      audioStreamIndexes: config.streams.audioStreamIndexes,
+      preserveOtherVideoStreams: config.streams.preserveOtherVideoStreams,
+      preserveOtherAudioStreams: config.streams.preserveOtherAudioStreams,
+      preserveOtherSubtitleStreams: config.streams.preserveOtherSubtitleStreams,
+    },
   }
 }
 
@@ -85,7 +92,13 @@ export function fromShareable(
       containerId: shareable.o.containerId,
       overwrite: shareable.o.overwrite,
     },
-    streams: { preserveOtherVideoStreams: false, preserveOtherAudioStreams: false, preserveOtherSubtitleStreams: true },
+    streams: shareable.m ?? {
+      videoStreamIndexes: [0],
+      audioStreamIndexes: [0],
+      preserveOtherVideoStreams: false,
+      preserveOtherAudioStreams: false,
+      preserveOtherSubtitleStreams: true,
+    },
     video: {
       mode: shareable.v.mode,
       encoderId: shareable.v.encoderId,

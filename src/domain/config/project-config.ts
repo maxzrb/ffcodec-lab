@@ -36,7 +36,13 @@ export interface OutputConfig {
 }
 
 export interface StreamSelectionConfig {
+  /** 要保留的相对视频流索引，例如 [0, 2] 对应 0:v:0 与 0:v:2。 */
+  videoStreamIndexes: number[]
+  /** 要保留的相对音频流索引，例如 [0, 1] 对应 0:a:0 与 0:a:1。 */
+  audioStreamIndexes: number[]
+  /** 旧配置兼容字段；新界面使用 videoStreamIndexes。 */
   videoStreamIndex?: number
+  /** 旧配置兼容字段；新界面使用 audioStreamIndexes。 */
   audioStreamIndex?: number
   subtitleStreamIndex?: number
   preserveOtherVideoStreams: boolean

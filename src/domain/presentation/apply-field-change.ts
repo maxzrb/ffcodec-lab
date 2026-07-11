@@ -158,6 +158,16 @@ function coerceValue(
           .filter(Boolean),
       }
 
+    case 'multiselect': {
+      const rawValues = Array.isArray(value) ? value : []
+      const matchedValues = field.options
+        ? field.options
+            .filter((option) => rawValues.some((item) => String(item) === String(option.value)))
+            .map((option) => option.value)
+        : rawValues
+      return { value: matchedValues.length > 0 ? [...new Set(matchedValues)] : [field.options?.[0]?.value ?? 0] }
+    }
+
     case 'switch':
       // Ensure boolean
       if (typeof value !== 'boolean') {

@@ -378,4 +378,53 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.getByRole('button', { name: '单行' })).toHaveAttribute('aria-pressed', 'false')
     expect(document.querySelector('.param-field__verification')).toBeNull()
   })
+
+  it('切换输出容器会同步输出文件扩展名', async () => {
+    useBuilderStore.setState({
+      expandedSections: {
+        'section.input': true,
+        'section.video': false,
+        'section.frame': false,
+        'section.audio': false,
+        'section.subtitle': false,
+        'section.container': true,
+        'section.customArgs': false,
+      },
+    })
+    render(<BuilderPage />)
+
+    await userEvent.selectOptions(screen.getByLabelText('输出容器'), 'mkv')
+
+    await waitFor(() => {
+      expect(useBuilderStore.getState().config.output.containerId).toBe('mkv')
+      expect(useBuilderStore.getState().config.output.path).toBe('output.mkv')
+      expect(screen.getByLabelText('输出文件路径')).toHaveValue('output.mkv')
+    })
+  })
+
+  it('视频和音频流索引支持分别多选', async () => {
+    useBuilderStore.setState({
+      expandedSections: {
+        'section.input': true,
+        'section.video': false,
+        'section.frame': false,
+        'section.audio': false,
+        'section.subtitle': false,
+        'section.container': false,
+        'section.customArgs': false,
+      },
+    })
+    render(<BuilderPage />)
+
+    const videoField = document.querySelector('[data-field-id="streams.videoStreamIndexes"]')!
+    const audioField = document.querySelector('[data-field-id="streams.audioStreamIndexes"]')!
+    const videoOptions = videoField.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+    const audioOptions = audioField.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+
+    await userEvent.click(videoOptions[2])
+    await userEvent.click(audioOptions[1])
+
+    expect(useBuilderStore.getState().config.streams.videoStreamIndexes).toEqual([0, 2])
+    expect(useBuilderStore.getState().config.streams.audioStreamIndexes).toEqual([0, 1])
+  })
 })

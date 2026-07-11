@@ -88,6 +88,13 @@ export const shareableConfigSchema = z.object({
     containerId: z.string(),
     overwrite: z.boolean(),
   }),
+  m: z.object({
+    videoStreamIndexes: z.array(z.number().int().nonnegative()),
+    audioStreamIndexes: z.array(z.number().int().nonnegative()),
+    preserveOtherVideoStreams: z.boolean(),
+    preserveOtherAudioStreams: z.boolean(),
+    preserveOtherSubtitleStreams: z.boolean(),
+  }).optional(),
 })
 
 export type ShareableProjectConfig = z.infer<typeof shareableConfigSchema>

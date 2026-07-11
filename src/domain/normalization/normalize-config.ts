@@ -26,6 +26,38 @@ export function normalizeConfig(
   const notices: NormalizationNotice[] = []
   let config = structuredClone(next)
 
+  const containerChanged = previous.output.containerId !== next.output.containerId
+  const outputPathChanged = previous.output.path !== next.output.path
+
+  if (containerChanged) {
+    const container = catalog.containers[next.output.containerId]
+    if (container) {
+      const normalizedPath = replaceOutputExtension(next.output.path, container.extension)
+      if (normalizedPath !== next.output.path) {
+        config = { ...config, output: { ...config.output, path: normalizedPath } }
+        notices.push({
+          fieldId: 'output.path',
+          from: next.output.path,
+          to: normalizedPath,
+          reason: `输出容器已改为 ${container.label}，同步更新文件扩展名`,
+        })
+      }
+    }
+  } else if (outputPathChanged) {
+    const extension = getOutputExtension(next.output.path)
+    const matchedContainer = Object.values(catalog.containers)
+      .find((container) => container.extension.toLowerCase() === extension)
+    if (matchedContainer && matchedContainer.id !== next.output.containerId) {
+      config = { ...config, output: { ...config.output, containerId: matchedContainer.id } }
+      notices.push({
+        fieldId: 'output.containerId',
+        from: next.output.containerId,
+        to: matchedContainer.id,
+        reason: `输出路径使用 .${matchedContainer.extension}，同步切换输出容器`,
+      })
+    }
+  }
+
   // Only normalize when video mode is 'encode' and encoder changed
   if (next.video.mode === 'encode' && next.video.encoderId) {
     const encoder = catalog.encoders.video[next.video.encoderId]
@@ -175,4 +207,20 @@ export function normalizeConfig(
   }
 
   return { config, notices }
+}
+
+/** 获取最后一个路径片段的扩展名，兼容 Windows 与 POSIX 路径。 */
+function getOutputExtension(path: string): string {
+  const separatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))
+  const dotIndex = path.lastIndexOf('.')
+  if (dotIndex <= separatorIndex + 0 || dotIndex === path.length - 1) return ''
+  return path.slice(dotIndex + 1).toLowerCase()
+}
+
+/** 保留目录与文件名，仅把最终扩展名替换为目标容器扩展名。 */
+function replaceOutputExtension(path: string, extension: string): string {
+  const separatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))
+  const dotIndex = path.lastIndexOf('.')
+  const base = dotIndex > separatorIndex ? path.slice(0, dotIndex) : path
+  return `${base}.${extension}`
 }

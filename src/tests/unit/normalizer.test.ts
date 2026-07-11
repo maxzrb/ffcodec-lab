@@ -96,4 +96,28 @@ describe('Normalizer', () => {
     expect(result.config.video.specialParameters).toEqual({})
     expect(result.notices.some((n) => n.fieldId === 'video.specialParameters')).toBe(true)
   })
+
+  it('切换输出容器时同步替换输出文件扩展名', () => {
+    const previous = createDefaultProjectConfig()
+    previous.output.path = 'D:\\Exports\\demo.final.mp4'
+    const next = structuredClone(previous)
+    next.output.containerId = 'mkv'
+
+    const result = normalizeConfig(previous, next, catalog)
+
+    expect(result.config.output.path).toBe('D:\\Exports\\demo.final.mkv')
+    expect(result.notices.some((notice) => notice.fieldId === 'output.path')).toBe(true)
+  })
+
+  it('输入已知容器扩展名时同步切换输出容器', () => {
+    const previous = createDefaultProjectConfig()
+    const next = structuredClone(previous)
+    next.output.path = '/exports/video.webm'
+
+    const result = normalizeConfig(previous, next, catalog)
+
+    expect(result.config.output.containerId).toBe('webm')
+    expect(result.config.output.path).toBe('/exports/video.webm')
+    expect(result.notices.some((notice) => notice.fieldId === 'output.containerId')).toBe(true)
+  })
 })

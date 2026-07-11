@@ -166,6 +166,41 @@ input[type="number"]:hover {
   font-size: 11px;
 }
 
+.multiselect-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(34px, 1fr));
+  gap: 6px;
+}
+
+.multiselect-option {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-surface);
+  color: var(--text-soft);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.multiselect-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--accent-strong);
+}
+
+.multiselect-option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.multiselect-option input {
+  margin: 0;
+}
+
 .section-divider {
   padding: 9px 11px;
   border: 1px dashed var(--border);
@@ -866,6 +901,7 @@ code {
 
 @media (max-width: 560px) {
   .builder-page { width: min(100% - 16px, 760px); padding-bottom: 28px; }
+  .multiselect-grid { grid-template-columns: repeat(4, minmax(34px, 1fr)); }
   .product-header { gap: 18px; padding: 19px 17px; border-radius: 17px; }
   .product-header__brand { gap: 11px; }
   .brand-mark { width: 40px; height: 40px; border-radius: 11px; font-size: 14px; }

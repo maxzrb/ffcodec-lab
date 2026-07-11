@@ -23,6 +23,10 @@ export function resolveInputSection(
   config: ProjectConfig,
   fieldStates: Record<string, FieldState>,
 ): ResolvedSection {
+  const streamIndexOptions = Array.from({ length: 16 }, (_, index) => ({
+    value: index,
+    label: String(index),
+  }))
   const preserveVideoField = resolveSwitchField(
     'streams.preserveOtherVideoStreams', '保留全部视频流',
     config.streams.preserveOtherVideoStreams, fieldStates,
@@ -70,16 +74,28 @@ export function resolveInputSection(
       fieldStates,
     ),
     {
-      id: 'streams.videoStreamIndex', label: '视频流索引', controlType: 'number',
-      value: config.streams.videoStreamIndex ?? 0, min: 0, max: 64, step: 1,
-      visible: true, disabled: false, sourceRefs: [], verificationLevel: 'project-derived',
-      needsCrossVerification: false, commandOrigins: [], diagnostics: [],
+      id: 'streams.videoStreamIndexes', label: '保留的视频流索引', controlType: 'multiselect',
+      description: '可勾选多个相对视频流索引；至少保留一项。开启“保留全部视频流”时忽略此项。',
+      value: (config.streams.videoStreamIndexes.length > 0
+        ? config.streams.videoStreamIndexes
+        : [config.streams.videoStreamIndex ?? 0]),
+      options: streamIndexOptions,
+      visible: true, disabled: config.streams.preserveOtherVideoStreams,
+      disabledReason: config.streams.preserveOtherVideoStreams ? '已选择保留全部视频流' : undefined,
+      sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
+      commandOrigins: ['streams.videoStreamIndexes'], diagnostics: [],
     },
     {
-      id: 'streams.audioStreamIndex', label: '音频流索引', controlType: 'number',
-      value: config.streams.audioStreamIndex ?? 0, min: 0, max: 64, step: 1,
-      visible: true, disabled: false, sourceRefs: [], verificationLevel: 'project-derived',
-      needsCrossVerification: false, commandOrigins: [], diagnostics: [],
+      id: 'streams.audioStreamIndexes', label: '保留的音频流索引', controlType: 'multiselect',
+      description: '可勾选多个相对音频流索引；至少保留一项。开启“保留全部音频流”时忽略此项。',
+      value: (config.streams.audioStreamIndexes.length > 0
+        ? config.streams.audioStreamIndexes
+        : [config.streams.audioStreamIndex ?? 0]),
+      options: streamIndexOptions,
+      visible: true, disabled: config.streams.preserveOtherAudioStreams,
+      disabledReason: config.streams.preserveOtherAudioStreams ? '已选择保留全部音频流' : undefined,
+      sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
+      commandOrigins: ['streams.audioStreamIndexes'], diagnostics: [],
     },
     {
       id: 'streams.subtitleStreamIndex', label: '字幕流索引', controlType: 'number',

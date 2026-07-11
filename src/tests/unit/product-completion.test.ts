@@ -22,12 +22,25 @@ describe('成品功能闭环', () => {
 
   it('流索引生成显式且可选的 map 选择器', () => {
     const config = createDefaultProjectConfig()
-    config.streams.videoStreamIndex = 1
-    config.streams.audioStreamIndex = 2
+    config.streams.videoStreamIndexes = [1]
+    config.streams.audioStreamIndexes = [2]
     config.streams.preserveOtherSubtitleStreams = false
     const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
     expect(tokens).toContain('0:v:1?')
     expect(tokens).toContain('0:a:2?')
+  })
+
+  it('多个视频和音频流索引分别生成独立 map 参数', () => {
+    const config = createDefaultProjectConfig()
+    config.streams.videoStreamIndexes = [0, 2]
+    config.streams.audioStreamIndexes = [0, 1, 3]
+    config.streams.preserveOtherSubtitleStreams = false
+    const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
+    expect(tokens.filter((token) => token === '0:v:0?')).toHaveLength(1)
+    expect(tokens.filter((token) => token === '0:v:2?')).toHaveLength(1)
+    expect(tokens).toContain('0:a:0?')
+    expect(tokens).toContain('0:a:1?')
+    expect(tokens).toContain('0:a:3?')
   })
 
   it('可独立选择保留全部视频、音频或字幕流', () => {
@@ -67,6 +80,8 @@ describe('成品功能闭环', () => {
     config.audio.qualityValues = { profile: 'aac_low' }
     config.frame.filters!.crop.enabled = true
     config.frame.filters!.crop.width = 1280
+    config.streams.videoStreamIndexes = [0, 2]
+    config.streams.audioStreamIndexes = [1]
 
     const encoded = encodeConfigToShare(config)
     expect(encoded.kind).toBe('hash')
@@ -75,5 +90,7 @@ describe('成品功能闭环', () => {
     expect(decoded.config?.video.specialParameters).toEqual({ vbaq: true })
     expect(decoded.config?.audio.qualityValues).toEqual({ profile: 'aac_low' })
     expect(decoded.config?.frame.filters?.crop.width).toBe(1280)
+    expect(decoded.config?.streams.videoStreamIndexes).toEqual([0, 2])
+    expect(decoded.config?.streams.audioStreamIndexes).toEqual([1])
   })
 })

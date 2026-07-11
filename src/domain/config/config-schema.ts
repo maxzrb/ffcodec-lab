@@ -163,6 +163,8 @@ export const projectConfigSchema = z.object({
     overwrite: z.boolean(),
   }),
   streams: z.object({
+    videoStreamIndexes: z.array(z.number().int().nonnegative()).default([]),
+    audioStreamIndexes: z.array(z.number().int().nonnegative()).default([]),
     videoStreamIndex: z.number().int().nonnegative().optional(),
     audioStreamIndex: z.number().int().nonnegative().optional(),
     subtitleStreamIndex: z.number().int().nonnegative().optional(),
