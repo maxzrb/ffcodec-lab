@@ -1,12 +1,12 @@
 # Project Status
 
-Last updated: 2026-07-11 23:02
+Last updated: 2026-07-11 23:16
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
 - Current objective: v0.5.2 容器/扩展名双向同步与多流索引多选 — 本地稳定提交
-- Current state: v0.5.2 已提交为 `cbb1c8d`，working tree clean。容器切换自动同步输出扩展名、输入已知扩展名反向同步容器、视频与音频各 0-15 多选索引复选框并为每个选中流生成独立 -map、分享 m 字段携带流选择配置、307 项测试全部通过、10/10 验收通过。
+- Current state: v0.5.2 已提交 `cbb1c8d` + `bbc59c6`（字幕多选补全），working tree clean。容器切换自动同步输出扩展名、输入已知扩展名反向同步容器、视频/音频/字幕各 0-15 多选索引复选框并为每个选中流生成独立 -map、分享 m 字段携带流选择配置、307 项测试全部通过、10/10 验收通过。
 - Next objective: 全量质量巡检后继续功能迭代或发布准备
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
@@ -731,5 +731,24 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 不部署到 Sites，此提交作为本地稳定点
   - 应用内浏览器仍无可用实例，UI 交互由 RTL 集成测试覆盖
 - Environment notes: Node.js v24.18.0, Windows 11
-- Git status: committed `cbb1c8d`, working tree clean (STATUS.md 待提交)
+- Git status: committed `cbb1c8d` + `bbc59c6`, working tree clean (STATUS.md 待提交)
 - Next step: 全量质量巡检；若通过可考虑合并到 master 或继续功能迭代
+
+### 2026-07-11 23:16 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 字幕流索引也改为 0-15 多选复选框，与视频/音频统一
+- Work completed:
+  1. `project-config.ts`: 新增 `subtitleStreamIndexes: number[]`，旧 `subtitleStreamIndex` 保留兼容
+  2. `config-schema.ts` / `defaults.ts` / `config-path.ts`: 同步新增字段、默认值 [0]、config path
+  3. `resolve-section.ts`: 字幕流索引从 `number` 控件改为 `multiselect`（0-15 复选框网格），`preserveOtherSubtitleStreams` 时自动禁用
+  4. `command-builder.ts`: 每个选中字幕流独立生成 `-map 0:s:N?`，originId 指向 `streams.subtitleStreamIndexes`
+  5. `share-codec.ts` / `share-schema.ts`: `m` 字段新增 `subtitleStreamIndexes`，向后兼容
+  6. 测试更新: product-completion（多 map + 分享覆盖含字幕流）、builder-checkboxes（字幕多选交互，先关闭 preserveOther 再操作）
+- Files changed: 10 files, +48/-10
+- Commands run:
+  - `npm run check`: ALL PASSED (ESLint 0/0, tsc 0, vitest 307/307, audit 0/0, build 449KB)
+- Verification:
+  - 全量检查全部通过，无弱化、无新增 warning
+  - 原有 307 测试全部保留
+- Git status: committed `bbc59c6`, working tree clean
+- Next step: 全量质量巡检
