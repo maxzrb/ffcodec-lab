@@ -245,28 +245,6 @@ code {
   mask-image: linear-gradient(to bottom, black, transparent 80%);
 }
 
-.dev-toolbar {
-  position: fixed;
-  top: 12px;
-  right: 14px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--toolbar-surface);
-  padding: 5px 6px 5px 11px;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(16px);
-}
-
-.dev-toolbar__label {
-  color: var(--text-dim);
-  font-size: 11px;
-}
-
-.dev-toolbar__button,
 .button,
 .button-ghost,
 .icon-button,
@@ -278,7 +256,6 @@ code {
   transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, color 140ms ease;
 }
 
-.dev-toolbar__button:hover,
 .button:hover,
 .button-ghost:hover,
 .icon-button:hover,
@@ -287,24 +264,11 @@ code {
   background: var(--bg-hover);
 }
 
-.dev-toolbar__button:active,
 .button:active,
 .button-ghost:active,
 .icon-button:active,
 .segmented-button:active {
   transform: translateY(1px);
-}
-
-.dev-toolbar__button {
-  border-radius: 999px;
-  padding: 5px 10px;
-  font-size: 11px;
-}
-
-.dev-toolbar__button--active {
-  border-color: rgba(49, 210, 180, 0.48);
-  background: rgba(49, 210, 180, 0.14);
-  color: var(--accent);
 }
 
 .builder-page {
@@ -909,7 +873,6 @@ code {
   .command-toolbar__title { width: 100%; }
   .shell-selector { width: 100%; }
   .segmented-button { flex: 1; }
-  .dev-toolbar__label { display: none; }
   .parameter-section__description { display: none; }
 }
 
