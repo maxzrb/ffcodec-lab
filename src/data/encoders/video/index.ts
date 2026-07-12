@@ -10,19 +10,14 @@ import { h264Amf, hevcAmf } from './amf'
 import { h264VideoToolbox, hevcVideoToolbox } from './videotoolbox'
 import { libaomAv1 } from './libaom_av1'
 import { libvvenc } from './libvvenc'
+import { withAdvancedQualityControls } from './advanced-quality'
 
-export const videoEncoders: Record<string, EncoderDefinition> = {
-  libx264,
-  libx265,
-  libsvtav1,
-  libaom_av1: libaomAv1,
-  libvvenc,
-  h264_nvenc: h264Nvenc,
-  hevc_nvenc: hevcNvenc,
-  h264_qsv: h264Qsv,
-  hevc_qsv: hevcQsv,
-  h264_amf: h264Amf,
-  hevc_amf: hevcAmf,
-  h264_videotoolbox: h264VideoToolbox,
-  hevc_videotoolbox: hevcVideoToolbox,
-}
+const definitions = [
+  libx264, libx265, libsvtav1, libaomAv1, libvvenc,
+  h264Nvenc, hevcNvenc, h264Qsv, hevcQsv,
+  h264Amf, hevcAmf, h264VideoToolbox, hevcVideoToolbox,
+].map(withAdvancedQualityControls)
+
+export const videoEncoders: Record<string, EncoderDefinition> = Object.fromEntries(
+  definitions.map((encoder) => [encoder.id, encoder]),
+)

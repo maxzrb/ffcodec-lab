@@ -1,6 +1,6 @@
 # MVP 验收报告
 
-> 生成时间：2026-07-12T04:40:27.685Z
+> 生成时间：2026-07-12T08:57:41.132Z
 > TypeScript：0 errors
 > 目录审计：0 errors
 > 测试：以本次 npm run check 结果为准
@@ -40,17 +40,17 @@
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -73,17 +73,17 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset mediu
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -106,17 +106,17 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow 
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -139,17 +139,17 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v copy -c:a copy output.mp4
+ffmpeg -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v copy -c:a copy output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v copy -c:a copy output.mp4
+ffmpeg -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v copy -c:a copy output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v copy -c:a copy output.mp4
+ffmpeg -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v copy -c:a copy output.mp4
 ```
 
 **结果**：✅ 通过
@@ -175,17 +175,17 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v copy -c:a copy output
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 copy output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map '0:v:0?' -map '0:a:0?' -map '0:s?' -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 copy output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 copy output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map "0:v:0?" -map "0:a:0?" -map "0:s?" -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 copy output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 copy output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map "0:v:0?" -map "0:a:0?" -map "0:s?" -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 copy output.mp4
 ```
 
 **结果**：✅ 通过
@@ -208,17 +208,17 @@ ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 mov_text output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map '0:v:0?' -map '0:a:0?' -map '0:s?' -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 mov_text output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 mov_text output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map "0:v:0?" -map "0:a:0?" -map "0:s?" -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 mov_text output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 mov_text output.mp4
+ffmpeg -i input.mkv -i subtitles.srt -map "0:v:0?" -map "0:a:0?" -map "0:s?" -map 1:s:0 -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 -c:s:0 mov_text output.mp4
 ```
 
 **结果**：✅ 通过
@@ -241,17 +241,17 @@ ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -i subtitles.ass -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset medium -crf 24 -vf "scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24'" -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.ass -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx265 -preset medium -crf 24 -vf "scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24'" -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -i subtitles.ass -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset medium -crf 24 -vf scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24' -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.ass -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx265 -preset medium -crf 24 -vf "scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24'" -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -i subtitles.ass -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset medium -crf 24 -vf scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24' -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -i subtitles.ass -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx265 -preset medium -crf 24 -vf "scale=1920:1080,fps=30,ass=filename='subtitles.ass':force_style='FontName=Arial,FontSize=24'" -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -274,17 +274,17 @@ ffmpeg -i input.mkv -i subtitles.ass -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -map 0:a:0? -map 0:s? -vn -c:a aac -aac_coder auto -b:a 320k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map '0:a:0?' -map '0:s?' -vn -c:a aac -aac_coder auto -b:a 320k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -map 0:a:0? -map 0:s? -vn -c:a aac -aac_coder auto -b:a 320k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map "0:a:0?" -map "0:s?" -vn -c:a aac -aac_coder auto -b:a 320k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -map 0:a:0? -map 0:s? -vn -c:a aac -aac_coder auto -b:a 320k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map "0:a:0?" -map "0:s?" -vn -c:a aac -aac_coder auto -b:a 320k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -308,17 +308,17 @@ ffmpeg -i input.mkv -map 0:a:0? -map 0:s? -vn -c:a aac -aac_coder auto -b:a 320k
 
 **Bash**：
 ```bash
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4 ;  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4 ;  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -341,17 +341,17 @@ ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map 0:v:0? -map 0:a:0? -ma
 
 **Bash**：
 ```bash
-ffmpeg -i 'C:\My Videos\我的视频 文件.mp4' -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 'C:\Output\压制输出 (高清版).mkv'
+ffmpeg -i 'C:\My Videos\我的视频 文件.mp4' -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 'C:\Output\压制输出 (高清版).mkv'
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 "C:\Output\压制输出 (高清版).mkv"
+ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 "C:\Output\压制输出 (高清版).mkv"
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 "C:\Output\压制输出 (高清版).mkv"
+ffmpeg -i "C:\My Videos\我的视频 文件.mp4" -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -crf 23 -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 "C:\Output\压制输出 (高清版).mkv"
 ```
 
 **结果**：✅ 通过

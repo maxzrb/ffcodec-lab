@@ -13,6 +13,7 @@ import {
   resolveInputSection,
   resolveVideoSection,
   resolveFrameSection,
+  resolveColorSection,
   resolveAudioSection,
   resolveSubtitleSection,
   resolveContainerSection,
@@ -36,6 +37,7 @@ export function resolveBuilderView(
     resolveInputSection(config, fieldStates),
     resolveVideoSection(config, catalog, fieldStates),
     resolveFrameSection(config, fieldStates),
+    resolveColorSection(config, fieldStates),
     resolveAudioSection(config, catalog, fieldStates),
     resolveSubtitleSection(config, catalog, fieldStates),
     resolveContainerSection(config, catalog, fieldStates),
@@ -59,13 +61,76 @@ export function resolveBuilderView(
   attachDiagnostics(allFields, allMessages)
 
   const hasErrors = allMessages.some((m) => m.severity === 'error')
+  const panels = buildWorkspacePanels(sections)
 
   return {
     sections,
+    panels,
     fieldIndex,
     messages: allMessages,
     hasErrors,
   }
+}
+
+const PANEL_DEFINITIONS = [
+  ['input-output', '输入与输出'],
+  ['video', '视频编码'],
+  ['quality', '质量控制'],
+  ['color', '色彩管理'],
+  ['filters', '画面与滤镜'],
+  ['audio', '音频'],
+  ['subtitle', '字幕'],
+  ['streams-container', '流与封装'],
+  ['custom', '自定义参数'],
+] as const
+
+function buildWorkspacePanels(sections: ResolvedBuilderView['sections']): ResolvedBuilderView['panels'] {
+  return PANEL_DEFINITIONS.map(([id, label]) => {
+    const panelSections = sections.flatMap((section) => {
+      const fields = section.fields.filter((field) => resolvePanelId(section.id, field) === id)
+      if (fields.length === 0) return []
+      const split = fields.length !== section.fields.length
+      return [{
+        ...section,
+        id: split ? `${section.id}.${id}` : section.id,
+        label: resolvePanelSectionLabel(id, section.id, label),
+        fields,
+      }]
+    })
+    const fields = panelSections.flatMap((section) => section.fields)
+    return {
+      id,
+      label,
+      sections: panelSections,
+      diagnosticCount: fields.reduce((sum, field) => sum + field.diagnostics.length, 0),
+      enabledAdvancedCount: fields.filter((field) => field.tier === 'advanced' && isAdvancedValueSet(field.value)).length,
+    }
+  })
+}
+
+/** 同一工作台内保留来源分组语义，避免两个区域显示完全相同的标题。 */
+function resolvePanelSectionLabel(panelId: string, sectionId: string, fallback: string): string {
+  if (panelId === 'color' && sectionId === 'section.video') return '像素格式'
+  if (panelId === 'color' && sectionId === 'section.color') return '色彩元数据'
+  if (panelId === 'streams-container' && sectionId === 'section.input') return '流选择'
+  if (panelId === 'streams-container' && sectionId === 'section.container') return '封装设置'
+  return fallback
+}
+
+function resolvePanelId(sectionId: string, field: ResolvedField): string {
+  if (field.panelId) return field.panelId
+  if (field.id.startsWith('streams.') || sectionId === 'section.container') return 'streams-container'
+  if (sectionId === 'section.input') return 'input-output'
+  if (sectionId === 'section.video') return 'video'
+  if (sectionId === 'section.frame') return 'filters'
+  if (sectionId === 'section.color') return 'color'
+  if (sectionId === 'section.audio') return 'audio'
+  if (sectionId === 'section.subtitle') return 'subtitle'
+  return 'custom'
+}
+
+function isAdvancedValueSet(value: unknown): boolean {
+  return value !== undefined && value !== null && value !== '' && value !== false
 }
 
 /**

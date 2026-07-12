@@ -175,9 +175,10 @@ export function resolveVideoSection(
     }
     // Pixel format
     if (encoder.pixelFormat) {
-      fields.push(
-        resolveControlField(encoder.pixelFormat, config, 'video.pixelFormat', fieldStates, encoder),
-      )
+      const pixelFormat = resolveControlField(encoder.pixelFormat, config, 'video.pixelFormat', fieldStates, encoder)
+      pixelFormat.panelId = 'color'
+      pixelFormat.groupId = 'pixel-format'
+      fields.push(pixelFormat)
     }
 
     // Rate control mode
@@ -198,6 +199,9 @@ export function resolveVideoSection(
       needsCrossVerification: encoder.needsCrossVerification,
       commandOrigins: [],
       diagnostics: [],
+      panelId: 'quality',
+      groupId: 'rate-control',
+      tier: 'basic',
     })
 
     // Quality mode specific controls
@@ -205,7 +209,10 @@ export function resolveVideoSection(
     if (activeMode) {
       for (const ctrl of activeMode.controls) {
         const configPath = resolveQualityControlConfigPath(ctrl)
-        fields.push(resolveControlField(ctrl, config, configPath, fieldStates, encoder))
+        const field = resolveControlField(ctrl, config, configPath, fieldStates, encoder)
+        field.panelId = 'quality'
+        field.groupId = 'rate-control'
+        fields.push(field)
       }
     }
 
@@ -222,11 +229,73 @@ export function resolveVideoSection(
     // Special parameters
     for (const sp of encoder.specialParameters) {
       const configPath = sp.configBinding?.path ?? `video.specialParameters.${sp.id}`
-      fields.push(resolveControlField(sp, config, configPath, fieldStates, encoder))
+      const field = resolveControlField(sp, config, configPath, fieldStates, encoder)
+      const qualityArgumentNames = new Set([
+        '-rc-lookahead', '-spatial_aq', '-spatial-aq', '-temporal_aq', '-temporal-aq',
+        '-bf', '-g', '-keyint_min', '-qmin', '-qmax', '-qcomp',
+      ])
+      if (!field.panelId && (
+        sp.commandBinding?.phase === 'VIDEO_RATE_CONTROL'
+        || qualityArgumentNames.has(sp.commandBinding?.argName ?? '')
+      )) {
+        field.panelId = 'quality'
+        field.groupId = 'encoder-quality'
+        field.tier = 'advanced'
+      }
+      fields.push(field)
     }
   }
 
   return { id: 'section.video', label: '视频编码', fields }
+}
+
+export function resolveColorSection(
+  config: ProjectConfig,
+  fieldStates: Record<string, FieldState>,
+): ResolvedSection {
+  const sourceRefs: SourceRef[] = [{
+    repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12',
+    file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_色彩管理.vb',
+    symbol: 'Form_v6_参数面板_色彩管理_Load', sourceType: 'ffmpegfreeui',
+  }]
+  const state = fieldStates['section.frame']
+  const makeSelect = (
+    id: string,
+    label: string,
+    value: unknown,
+    options: Array<{ value: string; label: string }>,
+  ): ResolvedField => ({
+    id, label, controlType: 'select', value: value ?? '',
+    options: [{ value: '', label: '不设置（保留输入或编码器默认）' }, ...options],
+    visible: state?.visible !== false,
+    disabled: state?.enabled === false,
+    disabledReason: state?.reason,
+    sourceRefs,
+    verificationLevel: 'project-derived', needsCrossVerification: true,
+    commandOrigins: [id], diagnostics: [], panelId: 'color', groupId: 'color-metadata',
+    tier: 'advanced', optional: true,
+    configBinding: { path: CONFIG_PATHS.video.color[id.split('.').slice(-1)[0] as 'range' | 'space' | 'primaries' | 'transfer'] },
+  })
+
+  return {
+    id: 'section.color',
+    label: '色彩管理',
+    description: '仅写入输出流色彩标记，不改变像素数值；未设置项不会进入命令。',
+    fields: [
+      makeSelect('video.color.range', '色彩范围', config.video.color?.range, [
+        { value: 'tv', label: 'tv 有限范围' }, { value: 'pc', label: 'pc 全范围' },
+      ]),
+      makeSelect('video.color.space', '矩阵 / 色彩空间', config.video.color?.space, [
+        'bt709', 'bt2020nc', 'bt2020c', 'rgb', 'gbr', 'bt470bg', 'smpte170m', 'smpte240m', 'fcc', 'ictcp', 'ycgco', 'xyz',
+      ].map((value) => ({ value, label: value }))),
+      makeSelect('video.color.primaries', '色域 / 原色', config.video.color?.primaries, [
+        'bt709', 'bt2020', 'smpte428', 'smpte431', 'smpte432', 'film', 'bt470m', 'bt470bg', 'smpte170m', 'smpte240m', 'jedec-p22', 'ebu3213',
+      ].map((value) => ({ value, label: value }))),
+      makeSelect('video.color.transfer', '传输特性', config.video.color?.transfer, [
+        'bt709', 'bt2020-10', 'bt2020-12', 'smpte2084', 'bt470m', 'bt470bg', 'log', 'log_sqrt', 'linear', 'bt1361e', 'iec61966-2-1', 'iec61966-2-4', 'smpte170m', 'smpte240m', 'gamma22', 'gamma28', 'arib-std-b67',
+      ].map((value) => ({ value, label: value }))),
+    ],
+  }
 }
 
 /**
@@ -466,6 +535,58 @@ export function resolveFrameSection(
   addFilterField('frame.filters.sharpen.enabled', '启用锐化', 'switch', filters.sharpen.enabled)
   if (filters.sharpen.enabled) {
     addFilterField('frame.filters.sharpen.amount', '锐化强度', 'number', filters.sharpen.amount, undefined, { min: -2, max: 5, step: 0.1 })
+  }
+
+  addFilterField('frame.filters.denoise.enabled', '启用降噪', 'switch', filters.denoise.enabled)
+  if (filters.denoise.enabled) {
+    addFilterField('frame.filters.denoise.algorithm', '降噪滤镜', 'select', filters.denoise.algorithm ?? '', [
+      { value: '', label: '请选择滤镜' },
+      { value: 'hqdn3d', label: 'hqdn3d（时空域）' },
+      { value: 'nlmeans', label: 'nlmeans（高质量）' },
+      { value: 'atadenoise', label: 'atadenoise（时间域）' },
+      { value: 'bm3d', label: 'bm3d（高质量/高负载）' },
+    ])
+    const values = filters.denoise.values
+    if (filters.denoise.algorithm === 'hqdn3d') {
+      addFilterField('frame.filters.denoise.values.lumaSpatial', '亮度空间强度', 'number', values.lumaSpatial, undefined, { min: 0, max: 20, step: 0.1 })
+      addFilterField('frame.filters.denoise.values.chromaSpatial', '色度空间强度', 'number', values.chromaSpatial, undefined, { min: 0, max: 20, step: 0.1 })
+      addFilterField('frame.filters.denoise.values.lumaTemporal', '亮度时间强度', 'number', values.lumaTemporal, undefined, { min: 0, max: 20, step: 0.1 })
+      addFilterField('frame.filters.denoise.values.chromaTemporal', '色度时间强度', 'number', values.chromaTemporal, undefined, { min: 0, max: 20, step: 0.1 })
+    } else if (filters.denoise.algorithm === 'nlmeans') {
+      addFilterField('frame.filters.denoise.values.strength', '降噪强度', 'number', values.strength, undefined, { min: 1, max: 30, step: 0.1 })
+      addFilterField('frame.filters.denoise.values.patchSize', '参考像素块大小', 'number', values.patchSize, undefined, { min: 0, max: 99, step: 1 })
+      addFilterField('frame.filters.denoise.values.chromaPatchSize', '色度像素块大小', 'number', values.chromaPatchSize, undefined, { min: 0, max: 99, step: 1 })
+      addFilterField('frame.filters.denoise.values.researchSize', '搜索半径', 'number', values.researchSize, undefined, { min: 0, max: 99, step: 1 })
+    } else if (filters.denoise.algorithm === 'atadenoise') {
+      addFilterField('frame.filters.denoise.values.lumaStatic', '亮度静态帧加权', 'number', values.lumaStatic, undefined, { min: 0, max: 0.3, step: 0.01 })
+      addFilterField('frame.filters.denoise.values.lumaDynamic', '亮度动态帧加权', 'number', values.lumaDynamic, undefined, { min: 0, max: 5, step: 0.01 })
+      addFilterField('frame.filters.denoise.values.chromaStatic', '色度静态帧加权', 'number', values.chromaStatic, undefined, { min: 0, max: 0.3, step: 0.01 })
+      addFilterField('frame.filters.denoise.values.chromaDynamic', '色度动态帧加权', 'number', values.chromaDynamic, undefined, { min: 0, max: 5, step: 0.01 })
+    } else if (filters.denoise.algorithm === 'bm3d') {
+      addFilterField('frame.filters.denoise.values.sigma', '噪声强度 sigma', 'number', values.sigma, undefined, { min: 0, max: 100, step: 0.1 })
+      addFilterField('frame.filters.denoise.values.block', '块大小', 'number', values.block, undefined, { min: 8, max: 64, step: 1 })
+      addFilterField('frame.filters.denoise.values.blockStep', '块步长', 'number', values.blockStep, undefined, { min: 1, max: 64, step: 1 })
+      addFilterField('frame.filters.denoise.values.group', '相似块数量', 'number', values.group, undefined, { min: 1, max: 256, step: 1 })
+    }
+  }
+
+  addFilterField('frame.filters.deband.enabled', '启用去色带', 'switch', filters.deband.enabled)
+  if (filters.deband.enabled) {
+    addFilterField('frame.filters.deband.algorithm', '去色带滤镜', 'select', filters.deband.algorithm ?? '', [
+      { value: '', label: '请选择滤镜' },
+      { value: 'deband', label: 'deband' },
+      { value: 'gradfun', label: 'gradfun' },
+    ])
+    const values = filters.deband.values
+    if (filters.deband.algorithm === 'deband') {
+      addFilterField('frame.filters.deband.values.threshold', '阈值', 'number', values.threshold, undefined, { min: 0.00003, max: 0.5, step: 0.001 })
+      addFilterField('frame.filters.deband.values.range', '采样范围', 'number', values.range, undefined, { min: 1, max: 256, step: 1 })
+      addFilterField('frame.filters.deband.values.direction', '方向', 'number', values.direction, undefined, { min: -6.28, max: 6.28, step: 0.01 })
+      addFilterField('frame.filters.deband.values.coupling', '平面耦合', 'switch', values.coupling ?? false)
+    } else if (filters.deband.algorithm === 'gradfun') {
+      addFilterField('frame.filters.deband.values.strength', '平滑强度', 'number', values.strength, undefined, { min: 0.51, max: 64, step: 0.01 })
+      addFilterField('frame.filters.deband.values.radius', '渐变拟合半径', 'number', values.radius, undefined, { min: 4, max: 32, step: 1 })
+    }
   }
 
   return { id: 'section.frame', label: '画面参数', fields }

@@ -5,7 +5,7 @@
 
 import { z } from 'zod'
 
-export const SHARE_PAYLOAD_VERSION = 2
+export const SHARE_PAYLOAD_VERSION = 3
 
 /** Privacy-safe config subset: no input path, output path, or external subtitle paths */
 export const shareableConfigSchema = z.object({
@@ -27,6 +27,12 @@ export const shareableConfigSchema = z.object({
     profile: z.string().optional(),
     tune: z.string().optional(),
     pixelFormat: z.string().optional(),
+    color: z.object({
+      range: z.enum(['tv', 'pc']).optional(),
+      space: z.string().optional(),
+      primaries: z.string().optional(),
+      transfer: z.string().optional(),
+    }).optional(),
     specialParameters: z.record(z.unknown()).default({}),
   }),
   f: z.object({
@@ -52,6 +58,16 @@ export const shareableConfigSchema = z.object({
       }),
       deinterlace: z.object({ enabled: z.boolean(), mode: z.enum(['send_frame', 'send_field']), parity: z.enum(['auto', 'tff', 'bff']) }),
       sharpen: z.object({ enabled: z.boolean(), amount: z.number() }),
+      denoise: z.object({
+        enabled: z.boolean(),
+        algorithm: z.enum(['hqdn3d', 'nlmeans', 'atadenoise', 'bm3d']).optional(),
+        values: z.record(z.number()),
+      }).default({ enabled: false, values: {} }),
+      deband: z.object({
+        enabled: z.boolean(),
+        algorithm: z.enum(['deband', 'gradfun']).optional(),
+        values: z.record(z.union([z.number(), z.boolean()])),
+      }).default({ enabled: false, values: {} }),
     }).optional(),
   }),
   a: z.object({

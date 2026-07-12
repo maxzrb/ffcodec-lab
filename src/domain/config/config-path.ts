@@ -93,6 +93,12 @@ export const CONFIG_PATHS = {
     pixelFormat: configPath(['video', 'pixelFormat']),
     gpuIndex: configPath(['video', 'gpuIndex']),
     threads: configPath(['video', 'threads']),
+    color: {
+      range: configPath(['video', 'color', 'range']),
+      space: configPath(['video', 'color', 'space']),
+      primaries: configPath(['video', 'color', 'primaries']),
+      transfer: configPath(['video', 'color', 'transfer']),
+    },
     specialParameters: configPath(['video', 'specialParameters']),
     rateControl: {
       mode: configPath(['video', 'rateControl', 'mode']),
@@ -108,6 +114,7 @@ export const CONFIG_PATHS = {
   frame: {
     resolution: configPath(['frame', 'resolution']),
     frameRate: configPath(['frame', 'frameRate']),
+    filters: configPath(['frame', 'filters']),
   },
 
   audio: {

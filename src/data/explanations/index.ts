@@ -1983,4 +1983,28 @@ export const explanations: Record<string, ExplanationDefinition> = {
     id: 'expl.libvvenc.params', title: 'VVenC 附加参数', short: '用冒号分隔 key=value，直接传递 VVenC 私有选项；只在核对 vvencapp --fullhelp 后使用。',
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi / libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
   },
+  'expl.advanced.gopSize': {
+    id: 'expl.advanced.gopSize', title: '关键帧间隔', short: '通过 -g 设置两个关键帧之间允许的最大帧数；留空时使用编码器默认。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.bFrames': {
+    id: 'expl.advanced.bFrames', title: '最大 B 帧数', short: '通过 -bf 限制连续 B 帧数量；留空时使用编码器默认。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.keyintMin': {
+    id: 'expl.advanced.keyintMin', title: '最小关键帧间隔', short: '通过 -keyint_min 限制关键帧之间的最小距离；留空时使用编码器默认。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.qmin': {
+    id: 'expl.advanced.qmin', title: '最低量化值', short: '通过 -qmin 限制最高画质侧的量化值；留空时使用编码器默认。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.qmax': {
+    id: 'expl.advanced.qmax', title: '最高量化值', short: '通过 -qmax 限制最低画质侧的量化值；留空时使用编码器默认。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.qcomp': {
+    id: 'expl.advanced.qcomp', title: '量化曲线压缩', short: '通过 -qcomp 调整复杂与简单场景之间的码率分配，范围 0–1；留空时使用编码器默认。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
 }

@@ -286,6 +286,23 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
         })
       }
 
+      const colorArguments: Array<[keyof NonNullable<ProjectConfig['video']['color']>, string]> = [
+        ['space', '-colorspace'],
+        ['primaries', '-color_primaries'],
+        ['transfer', '-color_trc'],
+        ['range', '-color_range'],
+      ]
+      for (const [key, argName] of colorArguments) {
+        const value = config.video.color?.[key]
+        if (!value) continue
+        output.codecArgs.push({
+          id: `color.${key}`,
+          originId: `video.color.${key}`,
+          phase: 'VIDEO_COLOR',
+          tokens: [argName, value],
+        })
+      }
+
       // Quality / rate control
       if (config.video.rateControl) {
         const qMode = encoder.qualityModes.find((m) => m.id === config.video.rateControl!.mode)

@@ -56,14 +56,21 @@ function presetStore(config: ProjectConfig) {
       'section.container': false,
     },
     selectedExplanationId: null,
+    activePanelId: 'input-output',
     encoderSessionCache: {},
   })
 }
 
+async function openPanel(label: string) {
+  await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${label}`) }))
+}
+
 describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   beforeEach(() => {
+    window.history.replaceState(null, '', window.location.pathname)
     window.localStorage.removeItem('ffcodec-theme')
     window.localStorage.removeItem('ffcodec-locale')
+    window.localStorage.removeItem('ffcodec-workbench-sidebar-collapsed')
     // 每条用例结束后恢复默认状态。
     useBuilderStore.setState({
       config: createDefaultProjectConfig(),
@@ -76,14 +83,61 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
         'section.container': false,
       },
       selectedExplanationId: null,
+      activePanelId: 'input-output',
       encoderSessionCache: {},
     })
+  })
+
+  it('工作台每次只挂载当前模块并通过查询参数切换', async () => {
+    render(<BuilderPage />)
+    expect(screen.getByLabelText('输入文件路径')).toBeInTheDocument()
+    expect(screen.queryByLabelText('视频编码器')).not.toBeInTheDocument()
+
+    await openPanel('视频编码')
+    expect(screen.getByLabelText('视频编码器')).toBeInTheDocument()
+    expect(screen.queryByLabelText('输入文件路径')).not.toBeInTheDocument()
+    expect(new URL(window.location.href).searchParams.get('panel')).toBe('video')
+  })
+
+  it('色彩与封装工作台使用不同子标题且默认展开区域首次点击即可关闭', async () => {
+    render(<BuilderPage />)
+    await openPanel('色彩管理')
+
+    const pixelFormatSection = screen.getByRole('button', { name: /^像素格式/ })
+    expect(pixelFormatSection).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: /^色彩元数据/ })).toBeInTheDocument()
+
+    await userEvent.click(pixelFormatSection)
+    expect(pixelFormatSection).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByLabelText('像素格式 (pix_fmt)')).not.toBeInTheDocument()
+
+    await openPanel('流与封装')
+    expect(screen.getByRole('button', { name: /^流选择/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^封装设置/ })).toBeInTheDocument()
+  })
+
+  it('参数侧边栏可以折叠并保存本机偏好', async () => {
+    render(<BuilderPage />)
+    const collapseButton = screen.getByRole('button', { name: '折叠参数侧边栏' })
+
+    await userEvent.click(collapseButton)
+
+    expect(document.querySelector('.workbench-shell')).toHaveClass('workbench-shell--nav-collapsed')
+    expect(screen.getByRole('button', { name: '展开参数侧边栏' })).toHaveAttribute('aria-expanded', 'false')
+    expect(window.localStorage.getItem('ffcodec-workbench-sidebar-collapsed')).toBe('true')
+  })
+
+  it('无诊断时检查器标签不显示零计数', () => {
+    render(<BuilderPage />)
+    expect(screen.getByRole('tab', { name: '诊断' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '诊断 0' })).not.toBeInTheDocument()
   })
 
   // -- 用例 1：NVENC 空间 AQ 复选框 --
   it('NVENC spatial AQ checkbox toggles and persists in ProjectConfig', async () => {
     presetStore(makeConfig('h264_nvenc'))
     render(<BuilderPage />)
+    await openPanel('质量控制')
 
     // 通过稳定字段 ID 查找空间 AQ 复选框。
     let checkbox: HTMLInputElement | null = null
@@ -133,6 +187,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('NVENC temporal AQ checkbox toggles from unchecked (defaultValue=0)', async () => {
     presetStore(makeConfig('h264_nvenc'))
     render(<BuilderPage />)
+    await openPanel('质量控制')
 
     let checkbox: HTMLInputElement | null = null
 
@@ -165,6 +220,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('QSV low power checkbox toggles and persists', async () => {
     presetStore(makeConfig('h264_qsv'))
     render(<BuilderPage />)
+    await openPanel('视频编码')
 
     let checkbox: HTMLInputElement | null = null
 
@@ -197,6 +253,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('HEVC NVENC spatial AQ checkbox toggles and persists', async () => {
     presetStore(makeConfig('hevc_nvenc'))
     render(<BuilderPage />)
+    await openPanel('质量控制')
 
     let checkbox: HTMLInputElement | null = null
 
@@ -227,6 +284,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('libopus VBR checkbox (audio specialParameter) toggles and persists', async () => {
     presetStore(makeAudioConfig('libopus'))
     render(<BuilderPage />)
+    await openPanel('音频')
 
     let checkbox: HTMLInputElement | null = null
 
@@ -263,6 +321,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('非必需的编码应用类型可以保持不设置或再次关闭', async () => {
     presetStore(makeAudioConfig('libopus'))
     render(<BuilderPage />)
+    await openPanel('音频')
 
     const application = screen.getByLabelText('编码应用类型')
     expect(application).toHaveValue('')
@@ -332,6 +391,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       },
     })
     render(<BuilderPage />)
+    await openPanel('字幕')
 
     await userEvent.click(await screen.findByRole('button', { name: '添加轨道' }))
     expect(useBuilderStore.getState().config.subtitle.tracks).toHaveLength(1)
@@ -345,6 +405,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     config.video.specialParameters = { spatialAq: true, temporalAq: true }
     presetStore(config)
     render(<BuilderPage />)
+    await openPanel('视频编码')
 
     const encoderSelect = await screen.findByLabelText('视频编码器')
     await userEvent.selectOptions(encoderSelect, 'h264_amf')
@@ -369,6 +430,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       },
     })
     render(<BuilderPage />)
+    await openPanel('自定义参数')
 
     const textarea = await screen.findByLabelText('全局参数')
     await userEvent.type(textarea, '-benchmark')
@@ -391,6 +453,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     expect(screen.getByRole('heading', { name: 'FFmpeg 命令生成器' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Switch to English' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Video encoding/ }))
 
     expect(screen.getByRole('heading', { name: 'FFmpeg Command Builder' })).toBeInTheDocument()
     expect(screen.getByLabelText('Video encoder')).toBeInTheDocument()
@@ -402,15 +465,10 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(englishPageText).not.toMatch(/[\u4e00-\u9fff]/)
   })
 
-  it('标题区展示六种语言的 FFmpeg 命令生成器译名', () => {
+  it('标题区使用简洁的模块化工作台说明', () => {
     render(<BuilderPage />)
     const title = document.querySelector('[data-multilingual-title]')
-    expect(title).toHaveTextContent('FFmpeg 指令產生器')
-    expect(title).toHaveTextContent('FFmpeg Command Generator')
-    expect(title).toHaveTextContent('FFmpeg コマンド生成ツール')
-    expect(title).toHaveTextContent('FFmpeg 명령어 생성기')
-    expect(title).toHaveTextContent('Генератор команд FFmpeg')
-    expect(title).toHaveTextContent('FFmpeg Komut Oluşturucu')
+    expect(title).toHaveTextContent('模块化参数工作台')
     expect(document.body).not.toHaveTextContent('组合编码、画面、音频与字幕参数')
   })
 
@@ -431,6 +489,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('音频码率使用数值输入和后置单位选择', async () => {
     presetStore(makeAudioConfig('aac'))
     render(<BuilderPage />)
+    await openPanel('音频')
 
     const amount = screen.getByLabelText('音频码率 (-b:a)')
     const unit = screen.getByLabelText('音频码率 (-b:a)单位')
@@ -447,6 +506,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
   it('参数说明不显示内部数据来源，并提供有决策价值的编码器介绍', async () => {
     render(<BuilderPage />)
+    await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))
 
@@ -469,6 +529,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     presetStore(config)
     render(<BuilderPage />)
 
+    await userEvent.click(screen.getByRole('tab', { name: /^诊断/ }))
+
     expect(await screen.findByText('无法确认字幕复制后的容器兼容性')).toBeInTheDocument()
     expect(screen.getByText(/先用 ffprobe 确认字幕编码/)).toBeInTheDocument()
 
@@ -479,6 +541,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
   it('默认显示 PowerShell 单行命令且不显示来源核验提示', async () => {
     render(<BuilderPage />)
+    await openPanel('流与封装')
 
     expect(useBuilderStore.getState().config.shell).toBe('powershell')
     expect(screen.getByRole('button', { name: 'PowerShell' })).toHaveAttribute('aria-pressed', 'true')
@@ -499,8 +562,10 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       },
     })
     render(<BuilderPage />)
+    await openPanel('流与封装')
 
     await userEvent.selectOptions(screen.getByLabelText('输出容器'), 'mkv')
+    await openPanel('输入与输出')
 
     await waitFor(() => {
       expect(useBuilderStore.getState().config.output.containerId).toBe('mkv')
@@ -525,6 +590,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     const store = useBuilderStore.getState()
     store.setConfigValue('streams.preserveOtherSubtitleStreams', false)
     render(<BuilderPage />)
+    await openPanel('流与封装')
 
     const videoField = document.querySelector('[data-field-id="streams.videoStreamIndexes"]')!
     const audioField = document.querySelector('[data-field-id="streams.audioStreamIndexes"]')!

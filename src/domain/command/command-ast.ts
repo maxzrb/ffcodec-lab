@@ -58,6 +58,7 @@ export const PHASE_ORDER: readonly ArgumentPhase[] = [
   'VIDEO_CODEC',
   'VIDEO_PROFILE',
   'VIDEO_RATE_CONTROL',
+  'VIDEO_COLOR',
   'VIDEO_FILTER',
   'AUDIO_CODEC',
   'AUDIO_QUALITY',

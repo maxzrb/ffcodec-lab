@@ -1,15 +1,15 @@
 # Project Status
 
-Last updated: 2026-07-12 14:20
-Updated by: Claude Code (DeepSeek-v4-pro)
+Last updated: 2026-07-12 17:18
+Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: 访问量计数器仪表盘 — 今日/总计双指标，4h 客户端限流，只读模式，来源校验
-- Current state: 全部功能已实现、验证通过、已推送到 master 并部署到 Cloudflare Pages
+- Current objective: 高级参数工作台架构升级与本地体验修复 — 分组折叠、侧栏折叠、说明阴影和诊断计数
+- Current state: 高级参数功能及五项本地体验修复均已实现并通过全量检查；本地预览运行中，尚未提交或部署
 - Current site: https://fflab.loliland.cn/
-- Next objective: 无阻断任务；后续按用户指示继续迭代
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 337/337（21 文件）、catalog audit 0/0、production build 成功（490.90 KB JS + 18.46 KB CSS）
+- Next objective: 用户在 `http://127.0.0.1:5173/` 审阅后提交；如用户要求上线，再推送 master 触发 Cloudflare Pages
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 346/346（21 文件）、catalog audit 0/0、production build 成功（509.09 KB JS + 22.46 KB CSS）；本地预览 HTTP 200
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -35,9 +35,14 @@ Updated by: Claude Code (DeepSeek-v4-pro)
 - Video encoders: 13 个 (software 5、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 无阻断任务；切换设备或代理前保持 master 与远端同步
+- Next recommended step: 提交高级参数工作台改动；切换设备或代理前不要遗漏未提交工作树
 
 ## Active TODO
+
+- [x] 高级参数工作台架构升级
+  - Owner: Codex
+  - Status: 已实现并全量验证；重复模块、折叠状态、侧栏折叠、说明阴影和零诊断计数已修复，待用户本地审阅及提交/部署
+  - Notes/blockers: 用户要求本地查看，未执行部署；Vite 对 509.09 KB 主包给出非阻断体积提示
 
 - [x] 英文遗漏、预设默认值、自由命令编辑、可选参数及新编码器
   - Owner: Codex
@@ -65,6 +70,8 @@ Updated by: Claude Code (DeepSeek-v4-pro)
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
+
+- 2026-07-12 17:18: 修复色彩区域首次无法关闭及重复 ID；区分像素格式/色彩元数据与流选择/封装设置；新增可折叠参数侧栏；修正说明卡片方形阴影及“诊断 0” — 346/346 测试、0/0 审计、build 成功
 
 - 2026-07-12 12:44: 展开字段英文覆盖、六语标题、无 WebM 且保留全部字幕的内置预设、自由命令编辑器、可关闭的非必需参数、libaom-av1/libvvenc — 333/333 测试、0/0 审计、10/10 验收
 
@@ -1047,3 +1054,62 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Environment notes: Node.js v24.18.0, Windows 11
 - Git status: master branch, commit `46ffa9b`, pushed to origin/master, working tree clean (STATUS.md + 工作进度.md 待提交)
 - Next step: 提交 closeout 记录；无功能阻断任务
+
+### 2026-07-12 16:58 - Codex (GPT-5)
+
+- Objective: 实施高级参数工作台架构升级，参考 FFmpegFreeUI v6 导入高级质量、色彩、降噪和去色带能力
+- Work completed:
+  1. 将正式页面重构为九模块 `WorkbenchShell`，桌面侧边导航 + 固定命令检查器，移动端模块选择器 + 底部抽屉
+  2. `ResolvedBuilderView` 扩展 panels、panel/group/tier、诊断数和高级参数计数；`?panel=` 与分享 hash 并存，命令来源可跨模块定位
+  3. ProjectConfig/schema/share 升级 v3，新增 `video.color`、denoise、deband；v2→v3 迁移默认全部禁用，不改变旧命令
+  4. 导入 FFmpegFreeUI 质量预制项：GOP、B 帧、keyint_min、qmin/qmax/qcomp；高级目录控件默认 optional
+  5. 新增色彩输出标记 `-colorspace/-color_primaries/-color_trc/-color_range` 与 `VIDEO_COLOR` 阶段
+  6. 新增 hqdn3d/nlmeans/atadenoise/bm3d、deband/gradfun，并保持唯一有序 `-vf`
+  7. 可选布尔控件支持未设置/开启/关闭三态；目录审计新增高级默认、来源和命令绑定约束
+  8. 更新架构、用户指南、来源映射、参数树、审计记录和验收报告
+- Commands run:
+  - `git pull --ff-only` — Already up to date
+  - FFmpegFreeUI GitHub main 源码读取 — 质量/色彩管理/降噪/平滑断层 v6 页面
+  - `npm run check` — 全部通过
+  - `npx tsx scripts/acceptance-test.ts` — 10/10
+  - Browser 技能连接 — 浏览器列表为空；无法执行截图巡检
+  - `git diff --check` — 通过，仅 Git 行尾提示
+- Verification:
+  - ESLint 0 errors / 0 warnings；TypeScript 0 errors
+  - Vitest 343/343 passed（21 files）；catalog audit 0 errors / 0 warnings
+  - Production build: 507.68 KB JS + 21.23 KB CSS；Vite 主包 >500 KB 提示为非阻断风险
+  - Acceptance: 10/10
+- Decisions/risks:
+  - FFmpegFreeUI `project-derived` 参数允许直接进入生产目录，不以官方交叉验证为前置条件
+  - 首批色彩能力只写输出标记，不执行 zscale/libplacebo/HDR 像素转换
+  - 未部署：用户请求为本地实施，未授权提交、推送或外部发布
+- Git status: master 跟踪 origin/master；功能、测试、文档和记录均未提交；`tsconfig.tsbuildinfo` 启动前已有机械差异并继续排除出功能提交
+- Next step: 审阅后提交；如需上线，再推送 master 并核验 Cloudflare Pages
+
+### 2026-07-12 17:18 - Codex (GPT-5)
+
+- Objective: 修复高级参数工作台本地预览反馈，并将参数导航改为可折叠侧边栏
+- Work completed:
+  1. 修复拆分区域复用 `section.color` 导致的重复 key/联动折叠问题，为工作台子区域生成来源唯一 ID
+  2. 修复默认展开区域首次点击被写成 `true` 的状态错误，现在首次点击即可关闭且切换模块后不增殖
+  3. 将两个色彩分组命名为“像素格式 / 色彩元数据”，将两个流与封装分组命名为“流选择 / 封装设置”，并补齐英文文案
+  4. 新增桌面参数侧栏折叠按钮、紧凑简称和本机偏好持久化；移动端模块选择器保持不变
+  5. 参数说明抽屉改用匹配圆角的盒阴影并移除方形 `drop-shadow`；诊断为零时不显示数字
+  6. 新增 3 项 RTL 回归测试，覆盖区域首次关闭、分组区分、侧栏折叠持久化及零诊断标签
+- Files changed in this fix: `resolve-builder-view.ts`、`builder-store.ts`、`WorkbenchShell.tsx`、`BuilderPage.tsx`、`i18n.tsx`、`index.css`、`builder-checkboxes.test.tsx` 及 HandShake 记录
+- Commands run:
+  - `git pull --ff-only` — Already up to date；启动时已有高级参数工作台未提交改动
+  - 定向 RTL：24/24 passed
+  - `npm run check` — ESLint、TypeScript、346 tests、catalog audit、production build 全部通过
+  - `Invoke-WebRequest http://127.0.0.1:5173/` — HTTP 200；开发预览继续运行
+  - `git diff --check` — 通过，仅 Git 预期的 LF→CRLF 提示
+- Verification:
+  - ESLint 0 errors / 0 warnings；TypeScript 0 errors
+  - Vitest 346/346 passed（21 files）；catalog audit 0 errors / 0 warnings
+  - Production build: 509.09 KB JS + 22.46 KB CSS；Vite 主包 >500 KB 提示为非阻断风险
+- Decisions/risks:
+  - 折叠偏好是纯 UI 状态，写入 `ffcodec-workbench-sidebar-collapsed`，不进入 ProjectConfig 或分享载荷
+  - 用户明确要求先本地查看，本轮不提交、不推送、不部署
+  - `tsconfig.tsbuildinfo` 启动前已有机械差异，继续排除出后续功能提交
+- Git status: master 跟踪 origin/master；高级参数功能、本次修复、测试和记录均未提交，working tree not clean
+- Next step: 用户通过本地预览确认；确认后创建功能提交，需上线时再推送 master

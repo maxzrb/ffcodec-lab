@@ -312,6 +312,17 @@ function checkConfigBindings(encoder: EncoderDefinition) {
     if (!isValidConfigPath(sp.configBinding.path)) {
       errors.push(`[configpath] ${sp.id} has invalid configBinding.path: "${sp.configBinding.path}"`)
     }
+    if (sp.uiPlacement?.tier === 'advanced') {
+      if (!sp.optional) {
+        errors.push(`[advanced-default] ${encoder.id}/${sp.id} must be optional so it is not emitted by default`)
+      }
+      if (!sp.sourceRefs || sp.sourceRefs.length === 0) {
+        errors.push(`[advanced-source] ${encoder.id}/${sp.id} is missing control-level sourceRefs`)
+      }
+      if (!sp.commandBinding?.prefix) {
+        errors.push(`[advanced-command] ${encoder.id}/${sp.id} is missing an explicit command prefix`)
+      }
+    }
   }
 }
 

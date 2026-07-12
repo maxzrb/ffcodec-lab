@@ -1,4 +1,4 @@
-import type { ProjectConfig } from '../config/project-config'
+import type { AdvancedVideoFiltersConfig, ProjectConfig } from '../config/project-config'
 import type { CommandArg } from '../command/command-ast'
 import { createDefaultAdvancedVideoFilters } from '../config/defaults'
 
@@ -12,6 +12,8 @@ export type VideoFilterSpec =
   | { type: 'vflip' }
   | { type: 'eq'; brightness: number; contrast: number; saturation: number; gamma: number }
   | { type: 'unsharp'; amount: number }
+  | { type: 'denoise'; filterString: string }
+  | { type: 'deband'; filterString: string }
   | { type: 'fps'; fps: number }
   | { type: 'subtitles' | 'ass'; filterString: string }
   | { type: 'custom'; filterString: string }
@@ -52,6 +54,13 @@ export function buildVideoFilterChain(config: ProjectConfig): VideoFilterSpec[] 
   }
   if (filters.transform.horizontalFlip) chain.push({ type: 'hflip' })
   if (filters.transform.verticalFlip) chain.push({ type: 'vflip' })
+
+  if (filters.denoise.enabled && filters.denoise.algorithm) {
+    chain.push({ type: 'denoise', filterString: buildDenoiseFilter(filters.denoise) })
+  }
+  if (filters.deband.enabled && filters.deband.algorithm) {
+    chain.push({ type: 'deband', filterString: buildDebandFilter(filters.deband) })
+  }
 
   if (filters.adjustment.enabled) {
     chain.push({ type: 'eq', ...filters.adjustment })
@@ -98,6 +107,9 @@ export function renderFilterChain(
         return `eq=brightness=${spec.brightness}:contrast=${spec.contrast}:saturation=${spec.saturation}:gamma=${spec.gamma}`
       case 'unsharp':
         return `unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=${spec.amount}`
+      case 'denoise':
+      case 'deband':
+        return spec.filterString
       case 'fps':
         return `fps=${spec.fps}`
       case 'subtitles':
@@ -114,6 +126,31 @@ export function renderFilterChain(
     tokens: ['-vf', parts.join(',')],
     explanationId: 'expl.filter.vf',
   }
+}
+
+function buildDenoiseFilter(filters: AdvancedVideoFiltersConfig['denoise']): string {
+  const value = filters.values
+  switch (filters.algorithm) {
+    case 'hqdn3d':
+      return `hqdn3d=${value.lumaSpatial ?? 4}:${value.chromaSpatial ?? 3}:${value.lumaTemporal ?? 6}:${value.chromaTemporal ?? 4.5}`
+    case 'nlmeans':
+      return `nlmeans=s=${value.strength ?? 1}:p=${value.patchSize ?? 7}:pc=${value.chromaPatchSize ?? 0}:r=${value.researchSize ?? 15}`
+    case 'atadenoise':
+      return `atadenoise=0a=${value.lumaStatic ?? 0.02}:0b=${value.lumaDynamic ?? 0.04}:1a=${value.chromaStatic ?? 0.02}:1b=${value.chromaDynamic ?? 0.04}`
+    case 'bm3d':
+      return `bm3d=sigma=${value.sigma ?? 1}:block=${value.block ?? 16}:bstep=${value.blockStep ?? 4}:group=${value.group ?? 1}`
+    default:
+      return ''
+  }
+}
+
+function buildDebandFilter(filters: AdvancedVideoFiltersConfig['deband']): string {
+  const value = filters.values
+  if (filters.algorithm === 'gradfun') {
+    return `gradfun=strength=${value.strength ?? 1.2}:radius=${value.radius ?? 16}`
+  }
+  const threshold = value.threshold ?? 0.02
+  return `deband=1thr=${threshold}:2thr=${threshold}:3thr=${threshold}:range=${value.range ?? 16}:direction=${value.direction ?? 0}:blur=1:coupling=${value.coupling ? 1 : 0}`
 }
 
 /** 根据字幕烧录配置构建 subtitles/ass 滤镜。 */

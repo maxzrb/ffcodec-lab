@@ -26,6 +26,7 @@ import { applyFix } from '../../domain/diagnostics/apply-diagnostic-fix'
 import type { DiagnosticFix } from '../../domain/rules/rule-types'
 import { CommandEditor } from './components/CommandEditor'
 import { VisitCounter } from '../../features/analytics/VisitCounter'
+import { WorkbenchShell } from './components/WorkbenchShell'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
@@ -40,6 +41,8 @@ export function BuilderPage() {
   const toggleSection = useBuilderStore((s) => s.toggleSection)
   const selectedExplanationId = useBuilderStore((s) => s.selectedExplanationId)
   const selectExplanation = useBuilderStore((s) => s.selectExplanation)
+  const activePanelId = useBuilderStore((s) => s.activePanelId)
+  const setActivePanel = useBuilderStore((s) => s.setActivePanel)
   const [theme, setTheme] = useState<ThemeKind>(() =>
     window.localStorage.getItem('ffcodec-theme') === 'dark' ? 'dark' : 'light',
   )
@@ -79,6 +82,7 @@ export function BuilderPage() {
   // Preset manager
   const [showPresetManager, setShowPresetManager] = useState(false)
   const [shareNotice, setShareNotice] = useState<string | null>(null)
+  const [inspectorTab, setInspectorTab] = useState<'command' | 'diagnostics'>('command')
 
   useEffect(() => {
     if (!window.location.hash) return
@@ -90,6 +94,18 @@ export function BuilderPage() {
       setShareNotice(isZh ? '共享链接无法解析，已保留当前配置' : 'The shared link could not be decoded; the current configuration was kept')
     }
   }, [isZh, setConfig])
+
+  useEffect(() => {
+    const requested = new URL(window.location.href).searchParams.get('panel')
+    if (requested && view.panels.some((panel) => panel.id === requested)) setActivePanel(requested)
+  }, [setActivePanel, view.panels])
+
+  const handlePanelChange = useCallback((panelId: string) => {
+    setActivePanel(panelId)
+    const url = new URL(window.location.href)
+    url.searchParams.set('panel', panelId)
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [setActivePanel])
 
   const handleApplyPreset = useCallback(
     (presetConfig: ProjectConfig) => {
@@ -113,7 +129,9 @@ export function BuilderPage() {
   const handleShare = useCallback(async () => {
     const result = encodeConfigToShare(config)
     if (result.kind === 'hash') {
-      window.history.replaceState(null, '', result.value)
+      const url = new URL(window.location.href)
+      url.hash = result.value
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
       try {
         await navigator.clipboard.writeText(window.location.href)
         setShareNotice(isZh ? '共享链接已复制；本地文件路径不会写入链接' : 'Share link copied; local file paths are excluded')
@@ -157,6 +175,10 @@ export function BuilderPage() {
         ?? Object.values(view.fieldIndex).find((f) => f.commandOrigins.includes(originId))
 
       if (field) {
+        const ownerPanel = view.panels.find((panel) => panel.sections.some(
+          (section) => section.fields.some((candidate) => candidate.id === field.id),
+        ))
+        if (ownerPanel) handlePanelChange(ownerPanel.id)
         setHighlightedFieldId(field.id)
         // Expand the section containing this field
         for (const section of view.sections) {
@@ -175,7 +197,7 @@ export function BuilderPage() {
         setTimeout(() => setHighlightedFieldId(undefined), 3000)
       }
     },
-    [view, expandedSections, toggleSection, selectExplanation],
+    [view, expandedSections, toggleSection, selectExplanation, handlePanelChange],
   )
 
   const handleExplain = useCallback(
@@ -200,7 +222,7 @@ export function BuilderPage() {
     ? catalogIndex.getExplanation(selectedExplanationId)
     : undefined
 
-  const videoEncoderCount = Object.keys(catalog.encoders.video).length
+  const activePanel = view.panels.find((panel) => panel.id === activePanelId) ?? view.panels[0]
 
   return (
     <I18nProvider locale={locale}>
@@ -212,13 +234,8 @@ export function BuilderPage() {
             <p className="eyebrow">FFCodec Lab · Command Workbench</p>
             <h1>{isZh ? 'FFmpeg 命令生成器' : 'FFmpeg Command Builder'}</h1>
             <p className="product-header__description" data-multilingual-title>
-              FFmpeg 指令產生器 · FFmpeg Command Generator · FFmpeg コマンド生成ツール · FFmpeg 명령어 생성기 · Генератор команд FFmpeg · FFmpeg Komut Oluşturucu
+              {isZh ? '模块化参数工作台 · 高级参数按需设置' : 'Modular parameter workbench · advanced settings on demand'}
             </p>
-            <div className="product-meta" aria-label={isZh ? '项目能力摘要' : 'Capability summary'}>
-              <span className="meta-pill">{isZh ? `${videoEncoderCount} 个视频编码器` : `${videoEncoderCount} video encoders`}</span>
-              <span className="meta-pill">Bash · PowerShell · CMD</span>
-              <span className="meta-pill meta-pill--success">{isZh ? '纯本地 · 不上传文件' : 'Local only · no file uploads'}</span>
-            </div>
           </div>
         </div>
         <div className="product-header__actions">
@@ -257,60 +274,74 @@ export function BuilderPage() {
         </div>
       </header>
 
-      <div className="workspace-grid">
-        <section className="workspace-column" aria-label={isZh ? '参数配置' : 'Parameters'}>
-          {view.sections.map((section) => (
-            <ParameterSection
-              key={section.id}
-              section={section}
-              expanded={expandedSections[section.id] ?? false}
-              onToggle={() => toggleSection(section.id)}
-              onFieldChange={handleFieldChange}
-              onExplain={handleExplain}
-              highlightedFieldId={highlightedFieldId}
-              actions={section.id === 'section.subtitle' ? (
-                <SubtitleSectionActions
-                  tracks={config.subtitle.tracks}
-                  onAdd={handleAddSubtitleTrack}
-                  onRemove={handleRemoveSubtitleTrack}
+      <WorkbenchShell
+        panels={view.panels}
+        activePanelId={activePanel.id}
+        onPanelChange={handlePanelChange}
+        content={activePanel.sections.map((section) => (
+          <ParameterSection
+            key={section.id}
+            section={section}
+            expanded={expandedSections[section.id] ?? true}
+            onToggle={() => toggleSection(section.id)}
+            onFieldChange={handleFieldChange}
+            onExplain={handleExplain}
+            highlightedFieldId={highlightedFieldId}
+            actions={section.id === 'section.subtitle' ? (
+              <SubtitleSectionActions
+                tracks={config.subtitle.tracks}
+                onAdd={handleAddSubtitleTrack}
+                onRemove={handleRemoveSubtitleTrack}
+              />
+            ) : undefined}
+          />
+        ))}
+        inspector={(
+          <>
+            <div className="inspector-tabs" role="tablist" aria-label={isZh ? '检查器视图' : 'Inspector view'}>
+              <button type="button" role="tab" aria-selected={inspectorTab === 'command'} onClick={() => setInspectorTab('command')}>
+                {isZh ? '命令' : 'Command'}
+              </button>
+              <button type="button" role="tab" aria-selected={inspectorTab === 'diagnostics'} onClick={() => setInspectorTab('diagnostics')}>
+                {isZh
+                  ? `诊断${view.messages.length > 0 ? ` ${view.messages.length}` : ''}`
+                  : `Diagnostics${view.messages.length > 0 ? ` ${view.messages.length}` : ''}`}
+              </button>
+            </div>
+            {inspectorTab === 'command' ? (
+              <>
+                <CommandPreview
+                  commandPlan={pipeline.commandPlan}
+                  renderedCommand={pipeline.renderedCommand}
+                  shell={config.shell}
+                  hasErrors={view.hasErrors}
+                  onShellChange={handleShellChange}
+                  onTokenClick={handleTokenClick}
                 />
-              ) : undefined}
-            />
-          ))}
-        </section>
+                <CommandEditor generatedCommand={pipeline.renderedCommand.text} />
+              </>
+            ) : (
+              <DiagnosticPanel
+                diagnostics={view.messages}
+                catalog={catalog}
+                getOriginLabel={(originId) => {
+                  const field = view.fieldIndex[originId]
+                    ?? Object.values(view.fieldIndex).find((candidate) => originId.startsWith(candidate.id))
+                  return field ? text(field.label) : originId
+                }}
+                onLocate={handleTokenClick}
+                onApplyFix={handleApplyDiagnosticFix}
+              />
+            )}
+          </>
+        )}
+      />
 
-        <aside className="workspace-column workspace-column--preview" aria-label={isZh ? '命令与诊断' : 'Command and diagnostics'}>
-          <CommandPreview
-            commandPlan={pipeline.commandPlan}
-            renderedCommand={pipeline.renderedCommand}
-            shell={config.shell}
-            hasErrors={view.hasErrors}
-            onShellChange={handleShellChange}
-            onTokenClick={handleTokenClick}
-          />
-
-          <CommandEditor generatedCommand={pipeline.renderedCommand.text} />
-
-          <DiagnosticPanel
-            diagnostics={view.messages}
-            catalog={catalog}
-            getOriginLabel={(originId) => {
-              const field = view.fieldIndex[originId]
-                ?? Object.values(view.fieldIndex).find((candidate) => originId.startsWith(candidate.id))
-              return field ? text(field.label) : originId
-            }}
-            onLocate={handleTokenClick}
-            onApplyFix={handleApplyDiagnosticFix}
-          />
-
-          {currentExplanation && (
-            <ExplanationPanel
-              explanation={currentExplanation}
-              onClose={() => selectExplanation(null)}
-            />
-          )}
-        </aside>
-      </div>
+      {currentExplanation && (
+        <div className="explanation-drawer">
+          <ExplanationPanel explanation={currentExplanation} onClose={() => selectExplanation(null)} />
+        </div>
+      )}
 
       {showPresetManager && (
         <PresetManager

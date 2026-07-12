@@ -28,6 +28,7 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       profile: config.video.profile,
       tune: config.video.tune,
       pixelFormat: config.video.pixelFormat,
+      color: config.video.color,
       specialParameters: config.video.specialParameters,
     },
     f: {
@@ -109,6 +110,7 @@ export function fromShareable(
       profile: shareable.v.profile,
       tune: shareable.v.tune,
       pixelFormat: shareable.v.pixelFormat,
+      color: shareable.v.color ?? {},
       specialParameters: shareable.v.specialParameters,
     },
     frame: shareable.f as ProjectConfig['frame'],

@@ -5,6 +5,9 @@
 
 import type { ProjectConfig } from '../../domain/config/project-config'
 import { createDefaultProjectConfig } from '../../domain/config/defaults'
+import { projectConfigSchema } from '../../domain/config/config-schema'
+import { migrateConfig } from '../../domain/migration/migrate-config'
+import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '../../domain/migration/migration-registry'
 import type { UserPreset, UserPresetImport } from './preset-types'
 import {
   CURRENT_PRESET_SCHEMA_VERSION,
@@ -59,7 +62,9 @@ export class PresetService {
       if (!raw) return null
       const parsed = JSON.parse(raw)
       const validated = userPresetSchema.parse(parsed)
-      return this.migratePreset(validated)
+      const preset = this.migratePreset(validated)
+      preset.config = migrateProjectConfig(preset.config)
+      return preset
     } catch {
       return null
     }
@@ -139,7 +144,7 @@ export class PresetService {
       schemaVersion: imported.schemaVersion ?? CURRENT_PRESET_SCHEMA_VERSION,
       createdAt: imported.createdAt ?? now,
       updatedAt: imported.updatedAt ?? now,
-      config: imported.config,
+      config: migrateProjectConfig(imported.config),
     }
 
     // Run migration if needed
@@ -169,7 +174,7 @@ export class PresetService {
     try {
       const raw = this.storage.getItem(ACTIVE_CONFIG_KEY)
       if (!raw) return null
-      return JSON.parse(raw) as ProjectConfig
+      return migrateProjectConfig(JSON.parse(raw) as ProjectConfig)
     } catch {
       return null
     }
@@ -189,6 +194,17 @@ export class PresetService {
 
     return preset
   }
+}
+
+function migrateProjectConfig(config: ProjectConfig): ProjectConfig {
+  const version = typeof config.schemaVersion === 'number' ? config.schemaVersion : CURRENT_SCHEMA_VERSION
+  const migrated = migrateConfig(
+    version,
+    CURRENT_SCHEMA_VERSION,
+    config as unknown as Record<string, unknown>,
+    [...ALL_MIGRATION_STEPS],
+  ).config
+  return projectConfigSchema.parse(migrated) as ProjectConfig
 }
 
 // -- singleton ---------------------------------------------------

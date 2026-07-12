@@ -66,6 +66,10 @@ export interface ResolvedField {
   diagnostics: Diagnostic[]
   /** Config binding for write-back (maps field back to ProjectConfig path) */
   configBinding?: ConfigBinding
+  panelId?: string
+  groupId?: string
+  tier?: 'basic' | 'advanced'
+  optional?: boolean
 }
 
 /**
@@ -83,6 +87,7 @@ export interface ResolvedSection {
  */
 export interface ResolvedBuilderView {
   sections: ResolvedSection[]
+  panels: ResolvedWorkspacePanel[]
   /** Flattened field lookup by ID */
   fieldIndex: Record<string, ResolvedField>
   /** All messages (errors, warnings, info) */
@@ -90,3 +95,14 @@ export interface ResolvedBuilderView {
   /** Whether any errors exist */
   hasErrors: boolean
 }
+
+export interface ResolvedWorkspacePanel {
+  id: string
+  label: string
+  description?: string
+  sections: ResolvedSection[]
+  diagnosticCount: number
+  enabledAdvancedCount: number
+}
+
+export type ResolvedWorkspaceView = ResolvedBuilderView

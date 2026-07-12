@@ -14,6 +14,8 @@ describe('高级视频滤镜', () => {
     config.frame.resolution = { mode: 'width', width: 960 }
     filters.transform.rotate = 'clockwise'
     filters.transform.horizontalFlip = true
+    filters.denoise = { enabled: true, algorithm: 'hqdn3d', values: { lumaSpatial: 5 } }
+    filters.deband = { enabled: true, algorithm: 'deband', values: { threshold: 0.03 } }
     filters.adjustment.enabled = true
     filters.adjustment.brightness = 0.1
     filters.sharpen.enabled = true
@@ -27,6 +29,8 @@ describe('高级视频滤镜', () => {
       'scale',
       'transpose',
       'hflip',
+      'denoise',
+      'deband',
       'eq',
       'unsharp',
       'fps',
@@ -37,6 +41,8 @@ describe('高级视频滤镜', () => {
     expect(argument?.tokens[1]).toContain('crop=1280:720:10:20')
     expect(argument?.tokens[1]).toContain('transpose=clock')
     expect(argument?.tokens[1]).toContain('unsharp=luma_msize_x=5')
+    expect(argument?.tokens[1]).toContain('hqdn3d=5:3:6:4.5')
+    expect(argument?.tokens[1]).toContain('deband=1thr=0.03:2thr=0.03:3thr=0.03')
 
     const plan = buildCommandPlan(config, loadCatalog(), [])
     const filterArgs = plan.invocations.flatMap((invocation) => invocation.output.filterArgs)
@@ -50,6 +56,8 @@ describe('高级视频滤镜', () => {
     const parsed = projectConfigSchema.parse(legacy)
     expect(parsed.frame.filters.crop.enabled).toBe(false)
     expect(parsed.frame.filters.transform.rotate).toBe('none')
+    expect(parsed.frame.filters.denoise.enabled).toBe(false)
+    expect(parsed.frame.filters.deband.enabled).toBe(false)
   })
 
   it('视频复制模式不会生成滤镜链', () => {

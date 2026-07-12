@@ -67,7 +67,7 @@ export function resolveControlField(
     max: ctrl.range?.max,
     step: ctrl.range?.step,
     explanationId: ctrl.explanationId,
-    sourceRefs: encoder?.sourceRefs ?? [],
+    sourceRefs: ctrl.sourceRefs ?? encoder?.sourceRefs ?? [],
     verificationLevel: encoder?.verificationLevel ?? 'project-derived',
     needsCrossVerification: encoder?.needsCrossVerification ?? true,
     commandOrigins: [],
@@ -75,6 +75,10 @@ export function resolveControlField(
     // 目录中的通用预设/档次/像素格式控件可能只声明命令绑定；
     // 解析器仍必须把调用方给出的配置路径带给正式页面，确保控件可写。
     configBinding: ctrl.configBinding ?? { path: createConfigPath(_configPath.split('.')) },
+    panelId: ctrl.uiPlacement?.panelId,
+    groupId: ctrl.uiPlacement?.groupId,
+    tier: ctrl.uiPlacement?.tier,
+    optional: ctrl.optional,
   }
 }
 

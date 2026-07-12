@@ -5,12 +5,13 @@
 
 import type { MigrationStep } from './migrate-config'
 import { v1ToV2 } from './migrations/v1-to-v2'
+import { v2ToV3 } from './migrations/v2-to-v3'
 
 /** All registered migration steps, sorted by fromVersion */
 export const ALL_MIGRATION_STEPS: readonly MigrationStep[] = [
   v1ToV2,
-  // v2ToV3 — reserved for future schema changes
+  v2ToV3,
 ]
 
 /** Current project config schema version */
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3

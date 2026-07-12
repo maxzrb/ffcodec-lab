@@ -8,6 +8,8 @@ export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig 
     adjustment: { enabled: false, brightness: 0, contrast: 1, saturation: 1, gamma: 1 },
     deinterlace: { enabled: false, mode: 'send_frame', parity: 'auto' },
     sharpen: { enabled: false, amount: 1 },
+    denoise: { enabled: false, values: {} },
+    deband: { enabled: false, values: {} },
   }
 }
 
@@ -17,7 +19,7 @@ export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig 
  */
 export function createDefaultProjectConfig(): ProjectConfig {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     shell: 'powershell',
     input: {
       path: 'input.mkv',
@@ -43,6 +45,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
       profile: 'auto',
       tune: 'auto',
       pixelFormat: 'auto',
+      color: {},
       rateControl: {
         mode: 'crf',
         qualityValue: 23,

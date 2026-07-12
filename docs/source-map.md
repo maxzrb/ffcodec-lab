@@ -20,7 +20,7 @@
 
 | FFmpegFreeUI 参数概念 | 本项目结构 |
 |---|---|
-| 参数导航树（面板折叠/展开） | `ParameterDefinition.group` + UI `sections/` 布局 |
+| 参数导航树（独立模块页面） | `ResolvedWorkspaceView.panels` + `uiPlacement` |
 | 参数能力树（编码器→子参数） | `EncoderDefinition.{preset,profile,tune,pixelFormat,qualityModes}` |
 | 依赖规则图（跨分支联动） | `RuleDefinition.when/effects` + `RuleExpression` AST |
 | 参数解释文本 | `ExplanationDefinition`（独立数据层） |
@@ -43,13 +43,24 @@
 | WebM 字幕 auto → webvtt | `R13.webm.subtitle.webvtt` |
 | 显式不兼容组合 → error | `R15.incompatible.combo` |
 
+## 2026-07-12 高级参数增量映射
+
+| FFmpegFreeUI v6 源文件 | 本项目能力 |
+|---|---|
+| `Form_v6_参数面板_质量.vb` | GOP、B 帧、最小关键帧间隔、qmin/qmax/qcomp 目录控件 |
+| `Form_v6_参数面板_色彩管理.vb` | 输出色彩范围、矩阵、原色、传输特性 |
+| `Form_v6_参数面板_降噪.vb` | hqdn3d、nlmeans、atadenoise、bm3d 参数与范围 |
+| `Form_v6_参数面板_平滑断层.vb` | deband、gradfun 参数与范围 |
+
+这些条目标记为 `sourceAuthority: ffmpegfreeui` 和 `verificationLevel: project-derived`，可以进入生产目录，不以官方交叉验证作为构建前置条件。
+
 ## 暂未映射的 3FUI 功能（第二轮以后）
 
 | 3FUI 功能 | 原因 |
 |---|---|
 | 图片编码器数据库 | 首版只覆盖视频压制 |
 | 硬件编码器 (NVENC/QSV/AMF) | 架构已支持，数据待补充（需核验） |
-| 色彩管理 (colorspace/primaries/transfer) | 首版暂缓 |
+| zscale/libplacebo 转换与 HDR 色调映射 | 首批只实现输出色彩标记，像素转换后续专项完成 |
 | 视频帧服务器 (AviSynth/VapourSynth) | 首版暂缓 |
 | 降噪/锐化/超分/插帧滤镜 | 首版暂缓 |
 | filter_complex | 首版不支持 |

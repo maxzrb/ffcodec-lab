@@ -63,7 +63,16 @@ export interface VideoConfig {
   pixelFormat?: string
   gpuIndex?: number
   threads?: number
+  /** 输出流色彩标记；未设置的字段不进入命令。 */
+  color?: VideoColorConfig
   specialParameters: Record<string, unknown>
+}
+
+export interface VideoColorConfig {
+  range?: 'tv' | 'pc'
+  space?: string
+  primaries?: string
+  transfer?: string
 }
 
 export interface RateControlConfig {
@@ -120,6 +129,16 @@ export interface AdvancedVideoFiltersConfig {
   sharpen: {
     enabled: boolean
     amount: number
+  }
+  denoise: {
+    enabled: boolean
+    algorithm?: 'hqdn3d' | 'nlmeans' | 'atadenoise' | 'bm3d'
+    values: Record<string, number>
+  }
+  deband: {
+    enabled: boolean
+    algorithm?: 'deband' | 'gradfun'
+    values: Record<string, number | boolean>
   }
 }
 

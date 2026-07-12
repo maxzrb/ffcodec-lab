@@ -48,6 +48,16 @@ const advancedVideoFiltersSchema = z.object({
     enabled: z.boolean(),
     amount: z.number().min(-2).max(5),
   }),
+  denoise: z.object({
+    enabled: z.boolean(),
+    algorithm: z.enum(['hqdn3d', 'nlmeans', 'atadenoise', 'bm3d']).optional(),
+    values: z.record(z.number()),
+  }).default({ enabled: false, values: {} }),
+  deband: z.object({
+    enabled: z.boolean(),
+    algorithm: z.enum(['deband', 'gradfun']).optional(),
+    values: z.record(z.union([z.number(), z.boolean()])),
+  }).default({ enabled: false, values: {} }),
 })
 
 const rateControlSchema = z.object({
@@ -129,6 +139,12 @@ const videoConfigSchema = z.object({
   pixelFormat: z.string().optional(),
   gpuIndex: z.number().int().nonnegative().optional(),
   threads: z.number().int().positive().optional(),
+  color: z.object({
+    range: z.enum(['tv', 'pc']).optional(),
+    space: z.string().optional(),
+    primaries: z.string().optional(),
+    transfer: z.string().optional(),
+  }).default({}),
   specialParameters: z.record(z.unknown()),
 })
 
@@ -145,7 +161,7 @@ const audioConfigSchema = z.object({
 // -- top-level schema -----------------------------------------
 
 export const projectConfigSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   shell: z.enum(['bash', 'powershell', 'cmd']),
   input: z.object({
     path: z.string(),
@@ -183,6 +199,8 @@ export const projectConfigSchema = z.object({
       adjustment: { enabled: false, brightness: 0, contrast: 1, saturation: 1, gamma: 1 },
       deinterlace: { enabled: false, mode: 'send_frame', parity: 'auto' },
       sharpen: { enabled: false, amount: 1 },
+      denoise: { enabled: false, values: {} },
+      deband: { enabled: false, values: {} },
     }),
   }),
   audio: audioConfigSchema,

@@ -126,6 +126,23 @@ function renderControl(
       )
 
     case 'switch':
+      if (field.optional) {
+        return (
+          <select
+            id={controlId}
+            value={field.value === true ? 'true' : field.value === false ? 'false' : ''}
+            onChange={(event) => {
+              const value = event.target.value
+              onChange(value === '' ? undefined : value === 'true')
+            }}
+            disabled={disabled}
+          >
+            <option value="">{text('不设置（使用编码器默认）')}</option>
+            <option value="true">{text('开启')}</option>
+            <option value="false">{text('关闭')}</option>
+          </select>
+        )
+      }
       return (
         <label className={`switch-control ${disabled ? 'switch-control--disabled' : ''}`}>
           <input

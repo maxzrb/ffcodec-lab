@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware'
 import type { ProjectConfig } from '../domain/config/project-config'
 import { createDefaultProjectConfig } from '../domain/config/defaults'
 import { projectConfigSchema } from '../domain/config/config-schema'
+import { migrateConfig } from '../domain/migration/migrate-config'
+import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '../domain/migration/migration-registry'
 
 // ============================================================
 // Zustand store — holds ProjectConfig and UI session state.
@@ -17,6 +19,7 @@ interface BuilderState {
   // -- UI session state (NOT the derived command) --
   expandedSections: Record<string, boolean>
   selectedExplanationId: string | null
+  activePanelId: string
 
   // -- per-encoder session cache (not part of config) --
   encoderSessionCache: Record<string, Record<string, unknown>>
@@ -28,6 +31,7 @@ interface BuilderState {
   resetSection: (sectionId: string) => void
   toggleSection: (sectionId: string) => void
   selectExplanation: (id: string | null) => void
+  setActivePanel: (id: string) => void
   setEncoderCache: (encoderId: string, cache: Record<string, unknown>) => void
   resetConfig: () => void
 }
@@ -43,9 +47,14 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
     'section.subtitle': false,
     'section.container': false,
     'section.customArgs': false,
+    'section.quality': true,
+    'section.color': true,
+    'section.filters': true,
+    'section.streams-container': true,
   },
 
   selectedExplanationId: null,
+  activePanelId: 'input-output',
   encoderSessionCache: {},
 
   // -- actions --
@@ -87,14 +96,18 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
     }),
 
   toggleSection: (sectionId) =>
-    set((state) => ({
-      expandedSections: {
-        ...state.expandedSections,
-        [sectionId]: !state.expandedSections[sectionId],
-      },
-    })),
+    set((state) => {
+      const currentlyExpanded = state.expandedSections[sectionId] ?? true
+      return {
+        expandedSections: {
+          ...state.expandedSections,
+          [sectionId]: !currentlyExpanded,
+        },
+      }
+    }),
 
   selectExplanation: (id) => set({ selectedExplanationId: id }),
+  setActivePanel: (id) => set({ activePanelId: id }),
 
   setEncoderCache: (encoderId, cache) =>
     set((state) => ({
@@ -116,7 +129,12 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
   partialize: (state) => ({ config: state.config }) as BuilderState,
   merge: (persistedState, currentState) => {
     const persistedConfig = (persistedState as Partial<BuilderState>)?.config
-    const parsed = projectConfigSchema.safeParse(persistedConfig)
+    const source = persistedConfig as unknown as Record<string, unknown> | undefined
+    const version = typeof source?.schemaVersion === 'number' ? source.schemaVersion : CURRENT_SCHEMA_VERSION
+    const migrated = source
+      ? migrateConfig(version, CURRENT_SCHEMA_VERSION, source, [...ALL_MIGRATION_STEPS]).config
+      : undefined
+    const parsed = projectConfigSchema.safeParse(migrated)
     return {
       ...currentState,
       config: parsed.success ? parsed.data as ProjectConfig : currentState.config,

@@ -14,6 +14,35 @@ function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
 }
 
 describe('Command AST — Invariants', () => {
+  it('高级质量和色彩参数默认不发射，显式设置后才进入命令', () => {
+    const config = makeConfig()
+    let rendered = renderBash(buildCommandPlan(config, catalog, []))
+    expect(rendered.text).not.toContain('-g ')
+    expect(rendered.text).not.toContain('-qmin')
+    expect(rendered.text).not.toContain('-color_primaries')
+
+    config.video.specialParameters.gopSize = 240
+    config.video.specialParameters.qmin = 8
+    config.video.color = { space: 'bt2020nc', primaries: 'bt2020', transfer: 'smpte2084', range: 'tv' }
+    rendered = renderBash(buildCommandPlan(config, catalog, []))
+    expect(rendered.text).toContain('-g 240')
+    expect(rendered.text).toContain('-qmin 8')
+    expect(rendered.text).toContain('-colorspace bt2020nc')
+    expect(rendered.text).toContain('-color_primaries bt2020')
+    expect(rendered.text).toContain('-color_trc smpte2084')
+    expect(rendered.text).toContain('-color_range tv')
+  })
+
+  it('视频复制模式忽略已保存的色彩和高级质量设置', () => {
+    const config = makeConfig()
+    config.video.mode = 'copy'
+    config.video.color = { space: 'bt709', range: 'tv' }
+    config.video.specialParameters.gopSize = 120
+    const rendered = renderBash(buildCommandPlan(config, catalog, []))
+    expect(rendered.text).not.toContain('-colorspace')
+    expect(rendered.text).not.toContain('-g 120')
+  })
+
   it('generates command for libx264 + CRF + AAC + MP4', () => {
     const config = makeConfig()
     const plan = buildCommandPlan(config, catalog, [])

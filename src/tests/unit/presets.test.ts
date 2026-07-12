@@ -37,6 +37,22 @@ describe('PresetService', () => {
     expect(loaded!.config.video.encoderId).toBe('libx264')
   })
 
+  it('loads v2 project config as schema v3 without enabling advanced settings', () => {
+    const legacy = createDefaultProjectConfig()
+    legacy.schemaVersion = 2
+    delete legacy.video.color
+    const filters = legacy.frame.filters as unknown as Record<string, unknown>
+    delete filters.denoise
+    delete filters.deband
+    const saved = service.save({ name: 'Legacy v2', config: legacy })
+
+    const loaded = service.load(saved.id)
+    expect(loaded?.config.schemaVersion).toBe(3)
+    expect(loaded?.config.video.color).toEqual({})
+    expect(loaded?.config.frame.filters?.denoise.enabled).toBe(false)
+    expect(loaded?.config.frame.filters?.deband.enabled).toBe(false)
+  })
+
   it('lists saved presets sorted by updatedAt', async () => {
     service.save({ name: 'First', config: createDefaultProjectConfig() })
     // Small delay to ensure different timestamps

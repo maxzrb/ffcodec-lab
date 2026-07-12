@@ -169,6 +169,9 @@ function coerceValue(
     }
 
     case 'switch':
+      if (field.optional && (value === undefined || value === null || value === '')) {
+        return { value: undefined }
+      }
       // Ensure boolean
       if (typeof value !== 'boolean') {
         return {

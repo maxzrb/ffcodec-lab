@@ -202,6 +202,7 @@ export type ArgumentPhase =
   | 'VIDEO_CODEC'
   | 'VIDEO_PROFILE'
   | 'VIDEO_RATE_CONTROL'
+  | 'VIDEO_COLOR'
   | 'VIDEO_FILTER'
   | 'AUDIO_CODEC'
   | 'AUDIO_QUALITY'
@@ -264,6 +265,14 @@ export interface ControlDefinition {
   defaultValue?: unknown
   /** 可选参数不由目录默认值自动写入命令，用户可明确选择“不设置”。 */
   optional?: boolean
+  /** 控件在工作台中的展示位置，业务页面不据此推导命令。 */
+  uiPlacement?: {
+    panelId: string
+    groupId: string
+    tier: 'basic' | 'advanced'
+  }
+  /** 控件级来源；缺省时继承编码器来源。 */
+  sourceRefs?: SourceRef[]
   explanationId: string
   /** Per-control capability constraints (overrides encoder-level) */
   capabilityScope?: CapabilityScope

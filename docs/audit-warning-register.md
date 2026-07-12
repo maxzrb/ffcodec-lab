@@ -148,6 +148,12 @@ sourceRefs:
 
 ## 版本历史
 
+### 2026-07-12 — 高级参数审计扩展
+
+- 带 `tier: advanced` 的编码器控件必须是 optional，禁止目录默认值自动进入命令。
+- 高级控件必须具有控件级 FFmpegFreeUI 来源、合法 `configBinding` 和显式命令前缀。
+- `project-derived` 不再因缺少官方交叉验证产生阻断或 warning。
+
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | v0.4.0-dev | 2026-07-10 | 初始创建，登记 5 条 configBinding 遗留 warning |
