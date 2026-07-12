@@ -1,15 +1,15 @@
 # Project Status
 
-Last updated: 2026-07-12 17:18
+Last updated: 2026-07-12 17:33
 Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: 高级参数工作台架构升级与本地体验修复 — 分组折叠、侧栏折叠、说明阴影和诊断计数
-- Current state: 高级参数功能及五项本地体验修复均已实现并通过全量检查；本地预览运行中，尚未提交或部署
+- Current objective: 高级参数工作台已提交并部署；规划下一阶段稳定化、真实色彩转换与参数扩展
+- Current state: 功能提交 `84c2028` 已推送 master，Cloudflare Pages 部署成功，生产站点已加载新工作台资源
 - Current site: https://fflab.loliland.cn/
-- Next objective: 用户在 `http://127.0.0.1:5173/` 审阅后提交；如用户要求上线，再推送 master 触发 Cloudflare Pages
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 346/346（21 文件）、catalog audit 0/0、production build 成功（509.09 KB JS + 22.46 KB CSS）；本地预览 HTTP 200
+- Next objective: 先完成上线稳定化与审计文档校准，再实施真实色彩转换，随后扩展编码器高级质量参数
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 346/346（21 文件）、catalog audit 0/0、production build 成功（509.09 KB JS + 22.46 KB CSS）；Cloudflare Pages check success；生产域名 HTTP 200 且新 bundle 标识已确认
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -35,14 +35,24 @@ Updated by: Codex (GPT-5)
 - Video encoders: 13 个 (software 5、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 提交高级参数工作台改动；切换设备或代理前不要遗漏未提交工作树
+- Next recommended step: 执行下一阶段 Step 1：上线稳定化、更新过时的控件交互审计、主包拆分与代表性 FFmpeg 实机命令矩阵
 
 ## Active TODO
 
 - [x] 高级参数工作台架构升级
   - Owner: Codex
-  - Status: 已实现并全量验证；重复模块、折叠状态、侧栏折叠、说明阴影和零诊断计数已修复，待用户本地审阅及提交/部署
-  - Notes/blockers: 用户要求本地查看，未执行部署；Vite 对 509.09 KB 主包给出非阻断体积提示
+  - Status: 已实现、全量验证、提交 `84c2028` 并部署到 Cloudflare Pages
+  - Notes/blockers: 无功能阻断；Vite 对 509.09 KB 主包给出非阻断体积提示
+
+- [ ] 下一阶段：稳定化与高级参数第二批
+  - Owner: Codex
+  - Status: 已规划，尚未开始实施
+  - Plan:
+    1. 稳定化：更新过时的控件交互审计，补桌面/移动端工作台回归，拆分说明/预设等非首屏代码以消除 >500 KB 提示，建立代表性 FFmpeg 实机命令矩阵
+    2. 真实色彩处理：在“只写元数据”之外新增明确的色彩转换模式，优先 zscale/tonemap 路径，处理 HDR→SDR、范围/矩阵/原色/传输联动及构建可用性诊断
+    3. 高级质量第二批：继续从 FFmpegFreeUI 导入编码器适用的 level、lookahead、AQ、场景切换和参考帧类参数，保持 optional、三态与编码器切换清理
+    4. 后续能力：在前三步稳定后再评估剪辑区间、元数据/章节/附件与自由滤镜排序，不与色彩处理同批混入
+  - Acceptance: 旧 v1/v2/v3 配置与分享链接命令不变；新增参数默认不发射；唯一有序 `-vf`；实机错误可复现登记；全量 check、catalog audit、生产构建和桌面/移动端交互通过
 
 - [x] 英文遗漏、预设默认值、自由命令编辑、可选参数及新编码器
   - Owner: Codex
@@ -70,6 +80,8 @@ Updated by: Codex (GPT-5)
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
+
+- 2026-07-12 17:33: 高级参数工作台提交 `84c2028` 并部署；Cloudflare Pages success，生产 bundle `index-D93ypZi1.js` 已确认包含侧栏折叠、色彩元数据和模块工作台能力
 
 - 2026-07-12 17:18: 修复色彩区域首次无法关闭及重复 ID；区分像素格式/色彩元数据与流选择/封装设置；新增可折叠参数侧栏；修正说明卡片方形阴影及“诊断 0” — 346/346 测试、0/0 审计、build 成功
 
@@ -1113,3 +1125,24 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - `tsconfig.tsbuildinfo` 启动前已有机械差异，继续排除出后续功能提交
 - Git status: master 跟踪 origin/master；高级参数功能、本次修复、测试和记录均未提交，working tree not clean
 - Next step: 用户通过本地预览确认；确认后创建功能提交，需上线时再推送 master
+
+### 2026-07-12 17:33 - Codex (GPT-5)
+
+- Objective: 提交并部署高级参数工作台，然后制定下一阶段实施计划
+- Work completed:
+  1. 复核 AGENTS/INDEX/STATUS、远端同步状态、已验证差异和 GitHub 登录状态
+  2. 暂存全部高级参数工作台源码、测试和文档，明确排除既有 `tsconfig.tsbuildinfo` 机械差异
+  3. 创建提交 `84c2028 feat: add advanced parameter workbench` 并推送 master
+  4. Cloudflare Workers and Pages check suite / Cloudflare Pages check-run 均返回 `completed / success`
+  5. 生产域名 HTTP 200，资源更新为 `/assets/index-D93ypZi1.js` 与 `/assets/index-CSyGe8SP.css`；bundle 确认包含侧栏折叠、Color metadata 和 Parameter workbench
+  6. 制定下一阶段四步计划：稳定化与审计校准 → 真实色彩处理 → 高级质量第二批 → 剪辑/元数据/章节/附件/排序评估
+- Verification:
+  - 提交沿用源码未变化前 `npm run check` 全通过结果：346/346 tests、audit 0/0、build success
+  - Cloudflare Pages: completed/success；生产站点 HTTP 200；线上 bundle 功能标识验证通过
+- Decisions/risks:
+  - 下一阶段先处理主包 >500 KB、过时审计文档和实机命令矩阵，避免继续扩展后提高回归成本
+  - 色彩第二阶段必须区分“只写元数据”与“真实像素转换”，不让用户误以为当前标记会改变画面
+  - 剪辑、章节、附件和自由排序继续后置，避免与色彩处理和质量参数同时扩大 schema/命令管道
+  - `tsconfig.tsbuildinfo` 不属于功能提交，继续保留为唯一未提交本地机械差异
+- Git status: `84c2028` 已推送 origin/master；本部署记录将以独立 docs 提交推送，之后仅保留 `tsconfig.tsbuildinfo` 本地差异
+- Next step: 用户确认计划后，从稳定化与实机命令矩阵开始实施
