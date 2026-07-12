@@ -1,7 +1,7 @@
 # Project Status
 
-Last updated: 2026-07-12 18:19
-Updated by: Codex (GPT-5)
+Last updated: 2026-07-12 18:35
+Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
@@ -33,8 +33,8 @@ Updated by: Codex (GPT-5)
   - build: 405 KB JS + 1.3 KB CSS
   - Playwright: 已移除，不属于默认依赖
 - Video encoders: 13 个 (software 5、NVIDIA 2、Intel 2、AMD 2、Apple 2)
-- Last active agent: Codex
-- Likely next agent: Codex
+- Last active agent: Claude Code (DeepSeek-v4-pro)
+- Likely next agent: Claude Code
 - Next recommended step: 无阻断任务；下一批按 `docs/next-capability-evaluation.md` 实施受控剪辑和常用元数据
 
 ## Active TODO
@@ -81,6 +81,8 @@ Updated by: Codex (GPT-5)
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
+
+- 2026-07-12 18:35: v0.6.0 closeout 核验与记录完善 — Claude Code 接管核验，全量检查 359/359 通过，修复 STATUS.md Git Sync 过时引用和 工作进度.md 摘要
 
 - 2026-07-12 18:19: v0.6.0 提交并部署 — Cloudflare Pages success，生产资源确认包含稳定滚动条、schema v4 色彩转换诊断和高级质量第二批
 
@@ -191,13 +193,13 @@ Updated by: Codex (GPT-5)
 
 - Git repository: yes
 - Branch: master（跟踪 origin/master）
-- Last deployed feature commit: 361949c（参数介绍、全局中/EN、诊断与码率单位）
+- Last deployed feature commit: `b24cfcb`（v0.6.0 — schema v4 色彩转换、高级质量第二批、字幕栏稳定化）
 - Remote: `https://github.com/maxzrb/ffcodec-lab.git`
-- Sync: `361949c` 已推送到 origin/master；Cloudflare Pages check suite success
-- Deployment verification: `https://fflab.loliland.cn/` HTTP 200，HTML 引用 `/assets/index-BCYh_oFj.js`，bundle 包含英文工作台与诊断模块文案
-- Uncommitted changes: 仅本次部署 closeout 记录，随后以独立 docs commit 提交
-- Working tree clean: closeout commit 完成后应为 yes
-- Commit recommended before switching agents/devices: closeout commit 完成后无需额外提交
+- Sync: `7ffe402` 已推送到 origin/master；Cloudflare Pages check suite success
+- Deployment verification: `https://fflab.loliland.cn/` HTTP 200，HTML 引用 `/assets/index-CYEsPILd.js`、`/assets/vendor-C0qM6IhX.js`、`/assets/index-Cnnup6gh.css`，bundle 包含 convert-and-tag、色调映射诊断和 qvbrQualityLevel
+- Uncommitted changes: 仅 `tsconfig.tsbuildinfo` 机械差异（持续排除出功能提交）
+- Working tree clean: 除 tsconfig.tsbuildinfo 外 clean
+- Commit recommended before switching agents/devices: 否（功能与部署记录均已推送）
 
 ## Session Log
 
@@ -1201,3 +1203,42 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 本地仅 `tsconfig.tsbuildinfo` 保留既有机械差异，不属于 v0.6.0
 - Git status: 功能提交已推送；本部署记录将以独立 docs 提交推送，之后 master 与 origin 同步，仅本地 tsbuildinfo 非干净
 - Next step: 无；未来新需求从受控剪辑和常用元数据开始
+
+### 2026-07-12 18:35 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 接管 Codex v0.6.0 工作，核验完成度并完善 closeout 记录
+- Work completed:
+  1. 按 HandShake 规程读取 AGENTS.md、CLAUDE.md、INDEX.md、STATUS.md；`git pull` 确认远端已同步
+  2. 运行 `npm run check` 全量验证：ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 files）、catalog audit 0/0、production build 成功（317.45 KB business + 205.27 KB vendor + 22.52 KB CSS）
+  3. 核验 Codex 四阶段完成度：
+     - ✅ 字幕栏稳定化：CSS scrollbar-gutter + flex/min-width 约束已落地
+     - ✅ schema v4 色彩转换：zscale/CPU tonemap/libplacebo + 三种操作模式 + 诊断
+     - ✅ 高级质量第二批：level/lookahead/AQ/scene-threshold/refs/extbrc/QVBR 均已接入
+     - ✅ FFmpeg 8.1.1 实机矩阵 4/4、验收 10/10
+     - ✅ v0.6.0 提交 `b24cfcb` + 部署记录 `7ffe402` 均已推送；Cloudflare Pages 生产站点在线
+  4. 发现并修复 closeout 记录遗漏：
+     - STATUS.md Git Sync 区域仍引用旧 commit `361949c`，已更新为 `b24cfcb` / `7ffe402`
+     - `version/工作进度.md` 当前摘要仍显示 v0.5.2 和旧日期 13:21，已更新为 v0.6.0 完整摘要
+  5. 追加本次 Claude Code 会话记录到 STATUS.md 和 工作进度.md
+- Files changed:
+  - Modified: docs/codex/STATUS.md（Git Sync 区域 + 本次 session log）
+  - Modified: version/工作进度.md（当前摘要 + 本次进度条目）
+- Commands run:
+  - `git pull` — Already up to date
+  - `git status` — 仅 tsconfig.tsbuildinfo 机械差异
+  - `git log --oneline -10` — 确认提交链完整
+  - `npm run check` — ALL PASSED
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 359/359 passed (22 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 317.45 KB + 205.27 KB vendor + 22.52 KB CSS
+  - 原有 359 测试 0 弱化/删除
+- Decisions/risks:
+  - v0.6.0 四阶段计划已全部闭环，无剩余实施项
+  - 应用内浏览器仍无可用实例，视觉巡检继续作为环境限制记录
+  - `tsconfig.tsbuildinfo` 持续排除出功能提交
+- Environment notes: Node.js v24.18.0, Windows 11, Git Bash
+- Git status: master 跟踪 origin/master，仅 tsconfig.tsbuildinfo 未跟踪修改；功能与记录提交均已推送
+- Next step: 无阻断任务；下一轮从 `docs/next-capability-evaluation.md` 建议的受控剪辑和常用元数据开始
