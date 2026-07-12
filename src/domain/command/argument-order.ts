@@ -85,6 +85,7 @@ function collectAndSortOutput(output: InvocationOutput): CommandArg[] {
     output.filterArgs ?? [],
     output.audioArgs ?? [],
     output.subtitleArgs ?? [],
+    output.metadataArgs ?? [],
     output.muxerArgs ?? [],
     output.customArgs ?? [],
   ]
