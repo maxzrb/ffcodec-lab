@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fflab.loliland.cn/sitemap.xml
