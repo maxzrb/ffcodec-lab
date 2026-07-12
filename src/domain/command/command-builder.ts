@@ -526,29 +526,46 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
   }
 
   // -- 自定义元数据 -------------------------------------------
+  // 格式：全局 key=value；流级 stream_type:index:key=value
   const metadata = config.output.metadata
   if (metadata) {
-    // 全局元数据 → -metadata key=value
-    for (const entry of metadata.global) {
-      if (!entry.key || entry.value === undefined) continue
+    const streamTypePrefix: Record<string, string> = { video: 'v', audio: 'a', subtitle: 's' }
+
+    for (const line of metadata.globalLines) {
+      const eq = line.indexOf('=')
+      if (eq <= 0) continue
+      const key = line.slice(0, eq).trim()
+      const value = line.slice(eq + 1)
+      if (!key) continue
       output.metadataArgs.push({
-        id: `metadata.global.${entry.key}`,
-        originId: 'output.metadata.global',
+        id: `metadata.global.${key}`,
+        originId: 'output.metadata.globalLines',
         phase: 'METADATA',
-        tokens: ['-metadata', `${entry.key}=${entry.value}`],
+        tokens: ['-metadata', `${key}=${value}`],
       })
     }
-    // 流级元数据 → -metadata:s:v/a/s:N key=value
-    const streamTypePrefix: Record<string, string> = { video: 'v', audio: 'a', subtitle: 's' }
-    for (const entry of metadata.streams) {
-      if (!entry.key || entry.value === undefined) continue
-      const prefix = streamTypePrefix[entry.streamType]
-      if (!prefix) continue
+
+    for (const line of metadata.streamLines) {
+      const firstColon = line.indexOf(':')
+      if (firstColon <= 0) continue
+      const streamType = line.slice(0, firstColon).trim()
+      const rest = line.slice(firstColon + 1)
+      const secondColon = rest.indexOf(':')
+      if (secondColon <= 0) continue
+      const indexStr = rest.slice(0, secondColon).trim()
+      const keyValue = rest.slice(secondColon + 1)
+      const eq = keyValue.indexOf('=')
+      if (eq <= 0) continue
+      const key = keyValue.slice(0, eq).trim()
+      const value = keyValue.slice(eq + 1)
+      const streamIndex = Number(indexStr)
+      const prefix = streamTypePrefix[streamType]
+      if (!prefix || !key || !Number.isFinite(streamIndex) || streamIndex < 0) continue
       output.metadataArgs.push({
-        id: `metadata.stream.${entry.streamType}.${entry.streamIndex}.${entry.key}`,
-        originId: 'output.metadata.streams',
+        id: `metadata.stream.${streamType}.${streamIndex}.${key}`,
+        originId: 'output.metadata.streamLines',
         phase: 'METADATA',
-        tokens: [`-metadata:s:${prefix}:${entry.streamIndex}`, `${entry.key}=${entry.value}`],
+        tokens: [`-metadata:s:${prefix}:${streamIndex}`, `${key}=${value}`],
       })
     }
   }

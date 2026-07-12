@@ -1187,70 +1187,50 @@ export function resolveCustomArgsSection(config: ProjectConfig): ResolvedSection
 }
 
 export function resolveMetadataSection(config: ProjectConfig): ResolvedSection {
-  const metadata = config.output.metadata ?? { global: [], streams: [] }
-  const fields: ResolvedField[] = []
-
-  // 全局元数据条目
-  metadata.global.forEach((entry, index) => {
-    fields.push({
-      id: `output.metadata.global.${index}`,
-      label: `全局 #${index + 1}`,
-      controlType: 'text',
-      value: `${entry.key}=${entry.value}`,
+  const metadata = config.output.metadata ?? { globalLines: [], streamLines: [] }
+  const fields: ResolvedField[] = [
+    {
+      id: 'output.metadata.globalLines',
+      label: '全局元数据',
+      description: '每行一条 key=value，例如 title=我的视频 或 copyright=2026。生成 -metadata key=value。',
+      controlType: 'textarea',
+      value: metadata.globalLines.join('\n'),
       visible: true, disabled: false,
-      sourceRefs: [],
-      verificationLevel: 'project-derived', needsCrossVerification: false,
-      commandOrigins: ['output.metadata.global'],
-      diagnostics: [],
-      tier: 'basic',
-      optional: true,
-    })
-  })
-
-  // 流级元数据条目
-  metadata.streams.forEach((entry, index) => {
-    const prefix = { video: 'v', audio: 'a', subtitle: 's' }[entry.streamType]
-    fields.push({
-      id: `output.metadata.streams.${index}`,
-      label: `流级 #${index + 1}`,
-      controlType: 'text',
-      value: `${prefix}:${entry.streamIndex}:${entry.key}=${entry.value}`,
-      visible: true, disabled: false,
-      sourceRefs: [],
-      verificationLevel: 'project-derived', needsCrossVerification: false,
-      commandOrigins: ['output.metadata.streams'],
-      diagnostics: [],
-      tier: 'basic',
-      optional: true,
-    })
-  })
-
-  if (fields.length === 0) {
-    fields.push({
-      id: 'output.metadata.empty',
-      label: '自定义元数据',
-      description: '全局元数据使用 -metadata key=value，流级元数据使用 -metadata:s:v/a/s:N key=value。可通过预设或分享链接导入已配置的元数据。',
-      controlType: 'text',
-      value: '',
-      visible: true, disabled: true,
       sourceRefs: [{
         repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12',
         file: 'doc/metadata.texi', sourceType: 'ffmpeg-official',
-        url: 'https://ffmpeg.org/ffmpeg.html#Main-options',
       }],
       verificationLevel: 'official', needsCrossVerification: false,
-      commandOrigins: [], diagnostics: [],
-      tier: 'basic',
-      optional: true,
-    })
-  }
+      commandOrigins: ['output.metadata.globalLines'], diagnostics: [],
+      tier: 'basic', optional: true,
+      configBinding: { path: CONFIG_PATHS.output.metadataGlobalLines },
+    },
+    {
+      id: 'output.metadata.streamLines',
+      label: '流级元数据',
+      description: '每行一条 stream_type:index:key=value，例如 audio:0:language=jpn 或 video:0:title=主视频。生成 -metadata:s:a:0 language=jpn。',
+      controlType: 'textarea',
+      value: metadata.streamLines.join('\n'),
+      visible: true, disabled: false,
+      sourceRefs: [{
+        repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12',
+        file: 'doc/metadata.texi', sourceType: 'ffmpeg-official',
+      }],
+      verificationLevel: 'official', needsCrossVerification: false,
+      commandOrigins: ['output.metadata.streamLines'], diagnostics: [],
+      tier: 'basic', optional: true,
+      configBinding: { path: CONFIG_PATHS.output.metadataStreamLines },
+    },
+  ]
+
+  const totalLines = metadata.globalLines.length + metadata.streamLines.length
 
   return {
     id: 'section.metadata',
     label: '自定义元数据',
-    description: metadata.global.length + metadata.streams.length > 0
-      ? `${metadata.global.length} 条全局 + ${metadata.streams.length} 条流级`
-      : '尚未配置；可通过预设或 JSON 导入添加',
+    description: totalLines > 0
+      ? `${metadata.globalLines.length} 条全局 + ${metadata.streamLines.length} 条流级，共 ${totalLines} 条`
+      : '每行输入一条 key=value（全局）或 stream_type:index:key=value（流级）',
     fields,
   }
 }

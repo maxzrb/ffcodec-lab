@@ -37,24 +37,11 @@ export interface OutputConfig {
   metadata?: MetadataConfig
 }
 
-/** 一条全局元数据键值对 → -metadata key=value */
-export interface MetadataPair {
-  key: string
-  value: string
-}
-
-/** 一条流级元数据 → -metadata:s:v/a/s:N key=value */
-export interface StreamMetadataEntry {
-  streamType: 'video' | 'audio' | 'subtitle'
-  /** 该类型内的相对流序号（0-based）。 */
-  streamIndex: number
-  key: string
-  value: string
-}
-
 export interface MetadataConfig {
-  global: MetadataPair[]
-  streams: StreamMetadataEntry[]
+  /** 全局元数据行，每行 key=value → -metadata key=value */
+  globalLines: string[]
+  /** 流级元数据行，每行 stream_type:index:key=value → -metadata:s:v/a/s:N key=value */
+  streamLines: string[]
 }
 
 export interface StreamSelectionConfig {

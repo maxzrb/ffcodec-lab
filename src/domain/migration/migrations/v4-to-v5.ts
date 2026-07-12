@@ -12,8 +12,8 @@ export const v4ToV5: MigrationStep = {
         output: {
           ...(config.output as Record<string, unknown> ?? {}),
           metadata: {
-            global: [],
-            streams: [],
+            globalLines: [],
+            streamLines: [],
           },
         },
       },
