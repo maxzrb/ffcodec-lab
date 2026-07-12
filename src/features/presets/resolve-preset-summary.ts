@@ -73,8 +73,33 @@ function resolveContainerSummary(config: ProjectConfig, catalog: Catalog): strin
 }
 
 function resolveSubtitleSummary(config: ProjectConfig, locale: Locale): string {
-  const count = config.subtitle.tracks.length
-  if (count === 0) return locale === 'zh-CN' ? '无字幕轨道' : 'No subtitle tracks'
-  if (config.subtitle.burn.enabled) return locale === 'zh-CN' ? `${count} 条轨道 + 烧录` : `${count} tracks + burn-in`
-  return locale === 'zh-CN' ? `${count} 条轨道` : `${count} tracks`
+  const trackCount = config.subtitle.tracks.length
+  const hasBurn = config.subtitle.burn.enabled
+  const hasPreserve = config.streams.preserveOtherSubtitleStreams
+  const hasStreamSelection = config.streams.subtitleStreamIndexes.length > 0
+
+  const parts: string[] = []
+
+  // Describe stream preservation / selection
+  if (hasPreserve) {
+    parts.push(locale === 'zh-CN' ? '保留全部字幕流' : 'All subtitle streams')
+  } else if (hasStreamSelection) {
+    const count = config.streams.subtitleStreamIndexes.length
+    parts.push(locale === 'zh-CN' ? `保留 ${count} 条字幕流` : `${count} subtitle stream(s)`)
+  }
+
+  // Describe explicit tracks
+  if (trackCount > 0) {
+    parts.push(locale === 'zh-CN' ? `${trackCount} 条轨道` : `${trackCount} track(s)`)
+  }
+
+  // Burn
+  if (hasBurn) {
+    parts.push(locale === 'zh-CN' ? '烧录' : 'burn-in')
+  }
+
+  if (parts.length === 0) {
+    return locale === 'zh-CN' ? '不保留字幕' : 'No subtitles'
+  }
+  return parts.join(' + ')
 }
