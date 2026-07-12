@@ -332,8 +332,8 @@ export function BuilderPage() {
         </small>
         <div className="builder-footer__stats">
           <VisitCounter
-            todayLabel={isZh ? '今日' : 'Today'}
-            totalLabel={isZh ? '总计' : 'Total'}
+            todayLabel={isZh ? '今日访问' : "Today's visits"}
+            totalLabel={isZh ? '总计访问' : 'Total visits'}
           />
         </div>
       </footer>
