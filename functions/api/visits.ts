@@ -1,5 +1,6 @@
 // ============================================================
 // GET /api/visits — 今日访问量 + 历史总访问量
+// GET /api/visits?count=false — 只读查询，不递增
 // 使用 Cloudflare Pages Functions + KV 存储
 // ============================================================
 
@@ -17,21 +18,26 @@ function todayKey(): string {
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const kv = context.env.VISIT_COUNTER
+  const url = new URL(context.request.url)
+  const readonly = url.searchParams.get('count') === 'false'
 
   // 历史总访问量
   const totalRaw = await kv.get('total')
-  const total = (parseInt(totalRaw || '0', 10)) + 1
+  let total = parseInt(totalRaw || '0', 10)
 
   // 今日访问量
   const dateKey = todayKey()
   const todayRaw = await kv.get(dateKey)
-  const today = (parseInt(todayRaw || '0', 10)) + 1
+  let today = parseInt(todayRaw || '0', 10)
 
-  // 异步写回 KV，不阻塞响应
-  context.waitUntil(Promise.all([
-    kv.put('total', String(total)),
-    kv.put(dateKey, String(today)),
-  ]))
+  if (!readonly) {
+    total += 1
+    today += 1
+    context.waitUntil(Promise.all([
+      kv.put('total', String(total)),
+      kv.put(dateKey, String(today)),
+    ]))
+  }
 
   return new Response(JSON.stringify({ total, today }), {
     headers: {

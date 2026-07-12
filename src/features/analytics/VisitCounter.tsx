@@ -1,6 +1,6 @@
 // ============================================================
 // VisitCounter — 今日 / 历史访问量仪表盘组件
-// 单设备 4 小时内仅上报一次，期间展示缓存的数值
+// 单设备 4 小时内仅上报一次（?count=false 只读），始终拉取实时数据
 // ============================================================
 
 import { useEffect, useState } from 'react'
@@ -10,8 +10,6 @@ const THROTTLE_MS = 4 * 60 * 60 * 1000 // 4 小时
 
 interface VisitCache {
   ts: number
-  total: number
-  today: number
 }
 
 interface VisitCounterProps {
@@ -19,21 +17,21 @@ interface VisitCounterProps {
   totalLabel: string
 }
 
-function readCache(): VisitCache | null {
+function isThrottled(): boolean {
   try {
     const raw = window.localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as VisitCache
-    if (typeof parsed.ts !== 'number' || typeof parsed.total !== 'number' || typeof parsed.today !== 'number') return null
-    return parsed
+    if (!raw) return false
+    const cache = JSON.parse(raw) as VisitCache
+    if (typeof cache.ts !== 'number') return false
+    return Date.now() - cache.ts < THROTTLE_MS
   } catch {
-    return null
+    return false
   }
 }
 
-function writeCache(total: number, today: number): void {
+function markVisit(): void {
   try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), total, today }))
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now() }))
   } catch {
     // 忽略存储失败
   }
@@ -43,32 +41,23 @@ export function VisitCounter({ todayLabel, totalLabel }: VisitCounterProps) {
   const [stats, setStats] = useState<{ total: number; today: number } | null>(null)
 
   useEffect(() => {
-    const cached = readCache()
+    const throttled = isThrottled()
+    const url = throttled ? '/api/visits?count=false' : '/api/visits'
 
-    // 4 小时内有缓存 → 直接展示缓存值，不上报
-    if (cached && Date.now() - cached.ts < THROTTLE_MS) {
-      setStats({ total: cached.total, today: cached.today })
-      return
-    }
-
-    // 无缓存或已过期 → 上报并更新缓存
     let cancelled = false
-    fetch('/api/visits')
+    fetch(url)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json() as Promise<{ total: number; today: number }>
       })
       .then((data) => {
         if (!cancelled) {
-          writeCache(data.total, data.today)
+          if (!throttled) markVisit()
           setStats(data)
         }
       })
       .catch(() => {
-        // 静默失败；若有旧缓存则降级展示
-        if (!cancelled && cached) {
-          setStats({ total: cached.total, today: cached.today })
-        }
+        // 静默失败：本地开发或网络错误
       })
     return () => { cancelled = true }
   }, [])
