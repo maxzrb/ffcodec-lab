@@ -1034,6 +1034,11 @@ code {
   text-underline-offset: 2px;
 }
 
+.visit-counter {
+  color: inherit;
+  font-size: inherit;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;

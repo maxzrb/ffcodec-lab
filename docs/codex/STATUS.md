@@ -964,3 +964,44 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Environment notes: Node.js v24.18.0, Windows 11
 - Git status: master branch, working tree NOT clean（6 文件修改 + 记录文件待更新）
 - Next step: git commit；用户确认后推送 master 触发 Cloudflare Pages 自动部署
+
+### 2026-07-12 13:39 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 为生产站点添加全局历史访问量计数器
+- Work completed:
+  1. **Cloudflare Pages Function 后端**: `functions/api/visits.ts`
+     - GET /api/visits → 从 KV 读取当前计数 → +1 → waitUntil 异步写回
+     - 返回 `{ visits: number }` JSON，Cache-Control: no-store
+  2. **前端 VisitCounter 组件**: `src/features/analytics/VisitCounter.tsx`
+     - useEffect 挂载时 fetch /api/visits
+     - 加载中/错误时静默返回 null，不影响页面功能
+     - 接收 `label` prop 支持双语（内联 isZh 模式，遵循 footer 现有惯例）
+  3. **BuilderPage footer 改造**: 在 Lake1059 归属信息后添加 `{' · '}<VisitCounter label={...} />`
+  4. **CSS**: `index.css` 新增 `.visit-counter`（继承 footer 的颜色与字号）
+- Files changed:
+  - New: functions/api/visits.ts (~20 lines)
+  - New: src/features/analytics/VisitCounter.tsx (~35 lines)
+  - Modified: src/pages/builder/BuilderPage.tsx (+3 lines)
+  - Modified: src/index.css (+5 lines)
+- Commands run:
+  - `npm run check`: ALL PASSED (ESLint 0/0, tsc 0, vitest 337/337, audit 0/0, build 490.22 KB JS + 18.22 KB CSS)
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 337/337 passed (21 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 490.22 KB JS + 18.22 KB CSS
+  - 原有 337 测试 0 弱化/删除
+- Decisions/risks:
+  - 采用 Cloudflare Pages Functions + KV（零额外成本，与现有部署完全集成）
+  - 本地开发时 Vite 不处理 /api/*，计数器静默失败不显示，不影响开发体验
+  - 不存储用户标识、不设 Cookie，仅全局递增计数器
+- Routing fix: 添加 `public/_routes.json` 解决 Cloudflare Pages SPA 回退拦截 `/api/*` 的问题
+  - `include: ["/api/*"]` → 走 Functions；`exclude: ["/*"]` → 走静态资源/SPA 回退
+  - Vite 自动将 `public/` 目录复制到 `dist/`，无需修改构建脚本
+- Blocker: 需在 Cloudflare 控制台手动创建 KV 命名空间 `VISIT_COUNTER` 并绑定到 Pages 项目后，推送代码才能生效
+- Environment notes: Node.js v24.18.0, Windows 11
+- Git status: master branch, working tree NOT clean（3 新文件 + 2 修改文件 + STATUS.md 待更新）
+  - New: functions/api/visits.ts, src/features/analytics/VisitCounter.tsx, public/_routes.json
+  - Modified: src/pages/builder/BuilderPage.tsx, src/index.css
+- Next step: (1) 用户在 Cloudflare 控制台创建 KV 命名空间并绑定 (2) git commit & push 触发部署

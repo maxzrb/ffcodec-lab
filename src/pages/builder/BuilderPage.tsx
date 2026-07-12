@@ -25,6 +25,7 @@ import { DiagnosticPanel } from './components/DiagnosticPanel'
 import { applyFix } from '../../domain/diagnostics/apply-diagnostic-fix'
 import type { DiagnosticFix } from '../../domain/rules/rule-types'
 import { CommandEditor } from './components/CommandEditor'
+import { VisitCounter } from '../../features/analytics/VisitCounter'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
@@ -328,6 +329,8 @@ export function BuilderPage() {
           <a href="https://github.com/Lake1059/FFmpegFreeUI" target="_blank" rel="noopener noreferrer">
             Lake1059/FFmpegFreeUI
           </a>
+          {' · '}
+          <VisitCounter label={isZh ? '访问量' : 'Visits'} />
         </small>
       </footer>
     </main>
