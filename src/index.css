@@ -594,6 +594,12 @@ code {
   text-align: center;
 }
 
+.workbench-nav__badge--diag {
+  background: oklch(0.78 0.14 85) !important;
+  color: #1a1a1a !important;
+  font-weight: 600;
+}
+
 .workbench-content,
 .workbench-inspector {
   min-width: 0;

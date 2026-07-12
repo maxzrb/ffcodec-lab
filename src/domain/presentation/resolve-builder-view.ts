@@ -116,6 +116,8 @@ function resolvePanelSectionLabel(panelId: string, sectionId: string, fallback: 
   if (panelId === 'color' && sectionId === 'section.color') return '色彩元数据'
   if (panelId === 'streams-container' && sectionId === 'section.input') return '流选择'
   if (panelId === 'streams-container' && sectionId === 'section.container') return '封装设置'
+  if (panelId === 'custom' && sectionId === 'section.metadata') return '自定义元数据'
+  if (panelId === 'custom' && sectionId === 'section.customArgs') return '自定义参数'
   return fallback
 }
 
