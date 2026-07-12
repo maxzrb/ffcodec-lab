@@ -99,6 +99,7 @@ html {
   min-width: 320px;
   min-height: 100%;
   color-scheme: light;
+  scrollbar-gutter: stable;
 }
 
 html[data-theme="dark"] {
@@ -617,6 +618,7 @@ code {
 .parameter-section__toggle {
   display: flex;
   width: 100%;
+  min-width: 0;
   align-items: center;
   gap: 11px;
   border: 0;
@@ -629,11 +631,13 @@ code {
 
 .parameter-section__header {
   display: flex;
+  min-width: 0;
   align-items: center;
 }
 
 .parameter-section__actions {
   display: flex;
+  flex: 0 0 auto;
   gap: 5px;
   padding-right: 10px;
 }

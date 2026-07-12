@@ -37,7 +37,7 @@ describe('PresetService', () => {
     expect(loaded!.config.video.encoderId).toBe('libx264')
   })
 
-  it('loads v2 project config as schema v3 without enabling advanced settings', () => {
+  it('loads v2 project config as schema v4 without enabling pixel conversion', () => {
     const legacy = createDefaultProjectConfig()
     legacy.schemaVersion = 2
     delete legacy.video.color
@@ -47,8 +47,8 @@ describe('PresetService', () => {
     const saved = service.save({ name: 'Legacy v2', config: legacy })
 
     const loaded = service.load(saved.id)
-    expect(loaded?.config.schemaVersion).toBe(3)
-    expect(loaded?.config.video.color).toEqual({})
+    expect(loaded?.config.schemaVersion).toBe(4)
+    expect(loaded?.config.video.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
     expect(loaded?.config.frame.filters?.denoise.enabled).toBe(false)
     expect(loaded?.config.frame.filters?.deband.enabled).toBe(false)
   })

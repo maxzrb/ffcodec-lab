@@ -144,6 +144,15 @@ const videoConfigSchema = z.object({
     space: z.string().optional(),
     primaries: z.string().optional(),
     transfer: z.string().optional(),
+    operation: z.enum(['metadata-only', 'convert-and-tag', 'convert-only']).optional(),
+    filter: z.enum(['zscale', 'libplacebo']).optional(),
+    preFormat: z.string().optional(),
+    toneMap: z.enum([
+      'none', 'auto', 'clip', 'st2094-40', 'st2094-10', 'bt.2390', 'bt.2446a',
+      'spline', 'reinhard', 'mobius', 'hable', 'gamma', 'linear',
+    ]).optional(),
+    desaturation: z.number().min(0).max(10).optional(),
+    nominalPeak: z.number().positive().max(10000).optional(),
   }).default({}),
   specialParameters: z.record(z.unknown()),
 })
@@ -161,7 +170,7 @@ const audioConfigSchema = z.object({
 // -- top-level schema -----------------------------------------
 
 export const projectConfigSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   shell: z.enum(['bash', 'powershell', 'cmd']),
   input: z.object({
     path: z.string(),

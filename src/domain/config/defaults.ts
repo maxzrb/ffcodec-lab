@@ -19,7 +19,7 @@ export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig 
  */
 export function createDefaultProjectConfig(): ProjectConfig {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     shell: 'powershell',
     input: {
       path: 'input.mkv',
@@ -45,7 +45,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
       profile: 'auto',
       tune: 'auto',
       pixelFormat: 'auto',
-      color: {},
+      color: { operation: 'metadata-only', filter: 'zscale', toneMap: 'none' },
       rateControl: {
         mode: 'crf',
         qualityValue: 23,

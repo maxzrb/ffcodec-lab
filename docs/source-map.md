@@ -47,8 +47,8 @@
 
 | FFmpegFreeUI v6 源文件 | 本项目能力 |
 |---|---|
-| `Form_v6_参数面板_质量.vb` | GOP、B 帧、最小关键帧间隔、qmin/qmax/qcomp 目录控件 |
-| `Form_v6_参数面板_色彩管理.vb` | 输出色彩范围、矩阵、原色、传输特性 |
+| `Form_v6_参数面板_质量.vb` | GOP、B 帧、最小关键帧间隔、qmin/qmax/qcomp、level、前瞻、AQ、场景切换、参考帧、extbrc、QVBR 目录控件 |
+| `Form_v6_参数面板_色彩管理.vb` + `预设命令行滤镜_v6.vb` | 输出色彩标记、元数据/转换模式、zscale、libplacebo、tonemap |
 | `Form_v6_参数面板_降噪.vb` | hqdn3d、nlmeans、atadenoise、bm3d 参数与范围 |
 | `Form_v6_参数面板_平滑断层.vb` | deband、gradfun 参数与范围 |
 
@@ -60,7 +60,7 @@
 |---|---|
 | 图片编码器数据库 | 首版只覆盖视频压制 |
 | 硬件编码器 (NVENC/QSV/AMF) | 架构已支持，数据待补充（需核验） |
-| zscale/libplacebo 转换与 HDR 色调映射 | 首批只实现输出色彩标记，像素转换后续专项完成 |
+| zscale/libplacebo 转换与 HDR 色调映射 | ✅ schema v4 已完成；libplacebo 仍受 FFmpeg 构建与 GPU 环境限制 |
 | 视频帧服务器 (AviSynth/VapourSynth) | 首版暂缓 |
 | 降噪/锐化/超分/插帧滤镜 | 首版暂缓 |
 | filter_complex | 首版不支持 |

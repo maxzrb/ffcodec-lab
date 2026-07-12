@@ -153,6 +153,8 @@ sourceRefs:
 - 带 `tier: advanced` 的编码器控件必须是 optional，禁止目录默认值自动进入命令。
 - 高级控件必须具有控件级 FFmpegFreeUI 来源、合法 `configBinding` 和显式命令前缀。
 - `project-derived` 不再因缺少官方交叉验证产生阻断或 warning。
+- schema v4 色彩处理控件必须绑定 `video.color.*`；转换仍只能进入统一 `filter.chain`，不得创建第二个 `-vf`。
+- 第二批质量控件继续要求 optional、控件级来源、合法 configBinding/commandBinding；默认配置不得发射 level、AQ、前瞻、场景切换、参考帧、extbrc 或 QVBR 参数。
 
 | 版本 | 日期 | 变更 |
 |------|------|------|

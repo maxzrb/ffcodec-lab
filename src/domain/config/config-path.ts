@@ -98,6 +98,12 @@ export const CONFIG_PATHS = {
       space: configPath(['video', 'color', 'space']),
       primaries: configPath(['video', 'color', 'primaries']),
       transfer: configPath(['video', 'color', 'transfer']),
+      operation: configPath(['video', 'color', 'operation']),
+      filter: configPath(['video', 'color', 'filter']),
+      preFormat: configPath(['video', 'color', 'preFormat']),
+      toneMap: configPath(['video', 'color', 'toneMap']),
+      desaturation: configPath(['video', 'color', 'desaturation']),
+      nominalPeak: configPath(['video', 'color', 'nominalPeak']),
     },
     specialParameters: configPath(['video', 'specialParameters']),
     rateControl: {

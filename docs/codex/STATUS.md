@@ -1,15 +1,15 @@
 # Project Status
 
-Last updated: 2026-07-12 17:33
+Last updated: 2026-07-12 18:14
 Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: 高级参数工作台已提交并部署；规划下一阶段稳定化、真实色彩转换与参数扩展
-- Current state: 功能提交 `84c2028` 已推送 master，Cloudflare Pages 部署成功，生产站点已加载新工作台资源
+- Current objective: v0.6.0 — 修复字幕栏位移并完成稳定化、真实色彩处理、高级质量第二批和后续能力评估
+- Current state: 全部计划项已实现并通过自动化、构建及 FFmpeg 实机矩阵；待提交和部署
 - Current site: https://fflab.loliland.cn/
-- Next objective: 先完成上线稳定化与审计文档校准，再实施真实色彩转换，随后扩展编码器高级质量参数
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 346/346（21 文件）、catalog audit 0/0、production build 成功（509.09 KB JS + 22.46 KB CSS）；Cloudflare Pages check success；生产域名 HTTP 200 且新 bundle 标识已确认
+- Next objective: 创建 v0.6.0 功能提交、推送 master、等待 Cloudflare Pages success 并核验生产资源
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 文件）、catalog audit 0/0、acceptance 10/10、FFmpeg 8.1.1 smoke 4/4、production build 成功（业务 317.45 KB + vendor 205.27 KB + CSS 22.52 KB）
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -35,7 +35,7 @@ Updated by: Codex (GPT-5)
 - Video encoders: 13 个 (software 5、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 执行下一阶段 Step 1：上线稳定化、更新过时的控件交互审计、主包拆分与代表性 FFmpeg 实机命令矩阵
+- Next recommended step: 提交并部署 v0.6.0；完成后下一批按评估先实施受控剪辑和常用元数据
 
 ## Active TODO
 
@@ -46,13 +46,14 @@ Updated by: Codex (GPT-5)
 
 - [ ] 下一阶段：稳定化与高级参数第二批
   - Owner: Codex
-  - Status: 已规划，尚未开始实施
+  - Status: 全部计划项已完成并验证，待提交/部署
   - Plan:
     1. 稳定化：更新过时的控件交互审计，补桌面/移动端工作台回归，拆分说明/预设等非首屏代码以消除 >500 KB 提示，建立代表性 FFmpeg 实机命令矩阵
     2. 真实色彩处理：在“只写元数据”之外新增明确的色彩转换模式，优先 zscale/tonemap 路径，处理 HDR→SDR、范围/矩阵/原色/传输联动及构建可用性诊断
     3. 高级质量第二批：继续从 FFmpegFreeUI 导入编码器适用的 level、lookahead、AQ、场景切换和参考帧类参数，保持 optional、三态与编码器切换清理
     4. 后续能力：在前三步稳定后再评估剪辑区间、元数据/章节/附件与自由滤镜排序，不与色彩处理同批混入
   - Acceptance: 旧 v1/v2/v3 配置与分享链接命令不变；新增参数默认不发射；唯一有序 `-vf`；实机错误可复现登记；全量 check、catalog audit、生产构建和桌面/移动端交互通过
+  - Completion evidence: schema v3→v4 保持 metadata-only；359 tests；单一 `-vf` 组合测试；FFmpeg 8.1.1 4/4；桌面导航/移动选择器 RTL；后续能力评估见 `docs/next-capability-evaluation.md`
 
 - [x] 英文遗漏、预设默认值、自由命令编辑、可选参数及新编码器
   - Owner: Codex
@@ -80,6 +81,8 @@ Updated by: Codex (GPT-5)
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
+
+- 2026-07-12 18:14: v0.6.0 实施完成 — 字幕栏稳定宽度、schema v4 zscale/tonemap/libplacebo、高级质量第二批、vendor 分包、4/4 FFmpeg 实机矩阵及后续能力评估
 
 - 2026-07-12 17:33: 高级参数工作台提交 `84c2028` 并部署；Cloudflare Pages success，生产 bundle `index-D93ypZi1.js` 已确认包含侧栏折叠、色彩元数据和模块工作台能力
 
@@ -1146,3 +1149,37 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - `tsconfig.tsbuildinfo` 不属于功能提交，继续保留为唯一未提交本地机械差异
 - Git status: `84c2028` 已推送 origin/master；本部署记录将以独立 docs 提交推送，之后仅保留 `tsconfig.tsbuildinfo` 本地差异
 - Next step: 用户确认计划后，从稳定化与实机命令矩阵开始实施
+
+### 2026-07-12 18:14 - Codex (GPT-5)
+
+- Objective: 修复切换字幕栏导致的整体 UI 位移，并持续完成上一轮全部后续计划直到可提交部署
+- Work completed:
+  1. 在根滚动容器启用稳定 scrollbar gutter，并约束字幕标题操作区的 flex/min-width，消除高内容量字幕页引发的可视宽度变化
+  2. 更新控件交互审计；补桌面工作台、移动模块选择器、字幕挂载和色彩操作 RTL；Vite 拆分 vendor/业务 chunk，消除 >500 KB 警告
+  3. ProjectConfig/schema/share 升级 v4；v3→v4 固定迁移为 metadata-only，旧命令不新增像素转换
+  4. 新增色彩操作方式、zscale、libplacebo、转换前像素格式、CPU tonemap、npl/desaturation；色彩处理按固定顺序进入唯一 `-vf`
+  5. 新增色彩转换空目标、视频复制、tonemap 目标/滤镜不匹配和 libplacebo 构建可用性诊断
+  6. 高级质量第二批加入 level、rc-lookahead、AQ strength、scene threshold、refs、NVENC lookahead level、QSV extbrc 三态、AMF QVBR quality；切换编码器继续清理
+  7. 新增 `scripts/ffmpeg-smoke-test.ts`，在 FFmpeg 8.1.1 实测 libx264 高级质量、zscale SDR、CPU HDR→SDR、降噪+去色带 4/4
+  8. 完成剪辑、元数据、章节、附件和自由滤镜排序评估；决定下一批先做受控剪辑与常用元数据，其他能力分别立项
+  9. 发布版本提升到 0.6.0并更新架构、用户指南、来源映射、审计、验收、版本记录
+- Commands run:
+  - `git pull --ff-only` — Already up to date；仅 `tsconfig.tsbuildinfo` 为启动前既有机械差异
+  - Browser runtime 连接与一次可用列表检查 — 列表为空，无法截图；未改用非授权浏览器后端
+  - FFmpegFreeUI GitHub main 源码读取：色彩管理、质量页、`构造色彩转换滤镜`
+  - `ffmpeg -h filter=zscale/tonemap/libplacebo` 与 11 个编码器 help 读取
+  - `npm run check` — 359/359、audit 0/0、build success
+  - `npx tsx scripts/acceptance-test.ts` — 10/10
+  - `npm run test:ffmpeg` — FFmpeg 8.1.1 smoke 4/4
+  - `git diff --check` — 通过，仅 Git 预期 LF→CRLF 提示
+- Verification:
+  - ESLint 0/0；TypeScript 0 errors；Vitest 359/359（22 files）；catalog audit 0/0
+  - Acceptance 10/10；FFmpeg smoke 4/4
+  - Build: index 317.45 KB / vendor 205.27 KB / CSS 22.52 KB，无 >500 KB warning
+- Decisions/risks:
+  - 当前色彩字段表示输出目标；CPU tonemap 依赖输入流已有正确 HDR 元数据，用户需用短样片复核
+  - libplacebo 生成项目来源支持的参数并显示 availability info，实际运行取决于 FFmpeg 构建、Vulkan 和驱动
+  - 应用内浏览器列表为空，字幕位移由 CSS 稳定槽位契约、桌面/移动 RTL 与构建产物验证；真实截图仍是环境限制
+  - `tsconfig.tsbuildinfo` 继续排除出功能提交
+- Git status: master 跟踪 origin/master；v0.6.0 功能、测试和文档未提交，working tree not clean
+- Next step: 创建功能提交、推送并核验 Cloudflare Pages；随后提交部署记录

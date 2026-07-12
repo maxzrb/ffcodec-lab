@@ -130,17 +130,23 @@ UI 展示: 命令预览、解释、错误、警告
 | `src/data/rules/index.ts` | 内置规则定义 |
 | `scripts/validate-catalog.ts` | 目录审计脚本 |
 
-## 模块化高级参数工作台（schema v3）
+## 模块化高级参数工作台（schema v4）
 
 正式页面采用 `WorkbenchShell`，由左侧模块导航、单一活动参数页和右侧命令检查器组成。活动模块写入 `?panel=`，分享配置继续使用 URL hash；两者互不占用。移动端使用模块选择器和可折叠命令抽屉。
 
 `ResolvedWorkspaceView.panels` 是 UI 的导航来源，原有 `sections` 保留为兼容视图。字段通过 `panelId`、`groupId` 和 `tier` 描述展示位置，命令生成仍只依赖 `ProjectConfig`、目录和 Command AST。
 
-schema v3 新增：
+schema v3 新增基础高级质量、色彩标记、降噪和去色带。schema v4 在保持旧命令不变的前提下继续新增：
 
-- `video.color`：可选的 `range`、`space`、`primaries`、`transfer`，进入 `VIDEO_COLOR` 阶段。
+- `video.color.operation`：区分仅写元数据、转换并写标记、仅转换；v3 迁移后固定为仅写元数据。
+- `video.color.filter`：zscale CPU 路径与 libplacebo GPU 路径；实际转换进入唯一有序 `-vf`。
+- `video.color.toneMap`：zscale + tonemap 的 CPU HDR→SDR 路径，或 libplacebo 的扩展算法。
 - `frame.filters.denoise`：hqdn3d、nlmeans、atadenoise、bm3d。
 - `frame.filters.deband`：deband、gradfun。
 - 编码器高级质量项继续存入 `video.specialParameters`，由目录中的 `configBinding` 与 `commandBinding` 控制。
+
+滤镜顺序保持：反交错 → 裁剪 → 缩放 → 旋转/翻转 → 降噪 → 去色带 → 色彩处理 → 基础调色 → 锐化 → 帧率 → 字幕 → 自定义。所有启用项最终仍只形成一个 `-vf`。
+
+生产构建通过 Vite `manualChunks` 将第三方运行时拆为 vendor chunk，业务主包不再超过 500 KB。
 
 高级项统一为显式启用语义：未设置值不进入命令；可选布尔控件提供未设置、开启、关闭三态。v2→v3 迁移只增加禁用结构，不改变旧命令。

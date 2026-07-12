@@ -19,8 +19,62 @@ export function validateConfig(
   const ruleResult: EvaluationResult = evaluateRules(ruleIndex.getAll(), ctx)
   const compatMessages = validateCompatibility(config, catalog)
   const subtitleMessages = validateSubtitleTracks(config)
+  const colorMessages = validateColorProcessing(config)
 
-  return [...ruleResult.messages, ...compatMessages, ...subtitleMessages]
+  return [...ruleResult.messages, ...compatMessages, ...subtitleMessages, ...colorMessages]
+}
+
+function validateColorProcessing(config: ProjectConfig): Diagnostic[] {
+  const color = config.video.color
+  const operation = color?.operation ?? 'metadata-only'
+  if (!color || operation === 'metadata-only') return []
+
+  const messages: Diagnostic[] = []
+  const origins = ['video.color.operation', 'video.color.filter']
+  if (config.video.mode !== 'encode') {
+    messages.push({
+      code: 'error.color.requires.encode', severity: 'error', category: 'configuration',
+      message: 'Color conversion requires video encoding.', originIds: origins,
+      context: { videoMode: config.video.mode },
+    })
+  }
+
+  const hasTarget = Boolean(color.space || color.primaries || color.transfer || color.range || color.preFormat)
+  if (!hasTarget) {
+    messages.push({
+      code: 'error.color.conversion.empty', severity: 'error', category: 'configuration',
+      message: 'Color conversion has no target values.', originIds: origins,
+      context: { filter: color.filter ?? 'zscale' },
+    })
+  }
+
+  if (color.toneMap && color.toneMap !== 'none' && !color.transfer) {
+    messages.push({
+      code: 'error.color.tonemap.target', severity: 'error', category: 'configuration',
+      message: 'Tone mapping requires an explicit target transfer characteristic.',
+      originIds: ['video.color.toneMap', 'video.color.transfer'],
+      context: { toneMap: color.toneMap },
+    })
+  }
+
+  const cpuToneMaps = new Set(['none', 'clip', 'reinhard', 'mobius', 'hable', 'gamma', 'linear'])
+  if ((color.filter ?? 'zscale') === 'zscale' && color.toneMap && !cpuToneMaps.has(color.toneMap)) {
+    messages.push({
+      code: 'error.color.tonemap.filter', severity: 'error', category: 'configuration',
+      message: 'The selected tone-mapping algorithm requires libplacebo.',
+      originIds: ['video.color.filter', 'video.color.toneMap'],
+      context: { toneMap: color.toneMap },
+    })
+  }
+
+  if (color.filter === 'libplacebo') {
+    messages.push({
+      code: 'info.color.libplacebo.build', severity: 'info', category: 'availability',
+      message: 'libplacebo conversion depends on the user FFmpeg build and GPU runtime.',
+      originIds: ['video.color.filter'], context: { filter: 'libplacebo' },
+    })
+  }
+  return messages
 }
 
 function validateSubtitleTracks(config: ProjectConfig): Diagnostic[] {

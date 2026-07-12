@@ -292,15 +292,17 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
         ['transfer', '-color_trc'],
         ['range', '-color_range'],
       ]
-      for (const [key, argName] of colorArguments) {
-        const value = config.video.color?.[key]
-        if (!value) continue
-        output.codecArgs.push({
-          id: `color.${key}`,
-          originId: `video.color.${key}`,
-          phase: 'VIDEO_COLOR',
-          tokens: [argName, value],
-        })
+      if ((config.video.color?.operation ?? 'metadata-only') !== 'convert-only') {
+        for (const [key, argName] of colorArguments) {
+          const value = config.video.color?.[key]
+          if (typeof value !== 'string' || !value) continue
+          output.codecArgs.push({
+            id: `color.${key}`,
+            originId: `video.color.${key}`,
+            phase: 'VIDEO_COLOR',
+            tokens: [argName, value],
+          })
+        }
       }
 
       // Quality / rate control

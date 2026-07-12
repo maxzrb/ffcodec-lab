@@ -73,6 +73,18 @@ export interface VideoColorConfig {
   space?: string
   primaries?: string
   transfer?: string
+  /** 元数据、实际转换和输出标记之间的关系。 */
+  operation?: 'metadata-only' | 'convert-and-tag' | 'convert-only'
+  /** 色彩转换滤镜；zscale 为 CPU，libplacebo 需要对应 FFmpeg 构建。 */
+  filter?: 'zscale' | 'libplacebo'
+  /** 在色彩转换前先统一像素格式。 */
+  preFormat?: string
+  /** none 表示只转换色彩空间，不进行动态范围压缩。 */
+  toneMap?: 'none' | 'auto' | 'clip' | 'st2094-40' | 'st2094-10' | 'bt.2390' | 'bt.2446a' | 'spline' | 'reinhard' | 'mobius' | 'hable' | 'gamma' | 'linear'
+  /** CPU tonemap 的去饱和强度。 */
+  desaturation?: number
+  /** zscale 线性化阶段使用的标称峰值亮度。 */
+  nominalPeak?: number
 }
 
 export interface RateControlConfig {

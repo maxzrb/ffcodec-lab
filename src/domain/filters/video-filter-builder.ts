@@ -14,6 +14,7 @@ export type VideoFilterSpec =
   | { type: 'unsharp'; amount: number }
   | { type: 'denoise'; filterString: string }
   | { type: 'deband'; filterString: string }
+  | { type: 'color'; filterString: string }
   | { type: 'fps'; fps: number }
   | { type: 'subtitles' | 'ass'; filterString: string }
   | { type: 'custom'; filterString: string }
@@ -62,6 +63,9 @@ export function buildVideoFilterChain(config: ProjectConfig): VideoFilterSpec[] 
     chain.push({ type: 'deband', filterString: buildDebandFilter(filters.deband) })
   }
 
+  const colorFilter = buildColorFilter(config)
+  if (colorFilter) chain.push({ type: 'color', filterString: colorFilter })
+
   if (filters.adjustment.enabled) {
     chain.push({ type: 'eq', ...filters.adjustment })
   }
@@ -109,6 +113,7 @@ export function renderFilterChain(
         return `unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=${spec.amount}`
       case 'denoise':
       case 'deband':
+      case 'color':
         return spec.filterString
       case 'fps':
         return `fps=${spec.fps}`
@@ -126,6 +131,55 @@ export function renderFilterChain(
     tokens: ['-vf', parts.join(',')],
     explanationId: 'expl.filter.vf',
   }
+}
+
+/** 按 FFmpegFreeUI 的处理方式生成色彩转换；元数据写入仍由命令构建器负责。 */
+function buildColorFilter(config: ProjectConfig): string {
+  const color = config.video.color
+  if (!color || (color.operation ?? 'metadata-only') === 'metadata-only') return ''
+
+  const parts: string[] = []
+  if (color.preFormat) parts.push(`format=${color.preFormat}`)
+
+  const matrix = color.space === 'rgb' ? 'gbr' : color.space
+  const range = color.range
+  const toneMap = color.toneMap ?? 'none'
+
+  if ((color.filter ?? 'zscale') === 'libplacebo') {
+    const options: string[] = []
+    if (matrix) options.push(`colorspace=${matrix}`)
+    if (color.primaries) options.push(`color_primaries=${color.primaries}`)
+    if (color.transfer) options.push(`color_trc=${color.transfer}`)
+    if (range) options.push(`range=${range}`)
+    if (toneMap !== 'none') options.push(`tonemapping=${toneMap}`)
+    if (options.length > 0) parts.push(`libplacebo=${options.join(':')}`)
+    return parts.join(',')
+  }
+
+  const targetOptions = [
+    matrix ? `matrix=${matrix}` : '',
+    color.primaries ? `primaries=${color.primaries}` : '',
+    color.transfer ? `transfer=${color.transfer}` : '',
+    range ? `range=${range}` : '',
+  ].filter(Boolean)
+
+  if (toneMap !== 'none') {
+    const cpuAlgorithm = ['clip', 'reinhard', 'mobius', 'hable', 'gamma', 'linear'].includes(toneMap)
+      ? toneMap
+      : 'mobius'
+    parts.push(`zscale=transfer=linear:npl=${color.nominalPeak ?? 100}`)
+    parts.push('format=gbrpf32le')
+    parts.push(`tonemap=tonemap=${cpuAlgorithm}:desat=${color.desaturation ?? 2}`)
+    if (targetOptions.length > 0) parts.push(`zscale=${targetOptions.join(':')}`)
+    const outputFormat = config.video.pixelFormat && config.video.pixelFormat !== 'auto'
+      ? config.video.pixelFormat
+      : 'yuv420p'
+    parts.push(`format=${outputFormat}`)
+  } else if (targetOptions.length > 0) {
+    parts.push(`zscale=${targetOptions.join(':')}`)
+  }
+
+  return parts.join(',')
 }
 
 function buildDenoiseFilter(filters: AdvancedVideoFiltersConfig['denoise']): string {

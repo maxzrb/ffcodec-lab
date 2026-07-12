@@ -116,6 +116,36 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.getByRole('button', { name: /^封装设置/ })).toBeInTheDocument()
   })
 
+  it('色彩操作切换会显示转换控件并生成唯一 zscale/tonemap 滤镜链', async () => {
+    render(<BuilderPage />)
+    await openPanel('色彩管理')
+
+    await userEvent.selectOptions(screen.getByLabelText('色彩空间操作方式'), 'convert-and-tag')
+    await userEvent.selectOptions(screen.getByLabelText('矩阵 / 色彩空间'), 'bt709')
+    await userEvent.selectOptions(screen.getByLabelText('色域 / 原色'), 'bt709')
+    await userEvent.selectOptions(screen.getByLabelText('传输特性'), 'bt709')
+    await userEvent.selectOptions(screen.getByLabelText('色彩范围'), 'tv')
+    await userEvent.selectOptions(screen.getByLabelText('色调映射算法'), 'mobius')
+
+    expect(useBuilderStore.getState().config.video.color?.operation).toBe('convert-and-tag')
+    const command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
+    expect(command).toContain('zscale=transfer=linear')
+    expect(command.match(/-vf/g)).toHaveLength(1)
+  })
+
+  it('移动端模块选择器可切换到字幕栏且不会重复挂载工作台', async () => {
+    render(<BuilderPage />)
+    const selector = screen.getByLabelText('当前模块')
+    await userEvent.selectOptions(selector, 'subtitle')
+    const subtitleToggle = screen.getAllByRole('button', { name: '字幕' })
+      .find((button) => button.hasAttribute('aria-expanded'))
+    expect(subtitleToggle).toBeDefined()
+    await userEvent.click(subtitleToggle!)
+    expect(screen.getByText('字幕轨道 (0 条)')).toBeInTheDocument()
+    expect(document.querySelectorAll('.workbench-shell')).toHaveLength(1)
+    expect(new URL(window.location.href).searchParams.get('panel')).toBe('subtitle')
+  })
+
   it('参数侧边栏可以折叠并保存本机偏好', async () => {
     render(<BuilderPage />)
     const collapseButton = screen.getByRole('button', { name: '折叠参数侧边栏' })

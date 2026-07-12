@@ -4,6 +4,8 @@ import { projectConfigSchema } from '../../domain/config/config-schema'
 import { buildVideoFilterChain, renderFilterChain } from '../../domain/filters/video-filter-builder'
 import { buildCommandPlan } from '../../domain/command/command-builder'
 import { loadCatalog } from '../../domain/catalog/catalog-loader'
+import { validateConfig } from '../../domain/validation'
+import { RuleIndex } from '../../domain/rules/rule-index'
 
 describe('高级视频滤镜', () => {
   it('按固定顺序合并为单个 -vf 参数', () => {
@@ -65,5 +67,65 @@ describe('高级视频滤镜', () => {
     config.video.mode = 'copy'
     config.frame.filters!.crop.enabled = true
     expect(buildVideoFilterChain(config)).toEqual([])
+  })
+
+  it('仅写元数据保持旧行为，不生成色彩滤镜', () => {
+    const config = createDefaultProjectConfig()
+    config.video.color = {
+      operation: 'metadata-only', filter: 'zscale', toneMap: 'none',
+      space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
+    }
+    expect(buildVideoFilterChain(config).some((item) => item.type === 'color')).toBe(false)
+    const args = buildCommandPlan(config, loadCatalog(), []).invocations[0].output.codecArgs.flatMap((arg) => arg.tokens)
+    expect(args).toContain('-colorspace')
+  })
+
+  it('zscale 色彩转换进入去色带之后、基础调色之前的唯一滤镜链', () => {
+    const config = createDefaultProjectConfig()
+    config.frame.filters!.deband = { enabled: true, algorithm: 'gradfun', values: {} }
+    config.frame.filters!.adjustment.enabled = true
+    config.video.color = {
+      operation: 'convert-and-tag', filter: 'zscale', toneMap: 'none',
+      space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
+    }
+    const chain = buildVideoFilterChain(config)
+    expect(chain.map((item) => item.type)).toEqual(['deband', 'color', 'eq'])
+    const vf = renderFilterChain(chain, 'filter.chain')?.tokens[1]
+    expect(vf).toContain('zscale=matrix=bt709:primaries=bt709:transfer=bt709:range=tv')
+    expect(buildCommandPlan(config, loadCatalog(), []).invocations[0].output.filterArgs).toHaveLength(1)
+  })
+
+  it('CPU HDR 转 SDR 生成 zscale → float → tonemap → zscale → format', () => {
+    const config = createDefaultProjectConfig()
+    config.video.color = {
+      operation: 'convert-and-tag', filter: 'zscale', toneMap: 'mobius', nominalPeak: 100,
+      desaturation: 1.5, space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
+    }
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+    expect(vf).toContain('zscale=transfer=linear:npl=100,format=gbrpf32le')
+    expect(vf).toContain('tonemap=tonemap=mobius:desat=1.5')
+    expect(vf).toContain('zscale=matrix=bt709:primaries=bt709:transfer=bt709:range=tv,format=yuv420p')
+  })
+
+  it('仅转换模式不写输出色彩标记，libplacebo 保留构建可用性提示', () => {
+    const config = createDefaultProjectConfig()
+    config.video.color = {
+      operation: 'convert-only', filter: 'libplacebo', toneMap: 'bt.2390',
+      space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
+    }
+    const plan = buildCommandPlan(config, loadCatalog(), [])
+    const codecTokens = plan.invocations[0].output.codecArgs.flatMap((arg) => arg.tokens)
+    const vf = plan.invocations[0].output.filterArgs[0].tokens[1]
+    expect(codecTokens).not.toContain('-colorspace')
+    expect(vf).toContain('libplacebo=colorspace=bt709:color_primaries=bt709:color_trc=bt709:range=tv:tonemapping=bt.2390')
+    const messages = validateConfig(config, loadCatalog(), new RuleIndex())
+    expect(messages.some((message) => message.code === 'info.color.libplacebo.build')).toBe(true)
+  })
+
+  it('色调映射缺少目标传输特性时阻止复制命令', () => {
+    const config = createDefaultProjectConfig()
+    config.video.color = { operation: 'convert-and-tag', filter: 'zscale', toneMap: 'hable', space: 'bt709' }
+    const messages = validateConfig(config, loadCatalog(), new RuleIndex())
+    expect(messages.some((message) => message.code === 'error.color.tonemap.target')).toBe(true)
   })
 })

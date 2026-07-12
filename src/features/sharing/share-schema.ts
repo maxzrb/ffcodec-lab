@@ -5,7 +5,7 @@
 
 import { z } from 'zod'
 
-export const SHARE_PAYLOAD_VERSION = 3
+export const SHARE_PAYLOAD_VERSION = 4
 
 /** Privacy-safe config subset: no input path, output path, or external subtitle paths */
 export const shareableConfigSchema = z.object({
@@ -32,6 +32,15 @@ export const shareableConfigSchema = z.object({
       space: z.string().optional(),
       primaries: z.string().optional(),
       transfer: z.string().optional(),
+      operation: z.enum(['metadata-only', 'convert-and-tag', 'convert-only']).optional(),
+      filter: z.enum(['zscale', 'libplacebo']).optional(),
+      preFormat: z.string().optional(),
+      toneMap: z.enum([
+        'none', 'auto', 'clip', 'st2094-40', 'st2094-10', 'bt.2390', 'bt.2446a',
+        'spline', 'reinhard', 'mobius', 'hable', 'gamma', 'linear',
+      ]).optional(),
+      desaturation: z.number().optional(),
+      nominalPeak: z.number().optional(),
     }).optional(),
     specialParameters: z.record(z.unknown()).default({}),
   }),

@@ -257,6 +257,10 @@ export function resolveColorSection(
     repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12',
     file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_色彩管理.vb',
     symbol: 'Form_v6_参数面板_色彩管理_Load', sourceType: 'ffmpegfreeui',
+  }, {
+    repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12',
+    file: 'FFmpegFreeUI/功能/预设系统/预设命令行滤镜_v6.vb',
+    symbol: '构造色彩转换滤镜', sourceType: 'ffmpegfreeui',
   }]
   const state = fieldStates['section.frame']
   const makeSelect = (
@@ -264,36 +268,86 @@ export function resolveColorSection(
     label: string,
     value: unknown,
     options: Array<{ value: string; label: string }>,
+    path: NonNullable<ResolvedField['configBinding']>['path'],
+    visible = true,
+    groupId = 'color-metadata',
+    tier: 'basic' | 'advanced' = 'advanced',
   ): ResolvedField => ({
     id, label, controlType: 'select', value: value ?? '',
     options: [{ value: '', label: '不设置（保留输入或编码器默认）' }, ...options],
-    visible: state?.visible !== false,
+    visible: visible && state?.visible !== false,
     disabled: state?.enabled === false,
     disabledReason: state?.reason,
     sourceRefs,
     verificationLevel: 'project-derived', needsCrossVerification: true,
-    commandOrigins: [id], diagnostics: [], panelId: 'color', groupId: 'color-metadata',
-    tier: 'advanced', optional: true,
-    configBinding: { path: CONFIG_PATHS.video.color[id.split('.').slice(-1)[0] as 'range' | 'space' | 'primaries' | 'transfer'] },
+    commandOrigins: [id, 'filter.chain'], diagnostics: [], panelId: 'color', groupId,
+    tier, optional: true,
+    configBinding: { path },
   })
+
+  const color = config.video.color ?? {}
+  const operation = color.operation ?? 'metadata-only'
+  const conversionEnabled = operation !== 'metadata-only'
+  const filter = color.filter ?? 'zscale'
+  const toneMap = color.toneMap ?? 'none'
+  const toneMappingEnabled = conversionEnabled && toneMap !== 'none'
+  const processingFields: ResolvedField[] = [
+    makeSelect('video.color.operation', '色彩空间操作方式', operation, [
+      { value: 'metadata-only', label: '仅写入元数据' },
+      { value: 'convert-and-tag', label: '写入元数据并转换' },
+      { value: 'convert-only', label: '仅转换' },
+    ], CONFIG_PATHS.video.color.operation, true, 'color-processing', 'basic'),
+    makeSelect('video.color.filter', '色彩转换滤镜', filter, [
+      { value: 'zscale', label: 'zscale（CPU）' },
+      { value: 'libplacebo', label: 'libplacebo（GPU）' },
+    ], CONFIG_PATHS.video.color.filter, conversionEnabled, 'color-processing', 'basic'),
+    makeSelect('video.color.preFormat', '转换前像素格式', color.preFormat, [
+      'yuv420p', 'yuv420p10le', 'yuv422p', 'yuv422p10le', 'yuv444p', 'yuv444p10le', 'p010le',
+    ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.preFormat, conversionEnabled, 'color-processing'),
+    makeSelect('video.color.toneMap', '色调映射算法', toneMap, (filter === 'zscale'
+      ? ['none', 'clip', 'reinhard', 'mobius', 'hable', 'gamma', 'linear']
+      : ['none', 'auto', 'clip', 'st2094-40', 'st2094-10', 'bt.2390', 'bt.2446a', 'spline', 'reinhard', 'mobius', 'hable', 'gamma', 'linear']
+    ).map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.toneMap, conversionEnabled, 'color-processing'),
+  ]
+
+  if (filter === 'zscale' && toneMappingEnabled) {
+    processingFields.push({
+      id: 'video.color.nominalPeak', label: '标称峰值亮度 (npl)', controlType: 'number',
+      value: color.nominalPeak ?? 100, min: 1, max: 10000, step: 1,
+      visible: state?.visible !== false, disabled: state?.enabled === false, disabledReason: state?.reason,
+      sourceRefs, verificationLevel: 'project-derived', needsCrossVerification: true,
+      commandOrigins: ['filter.chain'], diagnostics: [], panelId: 'color', groupId: 'color-processing',
+      tier: 'advanced', optional: true, configBinding: { path: CONFIG_PATHS.video.color.nominalPeak },
+    }, {
+      id: 'video.color.desaturation', label: '色调映射去饱和强度', controlType: 'number',
+      value: color.desaturation ?? 2, min: 0, max: 10, step: 0.1,
+      visible: state?.visible !== false, disabled: state?.enabled === false, disabledReason: state?.reason,
+      sourceRefs, verificationLevel: 'project-derived', needsCrossVerification: true,
+      commandOrigins: ['filter.chain'], diagnostics: [], panelId: 'color', groupId: 'color-processing',
+      tier: 'advanced', optional: true, configBinding: { path: CONFIG_PATHS.video.color.desaturation },
+    })
+  }
 
   return {
     id: 'section.color',
     label: '色彩管理',
-    description: '仅写入输出流色彩标记，不改变像素数值；未设置项不会进入命令。',
+    description: operation === 'metadata-only'
+      ? '仅写入输出流色彩标记，不改变像素数值。'
+      : '色彩转换进入统一滤镜链；是否写入输出标记由操作方式决定。',
     fields: [
-      makeSelect('video.color.range', '色彩范围', config.video.color?.range, [
+      ...processingFields,
+      makeSelect('video.color.range', '色彩范围', color.range, [
         { value: 'tv', label: 'tv 有限范围' }, { value: 'pc', label: 'pc 全范围' },
-      ]),
-      makeSelect('video.color.space', '矩阵 / 色彩空间', config.video.color?.space, [
+      ], CONFIG_PATHS.video.color.range),
+      makeSelect('video.color.space', '矩阵 / 色彩空间', color.space, [
         'bt709', 'bt2020nc', 'bt2020c', 'rgb', 'gbr', 'bt470bg', 'smpte170m', 'smpte240m', 'fcc', 'ictcp', 'ycgco', 'xyz',
-      ].map((value) => ({ value, label: value }))),
-      makeSelect('video.color.primaries', '色域 / 原色', config.video.color?.primaries, [
+      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.space),
+      makeSelect('video.color.primaries', '色域 / 原色', color.primaries, [
         'bt709', 'bt2020', 'smpte428', 'smpte431', 'smpte432', 'film', 'bt470m', 'bt470bg', 'smpte170m', 'smpte240m', 'jedec-p22', 'ebu3213',
-      ].map((value) => ({ value, label: value }))),
-      makeSelect('video.color.transfer', '传输特性', config.video.color?.transfer, [
+      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.primaries),
+      makeSelect('video.color.transfer', '传输特性', color.transfer, [
         'bt709', 'bt2020-10', 'bt2020-12', 'smpte2084', 'bt470m', 'bt470bg', 'log', 'log_sqrt', 'linear', 'bt1361e', 'iec61966-2-1', 'iec61966-2-4', 'smpte170m', 'smpte240m', 'gamma22', 'gamma28', 'arib-std-b67',
-      ].map((value) => ({ value, label: value }))),
+      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.transfer),
     ],
   }
 }

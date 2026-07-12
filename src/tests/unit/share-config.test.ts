@@ -39,7 +39,7 @@ describe('Share config — encoding', () => {
 })
 
 describe('Share config — decoding', () => {
-  it('migrates v2 to v3 without enabling new advanced settings', () => {
+  it('migrates v2 to v4 without enabling pixel conversion', () => {
     const legacy = createDefaultProjectConfig() as unknown as Record<string, unknown>
     legacy.schemaVersion = 2
     const video = legacy.video as Record<string, unknown>
@@ -52,8 +52,8 @@ describe('Share config — decoding', () => {
     const migrated = migrateConfig(2, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config
     const migratedVideo = migrated.video as Record<string, unknown>
     const migratedFilters = (migrated.frame as Record<string, unknown>).filters as Record<string, unknown>
-    expect(migrated.schemaVersion).toBe(3)
-    expect(migratedVideo.color).toEqual({})
+    expect(migrated.schemaVersion).toBe(4)
+    expect(migratedVideo.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
     expect(migratedFilters.denoise).toEqual({ enabled: false, values: {} })
     expect(migratedFilters.deband).toEqual({ enabled: false, values: {} })
   })
@@ -106,17 +106,22 @@ describe('Share config — decoding', () => {
     expect(decoded.config!.video.encoderId).toBe('h264_nvenc')
   })
 
-  it('preserves v3 color, denoise, deband and advanced quality values', () => {
+  it('preserves v4 color processing, denoise, deband and advanced quality values', () => {
     const config = createDefaultProjectConfig()
-    config.video.color = { space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv' }
+    config.video.color = {
+      operation: 'convert-and-tag', filter: 'zscale', toneMap: 'mobius', nominalPeak: 100,
+      space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
+    }
     config.video.specialParameters.gopSize = 120
     config.frame.filters!.denoise = { enabled: true, algorithm: 'hqdn3d', values: { lumaSpatial: 5 } }
     config.frame.filters!.deband = { enabled: true, algorithm: 'gradfun', values: { strength: 1.4, radius: 18 } }
 
     const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
     expect(decoded.success).toBe(true)
-    expect(decoded.config?.schemaVersion).toBe(3)
+    expect(decoded.config?.schemaVersion).toBe(4)
     expect(decoded.config?.video.color?.space).toBe('bt709')
+    expect(decoded.config?.video.color?.operation).toBe('convert-and-tag')
+    expect(decoded.config?.video.color?.toneMap).toBe('mobius')
     expect(decoded.config?.video.specialParameters.gopSize).toBe(120)
     expect(decoded.config?.frame.filters?.denoise.algorithm).toBe('hqdn3d')
     expect(decoded.config?.frame.filters?.deband.algorithm).toBe('gradfun')

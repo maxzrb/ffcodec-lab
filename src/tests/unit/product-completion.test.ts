@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { addSubtitleTrack, removeSubtitleTrack } from '../../domain/config/project-actions'
 import { createDefaultProjectConfig } from '../../domain/config/defaults'
@@ -9,6 +10,11 @@ import { decodeConfigFromShare, encodeConfigToShare } from '../../features/shari
 const catalog = loadCatalog()
 
 describe('成品功能闭环', () => {
+  it('为高内容量字幕面板预留滚动条槽位，切换模块时工作台不会横向偏移', () => {
+    const css = readFileSync('src/index.css', 'utf8')
+    expect(css).toMatch(/html\s*\{[^}]*scrollbar-gutter:\s*stable;/s)
+  })
+
   it('字幕轨道可添加并按 ID 删除', () => {
     const original = createDefaultProjectConfig()
     const withTrack = addSubtitleTrack(original)

@@ -130,7 +130,7 @@ function resolvePanelId(sectionId: string, field: ResolvedField): string {
 }
 
 function isAdvancedValueSet(value: unknown): boolean {
-  return value !== undefined && value !== null && value !== '' && value !== false
+  return value !== undefined && value !== null && value !== '' && value !== false && value !== 'none' && value !== 'auto'
 }
 
 /**

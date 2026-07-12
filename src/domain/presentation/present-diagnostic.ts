@@ -11,6 +11,66 @@ export interface PresentedDiagnostic {
 type Copy = Omit<PresentedDiagnostic, 'level'>
 
 const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
+  'error.color.requires.encode': {
+    'zh-CN': {
+      title: '色彩转换需要重新编码视频',
+      explanation: 'zscale、tonemap 或 libplacebo 会修改像素，无法与视频流复制或禁用视频同时使用。',
+      guidance: '切换到视频重新编码，或把色彩操作方式改为“仅写入元数据”。',
+    },
+    en: {
+      title: 'Color conversion requires video encoding',
+      explanation: 'zscale, tonemap, and libplacebo modify pixels and cannot run while copying or disabling video.',
+      guidance: 'Switch to video encoding, or change the color operation to Metadata only.',
+    },
+  },
+  'error.color.conversion.empty': {
+    'zh-CN': {
+      title: '色彩转换没有目标设置',
+      explanation: '已经选择实际转换，但矩阵、原色、传输特性、范围和预转换像素格式均未设置。',
+      guidance: '至少设置一个目标色彩值，或改回“仅写入元数据”。',
+    },
+    en: {
+      title: 'Color conversion has no target',
+      explanation: 'Conversion is enabled, but no matrix, primaries, transfer, range, or pre-conversion format is set.',
+      guidance: 'Set at least one target value, or switch back to Metadata only.',
+    },
+  },
+  'error.color.tonemap.target': {
+    'zh-CN': {
+      title: '色调映射缺少目标传输特性',
+      explanation: '色调映射必须知道输出采用 SDR、PQ、HLG 或其他传输曲线，否则结果无法可靠解释。',
+      guidance: '在传输特性中明确选择目标；HDR 转 SDR 通常选择 bt709。',
+    },
+    en: {
+      title: 'Tone mapping needs a target transfer',
+      explanation: 'Tone mapping must know the output transfer curve so the resulting pixels can be interpreted correctly.',
+      guidance: 'Choose an explicit target transfer; bt709 is common for HDR-to-SDR output.',
+    },
+  },
+  'error.color.tonemap.filter': {
+    'zh-CN': {
+      title: '色调映射算法与滤镜不匹配',
+      explanation: '当前算法由 libplacebo 提供，CPU zscale/tonemap 路径不支持。',
+      guidance: '切换到 libplacebo，或选择 mobius、hable、reinhard 等 CPU 算法。',
+    },
+    en: {
+      title: 'Tone-map algorithm does not match the filter',
+      explanation: 'The selected algorithm is provided by libplacebo and is unavailable in the CPU zscale/tonemap path.',
+      guidance: 'Use libplacebo, or select a CPU algorithm such as mobius, hable, or reinhard.',
+    },
+  },
+  'info.color.libplacebo.build': {
+    'zh-CN': {
+      title: 'libplacebo 取决于 FFmpeg 构建与 GPU 环境',
+      explanation: '命令语法可以生成，但精简版 FFmpeg、旧驱动或缺少 Vulkan 的环境可能无法加载该滤镜。',
+      guidance: '先运行 ffmpeg -filters 确认 libplacebo，并用短样片测试；不确定时使用 zscale。',
+    },
+    en: {
+      title: 'libplacebo depends on the FFmpeg build and GPU runtime',
+      explanation: 'The command can be generated, but minimal FFmpeg builds, old drivers, or missing Vulkan support may prevent the filter from loading.',
+      guidance: 'Check ffmpeg -filters and test a short sample, or use zscale when uncertain.',
+    },
+  },
   'error.resolution.requires.encode': {
     'zh-CN': {
       title: '复制视频流时不能修改画面',

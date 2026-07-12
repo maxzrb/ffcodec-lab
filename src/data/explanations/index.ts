@@ -2007,4 +2007,36 @@ export const explanations: Record<string, ExplanationDefinition> = {
     id: 'expl.advanced.qcomp', title: '量化曲线压缩', short: '通过 -qcomp 调整复杂与简单场景之间的码率分配，范围 0–1；留空时使用编码器默认。',
     sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
   },
+  'expl.advanced.rcLookahead': {
+    id: 'expl.advanced.rcLookahead', title: '码率控制前瞻', short: '让编码器预读更多帧后再分配帧类型和码率；通常提高复杂场景质量，但会增加延迟和内存占用。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.aqStrength': {
+    id: 'expl.advanced.aqStrength', title: '自适应量化强度', short: '控制 AQ 在平坦区和纹理区之间重新分配码率的幅度；过高可能损害客观指标或产生不稳定观感。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.sceneThreshold': {
+    id: 'expl.advanced.sceneThreshold', title: '场景切换阈值', short: '控制编码器在画面突变处插入关键帧的敏感度；留空时采用编码器自身的场景检测策略。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.refs': {
+    id: 'expl.advanced.refs', title: '参考帧数', short: '增加参考帧可能提高压缩效率，但会增加编码与解码开销，并可能限制硬件播放器兼容性。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.level': {
+    id: 'expl.advanced.level', title: '编码级别', short: '限制分辨率、帧率、码率和解码复杂度上限；只有目标平台明确要求时再填写。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.lookaheadLevel': {
+    id: 'expl.advanced.lookaheadLevel', title: 'NVENC 前瞻等级', short: '提高 NVENC 前瞻分析强度可能改善质量，但会增加性能开销；需要驱动和硬件支持。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.extbrc': {
+    id: 'expl.advanced.extbrc', title: 'Intel 扩展码率控制', short: '启用更积极的扩展码率分配；可明确开启或关闭，未设置时交给 QSV 驱动决定。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
+  'expl.advanced.qvbrQualityLevel': {
+    id: 'expl.advanced.qvbrQualityLevel', title: 'AMD QVBR 质量级别', short: '为 AMF QVBR 指定目标质量级别；实际行为取决于驱动、编码器与所选码率控制模式。',
+    sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
+  },
 }
