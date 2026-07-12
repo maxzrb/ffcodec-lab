@@ -1,14 +1,14 @@
 # Project Status
 
-Last updated: 2026-07-12 11:44
+Last updated: 2026-07-12 12:08
 Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: 参数介绍与诊断模块重制、全局中/EN切换、音频码率单位控件
-- Current state: 功能实现与本地验收完成，尚未提交。全局语言状态覆盖工作台、全部目录控件/选项、118 条参数介绍、诊断与预设界面；内部来源引用保留供目录审计但不再面向用户显示。诊断已接入完整兼容性校验，提供可读原因、影响字段、处理建议和受控修复。音频码率改为数值输入 + bps/kbps/Mbps 后置单位。
+- Current objective: 参数介绍、全局中/EN、诊断与音频码率改动提交部署收尾
+- Current state: 功能提交 `361949c` 已推送到 `origin/master`，Cloudflare Pages check suite 为 success，生产站点已加载新资源 `/assets/index-BCYh_oFj.js`。线上资源确认包含英文工作台与新诊断模块，HTTP 200。全局语言状态覆盖工作台、全部目录控件/选项、118 条参数介绍、诊断与预设界面；内部来源引用保留供目录审计但不再面向用户显示。
 - Current site: https://fflab.loliland.cn/
-- Next objective: 审查并提交本次易用性改动；如需上线，推送 master 触发 Cloudflare Pages 自动部署
+- Next objective: 继续功能迭代或在可用浏览器环境补做非阻断视觉巡检
 - Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 318/318（20 文件）、catalog audit 0/0、production build 成功、acceptance 10/10
 - Current UI risk: 应用内浏览器发现列表为空，无法执行截图巡检；17 项 BuilderPage RTL 交互及英文无中文混入契约已通过
 - v0.4.0 已知阻断缺陷（已修复）:
@@ -36,13 +36,13 @@ Updated by: Codex (GPT-5)
 - Video encoders: 11 个 (software 3、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 提交本次变更；确认需要上线后推送 master，由 Cloudflare Pages 自动部署
+- Next recommended step: 无阻断任务；切换设备或代理前保持 `master` 与远端同步
 
 ## Active TODO
 
 - [x] 参数介绍、诊断模块、全局语言与音频码率输入重制
   - Owner: Codex
-  - Status: 实现与本地验收完成，待 Git 提交
+  - Status: 已提交 `361949c` 并部署到 Cloudflare Pages 生产域名
   - Notes/blockers: 无功能阻断；应用内浏览器无实例，真实截图巡检保留为环境限制
 
 - [x] v0.5.0 功能开发: AMF / VideoToolbox / 高级滤镜 / 字幕 / 分享 / 持久化 / UI
@@ -57,7 +57,7 @@ Updated by: Codex (GPT-5)
 
 - [ ] v0.5.1 稳定性与易用性更新
   - Owner: Codex
-  - Status: 代码与本地验收完成，待 Git 提交和 Sites 重新发布
+  - Status: 已随当前 master 部署到 Cloudflare Pages；旧 ChatGPT Sites 不再作为主部署目标
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
@@ -161,12 +161,13 @@ Updated by: Codex (GPT-5)
 
 - Git repository: yes
 - Branch: master（跟踪 origin/master）
-- Last known commit: 5e6e612（Cloudflare Pages HandShake 记录）
+- Last deployed feature commit: 361949c（参数介绍、全局中/EN、诊断与码率单位）
 - Remote: `https://github.com/maxzrb/ffcodec-lab.git`
-- Sync: 2026-07-12 会话启动时 `git pull --ff-only` = Already up to date
-- Uncommitted changes: 本次参数介绍、i18n、诊断、音频码率、测试、验收报告和 HandShake 记录
-- Working tree clean: no
-- Commit recommended before switching agents/devices: yes，建议提交为一个易用性功能变更
+- Sync: `361949c` 已推送到 origin/master；Cloudflare Pages check suite success
+- Deployment verification: `https://fflab.loliland.cn/` HTTP 200，HTML 引用 `/assets/index-BCYh_oFj.js`，bundle 包含英文工作台与诊断模块文案
+- Uncommitted changes: 仅本次部署 closeout 记录，随后以独立 docs commit 提交
+- Working tree clean: closeout commit 完成后应为 yes
+- Commit recommended before switching agents/devices: closeout commit 完成后无需额外提交
 
 ## Session Log
 
@@ -851,3 +852,25 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 应用内浏览器无实例，截图式视觉巡检仍为非阻断环境限制
 - Git status: master 跟踪 origin/master，working tree not clean，本次变更尚未提交
 - Next step: 提交本次易用性改动；用户确认上线后 push master 触发 Cloudflare Pages 自动部署
+
+### 2026-07-12 12:08 - Codex (GPT-5)
+
+- Objective: 按用户要求提交并部署参数介绍、全局语言、诊断和音频码率改动
+- Work completed:
+  1. 复核 HandShake 状态、`git pull --ff-only`、待提交差异与 `git diff --check`
+  2. 创建功能提交 `361949c feat: improve parameter guidance and diagnostics`
+  3. 推送 master 到 `https://github.com/maxzrb/ffcodec-lab.git`
+  4. Cloudflare Pages GitHub App 接收提交并完成构建，check suite conclusion=`success`
+  5. 生产域名返回 HTTP 200，HTML 资源切换为 `/assets/index-BCYh_oFj.js`；bundle 确认包含 `FFmpeg Command Builder` 与 `Diagnostics & suggestions`
+- Commands run:
+  - `git pull --ff-only` — Already up to date
+  - `git add --all && git commit -m "feat: improve parameter guidance and diagnostics"`
+  - `git push origin master` — `5e6e612..361949c`
+  - `gh api .../check-runs` / `check-suites` — Cloudflare check suite success
+  - `Invoke-WebRequest https://fflab.loliland.cn/` — HTTP 200，新资源与功能文案确认
+- Verification: 本次提交沿用提交前 `npm run check` 全通过结果（318/318 tests、audit 0/0、build success）；线上新资源已实证加载
+- Decisions/risks:
+  - 单个 Cloudflare check-run API 一度残留 in_progress，但其 check suite 已 success，且生产站点已经加载与本地构建一致的新 hash 资源，因此部署判定成功
+  - 应用内浏览器仍无实例，真实截图巡检未补做
+- Git status: 功能提交已推送；本部署记录将以独立 docs commit 推送，完成后预期 clean
+- Next step: 无阻断任务；后续按用户指示继续迭代
