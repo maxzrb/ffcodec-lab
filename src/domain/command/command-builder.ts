@@ -531,7 +531,7 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
   if (metadata) {
     const streamTypePrefix: Record<string, string> = { video: 'v', audio: 'a', subtitle: 's' }
 
-    for (const line of metadata.globalLines) {
+    for (const line of metadata.globalRaw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)) {
       const eq = line.indexOf('=')
       if (eq <= 0) continue
       const key = line.slice(0, eq).trim()
@@ -539,13 +539,13 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
       if (!key) continue
       output.metadataArgs.push({
         id: `metadata.global.${key}`,
-        originId: 'output.metadata.globalLines',
+        originId: 'output.metadata.globalRaw',
         phase: 'METADATA',
         tokens: ['-metadata', `${key}=${value}`],
       })
     }
 
-    for (const line of metadata.streamLines) {
+    for (const line of metadata.streamRaw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)) {
       const firstColon = line.indexOf(':')
       if (firstColon <= 0) continue
       const streamType = line.slice(0, firstColon).trim()
@@ -563,7 +563,7 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
       if (!prefix || !key || !Number.isFinite(streamIndex) || streamIndex < 0) continue
       output.metadataArgs.push({
         id: `metadata.stream.${streamType}.${streamIndex}.${key}`,
-        originId: 'output.metadata.streamLines',
+        originId: 'output.metadata.streamRaw',
         phase: 'METADATA',
         tokens: [`-metadata:s:${prefix}:${streamIndex}`, `${key}=${value}`],
       })

@@ -29,7 +29,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
       path: 'output.mp4',
       containerId: 'mp4',
       overwrite: false,
-      metadata: { globalLines: [], streamLines: [] },
+      metadata: { globalRaw: '', streamRaw: '' },
     },
     streams: {
       videoStreamIndexes: [0],

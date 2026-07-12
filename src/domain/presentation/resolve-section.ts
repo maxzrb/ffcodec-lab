@@ -1187,49 +1187,51 @@ export function resolveCustomArgsSection(config: ProjectConfig): ResolvedSection
 }
 
 export function resolveMetadataSection(config: ProjectConfig): ResolvedSection {
-  const metadata = config.output.metadata ?? { globalLines: [], streamLines: [] }
+  const metadata = config.output.metadata ?? { globalRaw: '', streamRaw: '' }
+  const globalLines = metadata.globalRaw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
+  const streamLines = metadata.streamRaw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
+  const totalLines = globalLines.length + streamLines.length
+
   const fields: ResolvedField[] = [
     {
-      id: 'output.metadata.globalLines',
+      id: 'output.metadata.globalRaw',
       label: '全局元数据',
       description: '每行一条 key=value，例如 title=我的视频 或 copyright=2026。生成 -metadata key=value。',
       controlType: 'textarea',
-      value: metadata.globalLines.join('\n'),
+      value: metadata.globalRaw,
       visible: true, disabled: false,
       sourceRefs: [{
         repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12',
         file: 'doc/metadata.texi', sourceType: 'ffmpeg-official',
       }],
       verificationLevel: 'official', needsCrossVerification: false,
-      commandOrigins: ['output.metadata.globalLines'], diagnostics: [],
+      commandOrigins: ['output.metadata.globalRaw'], diagnostics: [],
       tier: 'basic', optional: true,
-      configBinding: { path: CONFIG_PATHS.output.metadataGlobalLines },
+      configBinding: { path: CONFIG_PATHS.output.metadataGlobalRaw },
     },
     {
-      id: 'output.metadata.streamLines',
+      id: 'output.metadata.streamRaw',
       label: '流级元数据',
       description: '每行一条 stream_type:index:key=value，例如 audio:0:language=jpn 或 video:0:title=主视频。生成 -metadata:s:a:0 language=jpn。',
       controlType: 'textarea',
-      value: metadata.streamLines.join('\n'),
+      value: metadata.streamRaw,
       visible: true, disabled: false,
       sourceRefs: [{
         repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12',
         file: 'doc/metadata.texi', sourceType: 'ffmpeg-official',
       }],
       verificationLevel: 'official', needsCrossVerification: false,
-      commandOrigins: ['output.metadata.streamLines'], diagnostics: [],
+      commandOrigins: ['output.metadata.streamRaw'], diagnostics: [],
       tier: 'basic', optional: true,
-      configBinding: { path: CONFIG_PATHS.output.metadataStreamLines },
+      configBinding: { path: CONFIG_PATHS.output.metadataStreamRaw },
     },
   ]
-
-  const totalLines = metadata.globalLines.length + metadata.streamLines.length
 
   return {
     id: 'section.metadata',
     label: '自定义元数据',
     description: totalLines > 0
-      ? `${metadata.globalLines.length} 条全局 + ${metadata.streamLines.length} 条流级，共 ${totalLines} 条`
+      ? `${globalLines.length} 条全局 + ${streamLines.length} 条流级，共 ${totalLines} 条`
       : '每行输入一条 key=value（全局）或 stream_type:index:key=value（流级）',
     fields,
   }

@@ -38,10 +38,10 @@ export interface OutputConfig {
 }
 
 export interface MetadataConfig {
-  /** 全局元数据行，每行 key=value → -metadata key=value */
-  globalLines: string[]
-  /** 流级元数据行，每行 stream_type:index:key=value → -metadata:s:v/a/s:N key=value */
-  streamLines: string[]
+  /** 全局元数据原始文本，每行 key=value → -metadata key=value */
+  globalRaw: string
+  /** 流级元数据原始文本，每行 stream_type:index:key=value → -metadata:s:v/a/s:N key=value */
+  streamRaw: string
 }
 
 export interface StreamSelectionConfig {

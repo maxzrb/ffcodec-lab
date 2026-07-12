@@ -151,6 +151,10 @@ function coerceValue(
 ): { value: unknown; notice?: FieldChangeNotice } {
   switch (field.controlType) {
     case 'textarea':
+      // Metadata fields store raw text; command builder parses lines
+      if (field.id.startsWith('output.metadata.')) {
+        return { value: String(value ?? '') }
+      }
       return {
         value: String(value ?? '')
           .split(/\r?\n/)

@@ -71,8 +71,8 @@ export const CONFIG_PATHS = {
     containerId: configPath(['output', 'containerId']),
     overwrite: configPath(['output', 'overwrite']),
     metadata: configPath(['output', 'metadata']),
-    metadataGlobalLines: configPath(['output', 'metadata', 'globalLines']),
-    metadataStreamLines: configPath(['output', 'metadata', 'streamLines']),
+    metadataGlobalRaw: configPath(['output', 'metadata', 'globalRaw']),
+    metadataStreamRaw: configPath(['output', 'metadata', 'streamRaw']),
   },
 
   streams: {

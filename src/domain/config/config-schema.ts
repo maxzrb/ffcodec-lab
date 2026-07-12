@@ -168,8 +168,8 @@ const audioConfigSchema = z.object({
 })
 
 const metadataConfigSchema = z.object({
-  globalLines: z.array(z.string()).default([]),
-  streamLines: z.array(z.string()).default([]),
+  globalRaw: z.string().default(''),
+  streamRaw: z.string().default(''),
 })
 
 // -- top-level schema -----------------------------------------
@@ -191,7 +191,7 @@ export const projectConfigSchema = z.object({
     path: z.string(),
     containerId: z.string(),
     overwrite: z.boolean(),
-    metadata: metadataConfigSchema.default({ globalLines: [], streamLines: [] }),
+    metadata: metadataConfigSchema.default({ globalRaw: '', streamRaw: '' }),
   }),
   streams: z.object({
     videoStreamIndexes: z.array(z.number().int().nonnegative()).default([]),

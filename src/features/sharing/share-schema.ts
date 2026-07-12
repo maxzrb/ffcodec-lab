@@ -113,9 +113,9 @@ export const shareableConfigSchema = z.object({
     containerId: z.string(),
     overwrite: z.boolean(),
     meta: z.object({
-      globalLines: z.array(z.string()).default([]),
-      streamLines: z.array(z.string()).default([]),
-    }).default({ globalLines: [], streamLines: [] }),
+      globalRaw: z.string().default(''),
+      streamRaw: z.string().default(''),
+    }).default({ globalRaw: '', streamRaw: '' }),
   }),
   m: z.object({
     videoStreamIndexes: z.array(z.number().int().nonnegative()),
