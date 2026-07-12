@@ -147,6 +147,7 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
     filterArgs: [],
     audioArgs: [],
     subtitleArgs: [],
+    metadataArgs: [],
     muxerArgs: [],
     customArgs: [],
     tailArgs: [],
@@ -521,6 +522,34 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
           tokens: ['-disposition:s:' + String(outputIndex), flags.join('+')],
         })
       }
+    }
+  }
+
+  // -- 自定义元数据 -------------------------------------------
+  const metadata = config.output.metadata
+  if (metadata) {
+    // 全局元数据 → -metadata key=value
+    for (const entry of metadata.global) {
+      if (!entry.key || entry.value === undefined) continue
+      output.metadataArgs.push({
+        id: `metadata.global.${entry.key}`,
+        originId: 'output.metadata.global',
+        phase: 'METADATA',
+        tokens: ['-metadata', `${entry.key}=${entry.value}`],
+      })
+    }
+    // 流级元数据 → -metadata:s:v/a/s:N key=value
+    const streamTypePrefix: Record<string, string> = { video: 'v', audio: 'a', subtitle: 's' }
+    for (const entry of metadata.streams) {
+      if (!entry.key || entry.value === undefined) continue
+      const prefix = streamTypePrefix[entry.streamType]
+      if (!prefix) continue
+      output.metadataArgs.push({
+        id: `metadata.stream.${entry.streamType}.${entry.streamIndex}.${entry.key}`,
+        originId: 'output.metadata.streams',
+        phase: 'METADATA',
+        tokens: [`-metadata:s:${prefix}:${entry.streamIndex}`, `${entry.key}=${entry.value}`],
+      })
     }
   }
 

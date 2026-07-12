@@ -67,6 +67,7 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
     o: {
       containerId: config.output.containerId,
       overwrite: config.output.overwrite,
+      meta: config.output.metadata ?? { global: [], streams: [] },
       // path intentionally excluded — privacy
     },
     m: {
@@ -93,6 +94,7 @@ export function fromShareable(
       path: base?.output?.path ?? 'output.' + shareable.o.containerId,
       containerId: shareable.o.containerId,
       overwrite: shareable.o.overwrite,
+      metadata: shareable.o.meta ?? { global: [], streams: [] },
     },
     streams: shareable.m ?? {
       videoStreamIndexes: [0],

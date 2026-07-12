@@ -52,7 +52,7 @@ describe('Share config — decoding', () => {
     const migrated = migrateConfig(2, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config
     const migratedVideo = migrated.video as Record<string, unknown>
     const migratedFilters = (migrated.frame as Record<string, unknown>).filters as Record<string, unknown>
-    expect(migrated.schemaVersion).toBe(4)
+    expect(migrated.schemaVersion).toBe(5)
     expect(migratedVideo.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
     expect(migratedFilters.denoise).toEqual({ enabled: false, values: {} })
     expect(migratedFilters.deband).toEqual({ enabled: false, values: {} })
@@ -118,7 +118,7 @@ describe('Share config — decoding', () => {
 
     const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
     expect(decoded.success).toBe(true)
-    expect(decoded.config?.schemaVersion).toBe(4)
+    expect(decoded.config?.schemaVersion).toBe(5)
     expect(decoded.config?.video.color?.space).toBe('bt709')
     expect(decoded.config?.video.color?.operation).toBe('convert-and-tag')
     expect(decoded.config?.video.color?.toneMap).toBe('mobius')

@@ -5,7 +5,7 @@
 
 import { z } from 'zod'
 
-export const SHARE_PAYLOAD_VERSION = 4
+export const SHARE_PAYLOAD_VERSION = 5
 
 /** Privacy-safe config subset: no input path, output path, or external subtitle paths */
 export const shareableConfigSchema = z.object({
@@ -112,6 +112,15 @@ export const shareableConfigSchema = z.object({
   o: z.object({
     containerId: z.string(),
     overwrite: z.boolean(),
+    meta: z.object({
+      global: z.array(z.object({ key: z.string(), value: z.string() })),
+      streams: z.array(z.object({
+        streamType: z.enum(['video', 'audio', 'subtitle']),
+        streamIndex: z.number().int().nonnegative(),
+        key: z.string(),
+        value: z.string(),
+      })),
+    }).default({ global: [], streams: [] }),
   }),
   m: z.object({
     videoStreamIndexes: z.array(z.number().int().nonnegative()),

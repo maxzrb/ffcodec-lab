@@ -167,10 +167,27 @@ const audioConfigSchema = z.object({
   qualityValues: z.record(z.unknown()),
 })
 
+const metadataPairSchema = z.object({
+  key: z.string().min(1),
+  value: z.string(),
+})
+
+const streamMetadataSchema = z.object({
+  streamType: z.enum(['video', 'audio', 'subtitle']),
+  streamIndex: z.number().int().nonnegative(),
+  key: z.string().min(1),
+  value: z.string(),
+})
+
+const metadataConfigSchema = z.object({
+  global: z.array(metadataPairSchema).default([]),
+  streams: z.array(streamMetadataSchema).default([]),
+})
+
 // -- top-level schema -----------------------------------------
 
 export const projectConfigSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
   shell: z.enum(['bash', 'powershell', 'cmd']),
   input: z.object({
     path: z.string(),
@@ -186,6 +203,7 @@ export const projectConfigSchema = z.object({
     path: z.string(),
     containerId: z.string(),
     overwrite: z.boolean(),
+    metadata: metadataConfigSchema.default({ global: [], streams: [] }),
   }),
   streams: z.object({
     videoStreamIndexes: z.array(z.number().int().nonnegative()).default([]),

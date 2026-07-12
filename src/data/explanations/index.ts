@@ -2039,4 +2039,102 @@ export const explanations: Record<string, ExplanationDefinition> = {
     id: 'expl.advanced.qvbrQualityLevel', title: 'AMD QVBR 质量级别', short: '为 AMF QVBR 指定目标质量级别；实际行为取决于驱动、编码器与所选码率控制模式。',
     sourceRefs: [{ repository: 'Lake1059/FFmpegFreeUI', branch: 'main', snapshotDate: '2026-07-12', file: 'FFmpegFreeUI/界面 v6 参数面板/Form_v6_参数面板_质量.vb', sourceType: 'ffmpegfreeui' }],
   },
+
+  // -- color management -----------------------------------------
+  'expl.color.operation': {
+    id: 'expl.color.operation', title: '色彩空间操作方式',
+    short: '控制输出视频的色彩处理策略：仅写入元数据、写入元数据并实际转换像素、或仅转换不写标记。',
+    detail: '“仅写入元数据”只设置输出流的色彩标记（-colorspace/-color_primaries/-color_trc/-color_range），不改变像素值，适合输入已正确标记的场景。“写入元数据并转换”通过 zscale 或 libplacebo 执行实际色彩空间转换，同时写入目标标记。“仅转换”只执行像素转换但不写输出标记，适合后续还需要其他工具处理色彩的场景。',
+    effects: { quality: 4, fileSize: 0, speed: 3, compatibility: 3 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=zscale', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#zscale' },
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/ffmpeg.texi -colorspace/-color_primaries/-color_trc/-color_range', sourceType: 'ffmpeg-official' },
+    ],
+  },
+  'expl.color.filter': {
+    id: 'expl.color.filter', title: '色彩转换滤镜',
+    short: '选择执行实际像素色彩转换的滤镜后端：zscale（CPU 软件）或 libplacebo（GPU/Vulkan）。',
+    detail: 'zscale 基于 z.lib 库，在 CPU 上执行高质量缩放和色彩空间转换，无需 GPU，兼容性最好。libplacebo 基于 libplacebo/Vulkan，在 GPU 上执行色彩管理和色调映射，支持更丰富的色调映射算法（如 bt.2390），但需要 FFmpeg 编译时启用 --enable-libplacebo 且系统有 Vulkan 驱动。',
+    effects: { quality: 3, fileSize: 0, speed: 4, compatibility: 4 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=zscale', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#zscale' },
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=libplacebo', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#libplacebo' },
+    ],
+  },
+  'expl.color.space': {
+    id: 'expl.color.space', title: '矩阵 / 色彩空间',
+    short: '设置输出流的色彩矩阵/色彩空间元数据（-colorspace），定义 RGB↔YUV 转换矩阵。',
+    detail: 'bt709 是 SDR 内容的标准色彩空间（Rec.709）。bt2020nc/bt2020c 用于 HDR/WCG 内容（Rec.2020），nc 为非恒定亮度编码（常用），c 为恒定亮度。bt470bg 对应 PAL/SECAM 标清。smpte170m 对应 NTSC 标清。fcc 是 FCC 标准。gbr 为 RGB 空间。选择“不设置”时保留输入流标记。',
+    effects: { quality: 2, fileSize: 0, speed: 0, compatibility: 4 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=zscale matrix parameter', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#zscale' },
+      { repository: 'ITU-R', snapshotDate: '2026-07-12', file: 'Rec.709 / Rec.2020', sourceType: 'encoder-official', note: '色彩空间标准' },
+    ],
+  },
+  'expl.color.primaries': {
+    id: 'expl.color.primaries', title: '色域 / 原色',
+    short: '设置输出流的色域原色元数据（-color_primaries），定义红绿蓝三原色坐标。',
+    detail: 'bt709 覆盖 Rec.709/sRGB 色域，是大多数 SDR 内容的标准。bt2020 覆盖 Rec.2020 广色域（WCG），用于 HDR 和 UHD 内容。smpte431（DCI-P3）和 smpte432（Display P3）用于数字影院和 Apple 设备。smpte428 为 DCDM 规格。film 泛指胶片色域。选择“不设置”时保留输入流标记。',
+    effects: { quality: 2, fileSize: 0, speed: 0, compatibility: 4 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=zscale primaries parameter', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#zscale' },
+      { repository: 'ITU-R', snapshotDate: '2026-07-12', file: 'Rec.709 / Rec.2020', sourceType: 'encoder-official', note: '原色标准' },
+    ],
+  },
+  'expl.color.transfer': {
+    id: 'expl.color.transfer', title: '传输特性',
+    short: '设置输出流的传输特性/伽马元数据（-color_trc），定义电信号到光学亮度的映射关系。',
+    detail: 'bt709 对应标准 SDR Gamma 2.2 曲线。bt2020-10/bt2020-12 对应 HDR/WCG 的传输特性。smpte2084 即 PQ (Perceptual Quantizer)，用于 HDR10/Dolby Vision，标称峰值亮度为 10000 nit。linear 是线性光域编码，通常在色彩转换管线中使用。iec61966-2-1 即 sRGB 的传输曲线。arib-std-b67 即 HLG (Hybrid Log-Gamma)，兼容 SDR 和 HDR 显示。选择“不设置”时保留输入流标记。',
+    effects: { quality: 3, fileSize: 0, speed: 0, compatibility: 4 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=zscale transfer parameter', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#zscale' },
+      { repository: 'SMPTE', snapshotDate: '2026-07-12', file: 'ST 2084 / ST 2086', sourceType: 'encoder-official', note: 'PQ/HDR 传输标准' },
+    ],
+  },
+  'expl.color.range': {
+    id: 'expl.color.range', title: '色彩范围',
+    short: '设置输出流的色彩范围元数据（-color_range）：tv 有限范围或 pc 全范围。',
+    detail: 'tv（有限范围/mpeg）是视频制品的默认值，Y 值在 16–235、UV 在 16–240。pc（全范围/jpeg）使用全部 0–255 范围，常见于计算机图形和 RGB 数据。错误设置可能导致视频偏亮/偏暗或色彩溢出。多数消费级视频使用 tv 范围。',
+    effects: { quality: 3, fileSize: 0, speed: 0, compatibility: 4 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=zscale range parameter', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#zscale' },
+    ],
+  },
+  'expl.color.toneMap': {
+    id: 'expl.color.toneMap', title: '色调映射算法',
+    short: '选择 HDR→SDR 或高亮度→显示亮度的动态范围压缩算法。none 表示只做色彩空间转换不压缩亮度。',
+    detail: 'zscale 支持的算法：clip（硬截断高光）、reinhard（经典全局压缩，暗部保留好）、mobius（改进全局压缩，过渡平滑）、hable（电影级色调映射）、gamma 和 linear（基础伽马/线性映射）。libplacebo 额外支持：auto（自动选择）、st2094-40/10（SMPTE 动态元数据）、bt.2390（ITU-R HDR 参考算法）、bt.2446a（ITU-R HDR→SDR 方法A）、spline（样条曲线）。',
+    effects: { quality: 5, fileSize: 0, speed: 2, compatibility: 3 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=zscale npl parameter + tonemap filter', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#zscale' },
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=libplacebo tonemapping', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#libplacebo' },
+    ],
+  },
+  'expl.color.preFormat': {
+    id: 'expl.color.preFormat', title: '转换前像素格式',
+    short: '在执行色彩空间转换之前，先将像素数据统一到此格式；保持空位时沿用输入或上游滤镜的格式。',
+    detail: '色彩转换滤镜对输入格式有严格要求（如 zscale 需要平面 YUV）。提前设置转换前像素格式可以避免自动协商错误，确保转换管线稳定。常用选择：yuv420p（常规 8-bit）、yuv420p10le（10-bit HDR 常用）、yuv444p10le（最高保真度但体积大，适合色彩转换中间步骤）。',
+    effects: { quality: 2, fileSize: 1, speed: 1, compatibility: 2 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -pix_fmts', sourceType: 'ffmpeg-official' },
+    ],
+  },
+  'expl.color.nominalPeak': {
+    id: 'expl.color.nominalPeak', title: '标称峰值亮度 (npl)',
+    short: '告知 zscale 色调映射器输入内容的标称峰值亮度（cd/m²）；默认 100 nit 即标准 SDR 亮度。',
+    detail: 'zscale 的 npl 参数在 zscale 和 tonemap 滤镜之间传递，影响色调映射算法的亮度缩放行为。HDR 内容通常为 1000 nit（HDR10）或 4000–10000 nit（Dolby Vision 母版级）。设置错误的 npl 会导致画面过亮或过暗。此参数仅对 zscale 路径生效，libplacebo 有独立的输入亮度设定。',
+    effects: { quality: 4, fileSize: 0, speed: 0, compatibility: 2 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=zscale npl parameter', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#zscale' },
+    ],
+  },
+  'expl.color.desaturation': {
+    id: 'expl.color.desaturation', title: '色调映射去饱和强度',
+    short: '控制 HDR→SDR 色调映射过程中对高亮度色彩的去饱和程度，避免映射后出现过于鲜艳的虚假色彩。',
+    detail: '当 HDR 亮度被压缩到 SDR 范围时，高亮度区域可能产生不自然的过饱和观感。去饱和参数（tonemap 的 desat）按指数衰减这些区域的饱和度，使画面看起来更自然。值 0 不去饱和，值越高去饱和越强烈，推荐从 2 开始调试。过高会导致画面整体灰淡。',
+    effects: { quality: 4, fileSize: 0, speed: 0, compatibility: 2 },
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'ffmpeg -h filter=tonemap desat parameter', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#tonemap' },
+    ],
+  },
 }

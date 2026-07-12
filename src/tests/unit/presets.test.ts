@@ -47,7 +47,7 @@ describe('PresetService', () => {
     const saved = service.save({ name: 'Legacy v2', config: legacy })
 
     const loaded = service.load(saved.id)
-    expect(loaded?.config.schemaVersion).toBe(4)
+    expect(loaded?.config.schemaVersion).toBe(5)
     expect(loaded?.config.video.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
     expect(loaded?.config.frame.filters?.denoise.enabled).toBe(false)
     expect(loaded?.config.frame.filters?.deband.enabled).toBe(false)

@@ -70,6 +70,7 @@ export const CONFIG_PATHS = {
     path: configPath(['output', 'path']),
     containerId: configPath(['output', 'containerId']),
     overwrite: configPath(['output', 'overwrite']),
+    metadata: configPath(['output', 'metadata']),
   },
 
   streams: {

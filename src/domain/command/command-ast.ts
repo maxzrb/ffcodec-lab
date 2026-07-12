@@ -33,6 +33,7 @@ export interface OutputSpec {
   filterArgs: CommandArg[]
   audioArgs: CommandArg[]
   subtitleArgs: CommandArg[]
+  metadataArgs: CommandArg[]
   muxerArgs: CommandArg[]
   customArgs: CommandArg[]
   /** 输出文件路径之后的危险自定义 token。 */
@@ -91,6 +92,7 @@ export function collectOutputArgs(output: OutputSpec): CommandArg[] {
     output.filterArgs,
     output.audioArgs,
     output.subtitleArgs,
+    output.metadataArgs,
     output.muxerArgs,
     output.customArgs,
   ]

@@ -272,6 +272,7 @@ export function resolveColorSection(
     visible = true,
     groupId = 'color-metadata',
     tier: 'basic' | 'advanced' = 'advanced',
+    explanationId?: string,
   ): ResolvedField => ({
     id, label, controlType: 'select', value: value ?? '',
     options: [{ value: '', label: '不设置（保留输入或编码器默认）' }, ...options],
@@ -281,7 +282,7 @@ export function resolveColorSection(
     sourceRefs,
     verificationLevel: 'project-derived', needsCrossVerification: true,
     commandOrigins: [id, 'filter.chain'], diagnostics: [], panelId: 'color', groupId,
-    tier, optional: true,
+    tier, optional: true, explanationId,
     configBinding: { path },
   })
 
@@ -296,18 +297,18 @@ export function resolveColorSection(
       { value: 'metadata-only', label: '仅写入元数据' },
       { value: 'convert-and-tag', label: '写入元数据并转换' },
       { value: 'convert-only', label: '仅转换' },
-    ], CONFIG_PATHS.video.color.operation, true, 'color-processing', 'basic'),
+    ], CONFIG_PATHS.video.color.operation, true, 'color-processing', 'basic', 'expl.color.operation'),
     makeSelect('video.color.filter', '色彩转换滤镜', filter, [
       { value: 'zscale', label: 'zscale（CPU）' },
       { value: 'libplacebo', label: 'libplacebo（GPU）' },
-    ], CONFIG_PATHS.video.color.filter, conversionEnabled, 'color-processing', 'basic'),
+    ], CONFIG_PATHS.video.color.filter, conversionEnabled, 'color-processing', 'basic', 'expl.color.filter'),
     makeSelect('video.color.preFormat', '转换前像素格式', color.preFormat, [
       'yuv420p', 'yuv420p10le', 'yuv422p', 'yuv422p10le', 'yuv444p', 'yuv444p10le', 'p010le',
-    ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.preFormat, conversionEnabled, 'color-processing'),
+    ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.preFormat, conversionEnabled, 'color-processing', 'advanced', 'expl.color.preFormat'),
     makeSelect('video.color.toneMap', '色调映射算法', toneMap, (filter === 'zscale'
       ? ['none', 'clip', 'reinhard', 'mobius', 'hable', 'gamma', 'linear']
       : ['none', 'auto', 'clip', 'st2094-40', 'st2094-10', 'bt.2390', 'bt.2446a', 'spline', 'reinhard', 'mobius', 'hable', 'gamma', 'linear']
-    ).map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.toneMap, conversionEnabled, 'color-processing'),
+    ).map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.toneMap, conversionEnabled, 'color-processing', 'basic', 'expl.color.toneMap'),
   ]
 
   if (filter === 'zscale' && toneMappingEnabled) {
@@ -317,14 +318,16 @@ export function resolveColorSection(
       visible: state?.visible !== false, disabled: state?.enabled === false, disabledReason: state?.reason,
       sourceRefs, verificationLevel: 'project-derived', needsCrossVerification: true,
       commandOrigins: ['filter.chain'], diagnostics: [], panelId: 'color', groupId: 'color-processing',
-      tier: 'advanced', optional: true, configBinding: { path: CONFIG_PATHS.video.color.nominalPeak },
+      tier: 'advanced', optional: true, explanationId: 'expl.color.nominalPeak',
+      configBinding: { path: CONFIG_PATHS.video.color.nominalPeak },
     }, {
       id: 'video.color.desaturation', label: '色调映射去饱和强度', controlType: 'number',
       value: color.desaturation ?? 2, min: 0, max: 10, step: 0.1,
       visible: state?.visible !== false, disabled: state?.enabled === false, disabledReason: state?.reason,
       sourceRefs, verificationLevel: 'project-derived', needsCrossVerification: true,
       commandOrigins: ['filter.chain'], diagnostics: [], panelId: 'color', groupId: 'color-processing',
-      tier: 'advanced', optional: true, configBinding: { path: CONFIG_PATHS.video.color.desaturation },
+      tier: 'advanced', optional: true, explanationId: 'expl.color.desaturation',
+      configBinding: { path: CONFIG_PATHS.video.color.desaturation },
     })
   }
 
@@ -338,16 +341,16 @@ export function resolveColorSection(
       ...processingFields,
       makeSelect('video.color.range', '色彩范围', color.range, [
         { value: 'tv', label: 'tv 有限范围' }, { value: 'pc', label: 'pc 全范围' },
-      ], CONFIG_PATHS.video.color.range),
+      ], CONFIG_PATHS.video.color.range, true, 'color-metadata', 'advanced', 'expl.color.range'),
       makeSelect('video.color.space', '矩阵 / 色彩空间', color.space, [
         'bt709', 'bt2020nc', 'bt2020c', 'rgb', 'gbr', 'bt470bg', 'smpte170m', 'smpte240m', 'fcc', 'ictcp', 'ycgco', 'xyz',
-      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.space),
+      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.space, true, 'color-metadata', 'advanced', 'expl.color.space'),
       makeSelect('video.color.primaries', '色域 / 原色', color.primaries, [
         'bt709', 'bt2020', 'smpte428', 'smpte431', 'smpte432', 'film', 'bt470m', 'bt470bg', 'smpte170m', 'smpte240m', 'jedec-p22', 'ebu3213',
-      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.primaries),
+      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.primaries, true, 'color-metadata', 'advanced', 'expl.color.primaries'),
       makeSelect('video.color.transfer', '传输特性', color.transfer, [
         'bt709', 'bt2020-10', 'bt2020-12', 'smpte2084', 'bt470m', 'bt470bg', 'log', 'log_sqrt', 'linear', 'bt1361e', 'iec61966-2-1', 'iec61966-2-4', 'smpte170m', 'smpte240m', 'gamma22', 'gamma28', 'arib-std-b67',
-      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.transfer),
+      ].map((value) => ({ value, label: value })), CONFIG_PATHS.video.color.transfer, true, 'color-metadata', 'advanced', 'expl.color.transfer'),
     ],
   }
 }
@@ -1181,4 +1184,73 @@ export function resolveCustomArgsSection(config: ProjectConfig): ResolvedSection
     diagnostics: [],
   }))
   return { id: 'section.customArgs', label: '自定义参数（高级）', fields }
+}
+
+export function resolveMetadataSection(config: ProjectConfig): ResolvedSection {
+  const metadata = config.output.metadata ?? { global: [], streams: [] }
+  const fields: ResolvedField[] = []
+
+  // 全局元数据条目
+  metadata.global.forEach((entry, index) => {
+    fields.push({
+      id: `output.metadata.global.${index}`,
+      label: `全局 #${index + 1}`,
+      controlType: 'text',
+      value: `${entry.key}=${entry.value}`,
+      visible: true, disabled: false,
+      sourceRefs: [],
+      verificationLevel: 'project-derived', needsCrossVerification: false,
+      commandOrigins: ['output.metadata.global'],
+      diagnostics: [],
+      tier: 'basic',
+      optional: true,
+    })
+  })
+
+  // 流级元数据条目
+  metadata.streams.forEach((entry, index) => {
+    const prefix = { video: 'v', audio: 'a', subtitle: 's' }[entry.streamType]
+    fields.push({
+      id: `output.metadata.streams.${index}`,
+      label: `流级 #${index + 1}`,
+      controlType: 'text',
+      value: `${prefix}:${entry.streamIndex}:${entry.key}=${entry.value}`,
+      visible: true, disabled: false,
+      sourceRefs: [],
+      verificationLevel: 'project-derived', needsCrossVerification: false,
+      commandOrigins: ['output.metadata.streams'],
+      diagnostics: [],
+      tier: 'basic',
+      optional: true,
+    })
+  })
+
+  if (fields.length === 0) {
+    fields.push({
+      id: 'output.metadata.empty',
+      label: '自定义元数据',
+      description: '全局元数据使用 -metadata key=value，流级元数据使用 -metadata:s:v/a/s:N key=value。可通过预设或分享链接导入已配置的元数据。',
+      controlType: 'text',
+      value: '',
+      visible: true, disabled: true,
+      sourceRefs: [{
+        repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12',
+        file: 'doc/metadata.texi', sourceType: 'ffmpeg-official',
+        url: 'https://ffmpeg.org/ffmpeg.html#Main-options',
+      }],
+      verificationLevel: 'official', needsCrossVerification: false,
+      commandOrigins: [], diagnostics: [],
+      tier: 'basic',
+      optional: true,
+    })
+  }
+
+  return {
+    id: 'section.metadata',
+    label: '自定义元数据',
+    description: metadata.global.length + metadata.streams.length > 0
+      ? `${metadata.global.length} 条全局 + ${metadata.streams.length} 条流级`
+      : '尚未配置；可通过预设或 JSON 导入添加',
+    fields,
+  }
 }

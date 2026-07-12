@@ -19,7 +19,7 @@ export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig 
  */
 export function createDefaultProjectConfig(): ProjectConfig {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     shell: 'powershell',
     input: {
       path: 'input.mkv',
@@ -29,6 +29,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
       path: 'output.mp4',
       containerId: 'mp4',
       overwrite: false,
+      metadata: { global: [], streams: [] },
     },
     streams: {
       videoStreamIndexes: [0],

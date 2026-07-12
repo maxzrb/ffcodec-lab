@@ -50,6 +50,8 @@ const ENGLISH_TEXT: Record<string, string> = {
   '封装设置': 'Container settings',
   '自定义参数': 'Custom arguments',
   '自定义参数（高级）': 'Custom arguments (advanced)',
+  '自定义元数据': 'Custom metadata',
+  '尚未配置；可通过预设或 JSON 导入添加': 'Not yet configured; can be added via presets or JSON import',
   '命令环境': 'Shell',
   '输出容器': 'Output container',
   '覆盖已有文件 (-y)': 'Overwrite existing file (-y)',
@@ -436,6 +438,56 @@ const ENGLISH_EXPLANATIONS: Record<string, { title?: string; short: string; deta
     title: 'Opus bitrate',
     short: 'Controls the data budget for Opus audio. Higher values usually preserve more detail but increase file size.',
     detail: 'Around 64 kbps is a common speech starting point, while 96–160 kbps is a practical range for stereo music depending on the source and target quality.',
+  },
+  'expl.color.operation': {
+    title: 'Color operation',
+    short: 'Controls the color processing strategy: metadata-only writes output flags without changing pixels; convert-and-tag performs real conversion and writes flags; convert-only converts pixels without writing output markers.',
+    detail: 'Metadata-only sets output stream color flags (-colorspace/-color_primaries/-color_trc/-color_range) without altering pixel values — suitable for correctly tagged inputs. Convert-and-tag runs real colorspace conversion through zscale or libplacebo and writes target markers. Convert-only performs pixel conversion without output flags — useful when downstream tools handle color tagging.',
+  },
+  'expl.color.filter': {
+    title: 'Color conversion filter',
+    short: 'Selects the filter backend for actual pixel color conversion: zscale (CPU software) or libplacebo (GPU/Vulkan).',
+    detail: 'zscale uses the z.lib library for high-quality CPU-based scaling and colorspace conversion — best compatibility, no GPU required. libplacebo uses GPU/Vulkan for color management and tonemapping with richer algorithm support (e.g., bt.2390), but requires FFmpeg built with --enable-libplacebo and Vulkan drivers.',
+  },
+  'expl.color.space': {
+    title: 'Matrix / color space',
+    short: 'Sets the output colorspace/color matrix metadata (-colorspace), defining the RGB↔YUV conversion matrix.',
+    detail: 'bt709 is the standard for SDR content (Rec.709). bt2020nc/bt2020c are used for HDR/WCG content (Rec.2020). bt470bg corresponds to PAL/SECAM SD. smpte170m corresponds to NTSC SD. Choose "not set" to keep the input stream tag.',
+  },
+  'expl.color.primaries': {
+    title: 'Color primaries',
+    short: 'Sets the output color primaries metadata (-color_primaries), defining the red/green/blue primary coordinates.',
+    detail: 'bt709 covers Rec.709/sRGB gamut — standard for most SDR content. bt2020 covers Rec.2020 wide color gamut for HDR and UHD. smpte431 (DCI-P3) and smpte432 (Display P3) are used for cinema and Apple devices. Choose "not set" to keep the input stream tag.',
+  },
+  'expl.color.transfer': {
+    title: 'Transfer characteristics',
+    short: 'Sets the output transfer characteristic/gamma metadata (-color_trc), defining the electrical-to-optical mapping.',
+    detail: 'bt709 corresponds to standard SDR gamma 2.2. bt2020-10/bt2020-12 are the HDR/WCG transfer curves. smpte2084 is PQ (Perceptual Quantizer) for HDR10/Dolby Vision at up to 10,000 nits. arib-std-b67 is HLG (Hybrid Log-Gamma), compatible with both SDR and HDR displays. Choose "not set" to keep the input stream tag.',
+  },
+  'expl.color.range': {
+    title: 'Color range',
+    short: 'Sets the output color range metadata (-color_range): tv (limited) or pc (full).',
+    detail: 'tv (limited/mpeg) is the default for video — Y values 16–235 and UV 16–240. pc (full/jpeg) uses the full 0–255 range, common in computer graphics and RGB data. Choosing the wrong range can cause the video to appear washed out or crushed.',
+  },
+  'expl.color.toneMap': {
+    title: 'Tone-mapping algorithm',
+    short: 'Selects the dynamic range compression algorithm for HDR→SDR or high-brightness→display conversion. "none" performs colorspace conversion without brightness compression.',
+    detail: 'zscale-supported algorithms: clip (hard highlight clip), reinhard (classic global compression), mobius (smooth global), hable (filmic tone-mapping), gamma/linear (basic curves). libplacebo additionally supports: auto, st2094-40/10 (SMPTE dynamic metadata), bt.2390 (ITU-R HDR reference), bt.2446a (ITU-R HDR→SDR method A), spline (spline curve).',
+  },
+  'expl.color.preFormat': {
+    title: 'Pre-conversion pixel format',
+    short: 'Converts pixel data to this format before colorspace conversion; leave empty to use the input or upstream filter format.',
+    detail: 'Color conversion filters have specific input format requirements (e.g., zscale needs planar YUV). Setting a pre-conversion format prevents auto-negotiation errors and stabilizes the pipeline. Common choices: yuv420p (standard 8-bit), yuv420p10le (10-bit HDR), yuv444p10le (maximum fidelity for intermediate steps).',
+  },
+  'expl.color.nominalPeak': {
+    title: 'Nominal peak luminance (npl)',
+    short: 'Tells the zscale tone-mapper the nominal peak luminance (cd/m²) of the input content; default 100 nits for standard SDR.',
+    detail: 'zscale npl parameter passes between zscale and tonemap filters, adjusting tone-mapping luminance scaling. HDR content typically specifies 1000 nits (HDR10) or 4000–10000 nits (Dolby Vision mastering). Incorrect npl causes over-brightened or over-darkened results. This parameter only affects the zscale path; libplacebo has a separate input brightness setting.',
+  },
+  'expl.color.desaturation': {
+    title: 'Tone-map desaturation strength',
+    short: 'Controls how strongly high-brightness colors are desaturated during HDR→SDR tone-mapping, preventing unnaturally vivid mapped colors.',
+    detail: 'When HDR brightness is compressed to SDR range, bright areas can appear unnaturally over-saturated. The desat parameter (tonemap desat) exponentially decays saturation in these areas for a more natural look. 0 = no desaturation, higher = stronger effect; starting from 2 is recommended. Too high makes the image look washed out.',
   },
 }
 

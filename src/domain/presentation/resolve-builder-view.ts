@@ -18,6 +18,7 @@ import {
   resolveSubtitleSection,
   resolveContainerSection,
   resolveCustomArgsSection,
+  resolveMetadataSection,
 } from './resolve-section'
 import { attachDiagnostics } from './resolve-field'
 
@@ -41,6 +42,7 @@ export function resolveBuilderView(
     resolveAudioSection(config, catalog, fieldStates),
     resolveSubtitleSection(config, catalog, fieldStates),
     resolveContainerSection(config, catalog, fieldStates),
+    resolveMetadataSection(config),
     resolveCustomArgsSection(config),
   ].filter((s) => s.fields.length > 0)
 
@@ -149,6 +151,7 @@ function attachCommandOrigins(fields: ResolvedField[], plan: CommandPlan): void 
       ...inv.output.filterArgs,
       ...inv.output.audioArgs,
       ...inv.output.subtitleArgs,
+      ...inv.output.metadataArgs,
       ...inv.output.muxerArgs,
       ...inv.output.customArgs,
     ]

@@ -1,15 +1,15 @@
 # Project Status
 
-Last updated: 2026-07-12 18:35
+Last updated: 2026-07-12 19:18
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: v0.6.0 — 修复字幕栏位移并完成稳定化、真实色彩处理、高级质量第二批和后续能力评估
-- Current state: 全部计划项已实现、验证、提交 `b24cfcb` 并部署；生产站点已加载 v0.6.0 资源
+- Current objective: v0.7.0 — 自定义元数据（全局/流级）和色彩参数详细介绍
+- Current state: 全部计划项已实现、验证，待提交部署
 - Current site: https://fflab.loliland.cn/
-- Next objective: v0.6.0 无剩余实施项；后续按评估从受控剪辑和常用元数据开始新一轮
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 文件）、catalog audit 0/0、acceptance 10/10、FFmpeg 8.1.1 smoke 4/4、production build 成功（业务 317.45 KB + vendor 205.27 KB + CSS 22.52 KB）；Cloudflare Pages success；生产 HTTP 200 与功能标识确认
+- Next objective: 提交并部署 v0.7.0；后续可考虑容器专项、有限滤镜排序预设等
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 文件）、catalog audit 0/0、acceptance 10/10、FFmpeg 8.1.1 smoke 4/4、production build 成功（业务 332.32 KB + vendor 205.27 KB + CSS 22.52 KB）
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -81,6 +81,8 @@ Updated by: Claude Code (DeepSeek-v4-pro)
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
+
+- 2026-07-12 19:18: v0.7.0 实施完成 — 自定义元数据（schema v5/全局/流级）+ 10 条色彩参数解释（FFmpeg 官方来源），359/359 测试全量通过
 
 - 2026-07-12 18:35: v0.6.0 closeout 核验与记录完善 — Claude Code 接管核验，全量检查 359/359 通过，修复 STATUS.md Git Sync 过时引用和 工作进度.md 摘要
 
@@ -193,13 +195,13 @@ Updated by: Claude Code (DeepSeek-v4-pro)
 
 - Git repository: yes
 - Branch: master（跟踪 origin/master）
-- Last deployed feature commit: `b24cfcb`（v0.6.0 — schema v4 色彩转换、高级质量第二批、字幕栏稳定化）
+- Last deployed feature commit: `d6364eb`（v0.6.0 closeout 记录）；v0.7.0 待提交
 - Remote: `https://github.com/maxzrb/ffcodec-lab.git`
-- Sync: `7ffe402` 已推送到 origin/master；Cloudflare Pages check suite success
-- Deployment verification: `https://fflab.loliland.cn/` HTTP 200，HTML 引用 `/assets/index-CYEsPILd.js`、`/assets/vendor-C0qM6IhX.js`、`/assets/index-Cnnup6gh.css`，bundle 包含 convert-and-tag、色调映射诊断和 qvbrQualityLevel
-- Uncommitted changes: 仅 `tsconfig.tsbuildinfo` 机械差异（持续排除出功能提交）
-- Working tree clean: 除 tsconfig.tsbuildinfo 外 clean
-- Commit recommended before switching agents/devices: 否（功能与部署记录均已推送）
+- Sync: `d6364eb` 已推送到 origin/master；v0.7.0 变更待暂存提交
+- Deployment verification: `https://fflab.loliland.cn/` 当前运行 v0.6.0
+- Uncommitted changes: v0.7.0 全部功能、测试和记录文件 + `tsconfig.tsbuildinfo` 机械差异
+- Working tree clean: 否（v0.7.0 变更待提交）
+- Commit recommended before switching agents/devices: 是（建议先提交 v0.7.0）
 
 ## Session Log
 
@@ -1242,3 +1244,59 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Environment notes: Node.js v24.18.0, Windows 11, Git Bash
 - Git status: master 跟踪 origin/master，仅 tsconfig.tsbuildinfo 未跟踪修改；功能与记录提交均已推送
 - Next step: 无阻断任务；下一轮从 `docs/next-capability-evaluation.md` 建议的受控剪辑和常用元数据开始
+
+### 2026-07-12 19:18 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: v0.7.0 — 自定义元数据（全局/流级）+ 色彩参数详细介绍
+- Work completed:
+  1. **Schema v5 — 自定义元数据**:
+     - `project-config.ts`：新增 `MetadataPair`、`StreamMetadataEntry`、`MetadataConfig` 类型，`OutputConfig` 新增 `metadata` 可选字段
+     - 两组分离：全局元数据 `-metadata key=value`，流级元数据 `-metadata:s:v/a/s:N key=value`
+     - `config-schema.ts`：Zod schema + `schemaVersion` 增至 5；`defaults.ts` 默认空 metadata
+     - `config-path.ts`：新增 `output.metadata` 路径
+     - 新建 `v4-to-v5.ts` 迁移步骤：旧配置默认空元数据，命令不变
+     - `migration-registry.ts`：注册 v4ToV5，`CURRENT_SCHEMA_VERSION` → 5
+     - `command-ast.ts`：`OutputSpec` 新增 `metadataArgs` 数组；`collectOutputArgs` 纳入排序
+     - `command-builder.ts`：遍历全局/流级 metadata 生成 `-metadata[:spec] key=value`，phase `METADATA`
+     - `resolve-section.ts`：新增 `resolveMetadataSection()`，显示全局和流级条目
+     - `resolve-builder-view.ts`：接入 metadata section + metadataArgs 命令来源映射
+     - `share-schema.ts`：`o` 字段新增 `meta` 子对象；`SHARE_PAYLOAD_VERSION` → 5
+     - `share-codec.ts`：`toShareable`/`fromShareable` 支持 metadata 编解码
+  2. **色彩参数详细介绍**:
+     - 新增 10 条解释条目：`expl.color.operation/filter/space/primaries/transfer/range/toneMap/preFormat/nominalPeak/desaturation`
+     - 来源以本机 FFmpeg 8.1.1 的 `zscale`/`colorspace`/`tonemap` filter help 输出为官方依据
+     - 每条含 `short`、`detail`、`effects` 和 FFmpeg 官方 `sourceRefs`
+     - `resolve-section.ts`：`makeSelect` 扩展 `explanationId` 参数；10 个色彩字段逐一绑定
+     - `i18n.tsx`：`ENGLISH_EXPLANATIONS` 补充 10 条色彩条目英文版，`ENGLISH_TEXT` 补充 metadata 标签
+  3. **版本更新**:
+     - `package.json`：0.6.0 → 0.7.0
+     - `share-schema.ts`：`SHARE_PAYLOAD_VERSION` 4 → 5
+     - `version/版本迭代记录.md`：v0.7.0 版本记录
+     - 测试修正：`presets.test.ts` 和 `share-config.test.ts` 中 schemaVersion 预期值 4→5
+- Files changed: 18 files
+  - Modified: `project-config.ts`, `config-schema.ts`, `config-path.ts`, `defaults.ts`, `migration-registry.ts`, `command-ast.ts`, `command-builder.ts`, `resolve-section.ts`, `resolve-builder-view.ts`, `share-schema.ts`, `share-codec.ts`, `explanations/index.ts`, `i18n.tsx`, `presets.test.ts`, `share-config.test.ts`, `package.json`, `版本迭代记录.md`
+  - New: `migration/migrations/v4-to-v5.ts`
+- Commands run:
+  - `npx tsc -b --noEmit` — 0 errors（多次增量检查）
+  - `npm run check` — ALL PASSED（ESLint 0/0, tsc 0, vitest 359/359, audit 0/0, build 332 KB + 205 KB vendor + 23 KB CSS）
+  - `npx tsx scripts/acceptance-test.ts` — 10/10 通过
+  - `npx tsx scripts/ffmpeg-smoke-test.ts` — 4/4 通过
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 359/359 passed (22 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 332.32 KB + 205.27 KB vendor + 22.52 KB CSS
+  - Acceptance: 10/10 passed
+  - FFmpeg smoke: 4/4 passed
+  - 原有 359 测试 0 弱化/删除（3 测试仅更新 schema version 期望值）
+- Decisions/risks:
+  - metadata 采用两组分离（global/streams）而非 flat 数组 + optional streamSpec，类型更安全
+  - metadata 键名不硬限制枚举，仅提供常用键下拉提示（title/author/copyright/language 等）
+  - 章节/节目级 metadata 不做（用户明确排除剪辑/章节/附件）
+  - 色彩解释来源 FFmpeg 官方 zscale/colorspace/tonemap filter help 输出，不再单独标 ffmpegfreeui
+  - 应用内浏览器仍无可用实例，视觉巡检继续作为环境限制
+  - `tsconfig.tsbuildinfo` 持续排除出功能提交
+- Environment notes: Node.js v24.18.0, Windows 11, Git Bash
+- Git status: master 跟踪 origin/master，v0.7.0 变更 + 记录文件待提交；仅 tsconfig.tsbuildinfo 为机械差异
+- Next step: 提交 v0.7.0，推送并核验 Cloudflare Pages 部署
