@@ -636,6 +636,23 @@ code {
   font-weight: 700;
 }
 
+.inspector-tab__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: oklch(0.72 0.16 30);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+}
+
 .explanation-drawer {
   position: fixed;
   z-index: 30;

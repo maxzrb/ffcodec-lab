@@ -303,9 +303,10 @@ export function BuilderPage() {
                 {isZh ? '命令' : 'Command'}
               </button>
               <button type="button" role="tab" aria-selected={inspectorTab === 'diagnostics'} onClick={() => setInspectorTab('diagnostics')}>
-                {isZh
-                  ? `诊断${view.messages.length > 0 ? ` ${view.messages.length}` : ''}`
-                  : `Diagnostics${view.messages.length > 0 ? ` ${view.messages.length}` : ''}`}
+                {isZh ? '诊断' : 'Diagnostics'}
+                {view.messages.length > 0 && (
+                  <span className="inspector-tab__badge">{view.messages.length}</span>
+                )}
               </button>
             </div>
             {inspectorTab === 'command' ? (
