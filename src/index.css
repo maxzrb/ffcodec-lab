@@ -220,7 +220,32 @@ input[type="number"]:hover {
   line-height: 1.5;
 }
 
+.group-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.group-nav__pill {
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--pill-surface);
+  color: var(--text-soft);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.group-nav__pill:hover {
+  background: var(--accent-glow);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .parameter-field-group {
+  scroll-margin-top: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 6px;

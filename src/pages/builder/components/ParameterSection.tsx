@@ -1,11 +1,13 @@
 // ============================================================
 // ParameterSection — renders a ResolvedSection with all its fields.
 // Fields separated by controlType='section' dividers are visually
-// grouped as sub-sections (e.g., subtitle tracks).
+// grouped as sub-sections (e.g., subtitle tracks) with a quick-jump
+// nav bar rendered above the groups.
 // ============================================================
 
 import type { ResolvedField, ResolvedSection } from '../../../domain/presentation/resolved-field'
 import type { ReactNode } from 'react'
+import { useCallback } from 'react'
 import { ParameterField } from './ParameterField'
 import { useI18n } from '../../../features/i18n/i18n'
 
@@ -21,6 +23,7 @@ interface ParameterSectionProps {
 
 interface FieldGroup {
   key: string
+  /** Section-divider field that starts this group (null for leaderless groups). */
   divider: ResolvedField | null
   fields: ResolvedField[]
 }
@@ -46,6 +49,36 @@ function groupFields(fields: ResolvedField[]): FieldGroup[] {
   return groups
 }
 
+/** A quick-jump nav pill bar for field groups. */
+function GroupNav({ groups, text }: { groups: FieldGroup[]; text: (v: string) => string }) {
+  const jumpTo = useCallback((groupId: string) => {
+    const el = document.getElementById(`pgroup-${groupId}`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  return (
+    <div className="group-nav">
+      {groups.map((g) => {
+        if (!g.divider) return null
+        const label = (g.divider.value !== undefined && g.divider.value !== null && g.divider.value !== '')
+          ? String(g.divider.value)
+          : text(g.divider.label)
+        return (
+          <button
+            key={g.key}
+            type="button"
+            className="group-nav__pill"
+            onClick={() => jumpTo(g.key)}
+            title={text('跳转到') + ' ' + label}
+          >
+            {label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function ParameterSection({
   section,
   expanded,
@@ -69,6 +102,7 @@ export function ParameterSection({
 
   const groups = groupFields(section.fields)
   const hasGroups = groups.length > 1 || (groups.length === 1 && groups[0].divider)
+  const navigableGroups = groups.filter((g) => g.divider)
 
   return (
     <section className="parameter-section">
@@ -92,9 +126,10 @@ export function ParameterSection({
 
       {expanded && (
         <div className="parameter-section__body">
+          {navigableGroups.length > 1 && <GroupNav groups={navigableGroups} text={text} />}
           {hasGroups
             ? groups.map((group) => (
-                <div key={group.key} className="parameter-field-group">
+                <div key={group.key} id={`pgroup-${group.key}`} className="parameter-field-group">
                   {group.divider && renderField(group.divider)}
                   {group.fields.map(renderField)}
                 </div>
