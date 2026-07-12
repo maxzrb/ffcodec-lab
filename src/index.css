@@ -1019,6 +1019,21 @@ code {
   .parameter-section__description { display: none; }
 }
 
+.builder-footer {
+  text-align: center;
+  padding: 24px 16px 12px;
+  color: var(--color-muted, #888);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--color-border, #eee);
+  margin-top: 32px;
+}
+
+.builder-footer a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;

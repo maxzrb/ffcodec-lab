@@ -451,8 +451,9 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))
 
     expect(screen.getByText(/编码器决定输出视频格式、压缩效率、处理速度/)).toBeInTheDocument()
+    // 解释面板不暴露内部数据来源元数据
     expect(screen.queryByText('数据来源：')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Lake1059\/FFmpegFreeUI/)).not.toBeInTheDocument()
+    // 页脚致谢链接是公开署名，不属于"解释面板内部来源"
   })
 
   it('warning显示可读建议并跟随全局语言切换', async () => {

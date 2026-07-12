@@ -319,6 +319,17 @@ export function BuilderPage() {
           onClose={() => setShowPresetManager(false)}
         />
       )}
+
+      <footer className="builder-footer">
+        <small>
+          {isZh
+            ? '本项目部分参数参考自 '
+            : 'Some parameters referenced from '}
+          <a href="https://github.com/Lake1059/FFmpegFreeUI" target="_blank" rel="noopener noreferrer">
+            Lake1059/FFmpegFreeUI
+          </a>
+        </small>
+      </footer>
     </main>
     </I18nProvider>
   )
