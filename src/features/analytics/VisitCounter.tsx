@@ -1,35 +1,39 @@
 // ============================================================
 // VisitCounter — 今日 / 历史访问量仪表盘组件
-// 单设备 4 小时内仅上报一次，防止重复计数和类 DDOS 攻击
+// 单设备 4 小时内仅上报一次，期间展示缓存的数值
 // ============================================================
 
 import { useEffect, useState } from 'react'
 
-const STORAGE_KEY = 'ffcodec-last-visit'
+const CACHE_KEY = 'ffcodec-visit-cache'
 const THROTTLE_MS = 4 * 60 * 60 * 1000 // 4 小时
 
+interface VisitCache {
+  ts: number
+  total: number
+  today: number
+}
+
 interface VisitCounterProps {
-  /** 今日访问量标签 */
   todayLabel: string
-  /** 历史总访问量标签 */
   totalLabel: string
 }
 
-function shouldSkip(): boolean {
+function readCache(): VisitCache | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return false
-    const lastVisit = parseInt(raw, 10)
-    if (Number.isNaN(lastVisit)) return false
-    return Date.now() - lastVisit < THROTTLE_MS
+    const raw = window.localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as VisitCache
+    if (typeof parsed.ts !== 'number' || typeof parsed.total !== 'number' || typeof parsed.today !== 'number') return null
+    return parsed
   } catch {
-    return false // localStorage 不可用时正常上报
+    return null
   }
 }
 
-function recordVisit(): void {
+function writeCache(total: number, today: number): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, String(Date.now()))
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), total, today }))
   } catch {
     // 忽略存储失败
   }
@@ -39,8 +43,15 @@ export function VisitCounter({ todayLabel, totalLabel }: VisitCounterProps) {
   const [stats, setStats] = useState<{ total: number; today: number } | null>(null)
 
   useEffect(() => {
-    if (shouldSkip()) return
+    const cached = readCache()
 
+    // 4 小时内有缓存 → 直接展示缓存值，不上报
+    if (cached && Date.now() - cached.ts < THROTTLE_MS) {
+      setStats({ total: cached.total, today: cached.today })
+      return
+    }
+
+    // 无缓存或已过期 → 上报并更新缓存
     let cancelled = false
     fetch('/api/visits')
       .then((res) => {
@@ -49,12 +60,15 @@ export function VisitCounter({ todayLabel, totalLabel }: VisitCounterProps) {
       })
       .then((data) => {
         if (!cancelled) {
-          recordVisit()
+          writeCache(data.total, data.today)
           setStats(data)
         }
       })
       .catch(() => {
-        // 静默失败：本地开发时 /api/visits 不可达，或网络错误
+        // 静默失败；若有旧缓存则降级展示
+        if (!cancelled && cached) {
+          setStats({ total: cached.total, today: cached.today })
+        }
       })
     return () => { cancelled = true }
   }, [])
