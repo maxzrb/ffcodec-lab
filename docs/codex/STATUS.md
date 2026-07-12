@@ -1,13 +1,15 @@
 # Project Status
 
-Last updated: 2026-07-11 23:16
+Last updated: 2026-07-12 10:30
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: v0.5.2 容器/扩展名双向同步与多流索引多选 — 本地稳定提交
-- Current state: v0.5.2 已提交 `cbb1c8d` + `bbc59c6`（字幕多选补全），working tree clean。容器切换自动同步输出扩展名、输入已知扩展名反向同步容器、视频/音频/字幕各 0-15 多选索引复选框并为每个选中流生成独立 -map、分享 m 字段携带流选择配置、307 项测试全部通过、10/10 验收通过。
+- Current objective: 部署迁移 — ChatGPT Sites → Cloudflare Pages（自定义域名）
+- Current state: v0.5.2 代码已合并到 master，working tree clean。部署已从 ChatGPT Sites（`ffcodec-lab.maxzhurb.chatgpt.site`）迁移到 Cloudflare Pages + 自定义域名 `https://fflab.loliland.cn/`。GitHub Pages 工作流已删除，`vite.config.ts` base 恢复为 `/`。仓库保持 private。
+- Current site: https://fflab.loliland.cn/
 - Next objective: 全量质量巡检后继续功能迭代或发布准备
+- v0.5.2 功能摘要: 容器/扩展名双向同步、视频/音频/字幕多流索引多选复选框、多 map 生成、分享 m 字段流选择配置、307 项测试、10/10 验收
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -752,3 +754,47 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 原有 307 测试全部保留
 - Git status: committed `bbc59c6`, working tree clean
 - Next step: 全量质量巡检
+
+### 2026-07-12 10:30 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 部署迁移 — 从 ChatGPT Sites 切到 Cloudflare Pages + 自定义域名；HandShake 启动与记录更新
+- Work completed:
+  1. **GitHub Pages 探索（已废止）**:
+     - `vite.config.ts` 添加 `base: '/ffcodec-lab/'`
+     - 创建 `.github/workflows/deploy.yml`（on push master → build → deploy-pages）
+     - 提交 `e5b13e7`，推送到 master
+     - 仓库重命名 `FFCodec-Lab` → `ffcodec-lab`
+     - 部署失败：GitHub Pages 未在仓库设置中启用
+  2. **决策变更：GitHub Pages → Cloudflare Pages**:
+     - 用户需求：自定义域名 + 仓库保持 private
+     - GitHub Pages 免费版要求公开仓库，用户拒绝
+     - Cloudflare Pages：免费、支持 private 仓库、自定义域名
+  3. **切换到 Cloudflare Pages**:
+     - 删除 `.github/workflows/deploy.yml`
+     - `vite.config.ts` base 恢复为 `/`（Cloudflare Pages 部署在根路径）
+     - 提交 `d78152a`，推送到 master
+     - 用户在 Cloudflare 控制台完成 Pages 项目创建和域名绑定
+  4. **最终部署结果**:
+     - 生产地址: `https://fflab.loliland.cn/`
+     - 自定义域名 `fflab.loliland.cn` 绑定到 Cloudflare Pages
+     - 仓库保持 private
+  5. **HandShake 记录更新**: STATUS.md + 工作进度.md
+- Files changed:
+  - Modified: vite.config.ts (base 先改 `/ffcodec-lab/` 再还原 `/`)
+  - Created then deleted: .github/workflows/deploy.yml
+- Commands run:
+  - `gh repo rename ffcodec-lab -R maxzrb/FFCodec-Lab --yes` (被权限拦截，用户手动完成)
+  - `gh api repos/maxzrb/ffcodec-lab` (验证改名成功)
+  - `gh run view 29176455755` (诊断 GitHub Pages 部署失败)
+  - `npx vite build` (验证根 base 路径构建)
+  - `git push origin master` (推送切换提交)
+- Verification:
+  - 构建: `npx vite build` 成功，资源路径 `/assets/...` 正确
+  - Cloudflare Pages: 用户在控制台确认部署成功
+- Decisions/risks:
+  - Decision: Cloudflare Pages 替代 GitHub Pages（private repo + 自定义域名 + 免费）
+  - Risk: 无；Cloudflare Pages 自带宽 CDN 和自动 HTTPS
+  - ChatGPT Sites 原站点 `ffcodec-lab.maxzhurb.chatgpt.site` 仍然可用，未删除
+- Environment notes: 不涉及本地环境变化
+- Git status: master branch, commit `d78152a`, working tree clean
+- Next step: 全量质量巡检或功能迭代
