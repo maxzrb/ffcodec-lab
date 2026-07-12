@@ -121,6 +121,52 @@ describe('Command AST — Invariants', () => {
     expect(rendered.text).toMatch(/'.*output file\.mkv.*'/)
   })
 
+  it('Bash quotes paths with Chinese characters and brackets', () => {
+    const config = makeConfig({
+      input: { ...createDefaultProjectConfig().input, path: 'F:\\演示片\\视频.mp4' },
+      output: { ...createDefaultProjectConfig().output, path: 'output.mkv' },
+    })
+    const rendered = renderBash(buildCommandPlan(config, catalog, []))
+
+    // Chinese paths must be quoted even without spaces
+    expect(rendered.text).toContain("'F:\\演示片\\视频.mp4'")
+  })
+
+  it('Bash quotes paths with square brackets', () => {
+    const config = makeConfig({
+      input: { ...createDefaultProjectConfig().input, path: 'D:\\videos\\[test].mp4' },
+      output: { ...createDefaultProjectConfig().output, path: 'output.mkv' },
+    })
+    const rendered = renderBash(buildCommandPlan(config, catalog, []))
+
+    // Brackets are special in bash, must be quoted
+    expect(rendered.text).toContain("'D:\\videos\\[test].mp4'")
+  })
+
+  it('PowerShell quotes non-ASCII paths', () => {
+    const config = makeConfig({
+      input: { ...createDefaultProjectConfig().input, path: 'E:\\素材\\风景.mp4' },
+      output: { ...createDefaultProjectConfig().output, path: 'out.mkv' },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderPowerShell(plan)
+
+    expect(rendered.text).toContain('ffmpeg')
+    expect(rendered.text).toContain('"E:\\素材\\风景.mp4"')
+  })
+
+  it('CMD quotes non-ASCII paths', () => {
+    const config = makeConfig({
+      input: { ...createDefaultProjectConfig().input, path: 'E:\\素材\\风景.mp4' },
+      output: { ...createDefaultProjectConfig().output, path: 'out.mkv' },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+    const rendered = renderCmd(plan)
+
+    expect(rendered.text).toContain('ffmpeg')
+    expect(rendered.text).toContain('"E:\\素材\\风景.mp4"')
+  })
+
   it('PowerShell renderer works', () => {
     const config = makeConfig()
     const plan = buildCommandPlan(config, catalog, [])

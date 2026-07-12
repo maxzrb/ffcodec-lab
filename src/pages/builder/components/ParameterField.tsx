@@ -146,7 +146,14 @@ function renderControl(
           id={controlId}
           type="text"
           value={field.value !== undefined && field.value !== null ? String(field.value) : ''}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(sanitizeTextValue(e.target.value))}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData('text/plain')
+            if (pasted) {
+              e.preventDefault()
+              onChange(sanitizeTextValue(pasted))
+            }
+          }}
           disabled={disabled}
         />
       )
@@ -208,7 +215,14 @@ function renderControl(
           id={controlId}
           type="text"
           value={field.value !== undefined && field.value !== null ? String(field.value) : ''}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(sanitizeTextValue(e.target.value))}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData('text/plain')
+            if (pasted) {
+              e.preventDefault()
+              onChange(sanitizeTextValue(pasted))
+            }
+          }}
           disabled={disabled}
         />
       )
@@ -272,6 +286,22 @@ function parseBitrate(value: unknown): { amount: string; unit: BitrateUnit } {
     amount: match[1],
     unit: suffix.toLowerCase() === 'k' ? 'k' : suffix.toLowerCase() === 'm' ? 'M' : '',
   }
+}
+
+/**
+ * 清理文本输入值：自动剥离两端成对引号。
+ * 解决从 Windows 资源管理器粘贴路径时剪贴板自带双引号的问题。
+ * 仅当首尾字符为相同引号（'或"）时才剥离。
+ */
+function sanitizeTextValue(value: string): string {
+  const trimmed = value.trim()
+  if (trimmed.length < 2) return value
+  const first = trimmed[0]
+  const last = trimmed[trimmed.length - 1]
+  if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+    return trimmed.slice(1, -1)
+  }
+  return value
 }
 
 function DisabledReason({ reason, locale }: { reason: string; locale: 'zh-CN' | 'en' }) {

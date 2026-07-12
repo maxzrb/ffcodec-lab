@@ -32,20 +32,24 @@ export function renderBash(plan: CommandPlan): RenderedCommand {
 }
 
 /**
- * Escape a token for Bash: wrap in single quotes if it contains
- * special characters. Escapes single quotes inside the value.
+ * Escape a token for Bash: wrap in quotes if it contains characters
+ * outside the safe ASCII set (including Unicode, spaces, brackets, etc.).
+ *
+ * Strategy:
+ * - Safe ASCII token (alnum + _ . - : / \) → no quoting needed
+ * - Contains single quote → use double quotes with \" escaping
+ * - Everything else → use single quotes (bash literal, preserves all chars)
  */
 function escapeBash(text: string): string {
-  // No escaping needed for simple alphanumeric tokens
+  // Safe: only ASCII alphanumeric and common path separators
   if (/^[a-zA-Z0-9_.\-:/\\]+$/.test(text)) return text
 
-  // For tokens with spaces or special chars, use single quotes
-  // with proper single-quote escaping
+  // Contains single quotes → must use double quotes
   if (text.includes("'")) {
     return `"${text.replace(/"/g, '\\"')}"`
   }
-  if (text.includes(' ') || text.includes('(') || text.includes(')') || text.includes('$') || text.includes('`')) {
-    return `'${text}'`
-  }
-  return text
+
+  // All other cases (Unicode, spaces, brackets, parens, $, `, etc.)
+  // Single quotes preserve everything literally in bash
+  return `'${text}'`
 }

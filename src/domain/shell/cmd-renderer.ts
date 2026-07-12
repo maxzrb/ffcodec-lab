@@ -31,13 +31,22 @@ export function renderCmd(plan: CommandPlan): RenderedCommand {
   }
 }
 
+/**
+ * Escape a token for Windows CMD.
+ *
+ * Strategy:
+ * - Safe ASCII token → no escaping needed
+ * - Otherwise: escape CMD metacharacters with ^, then wrap in double quotes
+ */
 function escapeCmd(text: string): string {
+  // Safe: only ASCII alphanumeric and common path separators
   if (/^[a-zA-Z0-9_.\-:/\\]+$/.test(text)) return text
 
-  // CMD special chars need ^ prefix
-  let escaped = text
-    .replace(/([&|<>^!%])/g, '^$1')
-  if (escaped.includes(' ') && !escaped.startsWith('"')) {
+  // Escape CMD metacharacters
+  let escaped = text.replace(/([&|<>^!%])/g, '^$1')
+
+  // Wrap in double quotes if not already quoted
+  if (!escaped.startsWith('"')) {
     escaped = `"${escaped}"`
   }
   return escaped

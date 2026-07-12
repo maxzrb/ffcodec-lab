@@ -9,6 +9,7 @@ import type { Catalog } from '../catalog/catalog-types'
 import type { SourceRef } from '../catalog/catalog-types'
 import type { FieldState } from '../rules/rule-types'
 import type { ResolvedField, ResolvedSection } from './resolved-field'
+import { CONFIG_PATHS } from '../config/config-path'
 import {
   resolveControlField,
   resolveParameterField,
@@ -51,7 +52,7 @@ export function resolveInputSection(
         file: 'docs/Codex_FFmpeg命令生成器_项目指令集.md',
         sourceType: 'manual-note',
       },
-    ]),
+    ], { path: CONFIG_PATHS.input.path }),
     resolveTextField(
       'output.path',
       '输出文件路径',
@@ -66,6 +67,7 @@ export function resolveInputSection(
           sourceType: 'manual-note',
         },
       ],
+      { path: CONFIG_PATHS.output.path },
     ),
     resolveSwitchField(
       'output.overwrite',

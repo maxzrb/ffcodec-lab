@@ -31,15 +31,23 @@ export function renderPowerShell(plan: CommandPlan): RenderedCommand {
   }
 }
 
+/**
+ * Escape a token for PowerShell.
+ *
+ * Strategy:
+ * - Safe ASCII token → no quoting needed
+ * - Contains double quote → use single quotes
+ * - Everything else → use double quotes (PowerShell preferred)
+ */
 function escapePowerShell(text: string): string {
+  // Safe: only ASCII alphanumeric and common path separators
   if (/^[a-zA-Z0-9_.\-:/\\]+$/.test(text)) return text
 
-  // PowerShell uses backtick for escaping special chars
+  // Contains double quotes → must use single quotes
   if (text.includes('"')) {
     return `'${text}'`
   }
-  if (text.includes(' ') || text.includes('(') || text.includes(')') || text.includes('$')) {
-    return `"${text}"`
-  }
-  return text
+
+  // All other cases (Unicode, spaces, brackets, parens, $, etc.)
+  return `"${text}"`
 }
