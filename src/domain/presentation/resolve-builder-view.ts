@@ -105,7 +105,7 @@ function buildWorkspacePanels(sections: ResolvedBuilderView['sections']): Resolv
       label,
       sections: panelSections,
       diagnosticCount: fields.reduce((sum, field) => sum + field.diagnostics.length, 0),
-      enabledAdvancedCount: fields.filter((field) => field.tier === 'advanced' && isAdvancedValueSet(field.value)).length,
+      enabledAdvancedCount: fields.filter((field) => field.tier === 'advanced' && field.visible && isAdvancedValueSet(field.value)).length,
     }
   })
 }

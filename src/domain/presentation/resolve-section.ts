@@ -262,7 +262,7 @@ export function resolveColorSection(
     file: 'FFmpegFreeUI/功能/预设系统/预设命令行滤镜_v6.vb',
     symbol: '构造色彩转换滤镜', sourceType: 'ffmpegfreeui',
   }]
-  const state = fieldStates['section.frame']
+  const state = fieldStates['section.color']
   const makeSelect = (
     id: string,
     label: string,
