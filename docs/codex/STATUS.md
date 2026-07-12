@@ -1,14 +1,14 @@
 # Project Status
 
-Last updated: 2026-07-12 12:44
+Last updated: 2026-07-12 12:47
 Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: 修复英文遗漏、重制标题与预设，新增自由命令编辑、可关闭参数、libaom-av1/libvvenc，并提交部署
-- Current state: 功能与测试已完成，待创建提交并推送 Cloudflare Pages。新增 libaom-av1 与 H.266/VVC libvvenc，官方参数、构建依赖和容器兼容记录已接入目录；右侧自由命令编辑器支持粘贴、修改、复制与恢复；展开字段英文覆盖契约通过；内置预设全部保留所有字幕且不再使用 WebM。
+- Current objective: 英文覆盖、预设、自由命令编辑、可选参数、libaom-av1/libvvenc 发布收尾
+- Current state: 功能提交 `2673a61` 已推送到 `origin/master`，Cloudflare Pages check suite 为 success。生产站点 HTTP 200，已切换到 `/assets/index-DaT-6WrM.js`；bundle 确认包含自由命令编辑、libaom-av1 与 libvvenc，且旧产品描述已不存在。
 - Current site: https://fflab.loliland.cn/
-- Next objective: 提交并推送当前功能，等待 Cloudflare Pages 成功后核验生产资源
+- Next objective: 继续功能迭代或在可用浏览器环境补做非阻断视觉巡检
 - Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 333/333（21 文件）、catalog audit 0/0、production build 成功（489.09 KB JS + 17.92 KB CSS）、acceptance 10/10
 - Current UI risk: 应用内浏览器发现列表仍为空，无法执行截图巡检；20 项 BuilderPage RTL 交互与全展开字段英文覆盖契约已通过
 - v0.4.0 已知阻断缺陷（已修复）:
@@ -36,13 +36,13 @@ Updated by: Codex (GPT-5)
 - Video encoders: 13 个 (software 5、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 完成 Git push 与 Cloudflare Pages 生产部署核验
+- Next recommended step: 无阻断任务；切换设备或代理前保持 master 与远端同步
 
 ## Active TODO
 
 - [x] 英文遗漏、预设默认值、自由命令编辑、可选参数及新编码器
   - Owner: Codex
-  - Status: 实现与全量验证完成，待提交部署
+  - Status: 已提交 `2673a61` 并部署到 Cloudflare Pages 生产域名
   - Notes/blockers: 应用内浏览器无实例；官方 FFmpeg 文档与源码已核对 libaom-av1/libvvenc 参数
 
 - [x] 参数介绍、诊断模块、全局语言与音频码率输入重制
@@ -912,3 +912,16 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 应用内浏览器无可用实例，截图式视觉巡检仍为非阻断环境限制
 - Git status: master 跟踪 origin/master，working tree not clean，本次功能与记录待提交
 - Next step: 创建提交、推送 master、等待 Cloudflare Pages success 并核验生产资源
+
+### 2026-07-12 12:47 - Codex (GPT-5)
+
+- Objective: 提交并部署英文覆盖、自由命令编辑、现代编码器与预设改动
+- Work completed:
+  1. 创建功能提交 `2673a61 feat: expand command editing and modern codecs`
+  2. 推送 master 到 GitHub，Cloudflare Workers and Pages check suite 返回 `completed / success`
+  3. 生产域名返回 HTTP 200，资源更新为 `/assets/index-DaT-6WrM.js`
+  4. 线上 bundle 确认包含 `Free command editor`、`libaom-av1`、`libvvenc`，且不包含已删除的旧产品描述
+- Verification: 沿用提交前 `npm run check` 全通过结果（333/333 tests、audit 0/0、build success）与 acceptance 10/10；线上新资源已实证加载
+- Decisions/risks: 应用内浏览器无实例，未执行截图巡检；Cloudflare 构建状态、HTTP 与 bundle 内容均已独立核验
+- Git status: 功能提交已推送；本部署记录将以独立 docs commit 推送，完成后预期 clean
+- Next step: 无阻断任务；后续按用户指示继续迭代
