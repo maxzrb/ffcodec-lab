@@ -456,7 +456,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.vbr': {
     id: 'expl.libx265.vbr',
     title: 'VBR 动态码率',
-    short: '指定目标码率的可变码率编码。',
+    short: '围绕目标平均码率按画面复杂度分配数据，适合需要预估文件体积、又允许瞬时码率波动的场景。',
     effects: { quality: 3, fileSize: 3, speed: 0, compatibility: 0 },
     sourceRefs: [
       {
@@ -473,7 +473,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.vbr.bitrate': {
     id: 'expl.libx265.vbr.bitrate',
     title: '目标码率',
-    short: '编码器输出视频的平均码率。',
+    short: '决定整段视频平均每秒的数据量；提高后通常能保留更多细节，但文件体积也会近似按比例增加。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -489,7 +489,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.vbr.maxrate': {
     id: 'expl.libx265.vbr.maxrate',
     title: '最大码率',
-    short: '编码器允许的最大瞬时码率。',
+    short: '限制复杂场景的瞬时码率峰值；过低会压低高运动画面的质量，过高则可能超过网络或播放器吞吐能力。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -505,7 +505,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.vbr.bufsize': {
     id: 'expl.libx265.vbr.bufsize',
     title: '缓冲区大小',
-    short: 'VBV 缓冲区大小。',
+    short: '决定码率在目标值附近可波动的时间窗口；缓冲越大，编码器越能把码率集中到复杂片段，但短时带宽波动也更明显。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -521,7 +521,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.cqp': {
     id: 'expl.libx265.cqp',
     title: 'CQP 恒定量化',
-    short: '以恒定量化参数编码所有帧。',
+    short: '固定量化强度而不控制最终码率；适合测试和特殊工作流，不适合要求明确文件体积或传输带宽的任务。',
     effects: { quality: 2, fileSize: 2, speed: 0, compatibility: 0 },
     sourceRefs: [
       {
@@ -538,7 +538,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.cqp.value': {
     id: 'expl.libx265.cqp.value',
     title: 'QP 值',
-    short: '恒定量化参数，范围 0~51。',
+    short: '控制 CQP 的压缩强度，范围 0~51；数值越低通常细节越多、文件越大，数值越高则压缩痕迹更明显。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -554,7 +554,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.cbr': {
     id: 'expl.libx265.cbr',
     title: 'CBR 恒定码率',
-    short: '以恒定码率编码。',
+    short: '让输出码率尽量贴近固定目标，适合直播或严格带宽预算；面对复杂画面时，画质弹性通常不如 VBR。',
     effects: { quality: 2, fileSize: 2, speed: 0, compatibility: 0 },
     sourceRefs: [
       {
@@ -571,7 +571,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.cbr.bitrate': {
     id: 'expl.libx265.cbr.bitrate',
     title: '目标码率',
-    short: 'CBR 模式的目标码率。',
+    short: '设定 CBR 要维持的每秒数据量；应按分辨率、帧率、内容复杂度和传输带宽共同确定。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -604,7 +604,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.twopass.bitrate': {
     id: 'expl.libx265.twopass.bitrate',
     title: '目标码率',
-    short: '二次编码的目标平均码率。',
+    short: '设定第二遍编码需要达到的平均码率；第一遍分析会把有限码率更合理地分配到复杂片段。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -620,7 +620,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.threads': {
     id: 'expl.libx265.threads',
     title: '编码线程数',
-    short: '控制并行编码线程数。',
+    short: '限制 x265 可使用的并行线程；自动模式通常能获得更好吞吐，仅在需要给其他任务保留 CPU 时手动限制。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -636,7 +636,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libx265.x265params': {
     id: 'expl.libx265.x265params',
     title: 'x265 附加参数',
-    short: '直接向 x265 编码器传递私有参数。高级用途。',
+    short: '把键值直接交给 x265 私有参数解析器，可覆盖高级行为；错误语法或与界面参数冲突时可能导致失败或结果难以预测。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -775,7 +775,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libsvtav1.vbr.bitrate': {
     id: 'expl.libsvtav1.vbr.bitrate',
     title: '目标码率',
-    short: 'AV1 编码的目标平均码率。',
+    short: '设定 AV1 输出的平均数据量；提高码率通常改善细节并增加文件体积，降低码率则更依赖编码器的内容分配能力。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -808,7 +808,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libsvtav1.cqp.value': {
     id: 'expl.libsvtav1.cqp.value',
     title: 'QP 值',
-    short: '恒定量化参数，范围 0~63。',
+    short: '控制 AV1 CQP 的压缩强度，范围 0~63；数值越低通常画质和体积越高，数值越高压缩越强。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -824,7 +824,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libsvtav1.cbr': {
     id: 'expl.libsvtav1.cbr',
     title: 'CBR 恒定码率',
-    short: '以恒定码率编码 AV1 视频。',
+    short: '让 AV1 输出码率尽量维持固定值，适合实时传输；相比 VBR，更容易在复杂画面中因码率不足而损失细节。',
     effects: { quality: 2, fileSize: 2, speed: 0, compatibility: 0 },
     sourceRefs: [
       {
@@ -841,7 +841,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libsvtav1.cbr.bitrate': {
     id: 'expl.libsvtav1.cbr.bitrate',
     title: '目标码率',
-    short: 'CBR 模式的目标码率。',
+    short: '设定 AV1 CBR 需要维持的带宽，应根据分辨率、帧率、画面复杂度和网络上限选择。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -857,7 +857,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libsvtav1.svtav1params': {
     id: 'expl.libsvtav1.svtav1params',
     title: 'SVT-AV1 附加参数',
-    short: '直接向 SVT-AV1 编码器传递私有参数。高级用途。',
+    short: '把高级选项直接传给 SVT-AV1；仅在熟悉参数语法时使用，避免与界面生成的选项重复或冲突。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -927,7 +927,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.aac.bitrate': {
     id: 'expl.aac.bitrate',
     title: '音频码率',
-    short: 'AAC 立体声推荐 128~192 kbps。',
+    short: '控制 AAC 每秒可使用的数据量；提高码率通常能保留更多细节并增大文件，立体声可从 128~192 kbps 起步。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -943,7 +943,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.aac.cbr.bitrate': {
     id: 'expl.aac.cbr.bitrate',
     title: '音频码率',
-    short: 'CBR 模式的恒定音频码率。',
+    short: '设定 AAC CBR 需要维持的数据量；语音可使用较低值，音乐、多声道或高采样率内容通常需要更高码率。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1044,7 +1044,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libopus.vbr': {
     id: 'expl.libopus.vbr',
     title: 'VBR 动态码率',
-    short: 'Opus 推荐的 VBR 编码模式。',
+    short: '让 Opus 根据声音复杂度动态分配码率，通常比固定码率更有效地利用体积，适合文件输出和非刚性带宽场景。',
     effects: { quality: 4, fileSize: 4, speed: 0, compatibility: 0 },
     sourceRefs: [
       {
@@ -1061,7 +1061,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libopus.cbr': {
     id: 'expl.libopus.cbr',
     title: 'CBR 恒定码率',
-    short: 'Opus 恒定码率模式。',
+    short: '让 Opus 输出尽量保持固定带宽，适合对实时传输速率有严格约束的场景，但同平均码率下效率通常低于 VBR。',
     effects: { quality: 3, fileSize: 2, speed: 0, compatibility: 0 },
     sourceRefs: [
       {
@@ -1078,7 +1078,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libopus.bitrate': {
     id: 'expl.libopus.bitrate',
     title: '音频码率',
-    short: 'Opus 立体声推荐 128 kbps，语音 64 kbps 已足够。',
+    short: '控制 Opus 每秒可使用的数据量；语音可从 64 kbps 起步，立体声音乐可从 96~160 kbps 试起，再按试听结果调整。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1094,7 +1094,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libopus.cbr.bitrate': {
     id: 'expl.libopus.cbr.bitrate',
     title: '音频码率',
-    short: 'CBR 模式的恒定音频码率。',
+    short: '设定 Opus CBR 需要维持的带宽；数值过低会在复杂音乐中损失细节，过高则增加传输与存储成本。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1184,7 +1184,8 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.param.shell': {
     id: 'expl.param.shell',
     title: 'Shell 类型',
-    short: '选择终端环境以生成对应的转义和续行格式。',
+    short: '决定命令中的引号、特殊字符转义和换行语法；选错后，路径含空格或特殊字符时可能无法执行。',
+    detail: '在 Windows PowerShell 中直接粘贴请选择 PowerShell；传统命令提示符请选择 CMD；Linux、macOS、WSL 及其他 POSIX 终端通常选择 Bash。',
     sourceRefs: [
       {
         repository: 'manual-note',
@@ -1199,7 +1200,8 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.param.container': {
     id: 'expl.param.container',
     title: '输出容器',
-    short: '选择输出文件的封装格式，影响支持的编码器和字幕类型。',
+    short: '容器负责把视频、音频、字幕和元数据封装进一个文件，本身不决定画质，但会限制可用编码和播放兼容性。',
+    detail: '需要通用播放兼容性时优先 MP4；需要灵活容纳多音轨、多字幕或更多编码时优先 MKV；WebM 适合 AV1/Opus 网络分发；MOV 更适合 Apple 与剪辑工作流。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1214,7 +1216,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.param.overwrite': {
     id: 'expl.param.overwrite',
     title: '覆盖文件',
-    short: '添加 -y 标志，使 FFmpeg 在输出文件已存在时自动覆盖而不询问。',
+    short: '开启后添加 -y，输出路径已存在时会直接替换原文件；关闭时 FFmpeg 会询问或中止，能降低误覆盖风险。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1229,7 +1231,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.param.video.mode': {
     id: 'expl.param.video.mode',
     title: '视频处理方式',
-    short: '选择重新编码、复制视频流或不输出视频。',
+    short: '重新编码可更换编码器并使用缩放、调色、字幕烧录等滤镜；复制流速度最快且无二次画质损失；不输出会移除全部视频。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1244,7 +1246,8 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.param.video.encoder': {
     id: 'expl.param.video.encoder',
     title: '视频编码器',
-    short: '选择重新编码时使用的视频编码器。',
+    short: '编码器决定输出视频格式、压缩效率、处理速度、硬件要求和播放兼容性，是影响成片体积与适用设备的核心选择。',
+    detail: 'libx264 适合追求广泛兼容；libx265/AV1 适合在终端支持允许时减小体积；NVENC、QSV、AMF、VideoToolbox 适合优先速度和低 CPU 占用。具体画质仍需结合质量模式与参数判断。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1259,7 +1262,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.param.audio.mode': {
     id: 'expl.param.audio.mode',
     title: '音频处理方式',
-    short: '选择重新编码、复制音频流或不输出音频。',
+    short: '重新编码可改变格式、码率、声道和采样率；复制流保留原始压缩数据且无二次损失；不输出会移除全部音频。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1274,7 +1277,8 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.param.audio.encoder': {
     id: 'expl.param.audio.encoder',
     title: '音频编码器',
-    short: '选择重新编码时使用的音频编码器。',
+    short: '音频编码器决定格式兼容性、同码率音质以及是否无损；不同容器和播放设备对 AAC、Opus、FLAC 的支持范围不同。',
+    detail: 'AAC 适合通用播放和 MP4；Opus 在中低码率下效率较高，适合 WebM；FLAC 完全无损，但文件通常明显大于有损编码。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1289,7 +1293,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.filter.vf': {
     id: 'expl.filter.vf',
     title: '视频滤镜链',
-    short: '由分辨率、帧率和字幕烧录组合而成的视频滤镜。',
+    short: '把缩放、帧率、裁剪、旋转、调色、去隔行、锐化和字幕烧录按顺序合并为一条 -vf 滤镜链；任一处理都会要求视频重新编码。',
     sourceRefs: [
       {
         repository: 'manual-note',

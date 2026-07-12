@@ -638,6 +638,23 @@ code {
 .diagnostic--warning { background: rgba(255, 202, 106, 0.12); color: var(--warning); }
 .diagnostic--info { background: rgba(112, 185, 255, 0.1); color: var(--info); }
 
+.unit-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.unit-input input {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.unit-input__unit {
+  min-width: 82px;
+  border-left: 0;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--toolbar-panel);
+  font-weight: 700;
+}
+
 .command-card {
   margin-bottom: 12px;
   overflow: hidden;
@@ -755,6 +772,104 @@ code {
 .message-item--warning { border-left-color: var(--warning); }
 .message-item__level { margin-right: 5px; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
 .message-item__origins { color: var(--text-dim); font-size: 9px; }
+
+.diagnostic-panel {
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+}
+
+.diagnostic-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.diagnostic-panel__header span {
+  min-width: 22px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  padding: 2px 7px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.diagnostic-panel__list {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+}
+
+.diagnostic-card {
+  position: relative;
+  border-left: 3px solid var(--info);
+  border-radius: 8px;
+  background: var(--message-surface);
+  padding: 10px;
+}
+
+.diagnostic-card--error { border-left-color: var(--error); }
+.diagnostic-card--warning { border-left-color: var(--warning); }
+
+.diagnostic-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-right: 92px;
+  font-size: 12px;
+}
+
+.diagnostic-card__level {
+  border-radius: 999px;
+  background: var(--bg-input);
+  padding: 2px 6px;
+  color: var(--text-dim);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.diagnostic-card p {
+  margin: 7px 0 0;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.diagnostic-card__guidance {
+  color: var(--text) !important;
+}
+
+.diagnostic-card__origins,
+.diagnostic-card__fixes {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.diagnostic-card__origins > span {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.diagnostic-card__code {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  max-width: 90px;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .explanation-card {
   margin-bottom: 12px;

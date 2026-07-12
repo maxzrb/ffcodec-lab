@@ -12,6 +12,7 @@ import { PresetList } from './PresetList'
 import { PresetEditorDialog } from './PresetEditorDialog'
 import { PresetImportDialog } from './PresetImportDialog'
 import type { NormalizationNotice } from '../../domain/rules/rule-types'
+import { useI18n } from '../i18n/i18n'
 
 interface PresetManagerProps {
   /** Called when user applies a preset — receives the config to set */
@@ -27,6 +28,8 @@ const catalog = loadCatalog()
 const presetService = getPresetService()
 
 export function PresetManager({ onApply, onReset, currentConfig, onClose }: PresetManagerProps) {
+  const { locale } = useI18n()
+  const isZh = locale === 'zh-CN'
   const [userPresets, setUserPresets] = useState<UserPreset[]>(() => presetService.list())
   const [showEditor, setShowEditor] = useState(false)
   const [showImport, setShowImport] = useState(false)
@@ -96,7 +99,7 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
             config: editingPreset.config,
           })
           if (updated) {
-            setNotices([`预设 "${updated.name}" 已更新`])
+            setNotices([isZh ? `预设 "${updated.name}" 已更新` : `Preset "${updated.name}" updated`])
           }
         } else {
           // Create new from current config
@@ -109,29 +112,29 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
         refreshList()
         setShowEditor(false)
       } catch (e) {
-        setNotices([`保存失败: ${String(e)}`])
+        setNotices([isZh ? `保存失败: ${String(e)}` : `Save failed: ${String(e)}`])
       }
     },
-    [saveAsMode, editingPreset, currentConfig, refreshList],
+    [saveAsMode, editingPreset, currentConfig, refreshList, isZh],
   )
 
   const handleDelete = useCallback(
     (id: string) => {
-      if (!window.confirm('确定要删除此预设吗？此操作不可撤销。')) return
+      if (!window.confirm(isZh ? '确定要删除此预设吗？此操作不可撤销。' : 'Delete this preset? This cannot be undone.')) return
       try {
         presetService.delete(id)
         refreshList()
-        setNotices(['预设已删除'])
+        setNotices([isZh ? '预设已删除' : 'Preset deleted'])
       } catch (e) {
-        setNotices([`删除失败: ${String(e)}`])
+        setNotices([isZh ? `删除失败: ${String(e)}` : `Delete failed: ${String(e)}`])
       }
     },
-    [refreshList],
+    [refreshList, isZh],
   )
 
   const handleOverwrite = useCallback(
     (id: string) => {
-      if (!window.confirm('确定要用当前配置覆盖此预设吗？')) return
+      if (!window.confirm(isZh ? '确定要用当前配置覆盖此预设吗？' : 'Overwrite this preset with the current configuration?')) return
       try {
         const existing = presetService.load(id)
         if (existing) {
@@ -142,13 +145,13 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
             config: currentConfig,
           })
           refreshList()
-          setNotices([`预设 "${existing.name}" 已覆盖`])
+          setNotices([isZh ? `预设 "${existing.name}" 已覆盖` : `Preset "${existing.name}" overwritten`])
         }
       } catch (e) {
-        setNotices([`覆盖失败: ${String(e)}`])
+        setNotices([isZh ? `覆盖失败: ${String(e)}` : `Overwrite failed: ${String(e)}`])
       }
     },
-    [currentConfig, refreshList],
+    [currentConfig, refreshList, isZh],
   )
 
   const handleRename = useCallback(
@@ -156,19 +159,19 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
       try {
         presetService.rename(id, newName)
         refreshList()
-        setNotices([`已重命名为 "${newName}"`])
+        setNotices([isZh ? `已重命名为 "${newName}"` : `Renamed to "${newName}"`])
       } catch (e) {
-        setNotices([`重命名失败: ${String(e)}`])
+        setNotices([isZh ? `重命名失败: ${String(e)}` : `Rename failed: ${String(e)}`])
       }
     },
-    [refreshList],
+    [refreshList, isZh],
   )
 
   const handleExport = useCallback((id: string) => {
     try {
       const json = presetService.export(id)
       if (!json) {
-        setNotices(['导出失败：预设不存在'])
+        setNotices([isZh ? '导出失败：预设不存在' : 'Export failed: preset not found'])
         return
       }
       const preset = presetService.load(id)
@@ -180,33 +183,33 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
       a.download = filename
       a.click()
       URL.revokeObjectURL(url)
-      setNotices(['预设已导出为 JSON 文件'])
+      setNotices([isZh ? '预设已导出为 JSON 文件' : 'Preset exported as JSON'])
     } catch (e) {
-      setNotices([`导出失败: ${String(e)}`])
+      setNotices([isZh ? `导出失败: ${String(e)}` : `Export failed: ${String(e)}`])
     }
-  }, [])
+  }, [isZh])
 
   const handleImport = useCallback(
     (json: string) => {
       const { preset, warnings } = presetService.importAndSave(json)
       refreshList()
       setNotices([
-        `已导入预设 "${preset.name}"`,
+        isZh ? `已导入预设 "${preset.name}"` : `Imported preset "${preset.name}"`,
         ...warnings,
       ])
       setShowImport(false)
     },
-    [refreshList],
+    [refreshList, isZh],
   )
 
   const handleReset = useCallback(() => {
-    if (!window.confirm('确定要恢复为默认配置吗？当前未保存的更改将丢失。')) return
+    if (!window.confirm(isZh ? '确定要恢复为默认配置吗？当前未保存的更改将丢失。' : 'Restore defaults? Unsaved changes will be lost.')) return
     onReset()
     onClose()
-  }, [onReset, onClose])
+  }, [onReset, onClose, isZh])
 
   return (
-    <div className="modal-layer" role="dialog" aria-modal="true" aria-label="预设管理">
+    <div className="modal-layer" role="dialog" aria-modal="true" aria-label={isZh ? '预设管理' : 'Preset manager'}>
       <div
         onClick={onClose}
         className="modal-backdrop"
@@ -216,13 +219,13 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
         <div className="modal-card__header">
           <div>
             <p className="eyebrow">Workspace presets</p>
-            <h2>预设管理</h2>
+            <h2>{isZh ? '预设管理' : 'Preset manager'}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="icon-button"
-            aria-label="关闭预设管理"
+            aria-label={isZh ? '关闭预设管理' : 'Close preset manager'}
           >
             ✕
           </button>
@@ -242,11 +245,11 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
         )}
 
         <div className="modal-actions">
-          <ToolbarButton label="+ 新建预设" onClick={handleCreate} />
-          <ToolbarButton label="另存当前为…" onClick={handleSaveAs} />
-          <ToolbarButton label="导入 JSON" onClick={() => setShowImport(true)} />
+          <ToolbarButton label={isZh ? '+ 新建预设' : '+ New preset'} onClick={handleCreate} />
+          <ToolbarButton label={isZh ? '另存当前为…' : 'Save current as…'} onClick={handleSaveAs} />
+          <ToolbarButton label={isZh ? '导入 JSON' : 'Import JSON'} onClick={() => setShowImport(true)} />
           <div style={{ flex: 1 }} />
-          <ToolbarButton label="恢复默认" onClick={handleReset} danger />
+          <ToolbarButton label={isZh ? '恢复默认' : 'Restore defaults'} onClick={handleReset} danger />
         </div>
 
         <div className="modal-card__content">

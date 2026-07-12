@@ -1,15 +1,16 @@
 # Project Status
 
-Last updated: 2026-07-12 10:30
-Updated by: Claude Code (DeepSeek-v4-pro)
+Last updated: 2026-07-12 11:44
+Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: 部署迁移 — ChatGPT Sites → Cloudflare Pages（自定义域名）
-- Current state: v0.5.2 代码已合并到 master，working tree clean。部署已从 ChatGPT Sites（`ffcodec-lab.maxzhurb.chatgpt.site`）迁移到 Cloudflare Pages + 自定义域名 `https://fflab.loliland.cn/`。GitHub Pages 工作流已删除，`vite.config.ts` base 恢复为 `/`。仓库保持 private。
+- Current objective: 参数介绍与诊断模块重制、全局中/EN切换、音频码率单位控件
+- Current state: 功能实现与本地验收完成，尚未提交。全局语言状态覆盖工作台、全部目录控件/选项、118 条参数介绍、诊断与预设界面；内部来源引用保留供目录审计但不再面向用户显示。诊断已接入完整兼容性校验，提供可读原因、影响字段、处理建议和受控修复。音频码率改为数值输入 + bps/kbps/Mbps 后置单位。
 - Current site: https://fflab.loliland.cn/
-- Next objective: 全量质量巡检后继续功能迭代或发布准备
-- v0.5.2 功能摘要: 容器/扩展名双向同步、视频/音频/字幕多流索引多选复选框、多 map 生成、分享 m 字段流选择配置、307 项测试、10/10 验收
+- Next objective: 审查并提交本次易用性改动；如需上线，推送 master 触发 Cloudflare Pages 自动部署
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 318/318（20 文件）、catalog audit 0/0、production build 成功、acceptance 10/10
+- Current UI risk: 应用内浏览器发现列表为空，无法执行截图巡检；17 项 BuilderPage RTL 交互及英文无中文混入契约已通过
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -35,9 +36,14 @@ Updated by: Claude Code (DeepSeek-v4-pro)
 - Video encoders: 11 个 (software 3、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 提交 v0.5.1 并更新现有 Sites 私有部署；目标浏览器可用时补做视觉巡检
+- Next recommended step: 提交本次变更；确认需要上线后推送 master，由 Cloudflare Pages 自动部署
 
 ## Active TODO
+
+- [x] 参数介绍、诊断模块、全局语言与音频码率输入重制
+  - Owner: Codex
+  - Status: 实现与本地验收完成，待 Git 提交
+  - Notes/blockers: 无功能阻断；应用内浏览器无实例，真实截图巡检保留为环境限制
 
 - [x] v0.5.0 功能开发: AMF / VideoToolbox / 高级滤镜 / 字幕 / 分享 / 持久化 / UI
   - Owner: Codex
@@ -56,6 +62,8 @@ Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Recently Completed
 
+- 2026-07-12 11:44: 全局中/EN切换、118 条参数介绍双语覆盖、可操作诊断、音频码率后置单位 — 318/318 测试、0/0 审计、10/10 验收
+
 - 2026-07-11 23:02: v0.5.2 容器/扩展名双向同步与多流索引多选 — 307/307 测试、0/0 审计、10/10 验收
 
 - 2026-07-10 18:00: v0.4.1 热修复 — 修复正式 BuilderPage specialParameters checkbox 交互、统一 configBinding 读写路径、移除 Playwright、新增 6 个 RTL 集成测试
@@ -67,6 +75,14 @@ Updated by: Claude Code (DeepSeek-v4-pro)
 - 2026-07-10 14:25: 首轮开发完成
 
 ## Decisions
+
+- 2026-07-12 11:44:
+  - Decision: 使用全局语言状态切换中文或英文，不在单个 warning 内中英并排
+  - Reason: 用户明确要求全局中/EN切换，避免诊断模块与其他界面语言割裂
+  - Impact: 语言偏好写入 `ffcodec-locale`，参数目录、说明、诊断、命令区和预设界面共享同一 locale
+  - Decision: 来源引用继续保留在目录模型与审计流程中，但解释卡片不展示 repository/file/symbol
+  - Reason: 来源对内部可追溯性有用，对普通用户缺少决策价值
+  - Impact: 目录审计能力不变，产品界面不再显示 `Lake1059/FFmpegFreeUI / xxx`
 
 - 2026-07-10 13:50:
   - Decision: 采用 React 18 + Vite 5 + TypeScript strict + Zustand + Zod + Vitest 技术栈
@@ -100,8 +116,8 @@ Updated by: Claude Code (DeepSeek-v4-pro)
   - Mitigation or next check: 在新设备上运行 `npm install && npm run check`
 
 - 应用内浏览器不可用:
-  - Impact: 当前会话无法执行真实页面截图和点击验收
-  - Mitigation or next check: v0.4.1 已由 6 项 RTL BuilderPage 集成测试覆盖；UI 成品化后再次连接应用内浏览器
+  - Impact: 2026-07-12 本次会话按 Browser 技能连接后确认浏览器列表为空，无法执行真实页面截图和点击验收
+  - Mitigation or next check: 17 项 RTL BuilderPage 集成测试覆盖语言、码率、说明与 warning 交互；浏览器实例可用时再补视觉巡检
 
 - ~~非 Git 仓库~~ (已解决)
 
@@ -123,11 +139,11 @@ Updated by: Claude Code (DeepSeek-v4-pro)
 ## Verification And Commands
 
 - Commands run:
-  - `npm run check`: 全部通过 (ESLint 0/0, tsc 0, vitest 307/307, audit 0/0, build OK)
+  - `npm run check`: 全部通过 (ESLint 0/0, tsc 0, vitest 318/318, audit 0/0, build OK)
   - `npx tsc -b --noEmit`: 0 errors, 类型检查通过
-  - `npx vitest run`: 307/307 tests passed (19 文件)
+  - `npx vitest run`: 318/318 tests passed (20 文件)
   - `npx tsx scripts/validate-catalog.ts`: 0 errors, 0 warnings
-  - `npx vite build`: 成功 (448KB JS, 16KB CSS)
+  - `npx vite build`: 成功 (470.88KB JS, 17.44KB CSS)
   - `npx tsx scripts/acceptance-test.ts`: 10/10 验收配置通过
 - Tests/checks:
   - rules.test.ts: 17 tests — 规则表达式求值 + R01-R15 不变量
@@ -135,20 +151,22 @@ Updated by: Claude Code (DeepSeek-v4-pro)
   - normalizer.test.ts: 7 tests — preset/profile/quality 切换 + 容器/扩展名双向同步
   - presentation.test.ts: 25 tests — 字段解析、section构建、builder view集成、command origin映射
   - presets.test.ts: 18 tests — CRUD、导入导出、Zod验证、schema migration、内置预设
-- React Testing Library: 13/13 正式 BuilderPage 交互通过（含新增 2 项容器切换 + 多选复选框）
+- React Testing Library: 17/17 正式 BuilderPage 交互通过（新增全局中/EN、码率单位、来源隐藏、warning 双语切换）
+- i18n.test.ts: 3/3 — 全部目录标签/选项英文覆盖、118 条说明英文覆盖、通用说明非同义反复
+- diagnostic-fix.test.ts: 12/12 — 兼容性 warning 容器建议、字幕烧录安全修复可实际应用
 - 新增 normalizer 测试: 容器→扩展名同步、扩展名→容器反向同步
 - 新增 product-completion 测试: 多流 map 生成、分享含流索引
 
 ## Git Sync
 
 - Git repository: yes
-- Branch: feat/v0.5.0-product
-- Last known commit: cbb1c8d (v0.5.2)
-- Remote: `https://github.com/maxzrb/FFCodec-Lab.git`
-- Sync: `git pull origin master` failed (no tracking), branch has no upstream
-- Uncommitted changes: STATUS.md 和版本记录更新（本次 closeout）
-- Working tree clean: yes (v0.5.2 已提交)
-- Commit recommended before switching agents/devices: STATUS.md 更新后建议 amend 或单独提交
+- Branch: master（跟踪 origin/master）
+- Last known commit: 5e6e612（Cloudflare Pages HandShake 记录）
+- Remote: `https://github.com/maxzrb/ffcodec-lab.git`
+- Sync: 2026-07-12 会话启动时 `git pull --ff-only` = Already up to date
+- Uncommitted changes: 本次参数介绍、i18n、诊断、音频码率、测试、验收报告和 HandShake 记录
+- Working tree clean: no
+- Commit recommended before switching agents/devices: yes，建议提交为一个易用性功能变更
 
 ## Session Log
 
@@ -798,3 +816,38 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Environment notes: 不涉及本地环境变化
 - Git status: master branch, commit `d78152a`, working tree clean
 - Next step: 全量质量巡检或功能迭代
+
+### 2026-07-12 11:44 - Codex (GPT-5)
+
+- Objective: 重制参数介绍与 warning 模块；移除面向用户的内部来源信息；音频码率改为数值加后置单位；根据用户追加要求实现全局中/EN切换
+- Work completed:
+  1. 从解释卡片移除 repository/file/symbol 展示，保留 `sourceRefs` 供目录审计和内部追溯
+  2. 审查 118 条参数介绍，重写通用编码器、处理方式、容器、滤镜及短码率说明；新增全量英文本地化与自动质量契约
+  3. 新增全局 `zh-CN` / `en` 状态与 `ffcodec-locale` 持久化，覆盖工作台、目录标签/选项、命令预览、说明、诊断与预设管理
+  4. 修复 pipeline 只把规则消息传给正式页面的问题，完整接入兼容性与字幕校验
+  5. 将空字幕轨道也触发 warning 的 R16 规则改为逐轨道校验，只警告 codecMode=copy 且 sourceCodecKnown=false 的真实风险
+  6. 新增可操作诊断面板：当前语言下的原因、影响、建议、相关参数定位及受控一键修复；补齐兼容容器建议和字幕烧录修复白名单
+  7. 音频码率改为数字输入 + bps/kbps/Mbps 后置选择，仍写回 FFmpeg 可接受的 `192k` / `1M` 格式
+- Files changed: 约 30 个源代码、测试、CSS、验收与 HandShake 文件；新增 `i18n.tsx`、`present-diagnostic.ts`、`DiagnosticPanel.tsx`、`i18n.test.ts`
+- Commands run:
+  - `git pull --ff-only` — Already up to date；启动时 master clean
+  - `npx tsc -b --noEmit` — 0 errors
+  - 定向 Vitest — 42/42 passed
+  - `npm run check` — ESLint、TypeScript、318 tests、catalog audit、production build 全部通过
+  - `npx tsx scripts/acceptance-test.ts` — 10/10，刷新 `docs/mvp-acceptance.md`
+  - Browser 技能本地巡检连接 — 浏览器列表为空，无法截图；本地 dev server 已停止
+  - `git diff --check` — 通过，仅有 Git 预期行尾提示
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 318/318 passed (20 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 470.88 KB JS + 17.44 KB CSS
+  - Acceptance: 10/10
+  - RTL BuilderPage: 17/17；英文模式除语言按钮“中”外无中文混入
+- Decisions/risks:
+  - 双语采用全局切换，不采用 warning 内中英并排
+  - 英文说明对 118 条目录项都有覆盖；未知技术名词保持原样，不机器猜测含义
+  - 应用内浏览器无实例，截图式视觉巡检仍为非阻断环境限制
+- Git status: master 跟踪 origin/master，working tree not clean，本次变更尚未提交
+- Next step: 提交本次易用性改动；用户确认上线后 push master 触发 Cloudflare Pages 自动部署

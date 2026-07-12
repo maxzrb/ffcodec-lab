@@ -3,6 +3,7 @@
 // ============================================================
 
 import { useState } from 'react'
+import { useI18n } from '../i18n/i18n'
 
 interface PresetImportDialogProps {
   onImport: (json: string) => void
@@ -10,20 +11,22 @@ interface PresetImportDialogProps {
 }
 
 export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProps) {
+  const { locale } = useI18n()
+  const isZh = locale === 'zh-CN'
   const [json, setJson] = useState('')
   const [error, setError] = useState('')
 
   const handleImport = () => {
     const trimmed = json.trim()
     if (!trimmed) {
-      setError('请粘贴 JSON 内容')
+      setError(isZh ? '请粘贴 JSON 内容' : 'Paste the JSON content')
       return
     }
     try {
       onImport(trimmed)
       setError('')
     } catch (e) {
-      setError(`导入失败: ${e instanceof Error ? e.message : String(e)}`)
+      setError(`${isZh ? '导入失败' : 'Import failed'}: ${e instanceof Error ? e.message : String(e)}`)
     }
   }
 
@@ -40,7 +43,7 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
         setError('')
       }
       reader.onerror = () => {
-        setError('文件读取失败')
+        setError(isZh ? '文件读取失败' : 'Could not read the file')
       }
       reader.readAsText(file)
     }
@@ -78,12 +81,12 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
           color: 'var(--text)',
         }}
       >
-        <h3 style={{ fontSize: 15, margin: '0 0 16px' }}>导入预设 (JSON)</h3>
+        <h3 style={{ fontSize: 15, margin: '0 0 16px' }}>{isZh ? '导入预设 (JSON)' : 'Import preset (JSON)'}</h3>
 
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <label style={{ fontSize: 12, fontWeight: 500 }}>
-              预设 JSON <span style={{ color: 'var(--error)' }}>*</span>
+              {isZh ? '预设 JSON' : 'Preset JSON'} <span style={{ color: 'var(--error)' }}>*</span>
             </label>
             <button
               onClick={handleFileSelect}
@@ -97,7 +100,7 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
                 color: 'var(--text)',
               }}
             >
-              选择文件…
+              {isZh ? '选择文件…' : 'Choose file…'}
             </button>
           </div>
           <textarea
@@ -106,7 +109,7 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
               setJson(e.target.value)
               setError('')
             }}
-            placeholder='粘贴 .ffcodec.json 文件内容…'
+            placeholder={isZh ? '粘贴 .ffcodec.json 文件内容…' : 'Paste .ffcodec.json content…'}
             rows={10}
             style={{
               width: '100%',
@@ -139,7 +142,9 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
         )}
 
         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 16 }}>
-          支持从「导出 JSON」生成的 .ffcodec.json 文件导入。导入内容会经过 Zod schema 验证和 migration。非法内容会被整体拒绝。
+          {isZh
+            ? '支持从「导出 JSON」生成的 .ffcodec.json 文件导入。导入内容会经过结构验证和版本迁移；非法内容会被整体拒绝。'
+            : 'Imports .ffcodec.json files created by Export JSON. The content is schema-validated and migrated; invalid files are rejected as a whole.'}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -155,7 +160,7 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
               color: 'var(--text)',
             }}
           >
-            取消
+            {isZh ? '取消' : 'Cancel'}
           </button>
           <button
             onClick={handleImport}
@@ -170,7 +175,7 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
               color: json.trim() ? '#fff' : 'var(--text-dim)',
             }}
           >
-            导入
+            {isZh ? '导入' : 'Import'}
           </button>
         </div>
       </div>

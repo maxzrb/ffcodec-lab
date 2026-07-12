@@ -1,4 +1,5 @@
 import type { ShellKind } from '../../../domain/config/project-config'
+import { useI18n } from '../../../features/i18n/i18n'
 
 interface ShellSelectorProps {
   value: ShellKind
@@ -12,8 +13,9 @@ const shellOptions: { value: ShellKind; label: string }[] = [
 ]
 
 export function ShellSelector({ value, onChange }: ShellSelectorProps) {
+  const { locale } = useI18n()
   return (
-    <div className="shell-selector" role="group" aria-label="命令环境">
+    <div className="shell-selector" role="group" aria-label={locale === 'zh-CN' ? '命令环境' : 'Shell'}>
       {shellOptions.map((option) => (
         <button
           key={option.value}

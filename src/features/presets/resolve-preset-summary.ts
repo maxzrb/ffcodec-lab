@@ -6,6 +6,8 @@
 
 import type { ProjectConfig } from '../../domain/config/project-config'
 import type { Catalog } from '../../domain/catalog/catalog-types'
+import type { Locale } from '../i18n/i18n'
+import { translateText } from '../i18n/i18n'
 
 export interface PresetSummary {
   /** One-line description of the video setup */
@@ -18,18 +20,18 @@ export interface PresetSummary {
   subtitles: string
 }
 
-export function resolvePresetSummary(config: ProjectConfig, catalog: Catalog): PresetSummary {
-  const video = resolveVideoSummary(config, catalog)
-  const audio = resolveAudioSummary(config, catalog)
+export function resolvePresetSummary(config: ProjectConfig, catalog: Catalog, locale: Locale = 'zh-CN'): PresetSummary {
+  const video = resolveVideoSummary(config, catalog, locale)
+  const audio = resolveAudioSummary(config, catalog, locale)
   const container = resolveContainerSummary(config, catalog)
-  const subtitles = resolveSubtitleSummary(config)
+  const subtitles = resolveSubtitleSummary(config, locale)
 
   return { video, audio, container, subtitles }
 }
 
-function resolveVideoSummary(config: ProjectConfig, catalog: Catalog): string {
-  if (config.video.mode === 'disabled') return '视频已禁用'
-  if (config.video.mode === 'copy') return '视频流复制'
+function resolveVideoSummary(config: ProjectConfig, catalog: Catalog, locale: Locale): string {
+  if (config.video.mode === 'disabled') return locale === 'zh-CN' ? '视频已禁用' : 'Video disabled'
+  if (config.video.mode === 'copy') return locale === 'zh-CN' ? '视频流复制' : 'Video stream copy'
 
   const encoder = config.video.encoderId
     ? catalog.encoders.video[config.video.encoderId]
@@ -39,7 +41,7 @@ function resolveVideoSummary(config: ProjectConfig, catalog: Catalog): string {
   const rc = config.video.rateControl
   if (!rc) return encLabel
 
-  const modeLabel = encoder?.qualityModes.find((m) => m.id === rc.mode)?.label ?? rc.mode
+  const modeLabel = translateText(encoder?.qualityModes.find((m) => m.id === rc.mode)?.label ?? rc.mode, locale)
 
   if (rc.qualityValue !== undefined) {
     return `${encLabel} / ${modeLabel} ${rc.qualityValue}`
@@ -50,9 +52,9 @@ function resolveVideoSummary(config: ProjectConfig, catalog: Catalog): string {
   return `${encLabel} / ${modeLabel}`
 }
 
-function resolveAudioSummary(config: ProjectConfig, catalog: Catalog): string {
-  if (config.audio.mode === 'disabled') return '音频已禁用'
-  if (config.audio.mode === 'copy') return '音频流复制'
+function resolveAudioSummary(config: ProjectConfig, catalog: Catalog, locale: Locale): string {
+  if (config.audio.mode === 'disabled') return locale === 'zh-CN' ? '音频已禁用' : 'Audio disabled'
+  if (config.audio.mode === 'copy') return locale === 'zh-CN' ? '音频流复制' : 'Audio stream copy'
 
   const encoder = config.audio.encoderId
     ? catalog.encoders.audio[config.audio.encoderId]
@@ -70,9 +72,9 @@ function resolveContainerSummary(config: ProjectConfig, catalog: Catalog): strin
   return container ? `.${container.extension}` : config.output.containerId
 }
 
-function resolveSubtitleSummary(config: ProjectConfig): string {
+function resolveSubtitleSummary(config: ProjectConfig, locale: Locale): string {
   const count = config.subtitle.tracks.length
-  if (count === 0) return '无字幕轨道'
-  if (config.subtitle.burn.enabled) return `${count} 条轨道 + 烧录`
-  return `${count} 条轨道`
+  if (count === 0) return locale === 'zh-CN' ? '无字幕轨道' : 'No subtitle tracks'
+  if (config.subtitle.burn.enabled) return locale === 'zh-CN' ? `${count} 条轨道 + 烧录` : `${count} tracks + burn-in`
+  return locale === 'zh-CN' ? `${count} 条轨道` : `${count} tracks`
 }

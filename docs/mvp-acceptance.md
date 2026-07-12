@@ -1,6 +1,6 @@
 # MVP 验收报告
 
-> 生成时间：2026-07-11T15:02:43.509Z
+> 生成时间：2026-07-12T03:41:35.701Z
 > TypeScript：0 errors
 > 目录审计：0 errors
 > 测试：以本次 npm run check 结果为准
@@ -35,9 +35,6 @@
 - 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
-
 **Command AST**：
 - `single-pass`：8 个参数
 
@@ -70,9 +67,6 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset mediu
 - 容器：mkv
 - 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
-
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
 
 **Command AST**：
 - `single-pass`：12 个参数
@@ -107,9 +101,6 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow 
 - 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
-
 **Command AST**：
 - `single-pass`：10 个参数
 
@@ -142,9 +133,6 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -
 - 容器：mkv
 - 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
-
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
 
 **Command AST**：
 - `single-pass`：2 个参数
@@ -180,7 +168,7 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v copy -c:a copy output
 - 帧：resolution=source, framerate=source
 
 **规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
+- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks.sub-1.codecMode]
 
 **Command AST**：
 - `single-pass`：9 个参数
@@ -215,9 +203,6 @@ ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:
 - 字幕：1 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
-
 **Command AST**：
 - `single-pass`：9 个参数
 
@@ -250,9 +235,6 @@ ffmpeg -i input.mkv -i subtitles.srt -map 0:v:0? -map 0:a:0? -map 0:s? -map 1:s:
 - 容器：mkv
 - 字幕：0 tracks, burn=on
 - 帧：resolution=size, framerate=value
-
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
 
 **Command AST**：
 - `single-pass`：9 个参数
@@ -287,9 +269,6 @@ ffmpeg -i input.mkv -i subtitles.ass -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx
 - 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
 
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
-
 **Command AST**：
 - `single-pass`：6 个参数
 
@@ -322,9 +301,6 @@ ffmpeg -i input.mkv -map 0:a:0? -map 0:s? -vn -c:a aac -aac_coder auto -b:a 320k
 - 容器：mp4
 - 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
-
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
 
 **Command AST**：
 - `pass-1`：8 个参数
@@ -359,9 +335,6 @@ ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map 0:v:0? -map 0:a:0? -ma
 - 容器：mp4
 - 字幕：0 tracks, burn=off
 - 帧：resolution=source, framerate=source
-
-**规则消息**：
-- [WARNING] warn.subtitle.copy.unknown.sourcecodec [subtitle.tracks]
 
 **Command AST**：
 - `single-pass`：8 个参数

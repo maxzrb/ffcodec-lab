@@ -103,7 +103,7 @@ export function evaluateRules(
             category: 'configuration',
             message: effect.messageId,
             originIds: effect.targets,
-            context: {},
+            context: buildDiagnosticContext(effect.targets, ctx),
             sourceRuleId: rule.id,
           })
           break
@@ -115,7 +115,7 @@ export function evaluateRules(
             category: 'configuration',
             message: effect.messageId,
             originIds: effect.targets,
-            context: {},
+            context: buildDiagnosticContext(effect.targets, ctx),
             sourceRuleId: rule.id,
           })
           break
@@ -151,6 +151,16 @@ export function evaluateRules(
     suggestions,
     normalizationNotices,
     resolvedValues,
+  }
+}
+
+/** 为诊断建议提供稳定的结构化上下文，避免从展示文案反向解析。 */
+function buildDiagnosticContext(targets: string[], ctx: RuleContext): Record<string, unknown> {
+  const isAudio = targets.some((target) => target.startsWith('audio.'))
+  return {
+    containerId: ctx.config.output.containerId,
+    encoderId: isAudio ? ctx.config.audio.encoderId : ctx.config.video.encoderId,
+    mediaType: isAudio ? 'audio' : 'video',
   }
 }
 

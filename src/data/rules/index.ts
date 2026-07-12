@@ -206,34 +206,6 @@ export const builtinRules: RuleDefinition[] = [
     ],
   },
 
-  // R16: subtitle copy + unknown source codec → warning
-  {
-    id: 'R16.subtitle.copy.unknown.sourcecodec',
-    priority: 60,
-    when: {
-      op: 'all',
-      rules: [
-        { op: 'exists', path: 'subtitle.tracks' },
-      ],
-    },
-    effects: [
-      {
-        type: 'warning',
-        messageId: 'warn.subtitle.copy.unknown.sourcecodec',
-        targets: ['subtitle.tracks'],
-      },
-    ],
-    sourceRefs: [
-      {
-        repository: 'manual-note',
-        snapshotDate: '2026-07-10',
-        file: 'FFCodec Lab 项目指令集',
-        sourceType: 'manual-note',
-        note: '当字幕源编码未知且选择 copy 时，无法确认兼容性',
-      },
-    ],
-  },
-
   // R05: encoder change → clear invalid
   {
     id: 'R05.encoder.change.clear',

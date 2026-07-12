@@ -5,6 +5,7 @@
 import type { ResolvedSection } from '../../../domain/presentation/resolved-field'
 import type { ReactNode } from 'react'
 import { ParameterField } from './ParameterField'
+import { useI18n } from '../../../features/i18n/i18n'
 
 interface ParameterSectionProps {
   section: ResolvedSection
@@ -25,6 +26,7 @@ export function ParameterSection({
   highlightedFieldId,
   actions,
 }: ParameterSectionProps) {
+  const { text } = useI18n()
   return (
     <section className="parameter-section">
       <div className="parameter-section__header">
@@ -37,9 +39,9 @@ export function ParameterSection({
           <span className={`parameter-section__chevron ${expanded ? 'parameter-section__chevron--open' : ''}`} aria-hidden="true">
             ▶
           </span>
-          <span className="parameter-section__title">{section.label}</span>
+          <span className="parameter-section__title">{text(section.label)}</span>
           {section.description && (
-            <span className="parameter-section__description">— {section.description}</span>
+            <span className="parameter-section__description">— {text(section.description)}</span>
           )}
         </button>
         {actions && <div className="parameter-section__actions">{actions}</div>}

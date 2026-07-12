@@ -5,6 +5,7 @@
 import type { UserPreset } from './preset-types'
 import type { Catalog } from '../../domain/catalog/catalog-types'
 import { resolvePresetSummary } from './resolve-preset-summary'
+import { useI18n } from '../i18n/i18n'
 
 interface PresetListProps {
   builtinPresets: Array<Omit<UserPreset, 'id' | 'createdAt' | 'updatedAt'>>
@@ -30,22 +31,24 @@ export function PresetList({
   onOverwrite,
   onExport,
 }: PresetListProps) {
+  const { locale, text } = useI18n()
+  const isZh = locale === 'zh-CN'
   return (
     <div>
       {/* Built-in presets */}
-      <SectionHeader label="内置预设" count={builtinPresets.length} />
+      <SectionHeader label={isZh ? '内置预设' : 'Built-in presets'} count={builtinPresets.length} />
       {builtinPresets.map((bp, i) => {
         const config = bp.config
-        const summary = resolvePresetSummary(config, catalog)
+        const summary = resolvePresetSummary(config, catalog, locale)
         return (
           <PresetCard
             key={`builtin-${i}`}
-            name={bp.name}
-            description={bp.description}
+            name={text(bp.name)}
+            description={bp.description ? text(bp.description) : undefined}
             summary={summary}
             actions={
               <>
-                <CardButton label="应用" onClick={() => onApplyBuiltin(i)} primary />
+                <CardButton label={isZh ? '应用' : 'Apply'} onClick={() => onApplyBuiltin(i)} primary />
               </>
             }
           />
@@ -53,28 +56,28 @@ export function PresetList({
       })}
 
       {/* User presets */}
-      <SectionHeader label="用户预设" count={userPresets.length} />
+      <SectionHeader label={isZh ? '用户预设' : 'User presets'} count={userPresets.length} />
       {userPresets.length === 0 && (
         <div style={{ padding: '12px 0', color: 'var(--text-dim)', fontSize: 13, textAlign: 'center' }}>
-          暂无用户预设。点击「+ 新建预设」或「另存当前为…」创建。
+          {isZh ? '暂无用户预设。点击「+ 新建预设」或「另存当前为…」创建。' : 'No user presets yet. Create one with “+ New preset” or “Save current as…”.'}
         </div>
       )}
       {userPresets.map((preset) => {
-        const summary = resolvePresetSummary(preset.config, catalog)
+        const summary = resolvePresetSummary(preset.config, catalog, locale)
         return (
           <PresetCard
             key={preset.id}
             name={preset.name}
             description={preset.description}
             summary={summary}
-            meta={`更新于 ${new Date(preset.updatedAt).toLocaleString('zh-CN')}`}
+            meta={`${isZh ? '更新于' : 'Updated'} ${new Date(preset.updatedAt).toLocaleString(isZh ? 'zh-CN' : 'en')}`}
             actions={
               <>
-                <CardButton label="应用" onClick={() => onApply(preset)} primary />
-                <CardButton label="编辑" onClick={() => onEdit(preset)} />
-                <CardButton label="覆盖" onClick={() => onOverwrite(preset.id)} />
-                <CardButton label="导出" onClick={() => onExport(preset.id)} />
-                <CardButton label="删除" onClick={() => onDelete(preset.id)} danger />
+                <CardButton label={isZh ? '应用' : 'Apply'} onClick={() => onApply(preset)} primary />
+                <CardButton label={isZh ? '编辑' : 'Edit'} onClick={() => onEdit(preset)} />
+                <CardButton label={isZh ? '覆盖' : 'Overwrite'} onClick={() => onOverwrite(preset.id)} />
+                <CardButton label={isZh ? '导出' : 'Export'} onClick={() => onExport(preset.id)} />
+                <CardButton label={isZh ? '删除' : 'Delete'} onClick={() => onDelete(preset.id)} danger />
               </>
             }
           />

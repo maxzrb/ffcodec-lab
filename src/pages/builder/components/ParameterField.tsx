@@ -5,6 +5,7 @@
 // ============================================================
 
 import type { ResolvedField } from '../../../domain/presentation/resolved-field'
+import { useI18n } from '../../../features/i18n/i18n'
 
 interface ParameterFieldProps {
   field: ResolvedField
@@ -14,6 +15,7 @@ interface ParameterFieldProps {
 }
 
 export function ParameterField({ field, onChange, onExplain, highlighted }: ParameterFieldProps) {
+  const { locale, text } = useI18n()
   if (!field.visible) return null
 
   const hasDiagnostics = field.diagnostics.length > 0
@@ -32,13 +34,13 @@ export function ParameterField({ field, onChange, onExplain, highlighted }: Para
       data-field-id={field.id}
     >
       <div className="param-field__header">
-        <label className="param-field__label" htmlFor={controlId}>{field.label}</label>
+        <label className="param-field__label" htmlFor={controlId}>{text(field.label)}</label>
         {field.explanationId && onExplain && (
           <button
             type="button"
             onClick={() => onExplain(field.id)}
-            title="查看参数说明"
-            aria-label={`查看${field.label}说明`}
+            title={locale === 'zh-CN' ? '查看参数说明' : 'Open parameter guide'}
+            aria-label={locale === 'zh-CN' ? `查看${field.label}说明` : `Open guide for ${text(field.label)}`}
             className="icon-button"
           >
             ?
@@ -48,14 +50,14 @@ export function ParameterField({ field, onChange, onExplain, highlighted }: Para
 
       {field.description && (
         <div className="param-field__description">
-          {field.description}
+          {text(field.description)}
         </div>
       )}
 
-      {renderControl(field, onChange, field.disabled, controlId)}
+      {renderControl(field, onChange, field.disabled, controlId, text)}
 
       {field.disabled && field.disabledReason && (
-        <DisabledReason reason={field.disabledReason} />
+        <DisabledReason reason={text(field.disabledReason)} locale={locale} />
       )}
 
       {hasDiagnostics && (
@@ -80,6 +82,7 @@ function renderControl(
   onChange: (v: unknown) => void,
   disabled: boolean,
   controlId: string,
+  text: (value: string) => string,
 ) {
   switch (field.controlType) {
     case 'section':
@@ -99,7 +102,7 @@ function renderControl(
         >
           {field.options?.map((opt) => (
             <option key={String(opt.value)} value={String(opt.value)}>
-              {opt.label}{opt.badge ? ` · ${opt.badge}` : ''}
+              {text(opt.label)}{opt.badge ? ` · ${text(opt.badge)}` : ''}
             </option>
           ))}
         </select>
@@ -133,7 +136,7 @@ function renderControl(
             disabled={disabled}
           />
           <span className="switch-control__track" aria-hidden="true" />
-          <span>{field.value ? '开启' : '关闭'}</span>
+          <span>{field.value ? text('开启') : text('关闭')}</span>
         </label>
       )
 
@@ -145,6 +148,17 @@ function renderControl(
           value={field.value !== undefined && field.value !== null ? String(field.value) : ''}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
+        />
+      )
+
+    case 'bitrate':
+      return (
+        <BitrateControl
+          id={controlId}
+          label={text(field.label)}
+          value={field.value}
+          disabled={disabled}
+          onChange={onChange}
         />
       )
 
@@ -201,10 +215,69 @@ function renderControl(
   }
 }
 
-function DisabledReason({ reason }: { reason: string }) {
+type BitrateUnit = '' | 'k' | 'M'
+
+function BitrateControl({
+  id,
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  id: string
+  label: string
+  value: unknown
+  disabled: boolean
+  onChange: (value: unknown) => void
+}) {
+  const parsed = parseBitrate(value)
+
+  const emit = (amount: string, unit: BitrateUnit) => {
+    onChange(amount === '' ? undefined : `${amount}${unit}`)
+  }
+
+  return (
+    <div className="unit-input">
+      <input
+        id={id}
+        type="number"
+        min="0"
+        step="1"
+        inputMode="decimal"
+        value={parsed.amount}
+        onChange={(event) => emit(event.target.value, parsed.unit)}
+        disabled={disabled}
+      />
+      <select
+        aria-label={`${label}单位`}
+        value={parsed.unit}
+        onChange={(event) => emit(parsed.amount, event.target.value as BitrateUnit)}
+        disabled={disabled}
+        className="unit-input__unit"
+      >
+        <option value="">bps</option>
+        <option value="k">kbps</option>
+        <option value="M">Mbps</option>
+      </select>
+    </div>
+  )
+}
+
+function parseBitrate(value: unknown): { amount: string; unit: BitrateUnit } {
+  const raw = String(value ?? '').trim()
+  const match = raw.match(/^(\d+(?:\.\d+)?)\s*([kKmM]?)$/)
+  if (!match) return { amount: '', unit: 'k' }
+  const suffix = match[2]
+  return {
+    amount: match[1],
+    unit: suffix.toLowerCase() === 'k' ? 'k' : suffix.toLowerCase() === 'm' ? 'M' : '',
+  }
+}
+
+function DisabledReason({ reason, locale }: { reason: string; locale: 'zh-CN' | 'en' }) {
   return (
     <div className="param-field__reason">
-      已禁用：{reason}
+      {locale === 'zh-CN' ? '已禁用：' : 'Disabled: '}{reason}
     </div>
   )
 }

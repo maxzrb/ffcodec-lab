@@ -4,6 +4,7 @@
 
 import { useState } from 'react'
 import type { UserPreset } from './preset-types'
+import { useI18n } from '../i18n/i18n'
 
 interface PresetEditorDialogProps {
   preset: UserPreset | null
@@ -18,16 +19,22 @@ export function PresetEditorDialog({
   onSave,
   onClose,
 }: PresetEditorDialogProps) {
+  const { locale } = useI18n()
+  const isZh = locale === 'zh-CN'
   const [name, setName] = useState(preset?.name ?? '')
   const [description, setDescription] = useState(preset?.description ?? '')
   const [error, setError] = useState('')
 
-  const title = saveAsMode ? '另存为新预设' : preset ? '编辑预设' : '新建预设'
+  const title = saveAsMode
+    ? (isZh ? '另存为新预设' : 'Save as new preset')
+    : preset
+      ? (isZh ? '编辑预设' : 'Edit preset')
+      : (isZh ? '新建预设' : 'New preset')
 
   const handleSubmit = () => {
     const trimmed = name.trim()
     if (!trimmed) {
-      setError('预设名称不能为空')
+      setError(isZh ? '预设名称不能为空' : 'Preset name is required')
       return
     }
     onSave(trimmed, description.trim() || undefined!)
@@ -69,7 +76,7 @@ export function PresetEditorDialog({
 
         <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>
-            名称 <span style={{ color: 'var(--error)' }}>*</span>
+            {isZh ? '名称' : 'Name'} <span style={{ color: 'var(--error)' }}>*</span>
           </label>
           <input
             type="text"
@@ -78,7 +85,7 @@ export function PresetEditorDialog({
               setName(e.target.value)
               setError('')
             }}
-            placeholder="输入预设名称"
+            placeholder={isZh ? '输入预设名称' : 'Enter a preset name'}
             autoFocus
             style={{
               width: '100%',
@@ -99,13 +106,13 @@ export function PresetEditorDialog({
 
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>
-            描述 <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(可选)</span>
+            {isZh ? '描述' : 'Description'} <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>({isZh ? '可选' : 'optional'})</span>
           </label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="简短描述此预设的用途"
+            placeholder={isZh ? '简短描述此预设的用途' : 'Briefly describe when to use this preset'}
             style={{
               width: '100%',
               padding: '6px 10px',
@@ -140,7 +147,7 @@ export function PresetEditorDialog({
               color: 'var(--text)',
             }}
           >
-            取消
+            {isZh ? '取消' : 'Cancel'}
           </button>
           <button
             onClick={handleSubmit}
@@ -155,7 +162,7 @@ export function PresetEditorDialog({
               color: name.trim() ? '#fff' : 'var(--text-dim)',
             }}
           >
-            保存
+            {isZh ? '保存' : 'Save'}
           </button>
         </div>
       </div>

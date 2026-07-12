@@ -22,6 +22,7 @@ const ALLOWED_PATHS = new Set([
   'video.encoderId',
   'frame.resolution',
   'frame.frameRate',
+  'subtitle.burn',
 ])
 
 export interface FixApplicationResult {

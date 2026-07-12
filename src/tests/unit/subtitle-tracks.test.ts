@@ -4,6 +4,8 @@ import { buildCommandPlan } from '../../domain/command/command-builder'
 import { renderBash } from '../../domain/shell/bash-renderer'
 import { loadCatalog } from '../../domain/catalog/catalog-loader'
 import type { SubtitleTrackConfig } from '../../domain/config/project-config'
+import { validateConfig } from '../../domain/validation/validate-config'
+import { RuleIndex } from '../../domain/rules/rule-index'
 
 const catalog = loadCatalog()
 
@@ -117,5 +119,25 @@ describe('Subtitle tracks — command generation', () => {
 
     // No burn → no -vf
     expect(text).not.toContain('-vf')
+  })
+})
+
+describe('Subtitle tracks — diagnostics', () => {
+  it('does not warn when there are no subtitle tracks', () => {
+    const messages = validateConfig(configWithTracks([]), catalog, new RuleIndex())
+    expect(messages.some((message) => message.code === 'warn.subtitle.copy.unknown.sourcecodec')).toBe(false)
+  })
+
+  it('warns only for copied tracks with an unknown source codec', () => {
+    const config = configWithTracks([
+      makeTrack({ id: 'known', sourceCodecKnown: true }),
+      makeTrack({ id: 'unknown', sourceCodecKnown: false }),
+      makeTrack({ id: 'transcoded', codecMode: 'transcode', codec: 'mov_text', sourceCodecKnown: false }),
+    ])
+    const messages = validateConfig(config, catalog, new RuleIndex())
+    const warning = messages.find((message) => message.code === 'warn.subtitle.copy.unknown.sourcecodec')
+
+    expect(warning?.originIds).toEqual(['subtitle.tracks.unknown.codecMode'])
+    expect(warning?.context.trackIds).toEqual(['unknown'])
   })
 })

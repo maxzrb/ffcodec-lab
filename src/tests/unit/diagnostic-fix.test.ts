@@ -64,6 +64,21 @@ describe('Diagnostic fix suggestions', () => {
     expect(fixes).toEqual([])
   })
 
+  it('offers fully supported containers for compatibility warnings', () => {
+    const diag: Diagnostic = {
+      code: 'warn.compat.caveat',
+      severity: 'warning',
+      category: 'compatibility',
+      message: '',
+      originIds: ['audio.encoderId', 'output.containerId'],
+      context: { encoderId: 'flac', containerId: 'mp4', mediaType: 'audio' },
+    }
+
+    const fixes = buildFixSuggestions(diag, catalog)
+    expect(fixes.length).toBeGreaterThan(0)
+    expect(fixes.every((fix) => fix.operations[0]?.op === 'set')).toBe(true)
+  })
+
   it('fix operations have correct safety levels', () => {
     const diag: Diagnostic = {
       code: 'error.burn.requires.encode',
@@ -141,6 +156,25 @@ describe('Diagnostic fix application', () => {
     expect(Array.isArray(result.normalizationNotices)).toBe(true)
     // Diagnostics include post-fix validation
     expect(Array.isArray(result.diagnostics)).toBe(true)
+  })
+
+  it('applies the safe subtitle burn-in fix offered by the registry', () => {
+    const config = createDefaultProjectConfig()
+    config.subtitle.burn.enabled = true
+    const diagnostic: Diagnostic = {
+      code: 'error.burn.requires.encode',
+      severity: 'error',
+      category: 'configuration',
+      message: '',
+      originIds: ['subtitle.burn', 'video.mode'],
+      context: {},
+    }
+    const fix = buildFixSuggestions(diagnostic, catalog).find((candidate) => candidate.id === 'fix.burn.disable')
+
+    expect(fix).toBeDefined()
+    const result = applyFix(config, fix!, catalog)
+    expect(result.success).toBe(true)
+    expect(result.newConfig.subtitle.burn.enabled).toBe(false)
   })
 
   it('isAllowedOperation validates paths', () => {

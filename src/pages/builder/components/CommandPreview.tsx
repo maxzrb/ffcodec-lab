@@ -3,6 +3,7 @@ import type { CommandArg, CommandPlan } from '../../../domain/command/command-as
 import type { ShellKind } from '../../../domain/config/project-config'
 import type { RenderedCommand } from '../../../domain/shell/shell-types'
 import { ShellSelector } from './ShellSelector'
+import { useI18n } from '../../../features/i18n/i18n'
 
 interface CommandPreviewProps {
   commandPlan: CommandPlan
@@ -21,6 +22,7 @@ export function CommandPreview({
   onShellChange,
   onTokenClick,
 }: CommandPreviewProps) {
+  const { locale } = useI18n()
   const [multiline, setMultiline] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -43,9 +45,9 @@ export function CommandPreview({
   const allTokens = collectAllTokens(commandPlan)
 
   return (
-    <section className={`command-card ${hasErrors ? 'command-card--error' : ''}`} aria-label="命令预览">
+    <section className={`command-card ${hasErrors ? 'command-card--error' : ''}`} aria-label={locale === 'zh-CN' ? '命令预览' : 'Command preview'}>
       <div className="command-toolbar">
-        <span className="command-toolbar__title">命令预览</span>
+        <span className="command-toolbar__title">{locale === 'zh-CN' ? '命令预览' : 'Command preview'}</span>
         <ShellSelector value={shell} onChange={onShellChange} />
         <button
           type="button"
@@ -53,7 +55,7 @@ export function CommandPreview({
           className={`button-ghost ${multiline ? 'button-ghost--active' : ''}`}
           aria-pressed={multiline}
         >
-          {multiline ? '多行' : '单行'}
+          {multiline ? (locale === 'zh-CN' ? '多行' : 'Multiline') : (locale === 'zh-CN' ? '单行' : 'Single line')}
         </button>
         <button
           type="button"
@@ -61,16 +63,20 @@ export function CommandPreview({
           disabled={hasErrors}
           className={`button-ghost ${copied ? 'button-ghost--active' : ''}`}
         >
-          {copied ? '已复制' : '复制'}
+          {copied ? (locale === 'zh-CN' ? '已复制' : 'Copied') : (locale === 'zh-CN' ? '复制' : 'Copy')}
         </button>
         {commandPlan.invocations.length > 1 && (
-          <span className="meta-pill">{commandPlan.invocations.length} 条两遍命令</span>
+          <span className="meta-pill">
+            {locale === 'zh-CN' ? `${commandPlan.invocations.length} 条两遍命令` : `${commandPlan.invocations.length} two-pass commands`}
+          </span>
         )}
       </div>
 
       {hasErrors && (
         <div className="command-error-banner" role="alert">
-          当前配置存在错误，复制已禁用。请先处理下方诊断。
+          {locale === 'zh-CN'
+            ? '当前配置存在错误，复制已禁用。请先处理下方诊断。'
+            : 'The configuration contains errors. Resolve the diagnostics below before copying.'}
         </div>
       )}
 
@@ -83,6 +89,7 @@ export function CommandPreview({
                 segment={segment}
                 tokens={allTokens}
                 onClick={onTokenClick}
+                locale={locale}
               />
             ))}
           </div>
@@ -127,10 +134,12 @@ function CommandToken({
   segment,
   tokens,
   onClick,
+  locale,
 }: {
   segment: { text: string; originId: string }
   tokens: TokenInfo[]
   onClick?: (originId: string) => void
+  locale: 'zh-CN' | 'en'
 }) {
   const matchedToken = tokens.find(
     (token) => token.text === segment.text.trim() || segment.text.includes(token.text),
@@ -142,7 +151,7 @@ function CommandToken({
         type="button"
         onClick={() => onClick(matchedToken.originId)}
         className="command-token"
-        title={`定位参数：${matchedToken.originId}`}
+        title={locale === 'zh-CN' ? `定位参数：${matchedToken.originId}` : `Locate field: ${matchedToken.originId}`}
       >
         {segment.text}
       </button>

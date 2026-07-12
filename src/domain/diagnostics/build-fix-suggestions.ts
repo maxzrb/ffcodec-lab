@@ -9,11 +9,38 @@ import { CONFIG_PATHS } from '../config/config-path'
 
 type FixFactory = (diag: Diagnostic, catalog: Catalog) => DiagnosticFix[]
 
+function buildContainerFixes(diag: Diagnostic, catalog: Catalog, fullySupportedOnly = false): DiagnosticFix[] {
+  const encoderId = diag.context.encoderId as string | undefined
+  const mediaType = diag.context.mediaType as 'video' | 'audio' | undefined
+  if (!encoderId || !mediaType) return []
+
+  return Object.values(catalog.containers)
+    .filter((container) => {
+      const level = mediaType === 'video'
+        ? container.videoCodecs[encoderId]
+        : container.audioCodecs[encoderId]
+      return level === 'supported' || (!fullySupportedOnly && level === 'supported-with-caveat')
+    })
+    .slice(0, 3)
+    .map((container) => ({
+      id: `fix.container.${container.id}`,
+      label: `切换到 ${container.label} 容器`,
+      description: `${container.label} 与当前编码器兼容。`,
+      category: 'compatibility',
+      operations: [{ op: 'set', path: CONFIG_PATHS.output.containerId, value: container.id }],
+      safety: 'changes-output',
+      sourceRuleId: diag.sourceRuleId,
+    }))
+}
+
 /**
  * Registry mapping diagnostic codes to fix suggestion factories.
  * Each factory receives the full Diagnostic (with context) and Catalog.
  */
 const FIX_REGISTRY: Record<string, FixFactory> = {
+  'error.compat.unsupported': (d, cat) => buildContainerFixes(d, cat),
+  'warn.compat.caveat': (d, cat) => buildContainerFixes(d, cat, true),
+  'warn.compat.unknown': (d, cat) => buildContainerFixes(d, cat),
   'error.webm.video.incompatible': (d, cat) => {
     const encoderId = d.context.encoderId as string | undefined
     const compatible = encoderId

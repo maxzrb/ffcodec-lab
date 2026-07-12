@@ -1,9 +1,10 @@
 // ============================================================
-// ExplanationPanel — displays parameter explanation, source refs,
-// verification status, and effects on quality/size/speed/compat.
+// ExplanationPanel — 向用户展示参数用途、取舍和注意事项。
+// 来源引用仅供内部目录审计，不在产品界面暴露。
 // ============================================================
 
 import type { ExplanationDefinition } from '../../domain/catalog/catalog-types'
+import { localizeExplanation, useI18n } from '../i18n/i18n'
 
 interface ExplanationPanelProps {
   explanation: ExplanationDefinition
@@ -11,32 +12,36 @@ interface ExplanationPanelProps {
 }
 
 export function ExplanationPanel({ explanation, onClose }: ExplanationPanelProps) {
+  const { locale } = useI18n()
+  const content = localizeExplanation(explanation, locale)
   return (
     <section className="explanation-card">
       <div className="explanation-card__header">
-        <h3>{explanation.title}</h3>
+        <h3>{content.title}</h3>
         <button
           type="button"
           onClick={onClose}
           className="icon-button"
-          aria-label="关闭参数说明"
+          aria-label={locale === 'zh-CN' ? '关闭参数说明' : 'Close parameter guide'}
         >
           ✕
         </button>
       </div>
 
       <div className="explanation-card__body">
-        <p style={{ margin: '0 0 8px' }}>{explanation.short}</p>
+        <p style={{ margin: '0 0 8px' }}>{content.short}</p>
 
-        {explanation.detail && (
+        {content.detail && (
           <p style={{ color: 'var(--text-dim)', fontSize: 12, margin: '0 0 12px' }}>
-            {explanation.detail}
+            {content.detail}
           </p>
         )}
 
         {explanation.commandExample && (
           <div style={{ marginBottom: 12 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>命令示例: </span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+              {locale === 'zh-CN' ? '命令示例：' : 'Command example: '}
+            </span>
             <code
               style={{
                 fontSize: 12,
@@ -53,24 +58,26 @@ export function ExplanationPanel({ explanation, onClose }: ExplanationPanelProps
         {/* Effects indicators */}
         {explanation.effects && (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>影响评估：</div>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>
+              {locale === 'zh-CN' ? '影响评估：' : 'Impact:'}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-              <EffectRow label="画质" value={explanation.effects.quality ?? 0} />
-              <EffectRow label="文件体积" value={explanation.effects.fileSize ?? 0} />
-              <EffectRow label="编码速度" value={explanation.effects.speed ?? 0} />
-              <EffectRow label="兼容性" value={explanation.effects.compatibility ?? 0} />
+              <EffectRow label={locale === 'zh-CN' ? '画质' : 'Quality'} value={explanation.effects.quality ?? 0} />
+              <EffectRow label={locale === 'zh-CN' ? '文件体积' : 'File size'} value={explanation.effects.fileSize ?? 0} />
+              <EffectRow label={locale === 'zh-CN' ? '编码速度' : 'Speed'} value={explanation.effects.speed ?? 0} />
+              <EffectRow label={locale === 'zh-CN' ? '兼容性' : 'Compatibility'} value={explanation.effects.compatibility ?? 0} />
             </div>
           </div>
         )}
 
         {/* Warnings */}
-        {explanation.warnings && explanation.warnings.length > 0 && (
+        {content.warnings && content.warnings.length > 0 && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 600, marginBottom: 4 }}>
-              注意事项：
+              {locale === 'zh-CN' ? '注意事项：' : 'Notes:'}
             </div>
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
-              {explanation.warnings.map((w, i) => (
+              {content.warnings.map((w, i) => (
                 <li key={i} style={{ color: 'var(--text-dim)' }}>
                   {w}
                 </li>
@@ -79,21 +86,6 @@ export function ExplanationPanel({ explanation, onClose }: ExplanationPanelProps
           </div>
         )}
 
-        {/* Source references */}
-        {explanation.sourceRefs.length > 0 && (
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>数据来源：</div>
-            {explanation.sourceRefs.map((ref, i) => (
-              <div key={i} style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 2 }}>
-                {ref.repository} / {ref.file}
-                {ref.symbol ? ` → ${ref.symbol}` : ''}
-                <span style={{ marginLeft: 8, color: 'var(--text-dim)' }}>
-                  ({ref.sourceType})
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </section>
   )

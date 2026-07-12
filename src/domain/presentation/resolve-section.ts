@@ -503,9 +503,16 @@ export function resolveAudioSection(
     if (audioEncoder) {
       // Bitrate — only for encoders with quality modes (not lossless like FLAC)
       if (audioEncoder.qualityModes.length > 0) {
-        fields.push(
-          resolveTextField('audio.bitrate', '音频码率 (-b:a)', config.audio.bitrate, fieldStates),
+        const bitrateField = resolveTextField(
+          'audio.bitrate',
+          '音频码率 (-b:a)',
+          config.audio.bitrate,
+          fieldStates,
+          audioEncoder.id === 'libopus' ? 'expl.libopus.bitrate' : 'expl.aac.bitrate',
         )
+        bitrateField.controlType = 'bitrate'
+        bitrateField.description = '填写数值后选择单位；例如 192 + kbps 会生成 192k。'
+        fields.push(bitrateField)
       }
 
       const audioSourceRefs: SourceRef[] = [{

@@ -63,6 +63,7 @@ function presetStore(config: ProjectConfig) {
 describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   beforeEach(() => {
     window.localStorage.removeItem('ffcodec-theme')
+    window.localStorage.removeItem('ffcodec-locale')
     // 每条用例结束后恢复默认状态。
     useBuilderStore.setState({
       config: createDefaultProjectConfig(),
@@ -368,6 +369,69 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await userEvent.click(screen.getByRole('button', { name: '切换到暗色模式' }))
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(window.localStorage.getItem('ffcodec-theme')).toBe('dark')
+  })
+
+  it('全局中/EN开关会翻译工作台并持久化语言', async () => {
+    render(<BuilderPage />)
+
+    expect(screen.getByRole('heading', { name: 'FFmpeg 命令生成器' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Switch to English' }))
+
+    expect(screen.getByRole('heading', { name: 'FFmpeg Command Builder' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Video encoder')).toBeInTheDocument()
+    expect(screen.getByLabelText('Command preview')).toBeInTheDocument()
+    expect(window.localStorage.getItem('ffcodec-locale')).toBe('en')
+    expect(document.documentElement.lang).toBe('en')
+    const englishPageText = document.body.textContent?.replace('中', '') ?? ''
+    expect(englishPageText).not.toMatch(/[\u4e00-\u9fff]/)
+  })
+
+  it('音频码率使用数值输入和后置单位选择', async () => {
+    presetStore(makeAudioConfig('aac'))
+    render(<BuilderPage />)
+
+    const amount = screen.getByLabelText('音频码率 (-b:a)')
+    const unit = screen.getByLabelText('音频码率 (-b:a)单位')
+    expect(amount).toHaveAttribute('type', 'number')
+    expect(amount).toHaveValue(192)
+    expect(unit).toHaveValue('k')
+
+    await userEvent.clear(amount)
+    await userEvent.type(amount, '256')
+    await userEvent.selectOptions(unit, 'M')
+
+    expect(useBuilderStore.getState().config.audio.bitrate).toBe('256M')
+  })
+
+  it('参数说明不显示内部数据来源，并提供有决策价值的编码器介绍', async () => {
+    render(<BuilderPage />)
+
+    await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))
+
+    expect(screen.getByText(/编码器决定输出视频格式、压缩效率、处理速度/)).toBeInTheDocument()
+    expect(screen.queryByText('数据来源：')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Lake1059\/FFmpegFreeUI/)).not.toBeInTheDocument()
+  })
+
+  it('warning显示可读建议并跟随全局语言切换', async () => {
+    const config = createDefaultProjectConfig()
+    config.subtitle.tracks = [{
+      id: 'unknown-subtitle',
+      source: 'input',
+      mainStreamRelIndex: 0,
+      codecMode: 'copy',
+      sourceCodecKnown: false,
+      disposition: {},
+    }]
+    presetStore(config)
+    render(<BuilderPage />)
+
+    expect(await screen.findByText('无法确认字幕复制后的容器兼容性')).toBeInTheDocument()
+    expect(screen.getByText(/先用 ffprobe 确认字幕编码/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Switch to English' }))
+    expect(screen.getByText('Subtitle copy compatibility cannot be confirmed')).toBeInTheDocument()
+    expect(screen.getByText(/Inspect the source with ffprobe/)).toBeInTheDocument()
   })
 
   it('默认显示 PowerShell 单行命令且不显示来源核验提示', async () => {

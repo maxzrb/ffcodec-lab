@@ -37,6 +37,8 @@ export function usePipeline(config: ProjectConfig, catalog: Catalog): PipelineOu
 
     // 3. Validate
     const allMessages = validateConfig(normalized, catalog, ruleIndex)
+    // 正式页面必须看到完整校验结果，而不仅是规则引擎消息。
+    evaluationResult.messages = allMessages
 
     // 4. Command
     const commandPlan = buildCommandPlan(normalized, catalog, allMessages)

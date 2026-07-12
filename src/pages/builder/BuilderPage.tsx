@@ -20,6 +20,10 @@ import { ExplanationPanel } from '../../features/explanations/ExplanationPanel'
 import { PresetManager } from '../../features/presets/PresetManager'
 import { addSubtitleTrack, removeSubtitleTrack } from '../../domain/config/project-actions'
 import { decodeConfigFromShare, encodeConfigToShare } from '../../features/sharing/share-codec'
+import { I18nProvider, translateText, useI18n, type Locale } from '../../features/i18n/i18n'
+import { DiagnosticPanel } from './components/DiagnosticPanel'
+import { applyFix } from '../../domain/diagnostics/apply-diagnostic-fix'
+import type { DiagnosticFix } from '../../domain/rules/rule-types'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
@@ -37,11 +41,21 @@ export function BuilderPage() {
   const [theme, setTheme] = useState<ThemeKind>(() =>
     window.localStorage.getItem('ffcodec-theme') === 'dark' ? 'dark' : 'light',
   )
+  const [locale, setLocale] = useState<Locale>(() =>
+    window.localStorage.getItem('ffcodec-locale') === 'en' ? 'en' : 'zh-CN',
+  )
+  const isZh = locale === 'zh-CN'
+  const text = useCallback((value: string) => translateText(value, locale), [locale])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     window.localStorage.setItem('ffcodec-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    document.documentElement.lang = locale === 'zh-CN' ? 'zh-CN' : 'en'
+    window.localStorage.setItem('ffcodec-locale', locale)
+  }, [locale])
 
   const pipeline = usePipeline(config, catalog)
 
@@ -69,11 +83,11 @@ export function BuilderPage() {
     const decoded = decodeConfigFromShare(window.location.hash)
     if (decoded.success && decoded.config) {
       setConfig(decoded.config)
-      setShareNotice(decoded.warnings[0] ?? '已载入链接中的共享配置')
+      setShareNotice(decoded.warnings[0] ?? (isZh ? '已载入链接中的共享配置' : 'Loaded configuration from the shared link'))
     } else if (decoded.error) {
-      setShareNotice('共享链接无法解析，已保留当前配置')
+      setShareNotice(isZh ? '共享链接无法解析，已保留当前配置' : 'The shared link could not be decoded; the current configuration was kept')
     }
-  }, [setConfig])
+  }, [isZh, setConfig])
 
   const handleApplyPreset = useCallback(
     (presetConfig: ProjectConfig) => {
@@ -100,9 +114,9 @@ export function BuilderPage() {
       window.history.replaceState(null, '', result.value)
       try {
         await navigator.clipboard.writeText(window.location.href)
-        setShareNotice('共享链接已复制；本地文件路径不会写入链接')
+        setShareNotice(isZh ? '共享链接已复制；本地文件路径不会写入链接' : 'Share link copied; local file paths are excluded')
       } catch {
-        setShareNotice('共享链接已写入地址栏，可直接复制')
+        setShareNotice(isZh ? '共享链接已写入地址栏，可直接复制' : 'The share link is in the address bar and ready to copy')
       }
       return
     }
@@ -113,8 +127,18 @@ export function BuilderPage() {
     anchor.download = 'ffcodec-share.json'
     anchor.click()
     URL.revokeObjectURL(url)
-    setShareNotice('配置较长，已改为下载隐私安全的 JSON')
-  }, [config])
+    setShareNotice(isZh ? '配置较长，已改为下载隐私安全的 JSON' : 'The configuration is too long for a link, so a privacy-safe JSON file was created')
+  }, [config, isZh])
+
+  const handleApplyDiagnosticFix = useCallback((fix: DiagnosticFix) => {
+    const result = applyFix(config, fix, catalog)
+    if (result.success) {
+      setConfig(result.newConfig)
+      setShareNotice(isZh ? `已应用修复：${fix.label}` : 'Diagnostic fix applied')
+    } else {
+      setShareNotice(isZh ? `修复未应用：${result.error ?? '未知错误'}` : `Fix was not applied: ${result.error ?? 'unknown error'}`)
+    }
+  }, [config, isZh, setConfig])
 
   const handleFieldChange = useCallback(
     (fieldId: string, value: unknown) => {
@@ -177,49 +201,64 @@ export function BuilderPage() {
   const videoEncoderCount = Object.keys(catalog.encoders.video).length
 
   return (
+    <I18nProvider locale={locale}>
     <main className="builder-page">
       <header className="product-header">
         <div className="product-header__brand">
           <div className="brand-mark" aria-hidden="true">FF</div>
           <div>
             <p className="eyebrow">FFCodec Lab · Command Workbench</p>
-            <h1>FFmpeg 命令生成器</h1>
+            <h1>{isZh ? 'FFmpeg 命令生成器' : 'FFmpeg Command Builder'}</h1>
             <p className="product-header__description">
-              组合编码、画面、音频与字幕参数，实时得到可追溯的跨 Shell 命令。所有能力均由目录和规则引擎驱动。
+              {isZh
+                ? '组合编码、画面、音频与字幕参数，实时得到可追溯的跨 Shell 命令。所有能力均由目录和规则引擎驱动。'
+                : 'Configure encoding, picture, audio, and subtitles to build a traceable command for Bash, PowerShell, or CMD in real time.'}
             </p>
-            <div className="product-meta" aria-label="项目能力摘要">
-              <span className="meta-pill">{videoEncoderCount} 个视频编码器</span>
+            <div className="product-meta" aria-label={isZh ? '项目能力摘要' : 'Capability summary'}>
+              <span className="meta-pill">{isZh ? `${videoEncoderCount} 个视频编码器` : `${videoEncoderCount} video encoders`}</span>
               <span className="meta-pill">Bash · PowerShell · CMD</span>
-              <span className="meta-pill meta-pill--success">纯本地 · 不上传文件</span>
+              <span className="meta-pill meta-pill--success">{isZh ? '纯本地 · 不上传文件' : 'Local only · no file uploads'}</span>
             </div>
           </div>
         </div>
         <div className="product-header__actions">
           <button
             type="button"
+            onClick={() => setLocale((current) => current === 'zh-CN' ? 'en' : 'zh-CN')}
+            className="button"
+            aria-label={isZh ? 'Switch to English' : '切换到中文'}
+          >
+            {isZh ? 'EN' : '中'}
+          </button>
+          <button
+            type="button"
             onClick={() => setTheme((current) => current === 'light' ? 'dark' : 'light')}
             className="button"
             aria-pressed={theme === 'dark'}
-            aria-label={theme === 'light' ? '切换到暗色模式' : '切换到亮色模式'}
+            aria-label={theme === 'light'
+              ? (isZh ? '切换到暗色模式' : 'Switch to dark mode')
+              : (isZh ? '切换到亮色模式' : 'Switch to light mode')}
           >
-            {theme === 'light' ? '暗色模式' : '亮色模式'}
+            {theme === 'light'
+              ? (isZh ? '暗色模式' : 'Dark mode')
+              : (isZh ? '亮色模式' : 'Light mode')}
           </button>
           <button type="button" onClick={handleShare} className="button">
-            分享配置
+            {isZh ? '分享配置' : 'Share'}
           </button>
           <button
             type="button"
             onClick={() => setShowPresetManager(true)}
             className="button button--primary"
           >
-            管理预设
+            {isZh ? '管理预设' : 'Presets'}
           </button>
           {shareNotice && <span className="share-notice" role="status">{shareNotice}</span>}
         </div>
       </header>
 
       <div className="workspace-grid">
-        <section className="workspace-column" aria-label="参数配置">
+        <section className="workspace-column" aria-label={isZh ? '参数配置' : 'Parameters'}>
           {view.sections.map((section) => (
             <ParameterSection
               key={section.id}
@@ -240,7 +279,7 @@ export function BuilderPage() {
           ))}
         </section>
 
-        <aside className="workspace-column workspace-column--preview" aria-label="命令与诊断">
+        <aside className="workspace-column workspace-column--preview" aria-label={isZh ? '命令与诊断' : 'Command and diagnostics'}>
           <CommandPreview
             commandPlan={pipeline.commandPlan}
             renderedCommand={pipeline.renderedCommand}
@@ -250,28 +289,17 @@ export function BuilderPage() {
             onTokenClick={handleTokenClick}
           />
 
-          {/* Messages summary */}
-          {view.messages.length > 0 && (
-            <div className="message-stack" role="status">
-              {view.messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`message-item message-item--${msg.severity}`}
-                >
-                  <strong className="message-item__level">
-                    {msg.severity}
-                  </strong>{' '}
-                  {msg.code}
-                  {msg.originIds.length > 0 && (
-                    <span className="message-item__origins">
-                      {' '}
-                      [{msg.originIds.join(', ')}]
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          <DiagnosticPanel
+            diagnostics={view.messages}
+            catalog={catalog}
+            getOriginLabel={(originId) => {
+              const field = view.fieldIndex[originId]
+                ?? Object.values(view.fieldIndex).find((candidate) => originId.startsWith(candidate.id))
+              return field ? text(field.label) : originId
+            }}
+            onLocate={handleTokenClick}
+            onApplyFix={handleApplyDiagnosticFix}
+          />
 
           {currentExplanation && (
             <ExplanationPanel
@@ -291,6 +319,7 @@ export function BuilderPage() {
         />
       )}
     </main>
+    </I18nProvider>
   )
 }
 
@@ -303,6 +332,7 @@ function SubtitleSectionActions({
   onAdd: () => void
   onRemove: (trackId: string) => void
 }) {
+  const { locale } = useI18n()
   const [selectedTrackId, setSelectedTrackId] = useState(tracks[0]?.id ?? '')
 
   useEffect(() => {
@@ -317,20 +347,20 @@ function SubtitleSectionActions({
         <select
           value={selectedTrackId}
           onChange={(event) => setSelectedTrackId(event.target.value)}
-          aria-label="选择要删除的字幕轨道"
+          aria-label={locale === 'zh-CN' ? '选择要删除的字幕轨道' : 'Select subtitle track to remove'}
           className="section-action-select"
         >
           {tracks.map((track) => <option key={track.id} value={track.id}>{track.id}</option>)}
         </select>
       )}
-      <button type="button" className="button-ghost" onClick={onAdd}>添加轨道</button>
+      <button type="button" className="button-ghost" onClick={onAdd}>{locale === 'zh-CN' ? '添加轨道' : 'Add track'}</button>
       <button
         type="button"
         className="button-ghost"
         onClick={() => onRemove(selectedTrackId)}
         disabled={!selectedTrackId}
       >
-        删除轨道
+        {locale === 'zh-CN' ? '删除轨道' : 'Remove track'}
       </button>
     </>
   )
