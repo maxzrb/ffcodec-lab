@@ -1,15 +1,15 @@
 # Project Status
 
-Last updated: 2026-07-12 18:14
+Last updated: 2026-07-12 18:19
 Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
 - Current objective: v0.6.0 — 修复字幕栏位移并完成稳定化、真实色彩处理、高级质量第二批和后续能力评估
-- Current state: 全部计划项已实现并通过自动化、构建及 FFmpeg 实机矩阵；待提交和部署
+- Current state: 全部计划项已实现、验证、提交 `b24cfcb` 并部署；生产站点已加载 v0.6.0 资源
 - Current site: https://fflab.loliland.cn/
-- Next objective: 创建 v0.6.0 功能提交、推送 master、等待 Cloudflare Pages success 并核验生产资源
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 文件）、catalog audit 0/0、acceptance 10/10、FFmpeg 8.1.1 smoke 4/4、production build 成功（业务 317.45 KB + vendor 205.27 KB + CSS 22.52 KB）
+- Next objective: v0.6.0 无剩余实施项；后续按评估从受控剪辑和常用元数据开始新一轮
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 文件）、catalog audit 0/0、acceptance 10/10、FFmpeg 8.1.1 smoke 4/4、production build 成功（业务 317.45 KB + vendor 205.27 KB + CSS 22.52 KB）；Cloudflare Pages success；生产 HTTP 200 与功能标识确认
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -35,7 +35,7 @@ Updated by: Codex (GPT-5)
 - Video encoders: 13 个 (software 5、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 提交并部署 v0.6.0；完成后下一批按评估先实施受控剪辑和常用元数据
+- Next recommended step: 无阻断任务；下一批按 `docs/next-capability-evaluation.md` 实施受控剪辑和常用元数据
 
 ## Active TODO
 
@@ -44,9 +44,9 @@ Updated by: Codex (GPT-5)
   - Status: 已实现、全量验证、提交 `84c2028` 并部署到 Cloudflare Pages
   - Notes/blockers: 无功能阻断；Vite 对 509.09 KB 主包给出非阻断体积提示
 
-- [ ] 下一阶段：稳定化与高级参数第二批
+- [x] 下一阶段：稳定化与高级参数第二批
   - Owner: Codex
-  - Status: 全部计划项已完成并验证，待提交/部署
+  - Status: 全部计划项已完成、验证、提交 `b24cfcb` 并部署
   - Plan:
     1. 稳定化：更新过时的控件交互审计，补桌面/移动端工作台回归，拆分说明/预设等非首屏代码以消除 >500 KB 提示，建立代表性 FFmpeg 实机命令矩阵
     2. 真实色彩处理：在“只写元数据”之外新增明确的色彩转换模式，优先 zscale/tonemap 路径，处理 HDR→SDR、范围/矩阵/原色/传输联动及构建可用性诊断
@@ -81,6 +81,8 @@ Updated by: Codex (GPT-5)
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
+
+- 2026-07-12 18:19: v0.6.0 提交并部署 — Cloudflare Pages success，生产资源确认包含稳定滚动条、schema v4 色彩转换诊断和高级质量第二批
 
 - 2026-07-12 18:14: v0.6.0 实施完成 — 字幕栏稳定宽度、schema v4 zscale/tonemap/libplacebo、高级质量第二批、vendor 分包、4/4 FFmpeg 实机矩阵及后续能力评估
 
@@ -1183,3 +1185,19 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - `tsconfig.tsbuildinfo` 继续排除出功能提交
 - Git status: master 跟踪 origin/master；v0.6.0 功能、测试和文档未提交，working tree not clean
 - Next step: 创建功能提交、推送并核验 Cloudflare Pages；随后提交部署记录
+
+### 2026-07-12 18:19 - Codex (GPT-5)
+
+- Objective: 发布并核验 v0.6.0，完成用户要求的全部计划闭环
+- Work completed:
+  1. 创建提交 `b24cfcb feat: release advanced color and quality workbench v0.6.0`
+  2. 推送 master，Cloudflare Workers and Pages check suite 与 Cloudflare Pages check-run 均 completed/success
+  3. 生产站点返回 HTTP 200，资源更新为 `/assets/index-CYEsPILd.js`、`/assets/vendor-C0qM6IhX.js`、`/assets/index-Cnnup6gh.css`
+  4. 线上 JS 确认包含 convert-and-tag、色调映射目标诊断和 qvbrQualityLevel；线上 CSS 确认包含稳定 scrollbar gutter
+- Verification: 沿用提交前最终全量检查（359/359、audit 0/0、acceptance 10/10、FFmpeg 4/4、build success）；Cloudflare success 与生产资源独立核验通过
+- Decisions/risks:
+  - 用户要求的字幕位移修复和上一轮全部计划已经完成，无剩余必做项
+  - 应用内浏览器仍无实例；生产资源与交互契约已验证，截图式视觉巡检是环境限制而非功能阻断
+  - 本地仅 `tsconfig.tsbuildinfo` 保留既有机械差异，不属于 v0.6.0
+- Git status: 功能提交已推送；本部署记录将以独立 docs 提交推送，之后 master 与 origin 同步，仅本地 tsbuildinfo 非干净
+- Next step: 无；未来新需求从受控剪辑和常用元数据开始
