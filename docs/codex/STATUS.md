@@ -1,16 +1,16 @@
 # Project Status
 
-Last updated: 2026-07-12 12:47
-Updated by: Codex (GPT-5)
+Last updated: 2026-07-12 13:21
+Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: 英文覆盖、预设、自由命令编辑、可选参数、libaom-av1/libvvenc 发布收尾
-- Current state: 功能提交 `2673a61` 已推送到 `origin/master`，Cloudflare Pages check suite 为 success。生产站点 HTTP 200，已切换到 `/assets/index-DaT-6WrM.js`；bundle 确认包含自由命令编辑、libaom-av1 与 libvvenc，且旧产品描述已不存在。
+- Current objective: 修复 Shell 渲染器对中文/方括号等非 ASCII 路径不加引号的问题
+- Current state: 核心修复已本地完成，全量检查通过（337/337）；尚未提交
 - Current site: https://fflab.loliland.cn/
-- Next objective: 继续功能迭代或在可用浏览器环境补做非阻断视觉巡检
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 333/333（21 文件）、catalog audit 0/0、production build 成功（489.09 KB JS + 17.92 KB CSS）、acceptance 10/10
-- Current UI risk: 应用内浏览器发现列表仍为空，无法执行截图巡检；20 项 BuilderPage RTL 交互与全展开字段英文覆盖契约已通过
+- Next objective: 提交并推送修复；在可用浏览器环境做视觉确认
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 337/337（21 文件）、catalog audit 0/0、production build 成功（489.29 KB JS + 17.92 KB CSS）
+- Current UI risk: 应用内浏览器发现列表仍为空，无法执行截图巡检
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -925,3 +925,42 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Decisions/risks: 应用内浏览器无实例，未执行截图巡检；Cloudflare 构建状态、HTTP 与 bundle 内容均已独立核验
 - Git status: 功能提交已推送；本部署记录将以独立 docs commit 推送，完成后预期 clean
 - Next step: 无阻断任务；后续按用户指示继续迭代
+
+### 2026-07-12 13:21 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 修复文件路径引号问题 — 两阶段：粘贴引号剥离 + Shell 渲染器非 ASCII 路径引号缺失（核心 bug）
+- Root cause:
+  1. **粘贴阶段**：Windows 资源管理器对含空格路径在剪贴板包裹双引号，粘贴后引号被当作路径字面值
+  2. **Shell 渲染阶段（核心 bug）**：`escapeBash`/`escapePowerShell`/`escapeCmd` 只匹配 ASCII 安全字符集，对中文、方括号、Unicode 等非 ASCII 字符不添加引号，导致 `F:\演示片\...\[HDR]秘鲁风光.mp4` 在命令中裸露，FFmpeg 无法解析
+- Work completed:
+  1. **bash-renderer.ts**: 重写 `escapeBash` — 安全 ASCII 令牌不引号；含单引号用双引号转义；其余一律单引号包裹
+  2. **powershell-renderer.ts**: 同策略 — 安全 ASCII 不引号；含双引号用单引号；其余双引号包裹
+  3. **cmd-renderer.ts**: 同策略 — 安全 ASCII 不引号；其余转义 CMD 元字符后双引号包裹
+  4. **ParameterField.tsx**: 新增 `sanitizeTextValue` + `onPaste` 处理器，剥离粘贴路径两端成对引号
+  5. **resolve-section.ts**: 为 `input.path`/`output.path` 补充 `configBinding`
+  6. **command.test.ts**: 新增 4 个测试（中文路径、方括号、PowerShell/CMD 非 ASCII 路径）
+- Files changed:
+  - Modified: `src/domain/shell/bash-renderer.ts` (~12 lines)
+  - Modified: `src/domain/shell/powershell-renderer.ts` (~8 lines)
+  - Modified: `src/domain/shell/cmd-renderer.ts` (~8 lines)
+  - Modified: `src/pages/builder/components/ParameterField.tsx` (+31/-4)
+  - Modified: `src/domain/presentation/resolve-section.ts` (+4/-2)
+  - Modified: `src/tests/unit/command.test.ts` (+44/-0)
+- Commands run:
+  - `npm run check`: ALL PASSED (ESLint 0/0, tsc 0, vitest 337/337, audit 0/0, build 489.29 KB JS + 17.92 KB CSS)
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 337/337 passed (21 files, +4 new)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 489.29 KB JS + 17.92 KB CSS
+  - 原有 333 测试 0 弱化/删除
+- Decisions/risks:
+  - 三渲染器统一策略：安全 ASCII 跳过引号（保持可读性），其余一律包裹
+  - bash 单引号原样保留所有字符（含中文/Unicode/方括号），是最安全的路径引号方式
+  - PowerShell 优先双引号、CMD 用双引号
+  - 粘贴引号剥离仅处理两端成对引号，路径内部引号不损坏
+  - 应用内浏览器无可用实例，新场景由单元测试覆盖
+- Environment notes: Node.js v24.18.0, Windows 11
+- Git status: master branch, working tree NOT clean（6 文件修改 + 记录文件待更新）
+- Next step: git commit；用户确认后推送 master 触发 Cloudflare Pages 自动部署
