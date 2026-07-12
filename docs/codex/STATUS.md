@@ -1,16 +1,15 @@
 # Project Status
 
-Last updated: 2026-07-12 13:21
+Last updated: 2026-07-12 14:20
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: 修复 Shell 渲染器对中文/方括号等非 ASCII 路径不加引号的问题
-- Current state: 核心修复已本地完成，全量检查通过（337/337）；尚未提交
+- Current objective: 访问量计数器仪表盘 — 今日/总计双指标，4h 客户端限流，只读模式，来源校验
+- Current state: 全部功能已实现、验证通过、已推送到 master 并部署到 Cloudflare Pages
 - Current site: https://fflab.loliland.cn/
-- Next objective: 提交并推送修复；在可用浏览器环境做视觉确认
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 337/337（21 文件）、catalog audit 0/0、production build 成功（489.29 KB JS + 17.92 KB CSS）
-- Current UI risk: 应用内浏览器发现列表仍为空，无法执行截图巡检
+- Next objective: 无阻断任务；后续按用户指示继续迭代
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 337/337（21 文件）、catalog audit 0/0、production build 成功（490.90 KB JS + 18.46 KB CSS）
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -1005,3 +1004,46 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - New: functions/api/visits.ts, src/features/analytics/VisitCounter.tsx, public/_routes.json
   - Modified: src/pages/builder/BuilderPage.tsx, src/index.css
 - Next step: (1) 用户在 Cloudflare 控制台创建 KV 命名空间并绑定 (2) git commit & push 触发部署
+
+### 2026-07-12 14:20 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: 访问量计数器完整实现 — 今日/总计双指标 + 客户端限流 + 只读模式 + 来源校验，并部署上线
+- Work completed:
+  1. **计数 API** (`functions/api/visits.ts`):
+     - 返回 `{ total, today }` 双指标
+     - 今日键名用 `YYYY-MM-DD`（北京时间 UTC+8），自动每日归零
+     - `?count=false` 只读模式：返回实时数据但不递增 KV
+     - Origin/Referer 校验：仅放行 fflab.loliland.cn 和 localhost，其余返回 403
+  2. **前端仪表盘** (`src/features/analytics/VisitCounter.tsx`):
+     - 双 `meta-pill` 药丸布局：今日访问 / 总计访问
+     - 4 小时客户端限流：限流期内 fetch `?count=false` 只读拉取实时数据
+     - 不限流时正常上报 + 写 localStorage 时间戳
+     - 网络错误静默失败，不影响页面功能
+  3. **路由修复** (`public/_routes.json`):
+     - 初始 `exclude: ["/*"]` 也匹配了 `/api/*`，exclude 优先级高于 include
+     - 修复为 `exclude: []`，`include: ["/api/*"]` 正确路由到 Functions
+  4. **页面集成**: footer 新增 `builder-footer__stats` 区域，中英双语标签（今日访问/Today's visits、总计访问/Total visits）
+  5. **样式**: `.visit-dashboard` / `.visit-pill` / `.builder-footer__stats` 仪表盘布局
+- Commits (5 commits, pushed to master):
+  - `bbadcaf`: 初始计数器（VisitCounter + Functions + _routes.json）
+  - `6489979`: fix _routes.json exclude 覆盖 include
+  - `30782d2`: 扩展为今日+总计双指标仪表盘
+  - `14e1c73`: 4h localStorage 限流（仅首次上报）
+  - `9eff7bb`: 标签改为"今日访问/总计访问"
+  - `084c993`: 限流期间展示缓存数据（修复仪表盘消失）
+  - `2d677b6`: 限流期改为 ?count=false 只读拉取实时数据
+  - `46ffa9b`: Origin/Referer 来源校验，拒绝外部直接访问
+- Commands run:
+  - `npm run check`: 每轮提交前全部通过（ESLint 0/0, tsc 0, vitest 337/337, audit 0/0, build OK）
+- Verification:
+  - 生产环境 `curl -H "Referer: https://fflab.loliland.cn/" https://fflab.loliland.cn/api/visits` → `{"total":N,"today":M}` ✅
+  - 无 Referer 的 curl 请求 → 403 ✅
+  - 页面 footer 显示双 pill 仪表盘 ✅
+- Decisions/risks:
+  - 客户端限流而非服务端限流：简单有效，4h 窗口足够防止刷量
+  - 限流期间用只读模式拉取实时数据：用户能看到其他访客贡献的增量
+  - Origin/Referer 校验阻止 curl 和第三方网站调用，但不影响同源 fetch
+  - 北京时间 UTC+8 用 `getTimezoneOffset() + 480` 计算，无第三方依赖
+- Environment notes: Node.js v24.18.0, Windows 11
+- Git status: master branch, commit `46ffa9b`, pushed to origin/master, working tree clean (STATUS.md + 工作进度.md 待提交)
+- Next step: 提交 closeout 记录；无功能阻断任务
