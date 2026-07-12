@@ -1208,7 +1208,6 @@ export function resolveMetadataSection(config: ProjectConfig): ResolvedSection {
       commandOrigins: ['output.metadata.globalRaw'], diagnostics: [],
       tier: 'basic', optional: true,
       configBinding: { path: CONFIG_PATHS.output.metadataGlobalRaw },
-      panelId: 'input-output',
     },
     {
       id: 'output.metadata.streamRaw',
@@ -1225,7 +1224,6 @@ export function resolveMetadataSection(config: ProjectConfig): ResolvedSection {
       commandOrigins: ['output.metadata.streamRaw'], diagnostics: [],
       tier: 'basic', optional: true,
       configBinding: { path: CONFIG_PATHS.output.metadataStreamRaw },
-      panelId: 'input-output',
     },
   ]
 
