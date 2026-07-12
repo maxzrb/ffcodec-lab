@@ -85,7 +85,7 @@ export function WorkbenchShell({
             <span className="workbench-nav__label">{text(panel.label)}</span>
             <span className="workbench-nav__badges">
               {panel.enabledAdvancedCount > 0 && <span title={locale === 'zh-CN' ? '已设置高级参数' : 'Advanced settings'}>{panel.enabledAdvancedCount}</span>}
-              {panel.diagnosticCount > 0 && <span className="workbench-nav__badge--warning" title={locale === 'zh-CN' ? '诊断信息' : 'Diagnostics'}>{panel.diagnosticCount}</span>}
+              {panel.diagnosticCount > 0 && <span title={locale === 'zh-CN' ? '诊断信息' : 'Diagnostics'}>{panel.diagnosticCount}</span>}
             </span>
           </button>
         ))}

@@ -18,6 +18,10 @@
   --text: #172033;
   --text-soft: #43536a;
   --text-dim: #687990;
+  --text-secondary: #43536a;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-strong: rgba(220, 228, 236, 0.7);
+  --shadow-soft: 0 1px 3px rgba(39, 61, 84, 0.08);
   --accent: #087f6c;
   --accent-strong: #056b5b;
   --accent-glow: rgba(8, 127, 108, 0.16);
@@ -63,6 +67,10 @@
   --text: #e9f2ff;
   --text-soft: #b7c8dd;
   --text-dim: #7f96b2;
+  --text-secondary: #b7c8dd;
+  --surface: rgba(13, 28, 47, 0.86);
+  --surface-strong: rgba(20, 42, 66, 0.7);
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.18);
   --accent: #31d2b4;
   --accent-strong: #12b89b;
   --accent-glow: rgba(49, 210, 180, 0.2);
@@ -210,6 +218,25 @@ input[type="number"]:hover {
   background: var(--section-surface);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.parameter-field-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  background: var(--bg-card);
+}
+
+.parameter-field-group .section-divider {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+  margin: -6px -6px 4px -6px;
+  padding: 5px 10px 3px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
 }
 
 select:focus,
@@ -537,12 +564,9 @@ code {
   padding: 2px 5px;
   border-radius: 999px;
   background: var(--surface-strong);
+  color: var(--text-secondary);
   font-size: 10px;
   text-align: center;
-}
-
-.workbench-nav__badge--warning {
-  color: var(--warning-text, #d79b35);
 }
 
 .workbench-content,

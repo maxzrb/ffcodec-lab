@@ -812,7 +812,7 @@ export function resolveSubtitleSection(
   for (const track of config.subtitle.tracks) {
     fields.push(resolveSectionLabel(
       `section.subtitle.track.${track.id}`,
-      `字幕: ${track.id}`,
+      `${track.id}${track.language ? ` · ${track.language}` : ''}`,
       fieldStates,
     ))
 

@@ -88,7 +88,7 @@ function renderControl(
     case 'section':
       return (
         <div className="section-divider" role="separator" aria-label={field.label}>
-          {field.value !== undefined && field.value !== null ? String(field.value) : ''}
+          {field.value !== undefined && field.value !== null && field.value !== '' ? String(field.value) : text(field.label)}
         </div>
       )
 

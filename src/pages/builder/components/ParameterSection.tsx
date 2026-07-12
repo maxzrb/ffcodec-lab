@@ -1,8 +1,10 @@
 // ============================================================
 // ParameterSection — renders a ResolvedSection with all its fields.
+// Fields separated by controlType='section' dividers are visually
+// grouped as sub-sections (e.g., subtitle tracks).
 // ============================================================
 
-import type { ResolvedSection } from '../../../domain/presentation/resolved-field'
+import type { ResolvedField, ResolvedSection } from '../../../domain/presentation/resolved-field'
 import type { ReactNode } from 'react'
 import { ParameterField } from './ParameterField'
 import { useI18n } from '../../../features/i18n/i18n'
@@ -17,6 +19,33 @@ interface ParameterSectionProps {
   actions?: ReactNode
 }
 
+interface FieldGroup {
+  key: string
+  divider: ResolvedField | null
+  fields: ResolvedField[]
+}
+
+/** Split a flat field list into groups delimited by section-divider fields. */
+function groupFields(fields: ResolvedField[]): FieldGroup[] {
+  const groups: FieldGroup[] = []
+  let current: FieldGroup = { key: '_default', divider: null, fields: [] }
+
+  for (const field of fields) {
+    if (field.controlType === 'section') {
+      if (current.fields.length > 0 || current.divider) {
+        groups.push(current)
+      }
+      current = { key: field.id, divider: field, fields: [] }
+    } else {
+      current.fields.push(field)
+    }
+  }
+  if (current.fields.length > 0 || current.divider) {
+    groups.push(current)
+  }
+  return groups
+}
+
 export function ParameterSection({
   section,
   expanded,
@@ -27,6 +56,20 @@ export function ParameterSection({
   actions,
 }: ParameterSectionProps) {
   const { text } = useI18n()
+
+  const renderField = (field: ResolvedField) => (
+    <ParameterField
+      key={field.id}
+      field={field}
+      onChange={(v) => onFieldChange(field.id, v)}
+      onExplain={onExplain}
+      highlighted={field.id === highlightedFieldId}
+    />
+  )
+
+  const groups = groupFields(section.fields)
+  const hasGroups = groups.length > 1 || (groups.length === 1 && groups[0].divider)
+
   return (
     <section className="parameter-section">
       <div className="parameter-section__header">
@@ -49,15 +92,15 @@ export function ParameterSection({
 
       {expanded && (
         <div className="parameter-section__body">
-          {section.fields.map((field) => (
-            <ParameterField
-              key={field.id}
-              field={field}
-              onChange={(v) => onFieldChange(field.id, v)}
-              onExplain={onExplain}
-              highlighted={field.id === highlightedFieldId}
-            />
-          ))}
+          {hasGroups
+            ? groups.map((group) => (
+                <div key={group.key} className="parameter-field-group">
+                  {group.divider && renderField(group.divider)}
+                  {group.fields.map(renderField)}
+                </div>
+              ))
+            : groups[0]?.fields.map(renderField)
+          }
         </div>
       )}
     </section>
