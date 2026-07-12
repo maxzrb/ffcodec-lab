@@ -1,15 +1,15 @@
 # Project Status
 
-Last updated: 2026-07-12 19:18
+Last updated: 2026-07-12 21:50
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: v0.7.0 — 自定义元数据（全局/流级）和色彩参数详细介绍
-- Current state: 全部计划项已实现、验证，待提交部署
+- Current objective: v0.7.0 hotfix — 统一展开状态、metadata 命令渲染修复、custom 面板重组、诊断徽章
+- Current state: 4 笔 hotfix 已提交推送、Cloudflare Pages 部署中；359/359 测试全部通过
 - Current site: https://fflab.loliland.cn/
-- Next objective: 提交并部署 v0.7.0；后续可考虑容器专项、有限滤镜排序预设等
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 文件）、catalog audit 0/0、acceptance 10/10、FFmpeg 8.1.1 smoke 4/4、production build 成功（业务 332.32 KB + vendor 205.27 KB + CSS 22.52 KB）
+- Next objective: 等待 Cloudflare 构建完成；后续按评估实施受控剪辑和常用元数据
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 文件）、catalog audit 0/0、production build 成功
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -195,13 +195,13 @@ Updated by: Claude Code (DeepSeek-v4-pro)
 
 - Git repository: yes
 - Branch: master（跟踪 origin/master）
-- Last deployed feature commit: `d6364eb`（v0.6.0 closeout 记录）；v0.7.0 待提交
+- Last deployed feature commit: `424cd49`（diagnostic badge revert）
 - Remote: `https://github.com/maxzrb/ffcodec-lab.git`
-- Sync: `d6364eb` 已推送到 origin/master；v0.7.0 变更待暂存提交
-- Deployment verification: `https://fflab.loliland.cn/` 当前运行 v0.6.0
-- Uncommitted changes: v0.7.0 全部功能、测试和记录文件 + `tsconfig.tsbuildinfo` 机械差异
-- Working tree clean: 否（v0.7.0 变更待提交）
-- Commit recommended before switching agents/devices: 是（建议先提交 v0.7.0）
+- Sync: 全部已推送到 origin/master
+- Deployment verification: Cloudflare Pages 自动构建中（`https://fflab.loliland.cn/`）
+- Uncommitted changes: 无（仅 STATUS.md + 工作进度.md 记录更新待提交）
+- Working tree clean: 否（HandShake 记录更新中）
+- Commit recommended before switching agents/devices: 是
 
 ## Session Log
 
@@ -1300,3 +1300,45 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Environment notes: Node.js v24.18.0, Windows 11, Git Bash
 - Git status: master 跟踪 origin/master，v0.7.0 变更 + 记录文件待提交；仅 tsconfig.tsbuildinfo 为机械差异
 - Next step: 提交 v0.7.0，推送并核验 Cloudflare Pages 部署
+
+### 2026-07-12 20:30 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: v0.7.0 hotfix — 统一展开状态、metadata 命令渲染修复、custom 面板重组
+
+- Work completed:
+  1. **全部模块默认展开** (`builder-store.ts`): `section.frame`/`subtitle`/`container`/`customArgs` 从 false 改为 true，所有 11 个模块统一默认展开
+  2. **metadata 命令渲染 bug 修复** (`argument-order.ts`): `collectAndSortOutput` 遗漏 `output.metadataArgs`，导致 command-builder 正确生成的 metadata 参数在命令预览中静默丢弃。补上一行修复
+  3. **metadata 迁移到 custom 面板** (`resolve-section.ts`): metadata 字段 `panelId` 从 `'input-output'` 改为 `'custom'`
+  4. **custom 面板拆分子区域** (`resolve-builder-view.ts`): `resolvePanelSectionLabel` 新增 `section.metadata` → "自定义元数据"、`section.customArgs` → "自定义参数"
+  5. **诊断数字徽章** (`BuilderPage.tsx` + `index.css`): 右侧检查器"诊断 N"标签页的数字包裹 `inspector-tab__badge`，红琥珀色圆角徽章样式
+  6. **还原左侧导航诊断徽章**: 用户反馈左侧导航保持统一风格，撤销 WorkbenchShell 中的 `workbench-nav__badge--diag` class 和对应 CSS
+
+- Commits (6 pushed to master):
+  - `2abd162` fix: unify all sections to expanded by default
+  - `fc4b904` fix: metadata args not rendered in command preview
+  - `6e75861` feat: move metadata to custom panel, split sections, add diagnostic badge
+  - `c838fbb` fix: apply diagnostic badge to right-side inspector tab count
+  - `424cd49` fix: revert left nav diagnostic badge — keep unified style
+
+- Files changed:
+  - Modified: `src/store/builder-store.ts`, `src/domain/command/argument-order.ts`, `src/domain/presentation/resolve-section.ts`, `src/domain/presentation/resolve-builder-view.ts`, `src/pages/builder/BuilderPage.tsx`, `src/pages/builder/components/WorkbenchShell.tsx`, `src/index.css`
+
+- Commands run:
+  - `npx vitest run`: 359/359 passed (22 files) — 每次提交前后均验证
+  - `npm run check`: ALL PASSED
+
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 359/359 passed (22 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 成功
+
+- Decisions/risks:
+  - custom 面板现在包含"自定义元数据"和"自定义参数"两个子区域，元数据两个 textarea 不再散落在输入输出面板
+  - metadata 命令渲染 bug 是 argument-order.ts 漏了一行，command-builder 逻辑本身正常
+  - 左侧导航徽章保持统一风格，仅右侧检查器诊断标签加蒙版
+
+- Environment notes: Node.js v24.18.0, Windows 11, Git Bash
+- Git status: master 跟踪 origin/master，全部功能提交已推送
+- Next step: 无阻断任务；等待 Cloudflare 构建完成后刷新验证
