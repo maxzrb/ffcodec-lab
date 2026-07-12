@@ -1889,4 +1889,98 @@ export const explanations: Record<string, ExplanationDefinition> = {
     id: 'expl.videotoolbox.power', title: '节能优先', short: '在系统支持时优先选择更节能的编码路径。',
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-11', file: 'libavcodec/videotoolboxenc.c', sourceType: 'ffmpeg-official' }],
   },
+
+  'expl.libaom.encoder': {
+    id: 'expl.libaom.encoder', title: 'libaom-av1 软件编码器',
+    short: 'AOMedia 的参考级 AV1 编码器，压缩效率高且选项丰富，但常用质量设置下编码速度明显慢于 H.264/HEVC。',
+    detail: '适合对体积和 AV1 质量控制要求较高、可以接受长编码时间的任务。FFmpeg 必须在编译时启用 libaom。',
+    effects: { quality: 5, fileSize: 5, speed: 1, compatibility: 3 },
+    warnings: ['cpu-used 较低时编码可能非常慢；开始长任务前建议先截取短片测试。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-12', file: 'doc/encoders.texi / libavcodec/libaomenc.c', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-codecs.html#libaom_002dav1' }],
+  },
+  'expl.libaom.profile': {
+    id: 'expl.libaom.profile', title: 'AV1 Profile', short: '限制 AV1 的位深和色度格式能力；自动模式会按输入格式选择，通常最不容易造成不必要的兼容性限制。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.pixfmt': {
+    id: 'expl.libaom.pixfmt', title: 'libaom 像素格式', short: '决定 AV1 输入到编码器的位深与色度采样；10-bit 可减轻渐变色带，但解码兼容性和运算开销更高。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'libavcodec/libaomenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.crf': {
+    id: 'expl.libaom.crf', title: 'libaom 恒定质量', short: '让码率随画面复杂度变化，并用 CRF 控制质量；本模式同时生成 -b:v 0，避免设置目标码率。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.crf.value': {
+    id: 'expl.libaom.crf.value', title: 'libaom CRF', short: '范围 0–63，数值越低质量越高、文件越大；相同数字不能直接与 x264/x265 的 CRF 横向比较。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.vbr': {
+    id: 'expl.libaom.vbr', title: 'libaom VBR', short: '按目标平均码率分配数据，便于估算文件体积；画质会随素材复杂度变化。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.vbr.bitrate': {
+    id: 'expl.libaom.vbr.bitrate', title: 'libaom 目标码率', short: '设置 AV1 输出的平均视频码率。分辨率、帧率和内容复杂度越高，通常需要更高码率。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.cpu_used': {
+    id: 'expl.libaom.cpu_used', title: 'libaom 速度等级', short: '0–8，数值越高编码越快、压缩效率通常越低。官方默认 1 很慢，日常测试可从 4–6 开始。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.row_mt': {
+    id: 'expl.libaom.row_mt', title: 'libaom 行级多线程', short: '允许编码器按行并行处理，可能提高多核利用率；实际收益还取决于分块和线程设置。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.params': {
+    id: 'expl.libaom.params', title: 'AOM 附加参数', short: '用冒号分隔 key=value，把 libaom 私有选项直接交给编码器；错误键值会让 FFmpeg 启动失败。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+
+  'expl.libvvenc.encoder': {
+    id: 'expl.libvvenc.encoder', title: 'libvvenc H.266/VVC 编码器',
+    short: 'Fraunhofer VVenC 的 H.266/VVC 软件编码器，面向更高压缩效率；目前编码耗时、FFmpeg 构建可用性和播放支持都较受限。',
+    detail: '只接受 yuv420p10le 输入。适合实验、研究或明确具备 VVC 播放链路的交付，不建议作为普通设备通用格式。',
+    effects: { quality: 5, fileSize: 5, speed: 1, compatibility: 1 },
+    warnings: ['使用前请确认目标 FFmpeg 启用 libvvenc，且接收端支持 H.266/VVC。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-12', file: 'doc/encoders.texi / libavcodec/libvvenc.c', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-codecs.html#libvvenc' }],
+  },
+  'expl.libvvenc.preset': {
+    id: 'expl.libvvenc.preset', title: 'VVenC 编码预设', short: '从 faster 到 slower 调整速度与压缩效率；medium 是官方默认，较慢档位会显著增加编码时间。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.pixfmt': {
+    id: 'expl.libvvenc.pixfmt', title: 'VVenC 输入像素格式', short: 'FFmpeg 当前 libvvenc 封装只接受 yuv420p10le，因此此项固定为 10-bit 4:2:0。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.cqp': {
+    id: 'expl.libvvenc.cqp', title: 'VVenC 恒定量化', short: '使用固定 QP 控制质量，不设目标码率；数值越低通常质量和文件体积越高。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.qp': {
+    id: 'expl.libvvenc.qp', title: 'VVenC QP', short: 'FFmpeg 封装允许 -1–63，默认 32；降低 QP 会增加细节、体积和编码负担。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.vbr': {
+    id: 'expl.libvvenc.vbr', title: 'VVenC 码率模式', short: '设置目标码率以便估算体积和带宽；复杂场景的瞬时质量会随码率预算变化。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.bitrate': {
+    id: 'expl.libvvenc.bitrate', title: 'VVenC 目标码率', short: '通过 -b:v 设置目标视频码率。官方示例使用 MP4，但实际播放支持仍取决于接收端。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.qpa': {
+    id: 'expl.libvvenc.qpa', title: 'VVenC 感知优化', short: '启用主观感知驱动的量化优化；关闭时更偏向基础量化行为。留空则采用编码器默认值。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.tier': {
+    id: 'expl.libvvenc.tier', title: 'VVC Tier', short: '选择 main 或 high tier，限制特定 level 下允许的码率能力；不确定时留空使用编码器默认值。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.period': {
+    id: 'expl.libvvenc.period', title: '帧内刷新周期', short: '以秒为单位控制周期性帧内刷新；更短周期便于跳转和错误恢复，但通常降低压缩效率。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.params': {
+    id: 'expl.libvvenc.params', title: 'VVenC 附加参数', short: '用冒号分隔 key=value，直接传递 VVenC 私有选项；只在核对 vvencapp --fullhelp 后使用。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi / libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
 }

@@ -1,16 +1,16 @@
 # Project Status
 
-Last updated: 2026-07-12 12:08
+Last updated: 2026-07-12 12:44
 Updated by: Codex (GPT-5)
 
 ## Current Snapshot
 
-- Current objective: 参数介绍、全局中/EN、诊断与音频码率改动提交部署收尾
-- Current state: 功能提交 `361949c` 已推送到 `origin/master`，Cloudflare Pages check suite 为 success，生产站点已加载新资源 `/assets/index-BCYh_oFj.js`。线上资源确认包含英文工作台与新诊断模块，HTTP 200。全局语言状态覆盖工作台、全部目录控件/选项、118 条参数介绍、诊断与预设界面；内部来源引用保留供目录审计但不再面向用户显示。
+- Current objective: 修复英文遗漏、重制标题与预设，新增自由命令编辑、可关闭参数、libaom-av1/libvvenc，并提交部署
+- Current state: 功能与测试已完成，待创建提交并推送 Cloudflare Pages。新增 libaom-av1 与 H.266/VVC libvvenc，官方参数、构建依赖和容器兼容记录已接入目录；右侧自由命令编辑器支持粘贴、修改、复制与恢复；展开字段英文覆盖契约通过；内置预设全部保留所有字幕且不再使用 WebM。
 - Current site: https://fflab.loliland.cn/
-- Next objective: 继续功能迭代或在可用浏览器环境补做非阻断视觉巡检
-- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 318/318（20 文件）、catalog audit 0/0、production build 成功、acceptance 10/10
-- Current UI risk: 应用内浏览器发现列表为空，无法执行截图巡检；17 项 BuilderPage RTL 交互及英文无中文混入契约已通过
+- Next objective: 提交并推送当前功能，等待 Cloudflare Pages 成功后核验生产资源
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 333/333（21 文件）、catalog audit 0/0、production build 成功（489.09 KB JS + 17.92 KB CSS）、acceptance 10/10
+- Current UI risk: 应用内浏览器发现列表仍为空，无法执行截图巡检；20 项 BuilderPage RTL 交互与全展开字段英文覆盖契约已通过
 - v0.4.0 已知阻断缺陷（已修复）:
   - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
   - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
@@ -33,12 +33,17 @@ Updated by: Codex (GPT-5)
   - audit: 0 errors, 0 warnings
   - build: 405 KB JS + 1.3 KB CSS
   - Playwright: 已移除，不属于默认依赖
-- Video encoders: 11 个 (software 3、NVIDIA 2、Intel 2、AMD 2、Apple 2)
+- Video encoders: 13 个 (software 5、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Last active agent: Codex
 - Likely next agent: Codex
-- Next recommended step: 无阻断任务；切换设备或代理前保持 `master` 与远端同步
+- Next recommended step: 完成 Git push 与 Cloudflare Pages 生产部署核验
 
 ## Active TODO
+
+- [x] 英文遗漏、预设默认值、自由命令编辑、可选参数及新编码器
+  - Owner: Codex
+  - Status: 实现与全量验证完成，待提交部署
+  - Notes/blockers: 应用内浏览器无实例；官方 FFmpeg 文档与源码已核对 libaom-av1/libvvenc 参数
 
 - [x] 参数介绍、诊断模块、全局语言与音频码率输入重制
   - Owner: Codex
@@ -61,6 +66,8 @@ Updated by: Codex (GPT-5)
   - Notes/blockers: 无功能阻断；应用内浏览器不可用，主题和交互由 RTL 覆盖
 
 ## Recently Completed
+
+- 2026-07-12 12:44: 展开字段英文覆盖、六语标题、无 WebM 且保留全部字幕的内置预设、自由命令编辑器、可关闭的非必需参数、libaom-av1/libvvenc — 333/333 测试、0/0 审计、10/10 验收
 
 - 2026-07-12 11:44: 全局中/EN切换、118 条参数介绍双语覆盖、可操作诊断、音频码率后置单位 — 318/318 测试、0/0 审计、10/10 验收
 
@@ -874,3 +881,34 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
   - 应用内浏览器仍无实例，真实截图巡检未补做
 - Git status: 功能提交已推送；本部署记录将以独立 docs commit 推送，完成后预期 clean
 - Next step: 无阻断任务；后续按用户指示继续迭代
+
+### 2026-07-12 12:44 - Codex (GPT-5)
+
+- Objective: 修复英文模式中文遗漏，调整标题与预设，新增自由命令编辑、可关闭参数、libaom-av1 和 VVC，并准备提交部署
+- Work completed:
+  1. 新增全展开字段英文覆盖契约，补齐流选择、滤镜、自定义参数与字幕高级字段的英文文案
+  2. 删除原产品描述，改为繁中、英文、日文、韩文、俄文、土耳其语六种“FFmpeg 命令生成器”译名
+  3. 内置 AV1 预设由 WebM 改为 MKV，并以自动测试保证所有内置预设默认保留全部字幕且不使用 WebM
+  4. 新增右侧自由命令编辑器，支持粘贴、手动修改、复制和恢复当前生成命令，且明确不反向覆盖参数配置
+  5. 为目录控件新增 optional 语义；libopus application/frame_duration 等非必需项可保持“不设置”，不再自动发射目录默认值
+  6. 依据 FFmpeg 官方 codecs 文档与 libvvenc.c 新增 libaom-av1、libvvenc，覆盖质量模式、速度/预设、像素格式、附加参数、构建要求与容器兼容性
+- Commands run:
+  - `git pull` / `git status` — master 与 origin/master 同步，启动时 clean
+  - FFmpeg 官方文档核验 — libaom-av1 cpu-used/CRF/row-mt/aom-params；libvvenc preset/QP/qpa/period/tier/vvenc-params 与 yuv420p10le
+  - 定向 TypeScript、Vitest 与 catalog audit — 49/49 相关测试通过，audit 0/0
+  - `npm run check` — ESLint、TypeScript、333 tests、catalog audit、production build 全部通过
+  - `npx tsx scripts/acceptance-test.ts` — 10/10，刷新 `docs/mvp-acceptance.md`
+  - Browser 本地巡检连接 — 浏览器发现列表为空，本地 preview 服务已安全停止
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 333/333 passed (21 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 489.09 KB JS + 17.92 KB CSS
+  - Acceptance: 10/10
+- Decisions/risks:
+  - 可选目录控件只有显式设置后才进入命令；现有非 optional 控件继续沿用目录默认值，避免破坏 NVENC/QSV 等既有行为
+  - libvvenc 仅提供 FFmpeg 当前源码声明的 yuv420p10le，且在说明中明确 VVC 播放兼容性较低
+  - 应用内浏览器无可用实例，截图式视觉巡检仍为非阻断环境限制
+- Git status: master 跟踪 origin/master，working tree not clean，本次功能与记录待提交
+- Next step: 创建提交、推送 master、等待 Cloudflare Pages success 并核验生产资源

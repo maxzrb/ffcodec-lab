@@ -1,6 +1,6 @@
 # MVP 验收报告
 
-> 生成时间：2026-07-12T03:41:35.701Z
+> 生成时间：2026-07-12T04:40:27.685Z
 > TypeScript：0 errors
 > 目录审计：0 errors
 > 测试：以本次 npm run check 结果为准
@@ -69,21 +69,21 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx264 -preset mediu
 - 帧：resolution=source, framerate=source
 
 **Command AST**：
-- `single-pass`：12 个参数
+- `single-pass`：10 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow -pix_fmt yuv420p10le -profile:v main10 -crf 24 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过
@@ -102,21 +102,21 @@ ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libx265 -preset slow 
 - 帧：resolution=source, framerate=source
 
 **Command AST**：
-- `single-pass`：10 个参数
+- `single-pass`：8 个参数
 
 **Bash**：
 ```bash
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -application audio -frame_duration 20 -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -i input.mkv -map 0:v:0? -map 0:a:0? -map 0:s? -c:v libsvtav1 -preset 6 -crf 35 -c:a libopus -vbr on -b:a 128k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过

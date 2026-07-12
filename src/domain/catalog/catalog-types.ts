@@ -10,6 +10,7 @@ export type CodecFamily =
   | 'h264'
   | 'hevc'
   | 'av1'
+  | 'vvc'
   | 'vp9'
   | 'prores'
   | 'aac'
@@ -261,6 +262,8 @@ export interface ControlDefinition {
   options?: SelectOption[]
   range?: { min?: number; max?: number; step?: number }
   defaultValue?: unknown
+  /** 可选参数不由目录默认值自动写入命令，用户可明确选择“不设置”。 */
+  optional?: boolean
   explanationId: string
   /** Per-control capability constraints (overrides encoder-level) */
   capabilityScope?: CapabilityScope

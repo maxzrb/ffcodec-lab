@@ -24,6 +24,7 @@ import { I18nProvider, translateText, useI18n, type Locale } from '../../feature
 import { DiagnosticPanel } from './components/DiagnosticPanel'
 import { applyFix } from '../../domain/diagnostics/apply-diagnostic-fix'
 import type { DiagnosticFix } from '../../domain/rules/rule-types'
+import { CommandEditor } from './components/CommandEditor'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
@@ -209,10 +210,8 @@ export function BuilderPage() {
           <div>
             <p className="eyebrow">FFCodec Lab · Command Workbench</p>
             <h1>{isZh ? 'FFmpeg 命令生成器' : 'FFmpeg Command Builder'}</h1>
-            <p className="product-header__description">
-              {isZh
-                ? '组合编码、画面、音频与字幕参数，实时得到可追溯的跨 Shell 命令。所有能力均由目录和规则引擎驱动。'
-                : 'Configure encoding, picture, audio, and subtitles to build a traceable command for Bash, PowerShell, or CMD in real time.'}
+            <p className="product-header__description" data-multilingual-title>
+              FFmpeg 指令產生器 · FFmpeg Command Generator · FFmpeg コマンド生成ツール · FFmpeg 명령어 생성기 · Генератор команд FFmpeg · FFmpeg Komut Oluşturucu
             </p>
             <div className="product-meta" aria-label={isZh ? '项目能力摘要' : 'Capability summary'}>
               <span className="meta-pill">{isZh ? `${videoEncoderCount} 个视频编码器` : `${videoEncoderCount} video encoders`}</span>
@@ -288,6 +287,8 @@ export function BuilderPage() {
             onShellChange={handleShellChange}
             onTokenClick={handleTokenClick}
           />
+
+          <CommandEditor generatedCommand={pipeline.renderedCommand.text} />
 
           <DiagnosticPanel
             diagnostics={view.messages}

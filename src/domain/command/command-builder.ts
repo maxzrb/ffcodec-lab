@@ -325,7 +325,8 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
         const configKey = sp.configBinding?.path
           ? extractConfigKey(sp.configBinding.path)
           : sp.id
-        const val = config.video.specialParameters[configKey] ?? sp.defaultValue
+        const storedValue = config.video.specialParameters[configKey]
+        const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
         if (val === undefined || val === null || val === '') continue
         const tokens = buildSpecialParameterTokens(sp, val)
         if (!tokens) continue
@@ -406,7 +407,8 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
         const configKey = sp.configBinding?.path
           ? extractConfigKey(sp.configBinding.path)
           : sp.id
-        const val = config.audio.qualityValues[configKey] ?? sp.defaultValue
+        const storedValue = config.audio.qualityValues[configKey]
+        const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
         if (val === undefined || val === null || val === '') continue
         const tokens = buildSpecialParameterTokens(sp, val)
         if (!tokens) continue

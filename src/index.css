@@ -643,6 +643,34 @@ code {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.command-editor__hint {
+  margin: 0;
+  padding: 0 1rem 0.75rem;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+}
+
+.command-editor textarea {
+  display: block;
+  width: calc(100% - 2rem);
+  min-height: 10rem;
+  margin: 0 1rem 1rem;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--command-surface);
+  color: var(--command-text);
+  padding: 0.85rem;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.editor-status {
+  color: var(--warning);
+  font-size: 0.78rem;
+}
+
 .unit-input input {
   border-radius: var(--radius) 0 0 var(--radius);
 }

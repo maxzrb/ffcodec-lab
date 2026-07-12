@@ -260,6 +260,21 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(useBuilderStore.getState().config.audio.qualityValues['vbr']).toBe(true)
   })
 
+  it('非必需的编码应用类型可以保持不设置或再次关闭', async () => {
+    presetStore(makeAudioConfig('libopus'))
+    render(<BuilderPage />)
+
+    const application = screen.getByLabelText('编码应用类型')
+    expect(application).toHaveValue('')
+    expect(screen.getAllByRole('option', { name: '不设置（使用编码器默认）' }).length).toBeGreaterThan(0)
+
+    await userEvent.selectOptions(application, 'voip')
+    expect(useBuilderStore.getState().config.audio.qualityValues.application).toBe('voip')
+
+    await userEvent.selectOptions(application, '')
+    expect(useBuilderStore.getState().config.audio.qualityValues.application).toBe('')
+  })
+
   // -- 用例 6：普通 output.overwrite 复选框回归测试 --
   // 用于确认原缺陷只影响特殊参数，而非所有复选框。
   it('output.overwrite checkbox (non-specialParameter) toggles correctly', async () => {
@@ -382,8 +397,35 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.getByLabelText('Command preview')).toBeInTheDocument()
     expect(window.localStorage.getItem('ffcodec-locale')).toBe('en')
     expect(document.documentElement.lang).toBe('en')
-    const englishPageText = document.body.textContent?.replace('中', '') ?? ''
+    const multilingualTitle = document.querySelector('[data-multilingual-title]')?.textContent ?? ''
+    const englishPageText = (document.body.textContent ?? '').replace(multilingualTitle, '').replace('中', '')
     expect(englishPageText).not.toMatch(/[\u4e00-\u9fff]/)
+  })
+
+  it('标题区展示六种语言的 FFmpeg 命令生成器译名', () => {
+    render(<BuilderPage />)
+    const title = document.querySelector('[data-multilingual-title]')
+    expect(title).toHaveTextContent('FFmpeg 指令產生器')
+    expect(title).toHaveTextContent('FFmpeg Command Generator')
+    expect(title).toHaveTextContent('FFmpeg コマンド生成ツール')
+    expect(title).toHaveTextContent('FFmpeg 명령어 생성기')
+    expect(title).toHaveTextContent('Генератор команд FFmpeg')
+    expect(title).toHaveTextContent('FFmpeg Komut Oluşturucu')
+    expect(document.body).not.toHaveTextContent('组合编码、画面、音频与字幕参数')
+  })
+
+  it('自由编辑栏允许修改命令、保留手工内容并恢复生成命令', async () => {
+    render(<BuilderPage />)
+    const editor = screen.getByLabelText('可自由编辑的 FFmpeg 命令')
+    expect((editor as HTMLTextAreaElement).value).toContain('ffmpeg')
+
+    await userEvent.clear(editor)
+    await userEvent.type(editor, 'ffmpeg -i custom.mkv -c copy custom.mp4')
+    expect(editor).toHaveValue('ffmpeg -i custom.mkv -c copy custom.mp4')
+    expect(screen.getByText('已脱离自动同步')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '恢复生成命令' }))
+    expect((editor as HTMLTextAreaElement).value).toContain('input.mkv')
   })
 
   it('音频码率使用数值输入和后置单位选择', async () => {

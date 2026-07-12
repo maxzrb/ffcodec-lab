@@ -128,6 +128,7 @@ export const libopus: EncoderDefinition = {
         { value: 'lowdelay', label: 'lowdelay — 低延迟' },
       ],
       defaultValue: 'audio',
+      optional: true,
       explanationId: 'expl.libopus.application',
     },
     {
@@ -145,6 +146,7 @@ export const libopus: EncoderDefinition = {
         { value: 60, label: '60 ms' },
       ],
       defaultValue: 20,
+      optional: true,
       explanationId: 'expl.libopus.frame_duration',
       capabilityScope: {
         notes: [

@@ -46,7 +46,12 @@ export function resolveControlField(
   const state = findFieldState(fieldStates, ctrl.id)
   // Prefer control's configBinding path for reading; fall back to legacy configPath param
   const readPath = ctrl.configBinding?.path ?? _configPath
-  const value = readConfigValue(config, readPath) ?? ctrl.defaultValue
+  const storedValue = readConfigValue(config, readPath)
+  const value = storedValue ?? (ctrl.optional ? '' : ctrl.defaultValue)
+  const options = ctrl.options ? toResolvedOptions(ctrl.options) : undefined
+  if (ctrl.optional && ctrl.control === 'select') {
+    options?.unshift({ value: '', label: '不设置（使用编码器默认）' })
+  }
 
   return {
     id: ctrl.id,
@@ -57,7 +62,7 @@ export function resolveControlField(
     visible: state.visible,
     disabled: !state.enabled,
     disabledReason: state.reason,
-    options: ctrl.options ? toResolvedOptions(ctrl.options) : undefined,
+    options,
     min: ctrl.range?.min,
     max: ctrl.range?.max,
     step: ctrl.range?.step,

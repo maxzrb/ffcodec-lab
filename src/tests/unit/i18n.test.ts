@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { loadCatalog } from '../../domain/catalog/catalog-loader'
 import { localizeExplanation, translateText } from '../../features/i18n/i18n'
+import { createDefaultProjectConfig } from '../../domain/config/defaults'
+import {
+  resolveAudioSection,
+  resolveContainerSection,
+  resolveCustomArgsSection,
+  resolveFrameSection,
+  resolveInputSection,
+  resolveSubtitleSection,
+  resolveVideoSection,
+} from '../../domain/presentation/resolve-section'
 
 const catalog = loadCatalog()
 const containsChinese = (value: string) => /[一-龥]/.test(value)
@@ -61,5 +71,56 @@ describe('全局中英文切换', () => {
     expect(videoEncoder.short).toContain('播放兼容性')
     expect(audioEncoder.short).toContain('是否无损')
     expect(videoEncoder.short).not.toBe('选择重新编码时使用的视频编码器。')
+  })
+
+  it('全部展开字段的标签、说明、禁用原因和选项都能显示为英文', () => {
+    const fieldStates = {}
+    const sections = []
+    const base = createDefaultProjectConfig()
+    sections.push(
+      resolveInputSection(base, fieldStates),
+      resolveFrameSection(base, fieldStates),
+      resolveContainerSection(base, catalog, fieldStates),
+      resolveCustomArgsSection(base),
+    )
+
+    const subtitleConfig = createDefaultProjectConfig()
+    subtitleConfig.streams.preserveOtherSubtitleStreams = false
+    subtitleConfig.subtitle.tracks = [{
+      id: 'track-1', source: 'external', path: 'subtitle.srt', externalStreamIndex: 0,
+      codecMode: 'transcode', codec: 'srt', sourceCodecKnown: true, language: 'eng', title: 'English',
+      disposition: {},
+    }]
+    subtitleConfig.subtitle.burn.enabled = true
+    sections.push(resolveSubtitleSection(subtitleConfig, catalog, fieldStates))
+
+    for (const encoderId of Object.keys(catalog.encoders.video)) {
+      const config = createDefaultProjectConfig()
+      config.video.encoderId = encoderId
+      sections.push(resolveVideoSection(config, catalog, fieldStates))
+    }
+    for (const encoderId of Object.keys(catalog.encoders.audio)) {
+      const config = createDefaultProjectConfig()
+      config.audio.encoderId = encoderId
+      sections.push(resolveAudioSection(config, catalog, fieldStates))
+    }
+
+    const untranslated = sections.flatMap((section) => [
+      { id: section.id, value: section.label },
+      ...(section.description ? [{ id: section.id, value: section.description }] : []),
+      ...section.fields.flatMap((field) => [
+        { id: field.id, value: field.label },
+        ...(field.description ? [{ id: field.id, value: field.description }] : []),
+        ...(field.disabledReason ? [{ id: field.id, value: field.disabledReason }] : []),
+        ...(field.options ?? []).flatMap((option) => [
+          { id: field.id, value: option.label },
+          ...(option.badge ? [{ id: field.id, value: option.badge }] : []),
+        ]),
+      ]),
+    ])
+      .map((entry) => ({ ...entry, translated: translateText(entry.value, 'en') }))
+      .filter((entry) => containsChinese(entry.translated))
+
+    expect(untranslated).toEqual([])
   })
 })

@@ -237,11 +237,11 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
     },
     {
       name: 'AV1 节省空间',
-      description: 'libsvtav1 CRF 35 + Opus 96k + WebM，极致压缩',
+      description: 'libsvtav1 CRF 35 + Opus 96k + MKV，适合高压缩效率输出',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
       config: {
         ...createDefaultProjectConfig(),
-        output: { ...createDefaultProjectConfig().output, containerId: 'webm' },
+        output: { ...createDefaultProjectConfig().output, path: 'output.mkv', containerId: 'mkv' },
         video: {
           ...createDefaultProjectConfig().video,
           encoderId: 'libsvtav1',

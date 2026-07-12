@@ -200,4 +200,11 @@ describe('Built-in presets', () => {
     const json = JSON.stringify(builtins)
     expect(json).not.toContain('ffmpeg')
   })
+
+  it('全部内置预设默认保留所有字幕且不使用 WebM', () => {
+    for (const preset of getBuiltinPresets()) {
+      expect(preset.config.streams.preserveOtherSubtitleStreams, preset.name).toBe(true)
+      expect(preset.config.output.containerId, preset.name).not.toBe('webm')
+    }
+  })
 })
