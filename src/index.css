@@ -1034,9 +1034,29 @@ code {
   text-underline-offset: 2px;
 }
 
-.visit-counter {
-  color: inherit;
-  font-size: inherit;
+.builder-footer__stats {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.visit-dashboard {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.visit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.visit-pill strong {
+  font-weight: 600;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -329,9 +329,13 @@ export function BuilderPage() {
           <a href="https://github.com/Lake1059/FFmpegFreeUI" target="_blank" rel="noopener noreferrer">
             Lake1059/FFmpegFreeUI
           </a>
-          {' · '}
-          <VisitCounter label={isZh ? '访问量' : 'Visits'} />
         </small>
+        <div className="builder-footer__stats">
+          <VisitCounter
+            todayLabel={isZh ? '今日' : 'Today'}
+            totalLabel={isZh ? '总计' : 'Total'}
+          />
+        </div>
       </footer>
     </main>
     </I18nProvider>
