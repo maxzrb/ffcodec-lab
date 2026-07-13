@@ -1144,7 +1144,8 @@ code {
   margin-top: 8px;
 }
 
-.diagnostic-card__origins > span {
+.diagnostic-card__origins > span,
+.diagnostic-card__fixes > span {
   color: var(--text-dim);
   font-size: 10px;
 }
