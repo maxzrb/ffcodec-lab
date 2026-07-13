@@ -14,7 +14,7 @@ export interface ResolvedOption {
   description?: string
   /** optgroup label for grouping by family/implementation */
   group?: string
-  /** Implementation badge text, e.g. "NVIDIA", "Intel", "软件" */
+  /** Implementation badge text, e.g. "NVIDIA", "Intel", "CPU" */
   badge?: string
 }
 

@@ -67,7 +67,7 @@ const ENGLISH_TEXT: Record<string, string> = {
   '跟随输入': 'Keep source',
   '自动': 'Auto',
   '无 (自动)': 'None (auto)',
-  '软件': 'Software',
+  'CPU': 'CPU',
   '音频码率 (-b:a)': 'Audio bitrate (-b:a)',
   '填写数值后选择单位；例如 192 + kbps 会生成 192k。': 'Enter a number, then choose a unit; for example, 192 + kbps produces 192k.',
   '声道布局': 'Channel layout',

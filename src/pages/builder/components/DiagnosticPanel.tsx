@@ -54,6 +54,7 @@ export function DiagnosticPanel({
               )}
               {fixes.length > 0 && (
                 <div className="diagnostic-card__fixes">
+                  <span>{locale === 'zh-CN' ? '建议操作' : 'Suggested action'}</span>
                   {fixes.map((fix) => (
                     <button key={fix.id} type="button" className="button-ghost" onClick={() => onApplyFix(fix)}>
                       {locale === 'zh-CN' ? fix.label : englishFixLabel(fix)}

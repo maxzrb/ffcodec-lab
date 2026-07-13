@@ -138,7 +138,7 @@ export function resolveVideoSection(
     const encField = resolveParameterField(videoEncoderParam, config, 'video.encoderId', fieldStates)
     // 编码器选择器完全由目录生成，并保留实现厂商信息供界面展示。
     const implementationLabels: Record<string, string> = {
-      software: '软件',
+      software: 'CPU',
       nvidia: 'NVIDIA',
       intel: 'Intel',
       amd: 'AMD',

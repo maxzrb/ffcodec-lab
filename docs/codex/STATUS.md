@@ -1,11 +1,38 @@
 # Project Status
 
-Last updated: 2026-07-12 21:50
+Last updated: 2026-07-13 10:40
 Updated by: Claude Code (DeepSeek-v4-pro)
 
 ## Current Snapshot
 
-- Current objective: v0.7.0 hotfix — 统一展开状态、metadata 命令渲染修复、custom 面板重组、诊断徽章
+- Current objective: v0.7.0 hotfix — 诊断面板区分"相关参数"与"修复方式"、视频编码器实现标签"软件"→"CPU"
+- Current state: 2 笔 hotfix 修改完成，359/359 测试全部通过，待提交
+- Current site: https://fflab.loliland.cn/
+- Next objective: 提交并推送；后续按评估实施受控剪辑和常用元数据
+- Current verification: ESLint 0/0、TypeScript 0 errors、Vitest 359/359（22 文件）、catalog audit 0/0、production build 成功
+- v0.4.0 已知阻断缺陷（已修复）:
+  - 正式 BuilderPage 中所有 specialParameters 业务复选框无法选择（configBinding 缺失 + 读写路径不一致）
+  - 开发验证页面不受影响（直接使用 setConfigValue 硬编码路径）
+  - Playwright E2E 代码不可执行（浏览器被 AV 拦截）
+- v0.4.1 修复内容:
+  - 为全部 10 个编码器的 31 个 specialParameters 添加 configBinding
+  - 修正 resolve-section.ts 使用 configBinding.path 读写
+  - 修正 command-builder.ts 通过 encoder.specialParameters + commandBinding 生成参数
+  - 修正 apply-field-change.ts 回退路径兼容标准 config path
+  - resolveSwitchField/resolveTextField 支持 configBinding 参数
+  - 移除 Playwright 依赖和 E2E 文件
+  - 新增 6 个 RTL 集成测试（正式 BuilderPage checkbox 交互）
+  - config-path.ts 新增 videoSpecialParamPath/audioQualityValuePath/extractConfigKey
+  - 补齐 libopus application/frameDuration 与 FLAC sampleFormat 的 configBinding
+  - 布尔特殊参数稳定映射为 1/0 或 on/off，移除 NVENC 重复 `-spatial_aq`
+  - 目录审计强制每个质量控件和特殊参数必须具有合法 configBinding
+- v0.4.1 最终指标:
+  - tsc: 0 errors
+  - vitest: 255/255 passed (15 files, +6 集成测试)
+  - audit: 0 errors, 0 warnings
+  - build: 405 KB JS + 1.3 KB CSS
+  - Playwright: 已移除，不属于默认依赖
+- Video encoders: 13 个 (CPU 5、NVIDIA 2、Intel 2、AMD 2、Apple 2)
 - Current state: 4 笔 hotfix 已提交推送、Cloudflare Pages 部署中；359/359 测试全部通过
 - Current site: https://fflab.loliland.cn/
 - Next objective: 等待 Cloudflare 构建完成；后续按评估实施受控剪辑和常用元数据
@@ -1342,3 +1369,36 @@ Append new entries below this line. Use `YYYY-MM-DD HH:MM` so same-day work rema
 - Environment notes: Node.js v24.18.0, Windows 11, Git Bash
 - Git status: master 跟踪 origin/master，全部功能提交已推送
 - Next step: 无阻断任务；等待 Cloudflare 构建完成后刷新验证
+
+### 2026-07-13 10:40 - Claude Code (DeepSeek-v4-pro)
+
+- Objective: v0.7.0 hotfix — 诊断面板区分"相关参数"与"修复方式"、视频编码器标签"软件"→"CPU"
+- Work completed:
+  1. **诊断面板区分"相关参数"与"修复方式"** (`DiagnosticPanel.tsx`):
+     - 修复按钮区域新增 `修复方式` / `Fix method` 标签头，与上方 `相关参数` / `Affected fields` 形成明确层级区分
+  2. **视频编码器实现标签改为 CPU**:
+     - `resolve-section.ts`: `implementationLabels.software` 从 `'软件'` 改为 `'CPU'`
+     - `i18n.tsx`: 翻译条目 `'软件': 'Software'` 改为 `'CPU': 'CPU'`
+     - `resolved-field.ts`: 注释中 `"软件"` → `"CPU"`
+  3. **STATUS.md snapshot 更新**: Video encoders 描述 `software 5` → `CPU 5`
+- Files changed:
+  - Modified: `src/pages/builder/components/DiagnosticPanel.tsx` (+1 line)
+  - Modified: `src/domain/presentation/resolve-section.ts` (1 word)
+  - Modified: `src/features/i18n/i18n.tsx` (1 mapping)
+  - Modified: `src/domain/presentation/resolved-field.ts` (comment only)
+  - Modified: `docs/codex/STATUS.md` (snapshot + session log)
+- Commands run:
+  - `npm run check`: ALL PASSED (ESLint 0/0, tsc 0, vitest 359/359, audit 0/0, build 334 KB + 205 KB vendor + 24 KB CSS)
+- Verification:
+  - ESLint: 0 errors, 0 warnings
+  - TypeScript strict: 0 errors
+  - Vitest: 359/359 passed (22 files)
+  - Catalog audit: 0 errors, 0 warnings
+  - Production build: 334.28 KB + 205.27 KB vendor + 23.83 KB CSS
+  - 原有 359 测试 0 弱化/删除
+- Decisions/risks:
+  - "CPU" 标签比"软件"更直观地表达编码在 CPU 上执行（与 NVIDIA/Intel/AMD/Apple 硬件形成对比）
+  - 诊断面板修复区域加标签后，用户可快速区分"哪些参数有关"和"可以怎么修"
+- Environment notes: Node.js v24.18.0, Windows 11, Git Bash
+- Git status: master 跟踪 origin/master，4 文件修改 + STATUS.md 待提交
+- Next step: 提交 hotfix，推送触发 Cloudflare Pages 部署
