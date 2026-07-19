@@ -21,12 +21,13 @@ npm run check
 
 ## 功能
 
-- 11 个视频编码器：libx264、libx265、SVT-AV1，以及 NVIDIA NVENC、Intel QSV、AMD AMF、Apple VideoToolbox。
+- 13 个视频编码器：libx264、libx265、SVT-AV1、libaom-AV1、VVenC，以及 NVIDIA NVENC、Intel QSV、AMD AMF、Apple VideoToolbox。
 - AAC、Opus、FLAC 音频编码，支持 MP4、MKV、WebM、MOV 等容器组合校验。
 - 裁剪、旋转、镜像、画面调整、去隔行、锐化、缩放、帧率和字幕烧录滤镜链。
 - 多字幕轨道、常用 ASS 样式、流索引映射和六阶段高级自定义参数。
 - 浏览器本地持久化、预设导入导出、隐私安全的 URL Hash 配置分享。
 - Bash、PowerShell、CMD 命令预览，参数来源解释和错误诊断。
+- 左侧“实用工具”提供目标文件大小计算：根据完整时长、目标 MiB 和音频预算派生视频码率并生成可靠的双遍命令。
 - 默认亮色并支持持久化暗色主题；默认显示 PowerShell 单行命令。
 
 详细操作见 [用户指南](docs/user-guide.md)，发布变化见 [CHANGELOG](CHANGELOG.md)。

@@ -10,6 +10,7 @@ import {
   resolveInputSection,
   resolveSubtitleSection,
   resolveVideoSection,
+  resolveUtilityToolsSection,
 } from '../../domain/presentation/resolve-section'
 
 const catalog = loadCatalog()
@@ -77,10 +78,13 @@ describe('全局中英文切换', () => {
     const fieldStates = {}
     const sections = []
     const base = createDefaultProjectConfig()
+    const toolsConfig = createDefaultProjectConfig()
+    toolsConfig.tools.targetSize.enabled = true
     sections.push(
       resolveInputSection(base, fieldStates),
       resolveFrameSection(base, fieldStates),
       resolveContainerSection(base, catalog, fieldStates),
+      resolveUtilityToolsSection(toolsConfig, catalog),
       resolveCustomArgsSection(base),
     )
 

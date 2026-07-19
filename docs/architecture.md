@@ -19,6 +19,7 @@ Domain Layer (Pure TypeScript, 无 React/Zustand 依赖)
 ├─ domain/rules/         → 规则 AST、求值器
 ├─ domain/normalization/ → 编码器切换规范化
 ├─ domain/validation/    → 兼容性校验
+├─ domain/tools/         → 实用工具的纯计算与交互约束
 ├─ domain/filters/       → 视频滤镜构建器
 ├─ domain/command/       → Command AST、命令构建器
 └─ domain/shell/         → Bash/PowerShell/CMD 渲染器
@@ -94,6 +95,14 @@ UI 展示: 命令预览、解释、错误、警告
 - 每个 Arg 有 phase 用于排序
 - Shell renderer 只负责转义，不参与参数选择
 
+### 目标大小与双遍编码（schema v6）
+
+- `tools.targetSize` 保存用户约束，不保存派生视频码率；计算集中在 `domain/tools/target-size.ts`。
+- 计算使用目标 MiB、完整时长、封装预留和音频总预算，派生的 `-b:v` 只在命令构建阶段产生。
+- 工具启用时只在呈现层暂时禁用原质量字段，不改写 `video.rateControl`，因此关闭后可无损恢复原设置。
+- 目标大小只接受已验证支持双遍的编码器、单一显式视频流和可确定的音频预算；冲突自定义参数由诊断阻断。
+- 所有双遍命令第一遍仅保留视频分析参数，固定输出 `-an -sn -f null -`；第二遍才包含完整输出。Shell 渲染器以成功条件连接两遍，避免第一遍失败后继续执行。
+
 ## 文件清单
 
 | 文件路径 | 用途 |
@@ -110,6 +119,7 @@ UI 展示: 命令预览、解释、错误、警告
 | `src/domain/normalization/normalize-config.ts` | 配置规范化器 |
 | `src/domain/validation/compatibility-validator.ts` | 容器兼容性校验 |
 | `src/domain/validation/validate-config.ts` | 完整验证管道 |
+| `src/domain/tools/target-size.ts` | 目标大小码率计算与冲突诊断 |
 | `src/domain/filters/video-filter-builder.ts` | 视频滤镜链构建器 |
 | `src/domain/command/command-ast.ts` | Command AST 类型和排序 |
 | `src/domain/command/command-builder.ts` | 从 Config 构建 CommandPlan |

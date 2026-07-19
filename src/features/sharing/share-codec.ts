@@ -78,6 +78,7 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       preserveOtherAudioStreams: config.streams.preserveOtherAudioStreams,
       preserveOtherSubtitleStreams: config.streams.preserveOtherSubtitleStreams,
     },
+    u: config.tools,
   }
 }
 
@@ -143,6 +144,7 @@ export function fromShareable(
         style: {},
       },
     },
+    tools: shareable.u,
     customArgs: { globalArgs: [], preInputArgs: [], videoArgs: [], audioArgs: [], preOutputArgs: [], tailArgs: [] },
   }
   return { ...defaults, ...base }

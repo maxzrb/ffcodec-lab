@@ -19,7 +19,7 @@ export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig 
  */
 export function createDefaultProjectConfig(): ProjectConfig {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     shell: 'powershell',
     input: {
       path: 'input.mkv',
@@ -74,6 +74,14 @@ export function createDefaultProjectConfig(): ProjectConfig {
         source: 'external',
         filterKind: 'subtitles',
         style: {},
+      },
+    },
+    tools: {
+      targetSize: {
+        enabled: false,
+        targetMiB: 700,
+        durationMinutes: 90,
+        overheadPercent: 3,
       },
     },
     customArgs: {

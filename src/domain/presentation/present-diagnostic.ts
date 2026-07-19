@@ -191,6 +191,150 @@ const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
       guidance: 'Select an output container again, or restore the default configuration.',
     },
   },
+  'error.targetSize.video.requiresEncode': {
+    'zh-CN': {
+      title: '目标大小需要重新编码视频',
+      explanation: '目标大小通过计算并控制视频平均码率实现，不能与视频流复制或禁用视频同时使用。',
+      guidance: '把视频处理方式改为“重新编码”，或关闭目标文件大小工具。',
+    },
+    en: {
+      title: 'Target size requires video encoding',
+      explanation: 'Target size controls the average video bitrate and cannot work while video is copied or disabled.',
+      guidance: 'Switch video handling to Encode, or disable the target file size tool.',
+    },
+  },
+  'error.targetSize.encoder.requiresTwoPass': {
+    'zh-CN': {
+      title: '当前编码器不支持目标大小模式',
+      explanation: '该工具只对项目已验证可执行双遍编码的编码器开放，以避免生成无法命中目标的命令。',
+      guidance: '改用 libx264 或 libx265，或关闭目标文件大小工具。',
+    },
+    en: {
+      title: 'The encoder does not support target-size mode',
+      explanation: 'This tool is limited to encoders with a verified two-pass workflow.',
+      guidance: 'Use libx264 or libx265, or disable the target file size tool.',
+    },
+  },
+  'error.targetSize.video.singleStream': {
+    'zh-CN': {
+      title: '目标大小只支持一个明确的视频流',
+      explanation: '多个视频流会分别消耗码率预算，而网页无法可靠预测每条流的最终大小。',
+      guidance: '关闭“保留全部视频流”，并且只选择一个视频流索引。',
+    },
+    en: {
+      title: 'Target size requires one explicit video stream',
+      explanation: 'Multiple video streams consume separate bitrate budgets that cannot be predicted reliably.',
+      guidance: 'Disable Keep all video streams and select exactly one video stream index.',
+    },
+  },
+  'error.targetSize.target.invalid': {
+    'zh-CN': {
+      title: '目标文件大小无效',
+      explanation: '目标大小必须是大于零的 MiB 数值。',
+      guidance: '填写有效的目标文件大小。',
+    },
+    en: {
+      title: 'Invalid target file size',
+      explanation: 'The target must be a positive MiB value.',
+      guidance: 'Enter a valid target file size.',
+    },
+  },
+  'error.targetSize.duration.invalid': {
+    'zh-CN': {
+      title: '完整视频时长无效',
+      explanation: '码率计算必须知道完整时长，零值或空值无法计算。',
+      guidance: '按分钟填写完整输入时长。',
+    },
+    en: {
+      title: 'Invalid full video duration',
+      explanation: 'A positive full duration is required to calculate bitrate.',
+      guidance: 'Enter the complete input duration in minutes.',
+    },
+  },
+  'error.targetSize.overhead.invalid': {
+    'zh-CN': {
+      title: '封装预留比例无效',
+      explanation: '预留比例必须位于 0%–20%，过高会使可用视频预算失真。',
+      guidance: '通常设置为 2%–5%。',
+    },
+    en: {
+      title: 'Invalid muxing reserve',
+      explanation: 'The reserve must be between 0% and 20%.',
+      guidance: 'A value between 2% and 5% is usually appropriate.',
+    },
+  },
+  'error.targetSize.audio.copyUnknown': {
+    'zh-CN': {
+      title: '无法自动计算复制音频的大小',
+      explanation: '音频流复制保留源码率，而网页不知道源文件中所有音轨的真实码率。',
+      guidance: '在实用工具中填写“手动音频总码率”，或改为固定码率音频编码。',
+    },
+    en: {
+      title: 'Copied audio size cannot be calculated automatically',
+      explanation: 'Stream copy keeps the source bitrate, which is unknown to the website.',
+      guidance: 'Enter the manual total audio bitrate, or encode audio at a known bitrate.',
+    },
+  },
+  'error.targetSize.audio.bitrateUnknown': {
+    'zh-CN': {
+      title: '当前音频大小无法自动预测',
+      explanation: '无损编码或缺少固定音频码率时，音频预算无法从现有配置推导。',
+      guidance: '填写所有输出音轨的手动总码率，或改用可设置码率的音频编码。',
+    },
+    en: {
+      title: 'The audio size cannot be predicted automatically',
+      explanation: 'Lossless or unspecified-bitrate audio has no predictable budget.',
+      guidance: 'Enter the total audio bitrate manually, or use a bitrate-controlled audio encoder.',
+    },
+  },
+  'error.targetSize.audio.streamCountUnknown': {
+    'zh-CN': {
+      title: '保留全部音轨时音频预算未知',
+      explanation: '网页不知道输入中实际有多少条音轨，因此不能把每轨码率换算为总码率。',
+      guidance: '明确选择音频流索引，或填写手动音频总码率。',
+    },
+    en: {
+      title: 'Audio budget is unknown while keeping all tracks',
+      explanation: 'The website does not know how many input audio streams will be mapped.',
+      guidance: 'Select audio indexes explicitly, or enter the total audio bitrate manually.',
+    },
+  },
+  'error.targetSize.custom.conflict': {
+    'zh-CN': {
+      title: '自定义参数与目标大小冲突',
+      explanation: '自定义映射、编解码器、码率或 pass 参数可能覆盖工具生成的受控双遍命令。',
+      guidance: '移除诊断标记区域中的冲突参数，或关闭目标文件大小工具。',
+    },
+    en: {
+      title: 'Custom arguments conflict with target size',
+      explanation: 'Custom mapping, codec, bitrate, or pass arguments can override the controlled two-pass command.',
+      guidance: 'Remove the conflicting arguments, or disable the target file size tool.',
+    },
+  },
+  'error.targetSize.budget.exhausted': {
+    'zh-CN': {
+      title: '目标大小不足以容纳当前音频预算',
+      explanation: '扣除封装预留和音频后，没有剩余的有效视频码率。',
+      guidance: '增大目标大小、缩短时长、降低音频码率或减少预留比例。',
+    },
+    en: {
+      title: 'The target is too small for the current audio budget',
+      explanation: 'No usable video bitrate remains after reserving muxing overhead and audio.',
+      guidance: 'Increase the target, shorten the duration, lower audio bitrate, or reduce the reserve.',
+    },
+  },
+  'warn.targetSize.videoBitrate.low': {
+    'zh-CN': {
+      title: '计算得到的视频码率过低',
+      explanation: '命令仍可执行，但画质很可能无法接受。',
+      guidance: '增大目标大小、缩短时长或降低音频预算。',
+    },
+    en: {
+      title: 'The calculated video bitrate is very low',
+      explanation: 'The command can run, but visual quality is likely to be unacceptable.',
+      guidance: 'Increase the target, shorten the duration, or reduce the audio budget.',
+    },
+  },
 }
 
 export function presentDiagnostic(diagnostic: Diagnostic, locale: Locale): PresentedDiagnostic {

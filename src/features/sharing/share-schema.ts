@@ -5,7 +5,7 @@
 
 import { z } from 'zod'
 
-export const SHARE_PAYLOAD_VERSION = 5
+export const SHARE_PAYLOAD_VERSION = 6
 
 /** Privacy-safe config subset: no input path, output path, or external subtitle paths */
 export const shareableConfigSchema = z.object({
@@ -125,6 +125,22 @@ export const shareableConfigSchema = z.object({
     preserveOtherAudioStreams: z.boolean(),
     preserveOtherSubtitleStreams: z.boolean(),
   }).optional(),
+  u: z.object({
+    targetSize: z.object({
+      enabled: z.boolean(),
+      targetMiB: z.number().positive(),
+      durationMinutes: z.number().positive(),
+      overheadPercent: z.number().min(0).max(20),
+      manualAudioBitrateKbps: z.number().positive().optional(),
+    }),
+  }).default({
+    targetSize: {
+      enabled: false,
+      targetMiB: 700,
+      durationMinutes: 90,
+      overheadPercent: 3,
+    },
+  }),
 })
 
 export type ShareableProjectConfig = z.infer<typeof shareableConfigSchema>

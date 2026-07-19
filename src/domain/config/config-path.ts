@@ -141,6 +141,16 @@ export const CONFIG_PATHS = {
     burn: configPath(['subtitle', 'burn']),
   },
 
+  tools: {
+    targetSize: {
+      enabled: configPath(['tools', 'targetSize', 'enabled']),
+      targetMiB: configPath(['tools', 'targetSize', 'targetMiB']),
+      durationMinutes: configPath(['tools', 'targetSize', 'durationMinutes']),
+      overheadPercent: configPath(['tools', 'targetSize', 'overheadPercent']),
+      manualAudioBitrateKbps: configPath(['tools', 'targetSize', 'manualAudioBitrateKbps']),
+    },
+  },
+
   customArgs: {
     globalArgs: configPath(['customArgs', 'globalArgs']),
     preInputArgs: configPath(['customArgs', 'preInputArgs']),

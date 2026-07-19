@@ -175,7 +175,7 @@ const metadataConfigSchema = z.object({
 // -- top-level schema -----------------------------------------
 
 export const projectConfigSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
   shell: z.enum(['bash', 'powershell', 'cmd']),
   input: z.object({
     path: z.string(),
@@ -222,6 +222,22 @@ export const projectConfigSchema = z.object({
   subtitle: z.object({
     tracks: z.array(subtitleTrackSchema),
     burn: subtitleBurnSchema,
+  }),
+  tools: z.object({
+    targetSize: z.object({
+      enabled: z.boolean(),
+      targetMiB: z.number().positive().max(1048576),
+      durationMinutes: z.number().positive().max(100000),
+      overheadPercent: z.number().min(0).max(20),
+      manualAudioBitrateKbps: z.number().positive().max(1000000).optional(),
+    }),
+  }).default({
+    targetSize: {
+      enabled: false,
+      targetMiB: 700,
+      durationMinutes: 90,
+      overheadPercent: 3,
+    },
   }),
   customArgs: z.object({
     globalArgs: z.array(z.string()),

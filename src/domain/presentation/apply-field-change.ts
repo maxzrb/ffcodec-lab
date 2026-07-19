@@ -275,7 +275,7 @@ function isValidDynamicPath(fieldId: string): boolean {
     return true
   }
   // 仅允许 ProjectConfig 中已知的根级命名空间。
-  if (/^(input|output|streams|video|frame|audio|subtitle|shell|schemaVersion)\./.test(fieldId)) {
+  if (/^(input|output|streams|video|frame|audio|subtitle|tools|shell|schemaVersion)\./.test(fieldId)) {
     return true
   }
   return false

@@ -15,7 +15,29 @@ export interface ProjectConfig {
   frame: FrameConfig
   audio: AudioConfig
   subtitle: SubtitleConfig
+  tools: UtilityToolsConfig
   customArgs: CustomArgsConfig
+}
+
+/** 独立于编码参数面板的实用工具配置。 */
+export interface UtilityToolsConfig {
+  targetSize: TargetSizeToolConfig
+}
+
+/**
+ * 目标文件大小工具。目标大小和时长是用户约束，视频码率始终由它们派生，
+ * 不写回 rateControl.bitrate，关闭工具后原质量控制设置可完整恢复。
+ */
+export interface TargetSizeToolConfig {
+  enabled: boolean
+  /** 目标文件大小，使用二进制 MiB（1 MiB = 1024 × 1024 bytes）。 */
+  targetMiB: number
+  /** 完整输入时长，单位为分钟。 */
+  durationMinutes: number
+  /** 为容器、字幕、元数据和码率波动预留的比例。 */
+  overheadPercent: number
+  /** 无法自动推导时，手工填写全部输出音轨的总码率。 */
+  manualAudioBitrateKbps?: number
 }
 
 export interface InputConfig {

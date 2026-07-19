@@ -4,6 +4,7 @@ import type { EvaluationResult, Diagnostic } from '../rules/rule-types'
 import { validateCompatibility } from './compatibility-validator'
 import { RuleIndex } from '../rules/rule-index'
 import { evaluateRules } from '../rules/rule-evaluator'
+import { calculateTargetSize } from '../tools/target-size'
 
 /**
  * Full validation pipeline — rules + compatibility.
@@ -20,8 +21,15 @@ export function validateConfig(
   const compatMessages = validateCompatibility(config, catalog)
   const subtitleMessages = validateSubtitleTracks(config)
   const colorMessages = validateColorProcessing(config)
+  const targetSizeMessages = calculateTargetSize(config, catalog).diagnostics
 
-  return [...ruleResult.messages, ...compatMessages, ...subtitleMessages, ...colorMessages]
+  return [
+    ...ruleResult.messages,
+    ...compatMessages,
+    ...subtitleMessages,
+    ...colorMessages,
+    ...targetSizeMessages,
+  ]
 }
 
 function validateColorProcessing(config: ProjectConfig): Diagnostic[] {

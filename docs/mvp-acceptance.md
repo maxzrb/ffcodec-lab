@@ -1,6 +1,6 @@
 # MVP 验收报告
 
-> 生成时间：2026-07-12T11:17:13.805Z
+> 生成时间：2026-07-19T10:52:07.509Z
 > TypeScript：0 errors
 > 目录审计：0 errors
 > 测试：以本次 npm run check 结果为准
@@ -303,22 +303,22 @@ ffmpeg -i input.mkv -map "0:a:0?" -map "0:s?" -vn -c:a aac -aac_coder auto -b:a 
 - 帧：resolution=source, framerate=source
 
 **Command AST**：
-- `pass-1`：8 个参数
+- `pass-1`：5 个参数
 - `pass-2`：8 个参数
 
 **Bash**：
 ```bash
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map '0:v:0?' -c:v libx264 -preset medium -b:v 5000k -an -sn -f null -  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map '0:v:0?' -map '0:a:0?' -map '0:s?' -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **PowerShell**：
 ```powershell
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4 ;  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -c:v libx264 -preset medium -b:v 5000k -an -sn -f null - ; if ($LASTEXITCODE -eq 0) {  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4  }
 ```
 
 **CMD**：
 ```cmd
-ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
+ffmpeg -pass 1 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -c:v libx264 -preset medium -b:v 5000k -an -sn -f null -  &&  ffmpeg -pass 2 -passlogfile ffmpeg2pass -i input.mkv -map "0:v:0?" -map "0:a:0?" -map "0:s?" -c:v libx264 -preset medium -b:v 5000k -c:a aac -aac_coder auto -b:a 192k -channel_layout:a stereo -ar 48000 output.mp4
 ```
 
 **结果**：✅ 通过

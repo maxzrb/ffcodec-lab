@@ -99,6 +99,30 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(new URL(window.location.href).searchParams.get('panel')).toBe('video')
   })
 
+  it('实用工具可启用目标大小、接管双遍码率并在关闭后恢复原质量模式', async () => {
+    render(<BuilderPage />)
+    await openPanel('实用工具')
+
+    const enabled = screen.getByLabelText('启用目标文件大小')
+    await userEvent.click(enabled)
+
+    expect(screen.getByLabelText('目标文件大小 (MiB)')).toHaveValue(700)
+    expect(screen.getByLabelText('完整视频时长（分钟）')).toHaveValue(90)
+    expect(useBuilderStore.getState().config.video.rateControl?.mode).toBe('crf')
+    let command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
+    expect(command).toContain('-pass 1')
+    expect(command).toContain('-b:v 862k')
+    expect(command).not.toContain('-crf 23')
+
+    await userEvent.click(screen.getByLabelText('启用目标文件大小'))
+    await waitFor(() => {
+      expect(useBuilderStore.getState().config.tools.targetSize.enabled).toBe(false)
+      command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
+      expect(command).toContain('-crf 23')
+      expect(command).not.toContain('-pass 1')
+    })
+  })
+
   it('色彩与封装工作台使用不同子标题且默认展开区域首次点击即可关闭', async () => {
     render(<BuilderPage />)
     await openPanel('色彩管理')

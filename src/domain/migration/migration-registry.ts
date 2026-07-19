@@ -8,6 +8,7 @@ import { v1ToV2 } from './migrations/v1-to-v2'
 import { v2ToV3 } from './migrations/v2-to-v3'
 import { v3ToV4 } from './migrations/v3-to-v4'
 import { v4ToV5 } from './migrations/v4-to-v5'
+import { v5ToV6 } from './migrations/v5-to-v6'
 
 /** All registered migration steps, sorted by fromVersion */
 export const ALL_MIGRATION_STEPS: readonly MigrationStep[] = [
@@ -15,7 +16,8 @@ export const ALL_MIGRATION_STEPS: readonly MigrationStep[] = [
   v2ToV3,
   v3ToV4,
   v4ToV5,
+  v5ToV6,
 ]
 
 /** Current project config schema version */
-export const CURRENT_SCHEMA_VERSION = 5
+export const CURRENT_SCHEMA_VERSION = 6

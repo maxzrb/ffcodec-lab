@@ -11,7 +11,13 @@ export function renderPowerShell(plan: CommandPlan): RenderedCommand {
 
   for (let i = 0; i < plan.invocations.length; i++) {
     if (i > 0) {
-      allSegments.push({ text: '; ', originId: 'system', argumentId: 'separator' })
+      // Windows PowerShell 5.1 不支持 &&，使用 LASTEXITCODE 保证第一遍失败时
+      // 不会继续执行第二遍；PowerShell 7 同样兼容该写法。
+      allSegments.push({
+        text: '; if ($LASTEXITCODE -eq 0) { ',
+        originId: 'system',
+        argumentId: 'separator',
+      })
     }
 
     const tokens = flattenInvocation(plan.invocations[i])
@@ -23,6 +29,10 @@ export function renderPowerShell(plan: CommandPlan): RenderedCommand {
         argumentId: token.argId,
       })
     }
+  }
+
+  if (plan.invocations.length > 1) {
+    allSegments.push({ text: ' }', originId: 'system', argumentId: 'conditional.end' })
   }
 
   return {

@@ -21,6 +21,7 @@ const PANEL_SHORT_LABELS: Record<string, { zh: string; en: string }> = {
   audio: { zh: '音', en: 'A' },
   subtitle: { zh: '字', en: 'S' },
   'streams-container': { zh: '流', en: 'M' },
+  tools: { zh: '工', en: 'T' },
   custom: { zh: '自', en: '+' },
 }
 

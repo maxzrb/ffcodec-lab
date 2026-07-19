@@ -19,6 +19,7 @@ import {
   resolveContainerSection,
   resolveCustomArgsSection,
   resolveMetadataSection,
+  resolveUtilityToolsSection,
 } from './resolve-section'
 import { attachDiagnostics } from './resolve-field'
 
@@ -42,6 +43,7 @@ export function resolveBuilderView(
     resolveAudioSection(config, catalog, fieldStates),
     resolveSubtitleSection(config, catalog, fieldStates),
     resolveContainerSection(config, catalog, fieldStates),
+    resolveUtilityToolsSection(config, catalog),
     resolveMetadataSection(config),
     resolveCustomArgsSection(config),
   ].filter((s) => s.fields.length > 0)
@@ -83,6 +85,7 @@ const PANEL_DEFINITIONS = [
   ['audio', '音频'],
   ['subtitle', '字幕'],
   ['streams-container', '流与封装'],
+  ['tools', '实用工具'],
   ['custom', '自定义参数'],
 ] as const
 
@@ -118,6 +121,7 @@ function resolvePanelSectionLabel(panelId: string, sectionId: string, fallback: 
   if (panelId === 'streams-container' && sectionId === 'section.container') return '封装设置'
   if (panelId === 'custom' && sectionId === 'section.metadata') return '自定义元数据'
   if (panelId === 'custom' && sectionId === 'section.customArgs') return '自定义参数'
+  if (panelId === 'tools' && sectionId === 'section.tools') return '目标文件大小'
   return fallback
 }
 
@@ -130,6 +134,7 @@ function resolvePanelId(sectionId: string, field: ResolvedField): string {
   if (sectionId === 'section.color') return 'color'
   if (sectionId === 'section.audio') return 'audio'
   if (sectionId === 'section.subtitle') return 'subtitle'
+  if (sectionId === 'section.tools') return 'tools'
   return 'custom'
 }
 

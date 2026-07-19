@@ -11,6 +11,7 @@ import {
 import { buildVideoFilterChain, renderFilterChain } from '../filters/video-filter-builder'
 import { getByPath } from '../../utils/object-path'
 import { extractConfigKey } from '../config/config-path'
+import { calculateTargetSize, type TargetSizeCalculation } from '../tools/target-size'
 
 /**
  * Builds the CommandPlan from ProjectConfig + Catalog.
@@ -21,14 +22,18 @@ export function buildCommandPlan(
   catalog: Catalog,
   messages: Diagnostic[]
 ): CommandPlan {
-  const hasErrors = messages.some((m) => m.severity === 'error')
+  const targetSize = calculateTargetSize(config, catalog)
+  const targetSizeReady = targetSize.enabled
+    && targetSize.videoBitrateKbps !== undefined
+    && !targetSize.diagnostics.some((diagnostic) => diagnostic.severity === 'error')
+  const isTwoPass = config.video.rateControl?.mode === 'twoPass' || targetSizeReady
 
   const invocation: CommandInvocation = {
     executable: 'ffmpeg',
-    globalArgs: buildGlobalArgs(config),
+    globalArgs: buildGlobalArgs(config, isTwoPass),
     inputs: buildInputs(config),
-    output: buildOutput(config, catalog),
-    purpose: config.video.rateControl?.mode === 'twoPass' ? 'pass-1' : 'single-pass',
+    output: buildOutput(config, catalog, targetSize),
+    purpose: isTwoPass ? 'pass-1' : 'single-pass',
   }
 
   const plan: CommandPlan = {
@@ -36,23 +41,57 @@ export function buildCommandPlan(
     messages,
   }
 
-  // For two-pass, add pass-2 with logfile
-  if (config.video.rateControl?.mode === 'twoPass' && !hasErrors) {
-    const pass2: CommandInvocation = structuredClone(invocation)
+  // 双遍第一遍只分析视频并写入 null muxer；音频、字幕、元数据和真实输出
+  // 只能出现在第二遍，否则默认未覆盖时第二遍会与第一遍生成的文件冲突。
+  if (isTwoPass) {
+    const pass2 = structuredClone(invocation)
     pass2.purpose = 'pass-2'
-    // Pass 1 global args differ
-    pass2.globalArgs = buildGlobalArgs(config).map((a) =>
+    pass2.globalArgs = buildGlobalArgs(config, true).map((a) =>
       a.id === 'global.pass'
         ? { ...a, tokens: ['-pass', '2'], id: 'global.pass2' }
         : a
     )
+
+    invocation.output = buildFirstPassOutput(invocation.output)
     plan.invocations.push(pass2)
   }
 
   return plan
 }
 
-function buildGlobalArgs(config: ProjectConfig): CommandArg[] {
+/** 为双遍编码第一遍构造不产生真实媒体文件的视频分析输出。 */
+function buildFirstPassOutput(output: OutputSpec): OutputSpec {
+  return {
+    maps: output.maps.filter((arg) => arg.id.startsWith('map.video.')),
+    codecArgs: output.codecArgs,
+    qualityArgs: output.qualityArgs,
+    filterArgs: output.filterArgs,
+    audioArgs: [{
+      id: 'pass1.audio.disabled',
+      originId: 'rule.twopass',
+      phase: 'AUDIO_CODEC',
+      tokens: ['-an'],
+    }],
+    subtitleArgs: [{
+      id: 'pass1.subtitle.disabled',
+      originId: 'rule.twopass',
+      phase: 'SUBTITLE',
+      tokens: ['-sn'],
+    }],
+    metadataArgs: [],
+    muxerArgs: [{
+      id: 'pass1.null.muxer',
+      originId: 'rule.twopass',
+      phase: 'MUXER',
+      tokens: ['-f', 'null'],
+    }],
+    customArgs: output.customArgs.filter((arg) => arg.originId === 'customArgs.videoArgs'),
+    tailArgs: [],
+    path: '-',
+  }
+}
+
+function buildGlobalArgs(config: ProjectConfig, isTwoPass: boolean): CommandArg[] {
   const args: CommandArg[] = []
 
   if (config.output.overwrite) {
@@ -65,7 +104,7 @@ function buildGlobalArgs(config: ProjectConfig): CommandArg[] {
     })
   }
 
-  if (config.video.rateControl?.mode === 'twoPass') {
+  if (isTwoPass) {
     args.push({
       id: 'global.pass',
       originId: 'rule.twopass',
@@ -139,7 +178,11 @@ function buildInputs(config: ProjectConfig): InputSpec[] {
   return inputs
 }
 
-function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
+function buildOutput(
+  config: ProjectConfig,
+  catalog: Catalog,
+  targetSize: TargetSizeCalculation,
+): OutputSpec {
   const output: OutputSpec = {
     maps: [],
     codecArgs: [],
@@ -306,8 +349,17 @@ function buildOutput(config: ProjectConfig, catalog: Catalog): OutputSpec {
         }
       }
 
-      // Quality / rate control
-      if (config.video.rateControl) {
+      // 目标大小工具接管平均视频码率，但不改写原质量控制配置；关闭后可原样恢复。
+      if (targetSize.enabled) {
+        if (targetSize.videoBitrateKbps !== undefined) {
+          output.qualityArgs.push({
+            id: 'quality.targetSize.bitrate',
+            originId: 'tools.targetSize.targetMiB',
+            phase: 'VIDEO_RATE_CONTROL',
+            tokens: ['-b:v', `${targetSize.videoBitrateKbps}k`],
+          })
+        }
+      } else if (config.video.rateControl) {
         const qMode = encoder.qualityModes.find((m) => m.id === config.video.rateControl!.mode)
         if (qMode) {
           // Emit mode-level arguments first (e.g. -rc vbr for NVENC CQ)

@@ -227,7 +227,7 @@ describe('Command AST — Invariants', () => {
     expect(rendered.text).toContain('libx264')
   })
 
-  it('two-pass generates two invocations', () => {
+  it('双遍第一遍只分析视频并写入 null，第二遍才写真实输出', () => {
     const config = makeConfig({
       video: {
         ...createDefaultProjectConfig().video,
@@ -239,5 +239,33 @@ describe('Command AST — Invariants', () => {
     expect(plan.invocations.length).toBe(2)
     expect(plan.invocations[0].purpose).toBe('pass-1')
     expect(plan.invocations[1].purpose).toBe('pass-2')
+
+    const pass1 = renderBash({ invocations: [plan.invocations[0]], messages: [] }).text
+    const pass2 = renderBash({ invocations: [plan.invocations[1]], messages: [] }).text
+    expect(pass1).toContain('-pass 1')
+    expect(pass1).toContain('-an')
+    expect(pass1).toContain('-sn')
+    expect(pass1).toContain('-f null -')
+    expect(pass1).not.toContain('-c:a')
+    expect(pass1).not.toContain(config.output.path)
+    expect(pass2).toContain('-pass 2')
+    expect(pass2).toContain('-c:a aac')
+    expect(pass2).toContain(config.output.path)
+  })
+
+  it('双遍命令在三种 Shell 中都只在第一遍成功后执行第二遍', () => {
+    const config = makeConfig({
+      video: {
+        ...createDefaultProjectConfig().video,
+        rateControl: { mode: 'twoPass', bitrate: '5000k', additionalValues: {} },
+      },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+
+    expect(renderBash(plan).text).toContain(' && ')
+    expect(renderCmd(plan).text).toContain(' && ')
+    const powerShell = renderPowerShell(plan).text
+    expect(powerShell).toContain('if ($LASTEXITCODE -eq 0) {')
+    expect(powerShell.endsWith(' }')).toBe(true)
   })
 })

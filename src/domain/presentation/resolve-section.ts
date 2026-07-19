@@ -17,6 +17,7 @@ import {
   resolveSwitchField,
   resolveSectionLabel,
 } from './resolve-field'
+import { calculateTargetSize } from '../tools/target-size'
 
 // -- section builders -------------------------------------------
 
@@ -159,6 +160,7 @@ export function resolveVideoSection(
   const encoder = config.video.encoderId
     ? catalog.encoders.video[config.video.encoderId]
     : undefined
+  const targetSizeEnabled = config.tools?.targetSize.enabled ?? false
 
   if (encoder && config.video.mode === 'encode') {
     // Preset
@@ -192,7 +194,8 @@ export function resolveVideoSection(
       controlType: 'select',
       value: rcMode,
       visible: true,
-      disabled: false,
+      disabled: targetSizeEnabled,
+      disabledReason: targetSizeEnabled ? '目标文件大小工具正在接管视频码率和双遍编码。' : undefined,
       options: qualityModes.map((qm) => ({ value: qm.id, label: qm.label })),
       sourceRefs: encoder.sourceRefs,
       verificationLevel: encoder.verificationLevel,
@@ -212,17 +215,11 @@ export function resolveVideoSection(
         const field = resolveControlField(ctrl, config, configPath, fieldStates, encoder)
         field.panelId = 'quality'
         field.groupId = 'rate-control'
-        fields.push(field)
-      }
-    }
-
-    // Two-pass bitrate (only when mode is twoPass)
-    if (rcMode === 'twoPass') {
-      const twoPassMode = qualityModes.find((qm) => qm.id === 'twoPass')
-      if (twoPassMode) {
-        for (const ctrl of twoPassMode.controls) {
-          fields.push(resolveControlField(ctrl, config, 'video.rateControl.bitrate', fieldStates, encoder))
+        if (targetSizeEnabled) {
+          field.disabled = true
+          field.disabledReason = '目标文件大小工具正在接管视频码率和双遍编码。'
         }
+        fields.push(field)
       }
     }
 
@@ -1156,6 +1153,122 @@ export function resolveContainerSection(
   }
 
   return { id: 'section.container', label: '封装设置', fields }
+}
+
+/** 左侧“实用工具”工作台。工具只声明约束，不直接保存派生视频码率。 */
+export function resolveUtilityToolsSection(
+  config: ProjectConfig,
+  catalog: Catalog,
+): ResolvedSection {
+  const tool = config.tools.targetSize
+  const calculation = calculateTargetSize(config, catalog)
+  const sourceRefs: SourceRef[] = [{
+    repository: 'FFmpeg/FFmpeg',
+    branch: 'master',
+    snapshotDate: '2026-07-19',
+    file: 'doc/ffmpeg.texi',
+    symbol: 'two-pass encoding',
+    sourceType: 'ffmpeg-official',
+    url: 'https://ffmpeg.org/ffmpeg.html',
+    note: '目标大小通过双遍平均视频码率近似实现。',
+  }]
+  const common = {
+    visible: true,
+    disabled: false,
+    sourceRefs,
+    verificationLevel: 'project-derived' as const,
+    needsCrossVerification: false,
+    commandOrigins: [] as string[],
+    diagnostics: [],
+    panelId: 'tools',
+    groupId: 'target-size',
+    tier: 'basic' as const,
+  }
+
+  const fields: ResolvedField[] = [{
+    ...common,
+    id: 'tools.targetSize.enabled',
+    label: '启用目标文件大小',
+    description: '开启后使用双遍编码派生视频码率；关闭后恢复原质量控制设置。',
+    controlType: 'switch',
+    value: tool.enabled,
+    configBinding: { path: CONFIG_PATHS.tools.targetSize.enabled },
+  }]
+
+  if (tool.enabled) {
+    fields.push(
+      {
+        ...common,
+        id: 'tools.targetSize.targetMiB',
+        label: '目标文件大小 (MiB)',
+        description: '1 MiB = 1024 × 1024 bytes；最终大小会受编码器和封装波动影响。',
+        controlType: 'number',
+        value: tool.targetMiB,
+        min: 1,
+        max: 1048576,
+        step: 1,
+        configBinding: { path: CONFIG_PATHS.tools.targetSize.targetMiB },
+      },
+      {
+        ...common,
+        id: 'tools.targetSize.durationMinutes',
+        label: '完整视频时长（分钟）',
+        description: '请填写完整输入时长；网页不会读取或上传媒体文件。',
+        controlType: 'number',
+        value: tool.durationMinutes,
+        min: 0.01,
+        max: 100000,
+        step: 0.01,
+        configBinding: { path: CONFIG_PATHS.tools.targetSize.durationMinutes },
+      },
+      {
+        ...common,
+        id: 'tools.targetSize.overheadPercent',
+        label: '封装与波动预留 (%)',
+        description: '为容器、字幕、元数据和码率波动预留空间，通常建议 2%–5%。',
+        controlType: 'number',
+        value: tool.overheadPercent,
+        min: 0,
+        max: 20,
+        step: 0.1,
+        configBinding: { path: CONFIG_PATHS.tools.targetSize.overheadPercent },
+      },
+      {
+        ...common,
+        id: 'tools.targetSize.manualAudioBitrateKbps',
+        label: '手动音频总码率 (kbps，可选)',
+        description: '音频复制、无损音频或保留全部音轨时必填；这是所有输出音轨的总和。',
+        controlType: 'number',
+        value: tool.manualAudioBitrateKbps,
+        min: 1,
+        max: 1000000,
+        step: 1,
+        optional: true,
+        configBinding: { path: CONFIG_PATHS.tools.targetSize.manualAudioBitrateKbps },
+      },
+    )
+
+    const result = calculation.videoBitrateKbps !== undefined
+      ? `${calculation.videoBitrateKbps} kbps (video) · ${calculation.audioBitrateKbps ?? 0} kbps (audio)`
+      : '—'
+    fields.push({
+      ...common,
+      id: 'section.tools.targetSize.result',
+      label: '计算结果',
+      controlType: 'section',
+      value: result,
+      commandOrigins: calculation.videoBitrateKbps !== undefined
+        ? ['tools.targetSize.targetMiB']
+        : [],
+    })
+  }
+
+  return {
+    id: 'section.tools',
+    label: '目标文件大小',
+    description: '通过双遍平均码率尽量接近指定大小，不保证逐字节精确。',
+    fields,
+  }
 }
 
 export function resolveCustomArgsSection(config: ProjectConfig): ResolvedSection {

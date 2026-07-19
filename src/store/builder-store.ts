@@ -51,6 +51,7 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
     'section.color': true,
     'section.filters': true,
     'section.streams-container': true,
+    'section.tools': true,
   },
 
   selectedExplanationId: null,

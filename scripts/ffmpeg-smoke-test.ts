@@ -1,4 +1,7 @@
 import { execFileSync } from 'node:child_process'
+import { mkdtempSync, rmSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 interface SmokeCase {
   name: string
@@ -25,6 +28,45 @@ const cases: SmokeCase[] = [
   },
 ]
 
+function runTwoPassSmoke(): void {
+  const temporaryDirectory = mkdtempSync(join(tmpdir(), 'ffcodec-two-pass-'))
+  const passLog = join(temporaryDirectory, 'ffmpeg2pass')
+  const outputPath = join(temporaryDirectory, 'output.mp4')
+  const commonArgs = [
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-nostdin',
+    ...source,
+    '-map',
+    '0:v:0?',
+    '-c:v',
+    'libx264',
+    '-b:v',
+    '200k',
+    '-passlogfile',
+    passLog,
+  ]
+
+  try {
+    // 第一遍只收集视频统计信息，不编码音频，也不写入真实输出文件。
+    execFileSync('ffmpeg', [...commonArgs, '-pass', '1', '-an', '-sn', '-f', 'null', '-'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    execFileSync('ffmpeg', [...commonArgs, '-pass', '2', '-an', '-sn', '-y', outputPath], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    if (statSync(outputPath).size <= 0) {
+      throw new Error('双遍编码未生成有效输出文件')
+    }
+    console.log('PASS two-pass target bitrate workflow')
+  } finally {
+    rmSync(temporaryDirectory, { recursive: true, force: true })
+  }
+}
+
 function run(): void {
   const version = execFileSync('ffmpeg', ['-hide_banner', '-version'], { encoding: 'utf8' }).split(/\r?\n/)[0]
   console.log(version)
@@ -35,7 +77,9 @@ function run(): void {
     })
     console.log(`PASS ${smokeCase.name}`)
   }
-  console.log(`FFmpeg smoke matrix passed: ${cases.length}/${cases.length}`)
+  runTwoPassSmoke()
+  const totalCases = cases.length + 1
+  console.log(`FFmpeg smoke matrix passed: ${totalCases}/${totalCases}`)
 }
 
 try {
