@@ -43,6 +43,8 @@ export function BuilderPage() {
   const selectExplanation = useBuilderStore((s) => s.selectExplanation)
   const activePanelId = useBuilderStore((s) => s.activePanelId)
   const setActivePanel = useBuilderStore((s) => s.setActivePanel)
+  const commandPreviewCleared = useBuilderStore((s) => s.commandPreviewCleared)
+  const clearAllCommands = useBuilderStore((s) => s.clearAllCommands)
   const [theme, setTheme] = useState<ThemeKind>(() =>
     window.localStorage.getItem('ffcodec-theme') === 'dark' ? 'dark' : 'light',
   )
@@ -217,6 +219,23 @@ export function BuilderPage() {
     [setConfigValue],
   )
 
+  const handleClearAllCommands = useCallback(() => {
+    const confirmed = window.confirm(isZh
+      ? '清空所有命令并将参数工作台恢复默认值？此操作会丢弃当前参数和自由编辑内容。'
+      : 'Clear all commands and restore the parameter workbench defaults? Current parameters and manual edits will be discarded.')
+    if (!confirmed) return
+
+    clearAllCommands()
+    setHighlightedFieldId(undefined)
+    setInspectorTab('command')
+    const url = new URL(window.location.href)
+    url.hash = ''
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`)
+    setShareNotice(isZh
+      ? '已清空所有命令并重置参数工作台'
+      : 'All commands cleared and parameter workbench reset')
+  }, [clearAllCommands, isZh])
+
   // Current explanation data
   const currentExplanation = selectedExplanationId
     ? catalogIndex.getExplanation(selectedExplanationId)
@@ -316,10 +335,15 @@ export function BuilderPage() {
                   renderedCommand={pipeline.renderedCommand}
                   shell={config.shell}
                   hasErrors={view.hasErrors}
+                  cleared={commandPreviewCleared}
                   onShellChange={handleShellChange}
+                  onClear={handleClearAllCommands}
                   onTokenClick={handleTokenClick}
                 />
-                <CommandEditor generatedCommand={pipeline.renderedCommand.text} />
+                <CommandEditor
+                  generatedCommand={commandPreviewCleared ? '' : pipeline.renderedCommand.text}
+                  cleared={commandPreviewCleared}
+                />
               </>
             ) : (
               <DiagnosticPanel

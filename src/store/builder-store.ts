@@ -20,6 +20,7 @@ interface BuilderState {
   expandedSections: Record<string, boolean>
   selectedExplanationId: string | null
   activePanelId: string
+  commandPreviewCleared: boolean
 
   // -- per-encoder session cache (not part of config) --
   encoderSessionCache: Record<string, Record<string, unknown>>
@@ -34,6 +35,7 @@ interface BuilderState {
   setActivePanel: (id: string) => void
   setEncoderCache: (encoderId: string, cache: Record<string, unknown>) => void
   resetConfig: () => void
+  clearAllCommands: () => void
 }
 
 export const useBuilderStore = create<BuilderState>()(persist((set) => ({
@@ -56,20 +58,23 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
 
   selectedExplanationId: null,
   activePanelId: 'input-output',
+  commandPreviewCleared: false,
   encoderSessionCache: {},
 
   // -- actions --
   setConfigValue: (path, value) =>
     set((state) => ({
       config: setByPath(state.config, path, value),
+      commandPreviewCleared: false,
     })),
 
   applyConfigPatch: (patch) =>
     set((state) => ({
       config: { ...state.config, ...patch } as ProjectConfig,
+      commandPreviewCleared: false,
     })),
 
-  setConfig: (config) => set({ config }),
+  setConfig: (config) => set({ config, commandPreviewCleared: false }),
 
   resetSection: (sectionId) =>
     set((state) => {
@@ -82,14 +87,17 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
               video: defaults.video,
               frame: defaults.frame,
             },
+            commandPreviewCleared: false,
           }
         case 'audio':
           return {
             config: { ...state.config, audio: defaults.audio },
+            commandPreviewCleared: false,
           }
         case 'subtitle':
           return {
             config: { ...state.config, subtitle: defaults.subtitle },
+            commandPreviewCleared: false,
           }
         default:
           return state
@@ -123,6 +131,15 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
       config: createDefaultProjectConfig(),
       encoderSessionCache: {},
       selectedExplanationId: null,
+      commandPreviewCleared: false,
+    }),
+
+  clearAllCommands: () =>
+    set({
+      config: createDefaultProjectConfig(),
+      encoderSessionCache: {},
+      selectedExplanationId: null,
+      commandPreviewCleared: true,
     }),
 }), {
   name: 'ffcodec-builder-v2',

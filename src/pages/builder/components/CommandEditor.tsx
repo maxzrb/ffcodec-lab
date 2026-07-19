@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useI18n } from '../../../features/i18n/i18n'
 
-export function CommandEditor({ generatedCommand }: { generatedCommand: string }) {
+export function CommandEditor({
+  generatedCommand,
+  cleared,
+}: {
+  generatedCommand: string
+  cleared: boolean
+}) {
   const { locale } = useI18n()
   const isZh = locale === 'zh-CN'
   const [value, setValue] = useState(generatedCommand)
@@ -9,8 +15,13 @@ export function CommandEditor({ generatedCommand }: { generatedCommand: string }
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    if (!dirty) setValue(generatedCommand)
-  }, [dirty, generatedCommand])
+    if (cleared) {
+      setValue('')
+      setDirty(false)
+    } else if (!dirty) {
+      setValue(generatedCommand)
+    }
+  }, [cleared, dirty, generatedCommand])
 
   const copy = useCallback(async () => {
     try {
@@ -42,7 +53,12 @@ export function CommandEditor({ generatedCommand }: { generatedCommand: string }
         >
           {isZh ? '恢复生成命令' : 'Reset to generated'}
         </button>
-        <button type="button" className={`button-ghost ${copied ? 'button-ghost--active' : ''}`} onClick={copy}>
+        <button
+          type="button"
+          className={`button-ghost ${copied ? 'button-ghost--active' : ''}`}
+          onClick={copy}
+          disabled={value.trim().length === 0}
+        >
           {copied ? (isZh ? '已复制' : 'Copied') : (isZh ? '复制编辑内容' : 'Copy edited command')}
         </button>
       </div>

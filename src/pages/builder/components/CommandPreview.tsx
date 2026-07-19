@@ -10,7 +10,9 @@ interface CommandPreviewProps {
   renderedCommand: RenderedCommand
   shell: ShellKind
   hasErrors: boolean
+  cleared: boolean
   onShellChange: (shell: ShellKind) => void
+  onClear: () => void
   onTokenClick?: (originId: string) => void
 }
 
@@ -19,7 +21,9 @@ export function CommandPreview({
   renderedCommand,
   shell,
   hasErrors,
+  cleared,
   onShellChange,
+  onClear,
   onTokenClick,
 }: CommandPreviewProps) {
   const { locale } = useI18n()
@@ -52,6 +56,7 @@ export function CommandPreview({
         <button
           type="button"
           onClick={() => setMultiline(!multiline)}
+          disabled={cleared}
           className={`button-ghost ${multiline ? 'button-ghost--active' : ''}`}
           aria-pressed={multiline}
         >
@@ -60,19 +65,27 @@ export function CommandPreview({
         <button
           type="button"
           onClick={handleCopy}
-          disabled={hasErrors}
+          disabled={hasErrors || cleared || renderedCommand.text.length === 0}
           className={`button-ghost ${copied ? 'button-ghost--active' : ''}`}
         >
           {copied ? (locale === 'zh-CN' ? '已复制' : 'Copied') : (locale === 'zh-CN' ? '复制' : 'Copy')}
         </button>
-        {commandPlan.invocations.length > 1 && (
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={cleared}
+          className="button-ghost button-ghost--danger"
+        >
+          {locale === 'zh-CN' ? '清空全部' : 'Clear all'}
+        </button>
+        {!cleared && commandPlan.invocations.length > 1 && (
           <span className="meta-pill">
             {locale === 'zh-CN' ? `${commandPlan.invocations.length} 条两遍命令` : `${commandPlan.invocations.length} two-pass commands`}
           </span>
         )}
       </div>
 
-      {hasErrors && (
+      {!cleared && hasErrors && (
         <div className="command-error-banner" role="alert">
           {locale === 'zh-CN'
             ? '当前配置存在错误，复制已禁用。请先处理下方诊断。'
@@ -80,8 +93,14 @@ export function CommandPreview({
         </div>
       )}
 
-      <div className="command-body">
-        {multiline ? (
+      <div className={`command-body ${cleared ? 'command-body--empty' : ''}`}>
+        {cleared ? (
+          <p role="status">
+            {locale === 'zh-CN'
+              ? '所有命令已清空。修改参数工作台中的任意参数后会自动重新生成。'
+              : 'All commands are cleared. Change any parameter to generate them again.'}
+          </p>
+        ) : multiline ? (
           <div>
             {renderedCommand.segments.map((segment, index) => (
               <CommandToken

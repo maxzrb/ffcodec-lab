@@ -4,7 +4,7 @@
 // 这些用例在修复前必须失败，用于证明缺陷可以稳定复现。
 // ============================================================
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BuilderPage } from '../../pages/builder/BuilderPage'
@@ -57,6 +57,7 @@ function presetStore(config: ProjectConfig) {
     },
     selectedExplanationId: null,
     activePanelId: 'input-output',
+    commandPreviewCleared: false,
     encoderSessionCache: {},
   })
 }
@@ -84,6 +85,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       },
       selectedExplanationId: null,
       activePanelId: 'input-output',
+      commandPreviewCleared: false,
       encoderSessionCache: {},
     })
   })
@@ -538,6 +540,39 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '恢复生成命令' }))
     expect((editor as HTMLTextAreaElement).value).toContain('input.mkv')
+  })
+
+  it('命令预览可清空全部命令、重置参数，并在参数变化后恢复生成', async () => {
+    const config = createDefaultProjectConfig()
+    config.input.path = 'movie.mkv'
+    config.video.rateControl = { mode: 'crf', qualityValue: 18, additionalValues: {} }
+    config.customArgs.globalArgs = ['-benchmark']
+    presetStore(config)
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    render(<BuilderPage />)
+    const editor = screen.getByLabelText('可自由编辑的 FFmpeg 命令')
+    await userEvent.clear(editor)
+    await userEvent.type(editor, 'ffmpeg -i manual.mkv -c copy manual.mp4')
+    await userEvent.click(screen.getByRole('button', { name: '清空全部' }))
+
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(useBuilderStore.getState().commandPreviewCleared).toBe(true)
+    expect(useBuilderStore.getState().config).toEqual(createDefaultProjectConfig())
+    expect(screen.getByLabelText('命令预览').querySelector('pre')).toBeNull()
+    expect(screen.getByText(/所有命令已清空/)).toBeInTheDocument()
+    expect(editor).toHaveValue('')
+
+    const inputPath = screen.getByLabelText('输入文件路径')
+    await userEvent.clear(inputPath)
+    await userEvent.type(inputPath, 'next.mkv')
+
+    await waitFor(() => {
+      expect(useBuilderStore.getState().commandPreviewCleared).toBe(false)
+      expect(screen.getByLabelText('命令预览').querySelector('pre')?.textContent).toContain('next.mkv')
+      expect((editor as HTMLTextAreaElement).value).toContain('next.mkv')
+    })
+    confirm.mockRestore()
   })
 
   it('音频码率使用数值输入和后置单位选择', async () => {
