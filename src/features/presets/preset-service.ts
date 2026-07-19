@@ -252,57 +252,6 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
       },
     },
     {
-      name: 'AV1 节省空间',
-      description: 'libsvtav1 CRF 35 + Opus 96k + MKV，适合高压缩效率输出',
-      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
-      config: {
-        ...createDefaultProjectConfig(),
-        output: { ...createDefaultProjectConfig().output, path: 'output.mkv', containerId: 'mkv' },
-        video: {
-          ...createDefaultProjectConfig().video,
-          encoderId: 'libsvtav1',
-          preset: 6,
-          profile: 'auto',
-          rateControl: {
-            mode: 'crf',
-            qualityValue: 35,
-            additionalValues: {},
-          },
-        },
-        audio: {
-          ...createDefaultProjectConfig().audio,
-          encoderId: 'libopus',
-          bitrate: '96k',
-        },
-      },
-    },
-    {
-      name: '视频流复制',
-      description: '视频和音频流直接复制，仅更换容器',
-      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
-      config: {
-        ...createDefaultProjectConfig(),
-        video: { ...createDefaultProjectConfig().video, mode: 'copy' },
-        audio: { ...createDefaultProjectConfig().audio, mode: 'copy' },
-      },
-    },
-    {
-      name: '仅提取音频',
-      description: '禁用视频，仅输出 AAC 音频',
-      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
-      config: {
-        ...createDefaultProjectConfig(),
-        output: { ...createDefaultProjectConfig().output, containerId: 'mp4' },
-        video: { ...createDefaultProjectConfig().video, mode: 'disabled' },
-        audio: {
-          ...createDefaultProjectConfig().audio,
-          mode: 'encode',
-          encoderId: 'aac',
-          bitrate: '320k',
-        },
-      },
-    },
-    {
       name: 'AV1 高品质存档',
       description: 'libsvtav1 CRF36 yuv420p10le film-grain=4 + Opus 128k compression_level=10，适合高品质长期存档',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
@@ -338,6 +287,32 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
         customArgs: {
           ...createDefaultProjectConfig().customArgs,
           audioArgs: ['-compression_level:a:0', '10'],
+        },
+      },
+    },
+    {
+      name: '视频流复制',
+      description: '视频和音频流直接复制，仅更换容器',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        video: { ...createDefaultProjectConfig().video, mode: 'copy' },
+        audio: { ...createDefaultProjectConfig().audio, mode: 'copy' },
+      },
+    },
+    {
+      name: '仅提取音频',
+      description: '禁用视频，仅输出 AAC 音频',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        output: { ...createDefaultProjectConfig().output, containerId: 'mp4' },
+        video: { ...createDefaultProjectConfig().video, mode: 'disabled' },
+        audio: {
+          ...createDefaultProjectConfig().audio,
+          mode: 'encode',
+          encoderId: 'aac',
+          bitrate: '320k',
         },
       },
     },
