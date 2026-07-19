@@ -302,5 +302,44 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
         },
       },
     },
+    {
+      name: 'AV1 高品质存档',
+      description: 'libsvtav1 CRF36 yuv420p10le film-grain=4 + Opus 128k compression_level=10，适合高品质长期存档',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        output: {
+          ...createDefaultProjectConfig().output,
+          path: 'output.mkv',
+          containerId: 'mkv',
+          overwrite: true,
+        },
+        video: {
+          ...createDefaultProjectConfig().video,
+          encoderId: 'libsvtav1',
+          preset: 6,
+          profile: 'auto',
+          pixelFormat: 'yuv420p10le',
+          rateControl: {
+            mode: 'crf',
+            qualityValue: 36,
+            additionalValues: {},
+          },
+          specialParameters: {
+            svtav1Params:
+              'tune=0:keyint=10s:enable-variance-boost=1:variance-boost-strength=1:film-grain=4:film-grain-denoise=1:sharpness=1:ac-bias=1:lp=4',
+          },
+        },
+        audio: {
+          ...createDefaultProjectConfig().audio,
+          encoderId: 'libopus',
+          bitrate: '128k',
+        },
+        customArgs: {
+          ...createDefaultProjectConfig().customArgs,
+          audioArgs: ['-compression_level:a:0', '10'],
+        },
+      },
+    },
   ]
 }
