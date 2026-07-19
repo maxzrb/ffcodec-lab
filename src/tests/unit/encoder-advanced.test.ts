@@ -3,7 +3,9 @@ import { loadCatalog } from '../../domain/catalog/catalog-loader'
 import { buildCommandPlan } from '../../domain/command/command-builder'
 import { createDefaultProjectConfig } from '../../domain/config/defaults'
 import { resolveVideoAdvancedSection } from '../../domain/presentation/resolve-section'
+import { resolveVideoSection } from '../../domain/presentation/resolve-section'
 import { renderBash } from '../../domain/shell/bash-renderer'
+import { isRawParameterDictionary, synchronizeVideoParameterDictionary } from '../../domain/catalog/parameter-dictionary'
 
 const catalog = loadCatalog()
 
@@ -44,13 +46,14 @@ describe('视频编码器高级参数统一契约', () => {
       const plan = buildCommandPlan(config, catalog, [])
 
       expect(section.id).toBe('section.video-advanced')
-      expect(section.fields.length, encoder.id).toBe(encoder.specialParameters.length)
+      const advancedControls = encoder.specialParameters.filter((control) => !isRawParameterDictionary(control))
+      expect(section.fields.length, encoder.id).toBe(advancedControls.length)
       expect(section.fields.every((field) => field.optional && field.value === '')).toBe(true)
       expect(plan.invocations[0].output.codecArgs.some((arg) => arg.id.startsWith('codec.special.'))).toBe(false)
     }
   })
 
-  it('保留各软件编码器原始附加参数文本框作为未收录选项的兜底', () => {
+  it('在视频编码栏保留各软件编码器附加参数文本框作为未收录选项的补充入口', () => {
     const rawFields = [
       ['libx264', 'libx264.x264params'],
       ['libx265', 'libx265.x265params'],
@@ -60,12 +63,29 @@ describe('视频编码器高级参数统一契约', () => {
     ] as const
 
     for (const [encoderId, fieldId] of rawFields) {
-      const section = resolveVideoAdvancedSection(configForEncoder(encoderId), catalog, {})
+      const config = configForEncoder(encoderId)
+      const section = resolveVideoSection(config, catalog, {})
+      const advancedSection = resolveVideoAdvancedSection(config, catalog, {})
       const field = section.fields.find((candidate) => candidate.id === fieldId)
       expect(field, `${encoderId}/${fieldId}`).toBeDefined()
       expect(field?.controlType).toBe('text')
       expect(field?.optional).toBe(true)
+      expect(advancedSection.fields.some((candidate) => candidate.id === fieldId)).toBe(false)
     }
+  })
+
+  it('SVT-AV1 字典文本与结构化控件保持双向同步', () => {
+    const encoder = catalog.encoders.video.libsvtav1
+    let config = configForEncoder('libsvtav1')
+    config.video.specialParameters = { svtav1Params: 'tune=0', filmGrain: 4, filmGrainDenoise: true }
+
+    config = synchronizeVideoParameterDictionary(config, encoder, 'libsvtav1.filmGrain')
+    expect(config.video.specialParameters.svtav1Params).toBe('tune=0:film-grain=4:film-grain-denoise=1')
+
+    config.video.specialParameters.svtav1Params = 'tune=0:film-grain=7:film-grain-denoise=0'
+    config = synchronizeVideoParameterDictionary(config, encoder, 'libsvtav1.svtav1params')
+    expect(config.video.specialParameters.filmGrain).toBe(7)
+    expect(config.video.specialParameters.filmGrainDenoise).toBe(false)
   })
 
   it('SVT-AV1 结构化参数与自由文本合并为唯一字典，结构化值覆盖同名文本键', () => {

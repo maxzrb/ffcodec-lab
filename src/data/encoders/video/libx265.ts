@@ -278,7 +278,10 @@ export const libx265: EncoderDefinition = {
       label: 'x265 附加参数 (-x265-params)',
       control: 'text',
       configBinding: { path: videoSpecialParamPath('x265Params') },
-      commandBinding: { argName: '-x265-params', prefix: '-x265-params', phase: 'VIDEO_CODEC' },
+      commandBinding: {
+        argName: '-x265-params', prefix: '-x265-params', phase: 'VIDEO_CODEC',
+        dictionary: { separator: ':' },
+      },
       explanationId: 'expl.libx265.x265params',
     },
   ],

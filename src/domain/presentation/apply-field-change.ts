@@ -15,6 +15,7 @@ import type { Catalog } from '../catalog/catalog-types'
 import type { ResolvedField } from './resolved-field'
 import { setByPath } from '../../utils/object-path'
 import { normalizeConfig } from '../normalization'
+import { synchronizeVideoParameterDictionary } from '../catalog/parameter-dictionary'
 
 // -- types ------------------------------------------------------
 
@@ -127,8 +128,12 @@ export function applyFieldChangeToConfig(
 
   const next = setByPath(previous, change.path, change.value)
   const normalized = normalizeConfig(previous, next, catalog)
+  const encoder = normalized.config.video.encoderId
+    ? catalog.encoders.video[normalized.config.video.encoderId]
+    : undefined
+  const synchronized = synchronizeVideoParameterDictionary(normalized.config, encoder, fieldId)
   return {
-    config: normalized.config,
+    config: synchronized,
     change: {
       ...change,
       notices: [

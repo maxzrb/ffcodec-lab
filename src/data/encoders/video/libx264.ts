@@ -287,7 +287,10 @@ export const libx264: EncoderDefinition = {
       label: 'x264 附加参数 (-x264-params)',
       control: 'text',
       configBinding: { path: videoSpecialParamPath('x264Params') },
-      commandBinding: { argName: '-x264-params', prefix: '-x264-params', phase: 'VIDEO_CODEC' },
+      commandBinding: {
+        argName: '-x264-params', prefix: '-x264-params', phase: 'VIDEO_CODEC',
+        dictionary: { separator: ':' },
+      },
       explanationId: 'expl.libx264.x264params',
     },
   ],

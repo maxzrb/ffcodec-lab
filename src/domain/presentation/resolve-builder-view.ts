@@ -67,7 +67,7 @@ export function resolveBuilderView(
   attachDiagnostics(allFields, allMessages)
 
   const hasErrors = allMessages.some((m) => m.severity === 'error')
-  const panels = buildWorkspacePanels(sections)
+  const panels = buildWorkspacePanels(sections, config)
 
   return {
     sections,
@@ -91,7 +91,10 @@ const PANEL_DEFINITIONS = [
   ['custom', '自定义参数'],
 ] as const
 
-function buildWorkspacePanels(sections: ResolvedBuilderView['sections']): ResolvedBuilderView['panels'] {
+function buildWorkspacePanels(
+  sections: ResolvedBuilderView['sections'],
+  config: ProjectConfig,
+): ResolvedBuilderView['panels'] {
   return PANEL_DEFINITIONS.map(([id, label]) => {
     const panelSections = sections.flatMap((section) => {
       const fields = section.fields.filter((field) => resolvePanelId(section.id, field) === id)
@@ -108,11 +111,58 @@ function buildWorkspacePanels(sections: ResolvedBuilderView['sections']): Resolv
     return {
       id,
       label,
+      stateNotice: resolvePanelStateNotice(id, config),
       sections: panelSections,
       diagnosticCount: fields.reduce((sum, field) => sum + field.diagnostics.length, 0),
       enabledAdvancedCount: fields.filter((field) => field.tier === 'advanced' && field.visible && isAdvancedValueSet(field.value)).length,
     }
   })
+}
+
+/** 为复制流、禁用输出等会隐藏大量控件的状态提供明确反馈。 */
+function resolvePanelStateNotice(
+  panelId: string,
+  config: ProjectConfig,
+): ResolvedBuilderView['panels'][number]['stateNotice'] {
+  if (config.video.mode === 'copy') {
+    if (panelId === 'video') return {
+      title: '正在复制视频流',
+      description: '当前使用 -c:v copy，不会重新编码视频，因此编码器、预设和私有参数不会生效。',
+    }
+    if (panelId === 'quality') return {
+      title: '复制模式不需要质量控制',
+      description: '视频数据会原样写入输出文件，画质和码率保持输入状态。若要调整质量或文件大小，请改为重新编码。',
+      actionPanelId: 'video', actionLabel: '前往视频编码',
+    }
+    if (panelId === 'color') return {
+      title: '复制模式不能转换色彩',
+      description: '像素格式、色彩转换和色调映射都需要重新编码视频。',
+      actionPanelId: 'video', actionLabel: '前往视频编码',
+    }
+    if (panelId === 'filters') return {
+      title: '复制模式不能处理画面',
+      description: '缩放、裁剪、帧率和画面滤镜都会改变像素数据，因此需要重新编码视频。',
+      actionPanelId: 'video', actionLabel: '前往视频编码',
+    }
+  }
+
+  if (config.video.mode === 'disabled' && ['video', 'quality', 'color', 'filters'].includes(panelId)) {
+    return {
+      title: '当前不输出视频',
+      description: '已选择 -vn，所有视频编码、质量、色彩和画面处理设置均不会进入命令。',
+      ...(panelId === 'video' ? {} : { actionPanelId: 'video', actionLabel: '前往视频编码' }),
+    }
+  }
+
+  if (config.audio.mode === 'copy' && panelId === 'audio') return {
+    title: '正在复制音频流',
+    description: '当前使用 -c:a copy，音频不会重新编码，因此编码器、码率、声道和采样率设置不会出现。',
+  }
+  if (config.audio.mode === 'disabled' && panelId === 'audio') return {
+    title: '当前不输出音频',
+    description: '已选择 -an，输出文件不会包含音频流，音频编码设置因此不可用。',
+  }
+  return undefined
 }
 
 /** 同一工作台内保留来源分组语义，避免两个区域显示完全相同的标题。 */

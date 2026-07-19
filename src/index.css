@@ -52,6 +52,8 @@
   --message-surface: rgba(239, 245, 248, 0.9);
   --command-surface: #142033;
   --command-text: #e4edf7;
+  --example-code-surface: #e8eef5;
+  --example-code-text: #21334a;
   --modal-overlay: rgba(22, 32, 46, 0.5);
   --modal-surface: #ffffff;
 }
@@ -99,6 +101,8 @@
   --message-surface: rgba(7, 19, 33, 0.66);
   --command-surface: #06101c;
   --command-text: #d8e7f7;
+  --example-code-surface: #071321;
+  --example-code-text: #d8e7f7;
   --modal-overlay: rgba(2, 8, 15, 0.74);
   --modal-surface: #0b1a2c;
 }
@@ -663,6 +667,65 @@ code {
 .explanation-drawer .explanation-card {
   margin-bottom: 0;
   box-shadow: none;
+}
+
+.explanation-command-example {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.explanation-command-example code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--example-code-surface);
+  color: var(--example-code-text);
+  padding: 3px 7px;
+  font-size: 12px;
+}
+
+.workbench-state-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, var(--info) 28%, var(--border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--info) 7%, var(--bg-card));
+  padding: 14px 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+.workbench-state-notice__icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--info) 16%, transparent);
+  color: var(--info);
+  font-weight: 800;
+}
+
+.workbench-state-notice h2,
+.workbench-state-notice p {
+  margin: 0;
+}
+
+.workbench-state-notice h2 {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.workbench-state-notice p {
+  margin-top: 2px;
+  color: var(--text-dim);
+  font-size: 11px;
 }
 
 .parameter-section,
@@ -1321,6 +1384,8 @@ code {
   .shell-selector { width: 100%; }
   .segmented-button { flex: 1; }
   .parameter-section__description { display: none; }
+  .workbench-state-notice { grid-template-columns: auto minmax(0, 1fr); }
+  .workbench-state-notice .button-ghost { grid-column: 1 / -1; width: 100%; }
   .workbench-mobile-inspector-toggle {
     display: block;
     position: sticky;

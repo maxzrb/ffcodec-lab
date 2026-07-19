@@ -155,9 +155,11 @@ schema v3 新增基础高级质量、色彩标记、降噪和去色带。schema 
 - `frame.filters.deband`：deband、gradfun。
 - 编码器高级质量项继续存入 `video.specialParameters`，由目录中的 `configBinding` 与 `commandBinding` 控制。
 
-视频编码器的 `specialParameters` 会被解析成独立的 `section.video-advanced`，并固定放在视频编码工作台。展示层把全部私有控件视为可选项，因此目录 `defaultValue` 只描述编码器默认行为；命令层只读取 `ProjectConfig.video.specialParameters` 中的显式值。这个约束适用于全部视频编码器，避免默认命令被私有参数填满。
+视频编码器的结构化 `specialParameters` 会被解析成独立的 `section.video-advanced`，并固定放在视频编码工作台。没有 `dictionary.key` 的自由字典文本框留在 `section.video` 底部。展示层把全部私有控件视为可选项，因此目录 `defaultValue` 只描述编码器默认行为；命令层只读取 `ProjectConfig.video.specialParameters` 中的显式值。这个约束适用于全部视频编码器，避免默认命令被私有参数填满。
 
-`CommandBinding.dictionary` 用于 `-svtav1-params` 一类 `key=value` 字典参数。带 `dictionary.key` 的结构化控件和不带 key 的原始文本根字段按 prefix、phase、separator 分组，最终只生成一个参数；结构化值会覆盖原始文本中的同名键。新增其他字典式编码器参数时应复用该绑定，不应在命令构建器里加入编码器名称分支。
+`CommandBinding.dictionary` 用于 `-svtav1-params` 一类 `key=value` 字典参数。带 `dictionary.key` 的结构化控件和不带 key 的原始文本根字段按 prefix、phase、separator 分组，最终只生成一个参数；同组字段在 `parameter-dictionary.ts` 中双向同步。新增其他字典式编码器参数时应复用该绑定，不应在命令构建器里加入编码器名称分支。
+
+`ResolvedWorkspacePanel.stateNotice` 描述复制流或禁用输出时的面板状态。视频复制会覆盖视频、质量、色彩与滤镜工作台，音频复制或禁用会覆盖音频工作台；即使面板没有字段也必须显示原因和返回路径。
 
 滤镜顺序保持：反交错 → 裁剪 → 缩放 → 旋转/翻转 → 降噪 → 去色带 → 色彩处理 → 基础调色 → 锐化 → 帧率 → 字幕 → 自定义。所有启用项最终仍只形成一个 `-vf`。
 

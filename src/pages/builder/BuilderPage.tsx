@@ -27,6 +27,7 @@ import type { DiagnosticFix } from '../../domain/rules/rule-types'
 import { CommandEditor } from './components/CommandEditor'
 import { VisitCounter } from '../../features/analytics/VisitCounter'
 import { WorkbenchShell } from './components/WorkbenchShell'
+import { WorkbenchStateNotice } from './components/WorkbenchStateNotice'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
@@ -297,24 +298,31 @@ export function BuilderPage() {
         panels={view.panels}
         activePanelId={activePanel.id}
         onPanelChange={handlePanelChange}
-        content={activePanel.sections.map((section) => (
-          <ParameterSection
-            key={section.id}
-            section={section}
-            expanded={expandedSections[section.id] ?? true}
-            onToggle={() => toggleSection(section.id)}
-            onFieldChange={handleFieldChange}
-            onExplain={handleExplain}
-            highlightedFieldId={highlightedFieldId}
-            actions={section.id === 'section.subtitle' ? (
-              <SubtitleSectionActions
-                tracks={config.subtitle.tracks}
-                onAdd={handleAddSubtitleTrack}
-                onRemove={handleRemoveSubtitleTrack}
+        content={(
+          <>
+            {activePanel.stateNotice && (
+              <WorkbenchStateNotice notice={activePanel.stateNotice} onPanelChange={handlePanelChange} />
+            )}
+            {activePanel.sections.map((section) => (
+              <ParameterSection
+                key={section.id}
+                section={section}
+                expanded={expandedSections[section.id] ?? true}
+                onToggle={() => toggleSection(section.id)}
+                onFieldChange={handleFieldChange}
+                onExplain={handleExplain}
+                highlightedFieldId={highlightedFieldId}
+                actions={section.id === 'section.subtitle' ? (
+                  <SubtitleSectionActions
+                    tracks={config.subtitle.tracks}
+                    onAdd={handleAddSubtitleTrack}
+                    onRemove={handleRemoveSubtitleTrack}
+                  />
+                ) : undefined}
               />
-            ) : undefined}
-          />
-        ))}
+            ))}
+          </>
+        )}
         inspector={(
           <>
             <div className="inspector-tabs" role="tablist" aria-label={isZh ? '检查器视图' : 'Inspector view'}>

@@ -38,20 +38,11 @@ export function ExplanationPanel({ explanation, onClose }: ExplanationPanelProps
         )}
 
         {explanation.commandExample && (
-          <div style={{ marginBottom: 12 }}>
+          <div className="explanation-command-example">
             <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
               {locale === 'zh-CN' ? '命令示例：' : 'Command example: '}
             </span>
-            <code
-              style={{
-                fontSize: 12,
-                padding: '2px 6px',
-                background: '#0d1117',
-                borderRadius: 'var(--radius)',
-              }}
-            >
-              {explanation.commandExample}
-            </code>
+            <code>{explanation.commandExample}</code>
           </div>
         )}
 

@@ -100,6 +100,12 @@ export interface ResolvedWorkspacePanel {
   id: string
   label: string
   description?: string
+  stateNotice?: {
+    title: string
+    description: string
+    actionPanelId?: string
+    actionLabel?: string
+  }
   sections: ResolvedSection[]
   diagnosticCount: number
   enabledAdvancedCount: number

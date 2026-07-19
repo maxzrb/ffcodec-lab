@@ -130,7 +130,10 @@ export const libvvenc: EncoderDefinition = {
       label: 'VVenC 附加参数 (-vvenc-params)',
       control: 'text',
       configBinding: { path: videoSpecialParamPath('vvencParams') },
-      commandBinding: { argName: '-vvenc-params', prefix: '-vvenc-params', phase: 'VIDEO_CODEC' },
+      commandBinding: {
+        argName: '-vvenc-params', prefix: '-vvenc-params', phase: 'VIDEO_CODEC',
+        dictionary: { separator: ':' },
+      },
       optional: true,
       explanationId: 'expl.libvvenc.params',
     },

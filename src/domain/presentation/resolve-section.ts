@@ -18,6 +18,11 @@ import {
   resolveSectionLabel,
 } from './resolve-field'
 import { calculateTargetSize } from '../tools/target-size'
+import {
+  isRawParameterDictionary,
+  resolveRawParameterDictionaryValue,
+  resolveStructuredDictionaryValue,
+} from '../catalog/parameter-dictionary'
 
 // -- section builders -------------------------------------------
 
@@ -223,6 +228,18 @@ export function resolveVideoSection(
       }
     }
 
+    // 自由附加参数固定放在视频编码栏底部，并显示与结构化字典控件同步后的内容。
+    for (const control of encoder.specialParameters.filter(isRawParameterDictionary)) {
+      const optionalControl = { ...control, optional: true }
+      const configPath = control.configBinding?.path ?? `video.specialParameters.${control.id}`
+      const field = resolveControlField(optionalControl, config, configPath, fieldStates, encoder)
+      field.value = resolveRawParameterDictionaryValue(encoder, control, config.video.specialParameters, true)
+      field.panelId = 'video'
+      field.groupId = 'encoder-additional-parameters'
+      field.tier = 'advanced'
+      fields.push(field)
+    }
+
   }
 
   return { id: 'section.video', label: '视频编码', fields }
@@ -239,12 +256,15 @@ export function resolveVideoAdvancedSection(
     : undefined
   if (!encoder) return { id: 'section.video-advanced', label: '编码器高级参数', fields: [] }
 
-  const fields = encoder.specialParameters.map((control) => {
+  const fields = encoder.specialParameters.filter((control) => !isRawParameterDictionary(control)).map((control) => {
     // EncoderDefinition.specialParameters 中的默认值只描述编码器行为，
     // 不代表项目应主动发射；界面必须允许保持空值。
     const optionalControl = { ...control, optional: true }
     const configPath = control.configBinding?.path ?? `video.specialParameters.${control.id}`
     const field = resolveControlField(optionalControl, config, configPath, fieldStates, encoder)
+    if (control.commandBinding?.dictionary?.key) {
+      field.value = resolveStructuredDictionaryValue(encoder, control, config.video.specialParameters)
+    }
     field.panelId = 'video'
     field.groupId = 'encoder-advanced'
     field.tier = 'advanced'
@@ -254,7 +274,7 @@ export function resolveVideoAdvancedSection(
   return {
     id: 'section.video-advanced',
     label: '编码器高级参数',
-    description: '仅显示当前编码器支持的私有选项；全部默认不设置，原始附加参数文本框继续作为兜底。',
+    description: '仅显示当前编码器支持的私有选项；全部默认不设置，附加参数文本框位于视频编码栏底部。',
     fields,
   }
 }

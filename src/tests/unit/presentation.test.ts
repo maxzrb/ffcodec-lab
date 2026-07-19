@@ -365,6 +365,38 @@ describe('Resolver — builder view integration', () => {
       expect(frameResolutionField.visible).toBeDefined()
     }
   })
+
+  it('媒体复制与禁用状态覆盖所有受影响的工作台', () => {
+    const copied = makeConfig({
+      video: { ...createDefaultProjectConfig().video, mode: 'copy' },
+      audio: { ...createDefaultProjectConfig().audio, mode: 'copy' },
+    })
+    const copiedView = resolveBuilderView(
+      copied,
+      catalog,
+      makeEvalResult(copied),
+      buildCommandPlan(copied, catalog, []),
+    )
+    const notices = Object.fromEntries(copiedView.panels.map((panel) => [panel.id, panel.stateNotice?.title]))
+    expect(notices.video).toBe('正在复制视频流')
+    expect(notices.quality).toBe('复制模式不需要质量控制')
+    expect(notices.color).toBe('复制模式不能转换色彩')
+    expect(notices.filters).toBe('复制模式不能处理画面')
+    expect(notices.audio).toBe('正在复制音频流')
+
+    const disabled = makeConfig({
+      video: { ...createDefaultProjectConfig().video, mode: 'disabled' },
+      audio: { ...createDefaultProjectConfig().audio, mode: 'disabled' },
+    })
+    const disabledView = resolveBuilderView(
+      disabled,
+      catalog,
+      makeEvalResult(disabled),
+      buildCommandPlan(disabled, catalog, []),
+    )
+    expect(disabledView.panels.find((panel) => panel.id === 'quality')?.stateNotice?.title).toBe('当前不输出视频')
+    expect(disabledView.panels.find((panel) => panel.id === 'audio')?.stateNotice?.title).toBe('当前不输出音频')
+  })
 })
 
 describe('Resolver — command origin attachment', () => {

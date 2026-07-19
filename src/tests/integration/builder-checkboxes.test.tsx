@@ -143,6 +143,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.queryByLabelText('Film Grain Synthesis 强度')).not.toBeInTheDocument()
 
     await userEvent.selectOptions(screen.getByLabelText('视频编码器'), 'libsvtav1')
+    expect(screen.getByLabelText('SVT-AV1 附加参数 (-svtav1-params)')).toHaveValue('')
     await userEvent.click(advancedToggle)
 
     expect(screen.getByLabelText('Film Grain Synthesis 强度')).toHaveValue(null)
@@ -151,11 +152,38 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     await userEvent.type(screen.getByLabelText('Film Grain Synthesis 强度'), '4')
     await userEvent.selectOptions(screen.getByLabelText('Film Grain 去噪'), 'true')
+    expect(screen.getByLabelText('SVT-AV1 附加参数 (-svtav1-params)'))
+      .toHaveValue('film-grain=4:film-grain-denoise=1')
 
     await waitFor(() => {
       const command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
       expect(command).toContain('-svtav1-params "film-grain=4:film-grain-denoise=1"')
     })
+
+    const rawParameters = screen.getByLabelText('SVT-AV1 附加参数 (-svtav1-params)')
+    await userEvent.clear(rawParameters)
+    await userEvent.type(rawParameters, 'tune=0:film-grain=7:film-grain-denoise=0')
+    expect(screen.getByLabelText('Film Grain Synthesis 强度')).toHaveValue(7)
+    expect(screen.getByLabelText('Film Grain 去噪')).toHaveValue('false')
+  })
+
+  it('复制或禁用媒体流时解释参数缺失原因，并允许从空质量页返回视频编码', async () => {
+    render(<BuilderPage />)
+    await openPanel('视频编码')
+    await userEvent.selectOptions(screen.getByLabelText('视频处理方式'), 'copy')
+    expect(screen.getByText('正在复制视频流')).toBeInTheDocument()
+
+    await openPanel('质量控制')
+    expect(screen.getByText('复制模式不需要质量控制')).toBeInTheDocument()
+    expect(screen.getByText(/视频数据会原样写入输出文件/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '前往视频编码' }))
+    expect(screen.getByLabelText('视频处理方式')).toHaveValue('copy')
+
+    await openPanel('音频')
+    await userEvent.selectOptions(screen.getByLabelText('音频处理方式'), 'copy')
+    expect(screen.getByText('正在复制音频流')).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByLabelText('音频处理方式'), 'disabled')
+    expect(screen.getByText('当前不输出音频')).toBeInTheDocument()
   })
 
   it('色彩与封装工作台使用不同子标题且默认展开区域首次点击即可关闭', async () => {

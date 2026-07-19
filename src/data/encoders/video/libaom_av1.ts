@@ -126,7 +126,10 @@ export const libaomAv1: EncoderDefinition = {
       label: 'AOM 附加参数 (-aom-params)',
       control: 'text',
       configBinding: { path: videoSpecialParamPath('aomParams') },
-      commandBinding: { argName: '-aom-params', prefix: '-aom-params', phase: 'VIDEO_CODEC' },
+      commandBinding: {
+        argName: '-aom-params', prefix: '-aom-params', phase: 'VIDEO_CODEC',
+        dictionary: { separator: ':' },
+      },
       optional: true,
       explanationId: 'expl.libaom.params',
     },
