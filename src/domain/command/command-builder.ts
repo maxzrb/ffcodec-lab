@@ -1,5 +1,5 @@
 import type { ProjectConfig } from '../config/project-config'
-import type { Catalog, ControlDefinition } from '../catalog/catalog-types'
+import type { Catalog, ControlDefinition, EncoderDefinition } from '../catalog/catalog-types'
 import type { Diagnostic } from '../rules/rule-types'
 import {
   type CommandPlan,
@@ -391,25 +391,9 @@ function buildOutput(
         }
       }
 
-      // 特殊参数必须以编码器目录为准，不能直接遍历配置中的任意键。
-      for (const sp of encoder.specialParameters) {
-        if (!sp.commandBinding) continue
-        const configKey = sp.configBinding?.path
-          ? extractConfigKey(sp.configBinding.path)
-          : sp.id
-        const storedValue = config.video.specialParameters[configKey]
-        const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
-        if (val === undefined || val === null || val === '') continue
-        const tokens = buildSpecialParameterTokens(sp, val)
-        if (!tokens) continue
-        output.codecArgs.push({
-          id: `codec.special.${configKey}`,
-          originId: sp.id,
-          phase: sp.commandBinding.phase,
-          tokens,
-          explanationId: sp.explanationId,
-        })
-      }
+      // 编码器私有高级参数一律只发射用户显式设置的值；目录 defaultValue
+      // 仅用于说明编码器自身默认行为，不能让默认命令变得冗长。
+      output.codecArgs.push(...buildVideoSpecialParameterArgs(config, encoder))
     }
   }
 
@@ -686,6 +670,108 @@ function buildSpecialParameterTokens(
   }
   const disabledValue = optionValues.includes('off') ? 'off' : 0
   return [prefix, String(disabledValue)]
+}
+
+interface DictionaryParameterEntry {
+  control: ControlDefinition
+  value: string
+}
+
+interface DictionaryParameterGroup {
+  prefix: string
+  phase: NonNullable<ControlDefinition['commandBinding']>['phase']
+  separator: string
+  rawEntries: DictionaryParameterEntry[]
+  keyedEntries: Array<DictionaryParameterEntry & { key: string }>
+}
+
+/**
+ * 构建视频编码器私有参数，并把 `-svtav1-params` 这类字典控件聚合为
+ * 唯一参数。结构化字段覆盖自由文本中的同名 key，其余文本原样保留。
+ */
+function buildVideoSpecialParameterArgs(
+  config: ProjectConfig,
+  encoder: EncoderDefinition,
+): CommandArg[] {
+  const args: CommandArg[] = []
+  const dictionaryGroups = new Map<string, DictionaryParameterGroup>()
+
+  for (const control of encoder.specialParameters) {
+    const binding = control.commandBinding
+    if (!binding) continue
+    const configKey = control.configBinding?.path
+      ? extractConfigKey(control.configBinding.path)
+      : control.id
+    const storedValue = config.video.specialParameters[configKey]
+    if (storedValue === undefined || storedValue === null || storedValue === '') continue
+
+    if (binding.dictionary) {
+      const prefix = binding.prefix ?? binding.argName
+      const separator = binding.dictionary.separator ?? ':'
+      const groupId = `${prefix}\u0000${binding.phase}\u0000${separator}`
+      const group = dictionaryGroups.get(groupId) ?? {
+        prefix,
+        phase: binding.phase,
+        separator,
+        rawEntries: [],
+        keyedEntries: [],
+      }
+      const renderedValue = buildSpecialParameterValue(control, storedValue)
+      if (renderedValue !== null) {
+        const entry = { control, value: renderedValue }
+        if (binding.dictionary.key) {
+          group.keyedEntries.push({ ...entry, key: binding.dictionary.key })
+        } else {
+          group.rawEntries.push(entry)
+        }
+        dictionaryGroups.set(groupId, group)
+      }
+      continue
+    }
+
+    const tokens = buildSpecialParameterTokens(control, storedValue)
+    if (!tokens) continue
+    args.push({
+      id: `codec.special.${configKey}`,
+      originId: control.id,
+      phase: binding.phase,
+      tokens,
+      explanationId: control.explanationId,
+    })
+  }
+
+  for (const [groupId, group] of dictionaryGroups) {
+    const structuredKeys = new Set(group.keyedEntries.map((entry) => entry.key.toLowerCase()))
+    const rawParts = group.rawEntries
+      .flatMap((entry) => entry.value.split(group.separator))
+      .map((part) => part.trim())
+      .filter((part) => {
+        if (!part) return false
+        const equalsIndex = part.indexOf('=')
+        if (equalsIndex < 0) return true
+        return !structuredKeys.has(part.slice(0, equalsIndex).trim().toLowerCase())
+      })
+    const structuredParts = group.keyedEntries.map((entry) => `${entry.key}=${entry.value}`)
+    const parts = [...rawParts, ...structuredParts]
+    if (parts.length === 0) continue
+
+    const originControl = group.rawEntries[0]?.control ?? group.keyedEntries[0].control
+    args.push({
+      id: `codec.special.dictionary.${groupId.replace(/[^a-zA-Z0-9_-]/g, '.')}`,
+      originId: originControl.id,
+      phase: group.phase,
+      tokens: [group.prefix, parts.join(group.separator)],
+      explanationId: originControl.explanationId,
+    })
+  }
+
+  return args
+}
+
+function buildSpecialParameterValue(control: ControlDefinition, value: unknown): string | null {
+  const tokens = buildSpecialParameterTokens(control, value)
+  if (!tokens || tokens.length < 2) return null
+  return tokens.slice(1).join(' ')
 }
 
 /**

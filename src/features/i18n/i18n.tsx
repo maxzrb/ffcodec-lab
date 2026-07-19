@@ -21,6 +21,8 @@ const ENGLISH_TEXT: Record<string, string> = {
   '输入与流': 'Input & streams',
   '输入与输出': 'Input & output',
   '视频编码': 'Video encoding',
+  '编码器高级参数': 'Encoder advanced parameters',
+  '仅显示当前编码器支持的私有选项；全部默认不设置，原始附加参数文本框继续作为兜底。': 'Shows only private options supported by the current encoder. Every option is unset by default, while the raw additional-options field remains available as a fallback.',
   '视频参数': 'Video',
   '画面参数': 'Picture & filters',
   '画面与滤镜': 'Picture & filters',
@@ -112,6 +114,8 @@ const ENGLISH_TEXT: Record<string, string> = {
   'x264 附加参数 (-x264-params)': 'Additional x264 options (-x264-params)',
   'x265 附加参数 (-x265-params)': 'Additional x265 options (-x265-params)',
   'SVT-AV1 附加参数 (-svtav1-params)': 'Additional SVT-AV1 options (-svtav1-params)',
+  'Film Grain Synthesis 强度': 'Film Grain Synthesis strength',
+  'Film Grain 去噪': 'Film Grain denoising',
   'AOM 附加参数 (-aom-params)': 'Additional AOM options (-aom-params)',
   'VVenC 附加参数 (-vvenc-params)': 'Additional VVenC options (-vvenc-params)',
   '速度等级 (-cpu-used)': 'Speed level (-cpu-used)',
@@ -411,6 +415,16 @@ export function translateText(value: string, locale: Locale): string {
 }
 
 const ENGLISH_EXPLANATIONS: Record<string, { title?: string; short: string; detail?: string }> = {
+  'expl.libsvtav1.filmGrain': {
+    title: 'SVT-AV1 Film Grain Synthesis',
+    short: 'Enables AV1 film-grain synthesis from 0–50. Zero disables it; higher values increase grain analysis and denoising strength.',
+    detail: 'SVT-AV1 can remove part of the random grain or sensor noise from the coded image and signal a grain model for the decoder to reconstruct. This can save bitrate while preserving subjective texture, but overly high values may erase fine detail. Start with a small value such as 4–12 and compare representative samples.',
+  },
+  'expl.libsvtav1.filmGrainDenoise': {
+    title: 'SVT-AV1 Film Grain denoising',
+    short: 'Controls whether SVT-AV1 denoises the source at the selected Film Grain strength before signaling synthetic grain.',
+    detail: 'This option only has a useful effect when Film Grain Synthesis is explicitly set above zero. Leave it unset to keep the encoder default.',
+  },
   'expl.param.shell': {
     title: 'Shell',
     short: 'Select the terminal that will run the command so quoting, escaping, and line continuation are generated correctly.',

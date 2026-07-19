@@ -50,6 +50,7 @@ function presetStore(config: ProjectConfig) {
     expandedSections: {
       'section.input': false,
       'section.video': true,
+      'section.video-advanced': false,
       'section.frame': false,
       'section.audio': true,
       'section.subtitle': false,
@@ -66,6 +67,13 @@ async function openPanel(label: string) {
   await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${label}`) }))
 }
 
+async function expandEncoderAdvanced() {
+  const toggle = screen.getByRole('button', { name: /编码器高级参数/ })
+  if (toggle.getAttribute('aria-expanded') === 'false') {
+    await userEvent.click(toggle)
+  }
+}
+
 describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   beforeEach(() => {
     window.history.replaceState(null, '', window.location.pathname)
@@ -78,6 +86,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       expandedSections: {
         'section.input': false,
         'section.video': true,
+        'section.video-advanced': false,
         'section.frame': false,
         'section.audio': true,
         'section.subtitle': false,
@@ -122,6 +131,30 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
       expect(command).toContain('-crf 23')
       expect(command).not.toContain('-pass 1')
+    })
+  })
+
+  it('视频编码器高级参数默认折叠，并随编码器切换显示私有空值控件', async () => {
+    render(<BuilderPage />)
+    await openPanel('视频编码')
+
+    const advancedToggle = screen.getByRole('button', { name: /编码器高级参数/ })
+    expect(advancedToggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByLabelText('Film Grain Synthesis 强度')).not.toBeInTheDocument()
+
+    await userEvent.selectOptions(screen.getByLabelText('视频编码器'), 'libsvtav1')
+    await userEvent.click(advancedToggle)
+
+    expect(screen.getByLabelText('Film Grain Synthesis 强度')).toHaveValue(null)
+    expect(screen.getByLabelText('Film Grain 去噪')).toHaveValue('')
+    expect(screen.getByLabelText('SVT-AV1 附加参数 (-svtav1-params)')).toHaveValue('')
+
+    await userEvent.type(screen.getByLabelText('Film Grain Synthesis 强度'), '4')
+    await userEvent.selectOptions(screen.getByLabelText('Film Grain 去噪'), 'true')
+
+    await waitFor(() => {
+      const command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
+      expect(command).toContain('-svtav1-params "film-grain=4:film-grain-denoise=1"')
     })
   })
 
@@ -189,49 +222,26 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.queryByRole('tab', { name: '诊断 0' })).not.toBeInTheDocument()
   })
 
-  // -- 用例 1：NVENC 空间 AQ 复选框 --
-  it('NVENC spatial AQ checkbox toggles and persists in ProjectConfig', async () => {
+  // -- 用例 1：NVENC 空间 AQ 可选开关 --
+  it('NVENC spatial AQ optional switch persists explicit values in ProjectConfig', async () => {
     presetStore(makeConfig('h264_nvenc'))
     render(<BuilderPage />)
-    await openPanel('质量控制')
+    await openPanel('视频编码')
+    await expandEncoderAdvanced()
 
-    // 通过稳定字段 ID 查找空间 AQ 复选框。
-    let checkbox: HTMLInputElement | null = null
-
-    await waitFor(() => {
-      const container = document.querySelector('[data-field-id="h264_nvenc.spatialaq"]')
-      expect(container).not.toBeNull()
-      const cb = container!.querySelector('input[type="checkbox"]') as HTMLInputElement
-      expect(cb).not.toBeNull()
-      checkbox = cb
-    }, { timeout: 3000 })
-
-    // 默认值为 1，因此初始状态应为选中。
-    expect(checkbox!.checked).toBe(true)
-
-    // 点击后取消选中。
-    await userEvent.click(checkbox!)
-
-    // 先验证 DOM 状态已变化。
-    await waitFor(() => {
-      expect(checkbox!.checked).toBe(false)
-    }, { timeout: 2000 })
+    const selector = screen.getByLabelText('空间自适应量化 (-spatial-aq)')
+    expect(selector).toHaveValue('')
+    await userEvent.selectOptions(selector, 'false')
 
     // 再验证 ProjectConfig 已同步；修复前 applyFieldChange 会拒绝此变更。
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters
-    // 修复后应写入 spatialAq；修复前该对象始终为空。
     const hasSpatialAq = ('spatialAq' in sp) || ('h264_nvenc.spatialaq' in sp)
     expect(hasSpatialAq).toBe(true)
-    // 验证实际值为 false。
     const value = sp['spatialAq'] ?? sp['h264_nvenc.spatialaq']
     expect(value).toBe(false)
 
-    // 再次点击，验证操作可逆。
-    await userEvent.click(checkbox!)
-    await waitFor(() => {
-      expect(checkbox!.checked).toBe(true)
-    }, { timeout: 2000 })
+    await userEvent.selectOptions(selector, 'true')
 
     const config2 = useBuilderStore.getState().config
     const sp2 = config2.video.specialParameters
@@ -239,30 +249,16 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(recheckedValue).toBe(true)
   })
 
-  // -- 用例 2：默认未选中的 NVENC 时间 AQ 复选框 --
-  it('NVENC temporal AQ checkbox toggles from unchecked (defaultValue=0)', async () => {
+  // -- 用例 2：NVENC 时间 AQ 可选开关 --
+  it('NVENC temporal AQ remains unset until explicitly enabled', async () => {
     presetStore(makeConfig('h264_nvenc'))
     render(<BuilderPage />)
-    await openPanel('质量控制')
+    await openPanel('视频编码')
+    await expandEncoderAdvanced()
 
-    let checkbox: HTMLInputElement | null = null
-
-    await waitFor(() => {
-      const container = document.querySelector('[data-field-id="h264_nvenc.temporalaq"]')
-      expect(container).not.toBeNull()
-      const cb = container!.querySelector('input[type="checkbox"]') as HTMLInputElement
-      expect(cb).not.toBeNull()
-      checkbox = cb
-    }, { timeout: 3000 })
-
-    // 默认值为 0。
-    expect(checkbox!.checked).toBe(false)
-
-    // 点击后启用。
-    await userEvent.click(checkbox!)
-    await waitFor(() => {
-      expect(checkbox!.checked).toBe(true)
-    }, { timeout: 2000 })
+    const selector = screen.getByLabelText('时间自适应量化 (-temporal-aq)')
+    expect(selector).toHaveValue('')
+    await userEvent.selectOptions(selector, 'true')
 
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters
@@ -272,30 +268,16 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(value).toBe(true)
   })
 
-  // -- 用例 3：QSV 低功耗复选框 --
-  it('QSV low power checkbox toggles and persists', async () => {
+  // -- 用例 3：QSV 低功耗可选开关 --
+  it('QSV low power optional switch toggles and persists', async () => {
     presetStore(makeConfig('h264_qsv'))
     render(<BuilderPage />)
     await openPanel('视频编码')
+    await expandEncoderAdvanced()
 
-    let checkbox: HTMLInputElement | null = null
-
-    await waitFor(() => {
-      const container = document.querySelector('[data-field-id="h264_qsv.lowpower"]')
-      expect(container).not.toBeNull()
-      const cb = container!.querySelector('input[type="checkbox"]') as HTMLInputElement
-      expect(cb).not.toBeNull()
-      checkbox = cb
-    }, { timeout: 3000 })
-
-    // 默认值为 0。
-    expect(checkbox!.checked).toBe(false)
-
-    // 点击后启用。
-    await userEvent.click(checkbox!)
-    await waitFor(() => {
-      expect(checkbox!.checked).toBe(true)
-    }, { timeout: 2000 })
+    const selector = screen.getByLabelText('低功耗模式 (-low_power)')
+    expect(selector).toHaveValue('')
+    await userEvent.selectOptions(selector, 'true')
 
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters
@@ -305,28 +287,16 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(value).toBe(true)
   })
 
-  // -- 用例 4：HEVC NVENC 空间 AQ 复选框 --
-  it('HEVC NVENC spatial AQ checkbox toggles and persists', async () => {
+  // -- 用例 4：HEVC NVENC 空间 AQ 可选开关 --
+  it('HEVC NVENC spatial AQ optional switch toggles and persists', async () => {
     presetStore(makeConfig('hevc_nvenc'))
     render(<BuilderPage />)
-    await openPanel('质量控制')
+    await openPanel('视频编码')
+    await expandEncoderAdvanced()
 
-    let checkbox: HTMLInputElement | null = null
-
-    await waitFor(() => {
-      const container = document.querySelector('[data-field-id="hevc_nvenc.spatialaq"]')
-      expect(container).not.toBeNull()
-      const cb = container!.querySelector('input[type="checkbox"]') as HTMLInputElement
-      expect(cb).not.toBeNull()
-      checkbox = cb
-    }, { timeout: 3000 })
-
-    expect(checkbox!.checked).toBe(true) // 默认值为 1。
-
-    await userEvent.click(checkbox!)
-    await waitFor(() => {
-      expect(checkbox!.checked).toBe(false)
-    }, { timeout: 2000 })
+    const selector = screen.getByLabelText('空间自适应量化 (-spatial-aq)')
+    expect(selector).toHaveValue('')
+    await userEvent.selectOptions(selector, 'false')
 
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters

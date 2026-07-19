@@ -223,27 +223,40 @@ export function resolveVideoSection(
       }
     }
 
-    // Special parameters
-    for (const sp of encoder.specialParameters) {
-      const configPath = sp.configBinding?.path ?? `video.specialParameters.${sp.id}`
-      const field = resolveControlField(sp, config, configPath, fieldStates, encoder)
-      const qualityArgumentNames = new Set([
-        '-rc-lookahead', '-spatial_aq', '-spatial-aq', '-temporal_aq', '-temporal-aq',
-        '-bf', '-g', '-keyint_min', '-qmin', '-qmax', '-qcomp',
-      ])
-      if (!field.panelId && (
-        sp.commandBinding?.phase === 'VIDEO_RATE_CONTROL'
-        || qualityArgumentNames.has(sp.commandBinding?.argName ?? '')
-      )) {
-        field.panelId = 'quality'
-        field.groupId = 'encoder-quality'
-        field.tier = 'advanced'
-      }
-      fields.push(field)
-    }
   }
 
   return { id: 'section.video', label: '视频编码', fields }
+}
+
+/** 当前视频编码器的私有高级参数。全部采用显式启用语义并默认折叠。 */
+export function resolveVideoAdvancedSection(
+  config: ProjectConfig,
+  catalog: Catalog,
+  fieldStates: Record<string, FieldState>,
+): ResolvedSection {
+  const encoder = config.video.mode === 'encode' && config.video.encoderId
+    ? catalog.encoders.video[config.video.encoderId]
+    : undefined
+  if (!encoder) return { id: 'section.video-advanced', label: '编码器高级参数', fields: [] }
+
+  const fields = encoder.specialParameters.map((control) => {
+    // EncoderDefinition.specialParameters 中的默认值只描述编码器行为，
+    // 不代表项目应主动发射；界面必须允许保持空值。
+    const optionalControl = { ...control, optional: true }
+    const configPath = control.configBinding?.path ?? `video.specialParameters.${control.id}`
+    const field = resolveControlField(optionalControl, config, configPath, fieldStates, encoder)
+    field.panelId = 'video'
+    field.groupId = 'encoder-advanced'
+    field.tier = 'advanced'
+    return field
+  })
+
+  return {
+    id: 'section.video-advanced',
+    label: '编码器高级参数',
+    description: '仅显示当前编码器支持的私有选项；全部默认不设置，原始附加参数文本框继续作为兜底。',
+    fields,
+  }
 }
 
 export function resolveColorSection(

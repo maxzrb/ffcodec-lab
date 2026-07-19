@@ -857,8 +857,21 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libsvtav1.svtav1params': {
     id: 'expl.libsvtav1.svtav1params',
     title: 'SVT-AV1 附加参数',
-    short: '把高级选项直接传给 SVT-AV1；仅在熟悉参数语法时使用，避免与界面生成的选项重复或冲突。',
+    short: '把尚未收录的高级选项直接传给 SVT-AV1；与结构化控件同名时，以结构化控件的值为准。',
+    detail:
+      '按 key=value:key=value 形式填写，不要重复输入 -svtav1-params。命令生成器会把该文本与上方结构化选项合并为唯一一个 -svtav1-params 参数；如果两处出现同名 key，会保留结构化控件的值并移除文本中的重复项。',
+    commandExample: 'tune=0:film-grain=4',
+    warnings: ['自由文本只做字典合并和 Shell 转义，不校验每个 SVT-AV1 键的取值范围。'],
     sourceRefs: [
+      {
+        repository: 'AOMediaCodec/SVT-AV1',
+        branch: 'master',
+        snapshotDate: '2026-07-20',
+        file: 'Docs/Ffmpeg.md',
+        symbol: 'Passing options to SvtAv1EncApp',
+        sourceType: 'encoder-official',
+        url: 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/Ffmpeg.md',
+      },
       {
         repository: 'Lake1059/FFmpegFreeUI',
         branch: 'main',
@@ -868,6 +881,50 @@ export const explanations: Record<string, ExplanationDefinition> = {
         sourceType: 'ffmpegfreeui',
       },
     ],
+  },
+
+  'expl.libsvtav1.filmGrain': {
+    id: 'expl.libsvtav1.filmGrain',
+    title: 'SVT-AV1 Film Grain Synthesis',
+    short: '启用 AV1 胶片颗粒合成，范围 0–50；0 表示关闭，数值越高，颗粒分析与去噪强度越高。',
+    detail:
+      'SVT-AV1 会分析源画面中的胶片颗粒或传感器噪声，将部分随机纹理从编码主体中去除，再把颗粒模型写入 AV1 码流供解码端重建。这样通常能节省码率并保留主观质感，但过高数值可能损失细小纹理。建议从 4–12 的较低值试验，并用代表性片段比较。',
+    commandExample: '-svtav1-params film-grain=4',
+    effects: { quality: 3, fileSize: 4, speed: 2, compatibility: 1 },
+    warnings: [
+      '该参数改变的是编码器内部颗粒建模，不等同于画面滤镜中的普通降噪。',
+      '播放端必须正确支持 AV1 Film Grain Synthesis 才能还原颗粒。',
+      'SVT-AV1 会提示高于 6 的速度预设使用 Film Grain 时计算开销显著；正式编码前应以代表性片段测试速度。',
+    ],
+    sourceRefs: [{
+      repository: 'AOMediaCodec/SVT-AV1',
+      branch: 'master',
+      snapshotDate: '2026-07-20',
+      file: 'Docs/Parameters.md',
+      symbol: 'FilmGrain / --film-grain',
+      sourceType: 'encoder-official',
+      url: 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/Parameters.md',
+    }],
+  },
+
+  'expl.libsvtav1.filmGrainDenoise': {
+    id: 'expl.libsvtav1.filmGrainDenoise',
+    title: 'SVT-AV1 Film Grain 去噪',
+    short: '控制启用 Film Grain 时是否按其强度先对源画面去噪，再通过码流中的颗粒模型重建质感。',
+    detail:
+      '开启时，SVT-AV1 使用 Film Grain 强度进行去噪并估计合成颗粒；关闭时不执行这一步去噪，但仍可把颗粒数据写入帧头。该选项只有 Film Grain 强度已设置且大于 0 时才有实际意义。',
+    commandExample: '-svtav1-params film-grain=4:film-grain-denoise=1',
+    effects: { quality: 3, fileSize: 3, speed: 2, compatibility: 1 },
+    warnings: ['请与大于 0 的 Film Grain Synthesis 强度配合使用。'],
+    sourceRefs: [{
+      repository: 'AOMediaCodec/SVT-AV1',
+      branch: 'master',
+      snapshotDate: '2026-07-20',
+      file: 'Docs/Parameters.md',
+      symbol: 'FilmGrainDenoise / --film-grain-denoise',
+      sourceType: 'encoder-official',
+      url: 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/Parameters.md',
+    }],
   },
 
   // -- AAC explanations -----------------------------------------

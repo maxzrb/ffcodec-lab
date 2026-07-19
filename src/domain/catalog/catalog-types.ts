@@ -156,6 +156,11 @@ export interface CommandBinding {
   prefix?: string
   /** If true, value is appended directly after prefix with no space */
   compact?: boolean
+  /** 将多个编码器私有控件聚合为一个分隔的 key=value 字典参数。key 为空时表示自由文本根字段。 */
+  dictionary?: {
+    key?: string
+    separator?: string
+  }
   phase: ArgumentPhase
 }
 

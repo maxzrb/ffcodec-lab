@@ -83,7 +83,9 @@ describe('NVENC command generation', () => {
   })
 
   it('NVENC switch parameters emit one explicit 1/0 value without duplicates', () => {
-    const enabledText = renderBash(buildCommandPlan(nvencCqConfig(), catalog, [])).text
+    const enabled = nvencCqConfig()
+    enabled.video.specialParameters = { spatialAq: true }
+    const enabledText = renderBash(buildCommandPlan(enabled, catalog, [])).text
     expect(enabledText).toContain('-spatial_aq 1')
     expect(enabledText.split('-spatial_aq').length - 1).toBe(1)
 
