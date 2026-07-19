@@ -252,8 +252,8 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
       },
     },
     {
-      name: 'AV1 高品质存档',
-      description: 'libsvtav1 CRF36 yuv420p10le film-grain=4 + Opus 128k compression_level=10，适合高品质长期存档',
+      name: 'AV1 节省空间',
+      description: 'libsvtav1 CRF36 yuv420p10le film-grain=4 + Opus 128k compression_level=10，适合高压缩效率输出',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
       config: {
         ...createDefaultProjectConfig(),
