@@ -1,6 +1,15 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
 import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
 
+const libx264Source = {
+  repository: 'FFmpeg/FFmpeg',
+  branch: 'master',
+  snapshotDate: '2026-07-20',
+  file: 'libavcodec/libx264.c',
+  sourceType: 'ffmpeg-official' as const,
+  url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx264.c',
+}
+
 export const libx264: EncoderDefinition = {
   id: 'libx264',
   label: 'libx264 (H.264/AVC)',
@@ -273,15 +282,241 @@ export const libx264: EncoderDefinition = {
   ],
 
   specialParameters: [
+    // -- 线程（通用编码选项，但仅软件编码器支持） ------------
     {
       id: 'libx264.threads',
-      label: '编码线程数',
+      label: '编码线程数 (-threads)',
       control: 'number',
       configBinding: { path: videoSpecialParamPath('threads') },
       commandBinding: { argName: '-threads', prefix: '-threads', phase: 'VIDEO_CODEC' },
       range: { min: 1, max: 64 },
       explanationId: 'expl.libx264.threads',
+      sourceRefs: [libx264Source],
     },
+
+    // -- 心理视觉优化 --------------------------------------------
+    {
+      id: 'libx264.psy', label: '心理视觉优化 (-psy)', control: 'switch',
+      configBinding: { path: videoSpecialParamPath('psy') },
+      commandBinding: { argName: '-psy', prefix: '-psy', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.psy',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.psyRd', label: '心理视觉 RDO (-psy-rd)',
+      control: 'text',
+      configBinding: { path: videoSpecialParamPath('psyRd') },
+      commandBinding: { argName: '-psy-rd', prefix: '-psy-rd', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.psyRd',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.noiseReduction', label: '心理视觉降噪 (-nr)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('noiseReduction') },
+      commandBinding: { argName: '-nr', prefix: '-nr', phase: 'VIDEO_CODEC' },
+      range: { min: 0, max: 1000, step: 1 }, optional: true,
+      explanationId: 'expl.libx264.nr',
+      sourceRefs: [libx264Source],
+    },
+
+    // -- 自适应量化 ----------------------------------------------
+    {
+      id: 'libx264.aqMode', label: '自适应量化模式 (-aq-mode)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('aqMode') },
+      commandBinding: { argName: '-aq-mode', prefix: '-aq-mode', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: '0', label: '0 — 关闭' },
+        { value: '1', label: '1 — 方差 AQ' },
+        { value: '2', label: '2 — 自动方差 AQ' },
+        { value: '3', label: '3 — 自动方差 + 暗景偏向' },
+      ],
+      optional: true, explanationId: 'expl.libx264.aqMode',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.aqStrength', label: '自适应量化强度 (-aq-strength)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('aqStrength') },
+      commandBinding: { argName: '-aq-strength', prefix: '-aq-strength', phase: 'VIDEO_CODEC' },
+      range: { min: 0, max: 3, step: 0.1 }, optional: true,
+      explanationId: 'expl.libx264.aqStrength',
+      sourceRefs: [libx264Source],
+    },
+
+    // -- 运动估计与分区 ------------------------------------------
+    {
+      id: 'libx264.partitions', label: '分区类型 (-partitions)',
+      control: 'text',
+      configBinding: { path: videoSpecialParamPath('partitions') },
+      commandBinding: { argName: '-partitions', prefix: '-partitions', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.partitions',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.directPred', label: '直接 MV 预测 (-direct-pred)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('directPred') },
+      commandBinding: { argName: '-direct-pred', prefix: '-direct-pred', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: 'none', label: 'none' },
+        { value: 'spatial', label: 'spatial（空间）' },
+        { value: 'temporal', label: 'temporal（时间）' },
+        { value: 'auto', label: 'auto' },
+      ],
+      optional: true, explanationId: 'expl.libx264.directPred',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.weightp', label: 'P 帧加权预测 (-weightp)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('weightp') },
+      commandBinding: { argName: '-weightp', prefix: '-weightp', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: '0', label: '0 — 关闭' },
+        { value: '1', label: '1 — 简单加权（重复和非重复）' },
+        { value: '2', label: '2 — 智能加权（默认）' },
+      ],
+      optional: true, explanationId: 'expl.libx264.weightp',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.weightb', label: 'B 帧加权预测 (-weightb)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('weightb') },
+      commandBinding: { argName: '-weightb', prefix: '-weightb', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.weightb',
+      sourceRefs: [libx264Source],
+    },
+
+    // -- B 帧控制 -------------------------------------------------
+    {
+      id: 'libx264.bBias', label: 'B 帧使用偏向 (-b-bias)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('bBias') },
+      commandBinding: { argName: '-b-bias', prefix: '-b-bias', phase: 'VIDEO_CODEC' },
+      range: { min: -100, max: 100, step: 1 }, optional: true,
+      explanationId: 'expl.libx264.bBias',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.bPyramid', label: 'B 帧金字塔 (-b-pyramid)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('bPyramid') },
+      commandBinding: { argName: '-b-pyramid', prefix: '-b-pyramid', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: 'none', label: 'none — 关闭' },
+        { value: 'strict', label: 'strict — 严格层次' },
+        { value: 'normal', label: 'normal — 正常（默认）' },
+      ],
+      optional: true, explanationId: 'expl.libx264.bPyramid',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.mixedRefs', label: '混合参考帧 (-mixed-refs)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('mixedRefs') },
+      commandBinding: { argName: '-mixed-refs', prefix: '-mixed-refs', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.mixedRefs',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.dct8x8', label: '自适应 8×8 DCT (-dct8x8)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('dct8x8') },
+      commandBinding: { argName: '-dct8x8', prefix: '-dct8x8', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.dct8x8',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.fastPskip', label: '快速 P-skip (-fast-pskip)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('fastPskip') },
+      commandBinding: { argName: '-fast-pskip', prefix: '-fast-pskip', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.fastPskip',
+      sourceRefs: [libx264Source],
+    },
+
+    // -- 编码树与码率控制 ----------------------------------------
+    {
+      id: 'libx264.mbtree', label: '宏块树码控 (-mbtree)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('mbtree') },
+      commandBinding: { argName: '-mbtree', prefix: '-mbtree', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.mbtree',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.cplxblur', label: '复杂度模糊 (-cplxblur)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('cplxblur') },
+      commandBinding: { argName: '-cplxblur', prefix: '-cplxblur', phase: 'VIDEO_CODEC' },
+      range: { min: 0, max: 999, step: 0.1 }, optional: true,
+      explanationId: 'expl.libx264.cplxblur',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.chromaOffset', label: '色度 QP 偏移 (-chromaoffset)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('chromaOffset') },
+      commandBinding: { argName: '-chromaoffset', prefix: '-chromaoffset', phase: 'VIDEO_CODEC' },
+      range: { min: -12, max: 12, step: 1 }, optional: true,
+      explanationId: 'expl.libx264.chromaOffset',
+      sourceRefs: [libx264Source],
+    },
+
+    // -- 去块滤波 -------------------------------------------------
+    {
+      id: 'libx264.deblock', label: '去块滤波参数 (-deblock)',
+      control: 'text',
+      configBinding: { path: videoSpecialParamPath('deblock') },
+      commandBinding: { argName: '-deblock', prefix: '-deblock', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.deblock',
+      sourceRefs: [libx264Source],
+    },
+
+    // -- 输出格式控制 --------------------------------------------
+    {
+      id: 'libx264.aud', label: 'Access Unit Delimiter (-aud)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('aud') },
+      commandBinding: { argName: '-aud', prefix: '-aud', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.aud',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.nalHrd', label: 'HRD 信令 (-nal-hrd)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('nalHrd') },
+      commandBinding: { argName: '-nal-hrd', prefix: '-nal-hrd', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: 'none', label: 'none — 关闭' },
+        { value: 'vbr', label: 'vbr' },
+        { value: 'cbr', label: 'cbr' },
+      ],
+      optional: true, explanationId: 'expl.libx264.nalHrd',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.sliceMaxSize', label: '最大 Slice 大小 (-slice-max-size)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('sliceMaxSize') },
+      commandBinding: { argName: '-slice-max-size', prefix: '-slice-max-size', phase: 'VIDEO_CODEC' },
+      range: { min: 0, max: 32768, step: 1 }, optional: true,
+      explanationId: 'expl.libx264.sliceMaxSize',
+      sourceRefs: [libx264Source],
+    },
+    {
+      id: 'libx264.fastfirstpass', label: '快速 2-pass 第一遍 (-fastfirstpass)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('fastfirstpass') },
+      commandBinding: { argName: '-fastfirstpass', prefix: '-fastfirstpass', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.libx264.fastfirstpass',
+      sourceRefs: [libx264Source],
+    },
+
+    // -- 附加参数字典（保留） ------------------------------------
     {
       id: 'libx264.x264params',
       label: 'x264 附加参数 (-x264-params)',
@@ -291,6 +526,7 @@ export const libx264: EncoderDefinition = {
         argName: '-x264-params', prefix: '-x264-params', phase: 'VIDEO_CODEC',
         dictionary: { separator: ':' },
       },
+      optional: true,
       explanationId: 'expl.libx264.x264params',
     },
   ],

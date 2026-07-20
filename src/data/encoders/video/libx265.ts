@@ -1,5 +1,34 @@
-import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+import type { EncoderDefinition, ArgumentPhase } from '../../../domain/catalog/catalog-types'
 import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
+
+const libx265Source = {
+  repository: 'FFmpeg/FFmpeg',
+  branch: 'master',
+  snapshotDate: '2026-07-20',
+  file: 'libavcodec/libx265.c',
+  sourceType: 'ffmpeg-official' as const,
+  url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c',
+}
+
+/** 便捷：生成通过 -x265-params dict 传入的单个 key 控件 */
+function x265key(id: string, label: string, control: 'select' | 'number' | 'switch' | 'text', key: string, opts?: { options?: Array<{ value: string; label: string }>; range?: { min?: number; max?: number; step?: number }; phase?: ArgumentPhase }) {
+  return {
+    id: `libx265.${id}`,
+    label,
+    control,
+    optional: true,
+    configBinding: { path: videoSpecialParamPath(id) },
+    commandBinding: {
+      argName: '-x265-params', prefix: '-x265-params',
+      phase: opts?.phase ?? 'VIDEO_CODEC',
+      dictionary: { key, separator: ':' as const },
+    },
+    ...(opts?.options ? { options: opts.options } : {}),
+    ...(opts?.range ? { range: opts.range } : {}),
+    explanationId: `expl.libx265.${id}`,
+    sourceRefs: [libx265Source],
+  }
+}
 
 export const libx265: EncoderDefinition = {
   id: 'libx265',
@@ -264,15 +293,109 @@ export const libx265: EncoderDefinition = {
   ],
 
   specialParameters: [
+    // -- 线程（通用编码选项） ----------------------------------
     {
       id: 'libx265.threads',
-      label: '编码线程数',
+      label: '编码线程数 (-threads)',
       control: 'number',
       configBinding: { path: videoSpecialParamPath('threads') },
       commandBinding: { argName: '-threads', prefix: '-threads', phase: 'VIDEO_CODEC' },
       range: { min: 1, max: 128 },
       explanationId: 'expl.libx265.threads',
+      sourceRefs: [libx265Source],
     },
+
+    // -- 自适应量化 ----------------------------------------------
+    x265key('aqMode', '自适应量化模式 (aq-mode)', 'select', 'aq-mode', { options: [
+      { value: '0', label: '0 — 关闭' }, { value: '1', label: '1 — 方差' },
+      { value: '2', label: '2 — 自动方差' }, { value: '3', label: '3 — 自动方差 + 暗景偏向' },
+      { value: '4', label: '4 — 自动方差 + 暗景偏向（增强）' },
+    ]}),
+    x265key('aqStrength', 'AQ 强度 (aq-strength)', 'number', 'aq-strength', { range: { min: 0, max: 3, step: 0.1 } }),
+
+    // -- 心理视觉优化 --------------------------------------------
+    x265key('psyRd', '心理视觉 RDO (psy-rd)', 'number', 'psy-rd', { range: { min: 0, max: 5, step: 0.1 } }),
+    x265key('psyRdoq', '心理视觉 RDO-Q (psy-rdoq)', 'number', 'psy-rdoq', { range: { min: 0, max: 50, step: 0.1 } }),
+
+    // -- 帧结构 --------------------------------------------------
+    x265key('bframes', '最大 B 帧数 (bframes)', 'number', 'bframes', { range: { min: 0, max: 16, step: 1 } }),
+    x265key('bAdapt', 'B 帧自适应策略 (b-adapt)', 'select', 'b-adapt', { options: [
+      { value: '0', label: '0 — 关闭' }, { value: '1', label: '1 — 快速' }, { value: '2', label: '2 — 完整' },
+    ]}),
+    x265key('ref', '参考帧数 (ref)', 'number', 'ref', { range: { min: 1, max: 16, step: 1 } }),
+    x265key('scenecut', '场景切换阈值 (scenecut)', 'number', 'scenecut', { range: { min: 0, max: 100, step: 1 } }),
+    x265key('ctu', 'CTU 大小 (ctu)', 'select', 'ctu', { options: [
+      { value: '64', label: '64' }, { value: '32', label: '32' }, { value: '16', label: '16' },
+    ]}),
+
+    // -- 运动估计 ------------------------------------------------
+    x265key('me', '运动估计方法 (me)', 'select', 'me', { options: [
+      { value: 'dia', label: 'dia — 菱形' }, { value: 'hex', label: 'hex — 六边形' },
+      { value: 'umh', label: 'umh — 非均匀多六边形' }, { value: 'star', label: 'star — 星形' },
+      { value: 'sea', label: 'sea — 连续消除' }, { value: 'full', label: 'full — 全搜索' },
+    ]}),
+    x265key('subme', '子像素 ME 精度 (subme)', 'number', 'subme', { range: { min: 0, max: 7, step: 1 } }),
+    x265key('merange', 'ME 搜索范围 (merange)', 'number', 'merange', { range: { min: 0, max: 32768, step: 1 } }),
+
+    // -- GOP 与滤波 ----------------------------------------------
+    x265key('noOpenGop', '关闭开放 GOP (no-open-gop)', 'switch', 'no-open-gop'),
+    x265key('noSao', '关闭 SAO 滤波 (no-sao)', 'switch', 'no-sao'),
+    x265key('selectiveSao', '选择性 SAO (selective-sao)', 'select', 'selective-sao', { options: [
+      { value: '0', label: '0 — 关闭' }, { value: '1', label: '1 — 开启' }, { value: '2', label: '2 — 增强' },
+    ]}),
+    x265key('saoNonDeblock', 'SAO 非去块模式 (sao-non-deblock)', 'switch', 'sao-non-deblock'),
+
+    // -- 帧内预测 ------------------------------------------------
+    x265key('noStrongIntraSmoothing', '关闭帧内强平滑', 'switch', 'no-strong-intra-smoothing'),
+    x265key('noConstrainedIntra', '关闭约束帧内预测', 'switch', 'no-constrained-intra'),
+
+    // -- 速度/质量权衡 -------------------------------------------
+    x265key('limitModes', '限制 CU 模式 (limit-modes)', 'switch', 'limit-modes'),
+    x265key('limitRefs', '限制参考帧候选 (limit-refs)', 'select', 'limit-refs', { options: [
+      { value: '0', label: '0 — 关闭' }, { value: '1', label: '1 — 轻度' },
+      { value: '2', label: '2 — 中度' }, { value: '3', label: '3 — 强度' },
+    ]}),
+    x265key('noCutree', '关闭 CU-tree (no-cutree)', 'switch', 'no-cutree'),
+
+    // -- RDO -----------------------------------------------------
+    x265key('rdoqLevel', 'RDO-Q 级别 (rdoq-level)', 'select', 'rdoq-level', { options: [
+      { value: '0', label: '0 — 关闭' }, { value: '1', label: '1 — 轻度' }, { value: '2', label: '2 — 完整' },
+    ]}),
+    x265key('rdpenalty', 'RD 惩罚 (rdpenalty)', 'select', 'rdpenalty', { options: [
+      { value: '0', label: '0 — 关闭' }, { value: '1', label: '1 — 轻度' }, { value: '2', label: '2 — 强度' },
+    ]}),
+
+    // -- CU / Merge ----------------------------------------------
+    x265key('maxMerge', '最大 Merge 候选 (max-merge)', 'number', 'max-merge', { range: { min: 1, max: 5, step: 1 } }),
+    x265key('earlySkip', '提前 Skip 检测 (early-skip)', 'switch', 'early-skip'),
+    x265key('fastIntra', '快速帧内 (fast-intra)', 'switch', 'fast-intra'),
+    x265key('bIntra', 'B 帧帧内 (b-intra)', 'switch', 'b-intra'),
+
+    // -- VBV 码率控制 --------------------------------------------
+    x265key('vbvMaxrate', 'VBV 最大码率 kbps (vbv-maxrate)', 'number', 'vbv-maxrate', { range: { min: 0, max: 240000, step: 1 } }),
+    x265key('vbvBufsize', 'VBV 缓冲区 kbps (vbv-bufsize)', 'number', 'vbv-bufsize', { range: { min: 0, max: 240000, step: 1 } }),
+
+    // -- QP 边界 -------------------------------------------------
+    x265key('qpmin', '最小 QP (qpmin)', 'number', 'qpmin', { range: { min: 0, max: 69, step: 1 } }),
+    x265key('qpmax', '最大 QP (qpmax)', 'number', 'qpmax', { range: { min: 0, max: 69, step: 1 } }),
+    x265key('qpstep', 'QP 步长 (qpstep)', 'number', 'qpstep', { range: { min: 1, max: 10, step: 1 } }),
+
+    // -- HRD -----------------------------------------------------
+    x265key('hrd', 'HRD 兼容输出 (hrd)', 'switch', 'hrd'),
+    x265key('hrdConcat', 'HRD 拼接模式 (hrd-concat)', 'switch', 'hrd-concat'),
+
+    // -- 输出格式 ------------------------------------------------
+    x265key('noInfo', '不写入编码器信息 (no-info)', 'switch', 'no-info'),
+    x265key('hash', '解码校验哈希 (hash)', 'select', 'hash', { options: [
+      { value: '0', label: '0 — 关闭' }, { value: '1', label: '1 — MD5' }, { value: '2', label: '2 — CRC' },
+    ]}),
+    x265key('repeatHeaders', '重复 SEI 头信息 (repeat-headers)', 'switch', 'repeat-headers'),
+
+    // -- 去块滤波 ------------------------------------------------
+    x265key('deblock', '去块滤波参数 (deblock)', 'text', 'deblock'),
+    x265key('noDeblock', '关闭去块滤波 (no-deblock)', 'switch', 'no-deblock'),
+
+    // -- 附加参数字典（保留） ------------------------------------
     {
       id: 'libx265.x265params',
       label: 'x265 附加参数 (-x265-params)',
@@ -282,6 +405,7 @@ export const libx265: EncoderDefinition = {
         argName: '-x265-params', prefix: '-x265-params', phase: 'VIDEO_CODEC',
         dictionary: { separator: ':' },
       },
+      optional: true,
       explanationId: 'expl.libx265.x265params',
     },
   ],

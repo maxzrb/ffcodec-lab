@@ -1,6 +1,19 @@
 import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
 import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
 
+const svtav1SourceRefs = [{
+  repository: 'AOMediaCodec/SVT-AV1',
+  branch: 'master',
+  snapshotDate: '2026-07-20',
+  file: 'Docs/Parameters.md',
+  sourceType: 'encoder-official' as const,
+  url: 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/Parameters.md',
+}]
+
+function svtav1ParamSource(symbol: string) {
+  return { ...svtav1SourceRefs[0], symbol }
+}
+
 export const libsvtav1: EncoderDefinition = {
   id: 'libsvtav1',
   label: 'libsvtav1 (AV1/SVT-AV1)',
@@ -206,29 +219,329 @@ export const libsvtav1: EncoderDefinition = {
   ],
 
   specialParameters: [
+    // -- 基础调优 ------------------------------------------------
+    {
+      id: 'libsvtav1.tune',
+      label: '视觉调优模式 (tune)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('tune') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'tune', separator: ':' },
+      },
+      options: [
+        { value: '0', label: '0 — 主观质量 (VQ)' },
+        { value: '1', label: '1 — 客观质量 (PSNR)' },
+      ],
+      optional: true,
+      explanationId: 'expl.libsvtav1.tune',
+      sourceRefs: [svtav1ParamSource('Tune / --tune')],
+    },
+    {
+      id: 'libsvtav1.keyint',
+      label: '关键帧间隔 (keyint)',
+      control: 'text',
+      configBinding: { path: videoSpecialParamPath('keyint') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'keyint', separator: ':' },
+      },
+      optional: true,
+      explanationId: 'expl.libsvtav1.keyint',
+      sourceRefs: [svtav1ParamSource('IntraPeriodLength / --keyint')],
+    },
+    {
+      id: 'libsvtav1.irefreshType',
+      label: '帧内刷新类型 (irefresh-type)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('irefreshType') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'irefresh-type', separator: ':' },
+      },
+      options: [
+        { value: '1', label: '1 — CRA 开放 GOP（推荐）' },
+        { value: '2', label: '2 — IDR 封闭 GOP' },
+      ],
+      optional: true,
+      explanationId: 'expl.libsvtav1.irefreshType',
+      sourceRefs: [svtav1ParamSource('IntraRefreshType / --irefresh-type')],
+    },
+    {
+      id: 'libsvtav1.lookahead',
+      label: '前瞻距离 (lookahead)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('lookahead') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'lookahead', separator: ':' },
+      },
+      range: { min: -1, max: 120, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.lookahead',
+      sourceRefs: [svtav1ParamSource('LookaheadDistance / --lookahead')],
+    },
+    {
+      id: 'libsvtav1.lp',
+      label: '逻辑处理器数 (lp)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('lp') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'lp', separator: ':' },
+      },
+      range: { min: 0, max: 128, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.lp',
+      sourceRefs: [svtav1ParamSource('LogicalProcessors / --lp')],
+    },
+
+    // -- 视觉质量 / PSY 增强 -------------------------------------
+    {
+      id: 'libsvtav1.sharpness',
+      label: '锐度偏向 (sharpness)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('sharpness') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'sharpness', separator: ':' },
+      },
+      range: { min: -7, max: 7, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.sharpness',
+      sourceRefs: [svtav1ParamSource('Sharpness / --sharpness')],
+    },
+    {
+      id: 'libsvtav1.enableVarianceBoost',
+      label: '启用方差增强 (enable-variance-boost)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('enableVarianceBoost') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'enable-variance-boost', separator: ':' },
+      },
+      optional: true,
+      explanationId: 'expl.libsvtav1.enableVarianceBoost',
+      sourceRefs: [svtav1ParamSource('VarianceBoost / --enable-variance-boost')],
+    },
+    {
+      id: 'libsvtav1.varianceBoostStrength',
+      label: '方差增强强度 (variance-boost-strength)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('varianceBoostStrength') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'variance-boost-strength', separator: ':' },
+      },
+      range: { min: 1, max: 4, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.varianceBoostStrength',
+      sourceRefs: [svtav1ParamSource('VarianceBoostStrength / --variance-boost-strength')],
+    },
+    {
+      id: 'libsvtav1.varianceOctile',
+      label: '方差八分位阈值 (variance-octile)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('varianceOctile') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'variance-octile', separator: ':' },
+      },
+      range: { min: 1, max: 8, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.varianceOctile',
+      sourceRefs: [svtav1ParamSource('VarianceOctile / --variance-octile')],
+    },
+
+    // -- 量化与自适应量化 ----------------------------------------
+    {
+      id: 'libsvtav1.aqMode',
+      label: '自适应量化模式 (aq-mode)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('aqMode') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'aq-mode', separator: ':' },
+      },
+      options: [
+        { value: '0', label: '0 — 关闭' },
+        { value: '1', label: '1 — 方差基准' },
+        { value: '2', label: '2 — DeltaQ 预测效率（默认，推荐）' },
+      ],
+      optional: true,
+      explanationId: 'expl.libsvtav1.aqMode',
+      sourceRefs: [svtav1ParamSource('AQMode / --aq-mode')],
+    },
+    {
+      id: 'libsvtav1.qpScaleCompressStrength',
+      label: 'QP 曲线压缩强度 (qp-scale-compress-strength)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('qpScaleCompressStrength') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'qp-scale-compress-strength', separator: ':' },
+      },
+      range: { min: 0, max: 8, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.qpScaleCompressStrength',
+      sourceRefs: [svtav1ParamSource('QPScaleCompressStrength')],
+    },
+    {
+      id: 'libsvtav1.luminanceQpBias',
+      label: '亮度 QP 偏向 (luminance-qp-bias)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('luminanceQpBias') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'luminance-qp-bias', separator: ':' },
+      },
+      range: { min: 0, max: 100, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.luminanceQpBias',
+      sourceRefs: [svtav1ParamSource('LuminanceQPBias / --luminance-qp-bias')],
+    },
+
+    // -- 时域滤波 ------------------------------------------------
+    {
+      id: 'libsvtav1.enableTf',
+      label: '启用时域滤波 (enable-tf)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('enableTf') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'enable-tf', separator: ':' },
+      },
+      optional: true,
+      explanationId: 'expl.libsvtav1.enableTf',
+      sourceRefs: [svtav1ParamSource('TemporalFiltering / --enable-tf')],
+    },
+    {
+      id: 'libsvtav1.tfStrength',
+      label: '时域滤波强度 (tf-strength)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('tfStrength') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'tf-strength', separator: ':' },
+      },
+      range: { min: 0, max: 4, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.tfStrength',
+      sourceRefs: [svtav1ParamSource('TemporalFilteringStrength / --tf-strength')],
+    },
+
+    // -- 量化矩阵 (QM) -------------------------------------------
+    {
+      id: 'libsvtav1.enableQm',
+      label: '启用量化矩阵 (enable-qm)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('enableQm') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'enable-qm', separator: ':' },
+      },
+      optional: true,
+      explanationId: 'expl.libsvtav1.enableQm',
+      sourceRefs: [svtav1ParamSource('QuantizationMatrices / --enable-qm')],
+    },
+    {
+      id: 'libsvtav1.qmMin',
+      label: '量化矩阵最小值 (qm-min)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('qmMin') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'qm-min', separator: ':' },
+      },
+      range: { min: 0, max: 15, step: 1 },
+      optional: true,
+      explanationId: 'expl.libsvtav1.qmMin',
+      sourceRefs: [svtav1ParamSource('QMMin / --qm-min')],
+    },
+
+    // -- 其他编码器特性 ------------------------------------------
+    {
+      id: 'libsvtav1.enableOverlays',
+      label: '启用覆盖层增强 (enable-overlays)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('enableOverlays') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'enable-overlays', separator: ':' },
+      },
+      optional: true,
+      explanationId: 'expl.libsvtav1.enableOverlays',
+      sourceRefs: [svtav1ParamSource('Overlays / --enable-overlays')],
+    },
+    {
+      id: 'libsvtav1.scd',
+      label: '场景切换检测 (scd)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('scd') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'scd', separator: ':' },
+      },
+      optional: true,
+      explanationId: 'expl.libsvtav1.scd',
+      sourceRefs: [svtav1ParamSource('SceneChangeDetection / --scd')],
+    },
+    {
+      id: 'libsvtav1.enableDlf',
+      label: '去块滤波模式 (enable-dlf)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('enableDlf') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'enable-dlf', separator: ':' },
+      },
+      options: [
+        { value: '0', label: '0 — 关闭去块滤波' },
+        { value: '1', label: '1 — 全部开启（默认）' },
+        { value: '2', label: '2 — 仅非关键帧' },
+      ],
+      optional: true,
+      explanationId: 'expl.libsvtav1.enableDlf',
+      sourceRefs: [svtav1ParamSource('DeblockingLoopFilter / --enable-dlf')],
+    },
+
+    // -- PSY 高级特性 (SVT-AV1 v4.0+ / PSY fork) ----------------
+    {
+      id: 'libsvtav1.acBias',
+      label: 'AC 偏向 (ac-bias) [PSY]',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('acBias') },
+      commandBinding: {
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'ac-bias', separator: ':' },
+      },
+      optional: true,
+      explanationId: 'expl.libsvtav1.acBias',
+      sourceRefs: [{
+        repository: 'AOMediaCodec/SVT-AV1',
+        branch: 'master',
+        snapshotDate: '2026-07-20',
+        file: 'Docs/Parameters.md',
+        symbol: 'ACBias PSY / --ac-bias',
+        sourceType: 'encoder-official',
+        url: 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/Parameters.md',
+      }],
+    },
+
+    // -- Film Grain (已存在，保留) --------------------------------
     {
       id: 'libsvtav1.filmGrain',
       label: 'Film Grain Synthesis 强度',
       control: 'number',
       configBinding: { path: videoSpecialParamPath('filmGrain') },
       commandBinding: {
-        argName: '-svtav1-params',
-        prefix: '-svtav1-params',
-        phase: 'VIDEO_CODEC',
-        dictionary: { key: 'film-grain', separator: ':' },
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'film-grain', separator: ':' },
       },
       range: { min: 0, max: 50, step: 1 },
       optional: true,
       explanationId: 'expl.libsvtav1.filmGrain',
-      sourceRefs: [{
-        repository: 'AOMediaCodec/SVT-AV1',
-        branch: 'master',
-        snapshotDate: '2026-07-20',
-        file: 'Docs/Parameters.md',
-        symbol: 'FilmGrain / --film-grain',
-        sourceType: 'encoder-official',
-        url: 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/Parameters.md',
-      }],
+      sourceRefs: [svtav1ParamSource('FilmGrain / --film-grain')],
     },
     {
       id: 'libsvtav1.filmGrainDenoise',
@@ -236,33 +549,23 @@ export const libsvtav1: EncoderDefinition = {
       control: 'switch',
       configBinding: { path: videoSpecialParamPath('filmGrainDenoise') },
       commandBinding: {
-        argName: '-svtav1-params',
-        prefix: '-svtav1-params',
-        phase: 'VIDEO_CODEC',
-        dictionary: { key: 'film-grain-denoise', separator: ':' },
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { key: 'film-grain-denoise', separator: ':' },
       },
       optional: true,
       explanationId: 'expl.libsvtav1.filmGrainDenoise',
-      sourceRefs: [{
-        repository: 'AOMediaCodec/SVT-AV1',
-        branch: 'master',
-        snapshotDate: '2026-07-20',
-        file: 'Docs/Parameters.md',
-        symbol: 'FilmGrainDenoise / --film-grain-denoise',
-        sourceType: 'encoder-official',
-        url: 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/Parameters.md',
-      }],
+      sourceRefs: [svtav1ParamSource('FilmGrainDenoise / --film-grain-denoise')],
     },
+
+    // -- 附加参数字典 (保留) ------------------------------------
     {
       id: 'libsvtav1.svtav1params',
       label: 'SVT-AV1 附加参数 (-svtav1-params)',
       control: 'text',
       configBinding: { path: videoSpecialParamPath('svtav1Params') },
       commandBinding: {
-        argName: '-svtav1-params',
-        prefix: '-svtav1-params',
-        phase: 'VIDEO_CODEC',
-        dictionary: { separator: ':' },
+        argName: '-svtav1-params', prefix: '-svtav1-params',
+        phase: 'VIDEO_CODEC', dictionary: { separator: ':' },
       },
       optional: true,
       explanationId: 'expl.libsvtav1.svtav1params',

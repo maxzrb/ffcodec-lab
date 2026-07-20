@@ -126,6 +126,15 @@ export const libvvenc: EncoderDefinition = {
       explanationId: 'expl.libvvenc.period',
     },
     {
+      id: 'libvvenc.level',
+      label: 'VVC 层级 (-level)',
+      control: 'text',
+      configBinding: { path: videoSpecialParamPath('level') },
+      commandBinding: { argName: '-level', prefix: '-level', phase: 'VIDEO_CODEC' },
+      optional: true,
+      explanationId: 'expl.libvvenc.level',
+    },
+    {
       id: 'libvvenc.params',
       label: 'VVenC 附加参数 (-vvenc-params)',
       control: 'text',

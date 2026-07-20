@@ -68,19 +68,65 @@ function createVideoToolboxEncoder(family: Extract<CodecFamily, 'h264' | 'hevc'>
     ],
     specialParameters: [
       {
-        id: `${id}.realtime`, label: '实时编码提示', control: 'switch', defaultValue: false,
+        id: `${id}.realtime`, label: '实时编码提示 (-realtime)', control: 'switch', defaultValue: false,
         commandBinding: { argName: '-realtime', prefix: '-realtime', phase: 'VIDEO_CODEC' },
         configBinding: { path: videoSpecialParamPath('realtime') }, explanationId: 'expl.videotoolbox.realtime',
       },
       {
-        id: `${id}.allow_sw`, label: '允许软件编码回退', control: 'switch', defaultValue: false,
+        id: `${id}.allow_sw`, label: '允许软件回退 (-allow_sw)', control: 'switch', defaultValue: false,
         commandBinding: { argName: '-allow_sw', prefix: '-allow_sw', phase: 'VIDEO_CODEC' },
         configBinding: { path: videoSpecialParamPath('allowSoftware') }, explanationId: 'expl.videotoolbox.allow_sw',
       },
       {
-        id: `${id}.power_efficient`, label: '优先节能', control: 'switch', defaultValue: false,
+        id: `${id}.power_efficient`, label: '优先节能 (-power_efficient)', control: 'switch', defaultValue: false,
         commandBinding: { argName: '-power_efficient', prefix: '-power_efficient', phase: 'VIDEO_CODEC' },
         configBinding: { path: videoSpecialParamPath('powerEfficient') }, explanationId: 'expl.videotoolbox.power',
+      },
+      {
+        id: `${id}.frames_before`, label: '前置帧模式 (-frames_before)', control: 'switch', optional: true,
+        commandBinding: { argName: '-frames_before', prefix: '-frames_before', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('framesBefore') }, explanationId: 'expl.videotoolbox.framesBefore',
+      },
+      {
+        id: `${id}.frames_after`, label: '后置帧模式 (-frames_after)', control: 'switch', optional: true,
+        commandBinding: { argName: '-frames_after', prefix: '-frames_after', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('framesAfter') }, explanationId: 'expl.videotoolbox.framesAfter',
+      },
+      {
+        id: `${id}.a53cc`, label: 'A/53 字幕 (-a53cc)', control: 'switch', defaultValue: true,
+        commandBinding: { argName: '-a53cc', prefix: '-a53cc', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('a53cc') }, explanationId: 'expl.videotoolbox.a53cc',
+      },
+      {
+        id: `${id}.sse`, label: '计算 SSE (-sse)', control: 'switch', optional: true,
+        commandBinding: { argName: '-sse', prefix: '-sse', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('sse') }, explanationId: 'expl.videotoolbox.sse',
+      },
+      {
+        id: `${id}.require_sw`, label: '要求软件编码 (-require_sw)', control: 'switch', optional: true,
+        commandBinding: { argName: '-require_sw', prefix: '-require_sw', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('requireSw') }, explanationId: 'expl.videotoolbox.requireSw',
+      },
+      {
+        id: `${id}.prio_speed`, label: '优先速度 (-prio_speed)', control: 'switch', optional: true,
+        commandBinding: { argName: '-prio_speed', prefix: '-prio_speed', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('prioSpeed') }, explanationId: 'expl.videotoolbox.prioSpeed',
+      },
+      {
+        id: `${id}.prio_quality`, label: '优先质量 (-prio_quality)', control: 'switch', optional: true,
+        commandBinding: { argName: '-prio_quality', prefix: '-prio_quality', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('prioQuality') }, explanationId: 'expl.videotoolbox.prioQuality',
+      },
+      {
+        id: `${id}.alpha_quality`, label: 'Alpha 质量优化 (-alpha_quality)', control: 'switch', optional: true,
+        commandBinding: { argName: '-alpha_quality', prefix: '-alpha_quality', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('alphaQuality') }, explanationId: 'expl.videotoolbox.alphaQuality',
+      },
+      {
+        id: `${id}.max_ref_frames`, label: '最大参考帧数 (-max_ref_frames)', control: 'number', optional: true,
+        range: { min: 0, max: 16, step: 1 },
+        commandBinding: { argName: '-max_ref_frames', prefix: '-max_ref_frames', phase: 'VIDEO_CODEC' },
+        configBinding: { path: videoSpecialParamPath('maxRefFrames') }, explanationId: 'expl.videotoolbox.maxRefFrames',
       },
     ],
     requiredArguments: [],
