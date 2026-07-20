@@ -2491,6 +2491,193 @@ export const explanations: Record<string, ExplanationDefinition> = {
 
 
   // -- libx265 explanations (new) --------------------------------
+
+  'expl.libx265.aqMode': {
+    id: 'expl.libx265.aqMode',
+    title: 'x265 自适应量化模式 (aq-mode)',
+    short: '控制 x265 如何在画面不同区域分配量化精度——平坦区域（天空、墙壁）需要更多码率来避免色带和块效应，纹理复杂区域（草地、织物）可以容忍更粗糙的量化。0=关闭（全帧统一 QP），1=方差自适应，2=自动方差（默认），3=自动方差+暗景偏向，4=增强暗景偏向。',
+    detail: '自适应量化（AQ）是 x265 最重要的心理视觉工具之一。人眼对平坦区域的编码瑕疵（色带、块效应）极为敏感，而对高频纹理区域的失真几乎无感。AQ 的核心机制是：分析每个 CTU 的局部方差，方差低的块（平坦区）降低 QP（分配更多码率），方差高的块（纹理区）提高 QP（节省码率）。模式 0 关闭 AQ——全帧使用同一 QP，平坦区最容易出块效应。模式 1 基于方差做线性偏置。模式 2（默认）引入自动强度校准，根据帧级内容复杂度动态调整偏置幅度——这对混合内容（访谈、纪录片）尤其有效。模式 3 和 4 增加了"暗景偏向"——在方差的基础上叠加亮度因子，暗场景额外降低 QP。因为人眼在暗环境下瞳孔放大，对暗部噪点和色带的敏感度是亮部的数倍。模式 4 比模式 3 的暗景偏向更激进，适用于大量夜景/HDR 暗部内容的影片。对动漫、屏幕录制等平坦面积占比大的内容，建议至少保持模式 2。',
+    commandExample: '-x265-params aq-mode=2',
+    effects: { quality: 4, fileSize: 1, speed: 1, compatibility: 1 },
+    warnings: ['aq-mode=0 对动画和游戏录制内容的画质影响尤为严重，不推荐。', '与 aq-strength 联动——高 aq-mode 配合过高 aq-strength 可能导致平坦区过度分配码率。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.aqStrength': {
+    id: 'expl.libx265.aqStrength',
+    title: 'x265 自适应量化强度 (aq-strength)',
+    short: '控制 AQ 偏置的幅度——值越高，平坦区与纹理区之间的 QP 差异越大，平坦区获得更多码率保护但纹理区可能被过度压缩。范围 0.0-3.0，默认约 1.0。设为 0 等同于关闭 AQ。',
+    detail: 'aq-strength 是 AQ 的"增益旋钮"。每次 AQ 计算出某 CTU 的"复杂度评分"后，aq-strength 决定这个评分转化为 QP 偏移的倍数。低值（0.3-0.7）：轻度保护平坦区，纹理区不会被过度牺牲——适合本身画质已经很好的高质量片源（BD 原盘、ProRes 中间片）。中值（0.8-1.2，默认范围）：平衡的保护力度，对大多数内容适用。高值（1.5-3.0）：激进保护平坦区——天空、墙面极其干净，但代价是纹理区（草地、皮肤毛孔、织物纹理）可能被"抹平"为模糊团块。实际调参时建议逐步增减 0.2 并对比同一帧的平坦区和纹理区：在平坦区看到色带→加大 aq-strength；纹理区变得模糊→减小 aq-strength。对 4K HDR 内容，由于高位深降低了色带风险，可以适当降低到 0.5-0.8。',
+    commandExample: '-x265-params aq-strength=1.0',
+    effects: { quality: 3, fileSize: 1, speed: 1, compatibility: 1 },
+    warnings: ['过高的 aq-strength（>2.0）会导致纹理区出现"涂抹状"模糊，尤其在人脸皮肤和织物材质上易于察觉。', '与 aq-mode 联动——aq-mode=3 或 4 时暗景已有额外偏置，aq-strength 不宜过高。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.psyRd': {
+    id: 'expl.libx265.psyRd',
+    title: 'x265 心理视觉率失真优化 (psy-rd)',
+    short: '在 RDO 决策中引入心理视觉偏置——告诉编码器"保留看起来重要的细节，即使它在数学上不是最优的"。范围 0.0-5.0，默认约 2.0。值越高，纹理和边缘保留越好，但传统指标（PSNR、SSIM）反而下降。',
+    detail: '传统 RDO（率失真优化）以均方误差（MSE）为失真度量——MSE 认为"平滑但模糊的块"优于"略有噪点但细节丰富的块"，因为平滑块在数学上与原始的像素差更小。但人眼不这么看：我们更容易接受细小的随机噪点，却极其敏感于纹理抹平和边缘模糊。psy-rd 在 RDO 的失真计算中注入一个基于原始像素能量的补偿项——如果编码块包含大量高频纹理（原始画面"信息丰富"），RDO 会认为"把这块压模糊的代价更高"，从而分配更多码率保留纹理。低值（0-1）：接近纯数学优化，画面干净但细节可能被抹去——适合 CG 动画和屏幕录制。中值（1.5-2.5）：平衡的纹理保留，适合电影和实拍内容。高值（3-5）：激进保留纹理，甚至可能"制造"伪纹理（ringing artifacts）——适合噪点多的老胶片修复场景。注意 psy-rd 与 psy-rdoq 正交：psy-rd 作用于模式决策阶段，psy-rdoq 作用于量化舍入阶段，两者叠加使用。',
+    commandExample: '-x265-params psy-rd=2.0',
+    effects: { quality: 3, fileSize: 2, speed: 1, compatibility: 1 },
+    warnings: ['过高的 psy-rd（>3.5）可能在锐利边缘周围产生振铃伪影——表现为物体轮廓外侧的"鬼影"细线。', 'psy-rd 值过高时编码器可能在平坦背景中引入细微的颗粒感，这在动画内容中尤其刺眼，建议动画/屏幕录制使用 0.5-1.0。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.psyRdoq': {
+    id: 'expl.libx265.psyRdoq',
+    title: 'x265 心理视觉量化舍入优化 (psy-rdoq)',
+    short: '在量化阶段做心理视觉偏置——当变换系数处于两个量化级别的边界时，倾向于向保留更多高频的方向舍入。范围 0.0-50.0，默认约 12.5。配合 psy-rd 使用，两者覆盖不同的编码决策阶段。',
+    detail: '量化（Quantization）将 DCT/DST 变换系数除以 QStep 后取整——这是有损编码中信息丢失的核心步骤。传统量化舍入（Deadzone Quantization）在"向上取"还是"向下取"之间仅依据数学 MSE 做决定，会系统性地将小幅度高频系数舍入到零，造成纹理丢失。psy-rdoq 在每个系数量化时计算一个"心理视觉代价"：如果原始块的纹理丰富（高频分量多），将系数向保留方向舍入的代价降低，使其更有可能"幸存"而非归零。低值（0-5）：接近传统量化，画面干净清爽，适合干净的数字摄影。中值（8-15）：温和保留纹理，适合大多数自然内容。高值（20-50）：激进保留每一个可能的纹理系数，噪点和胶片颗粒得到更好保留，但码率明显增加且可能在平坦区出现"孤立亮点"伪影。psy-rdoq 与 psy-rd 协同工作但作用于不同阶段：psy-rd 影响"选哪种编码模式"，psy-rdoq 影响"选了之后系数怎么量化"。两者同时调高时纹理保留效果最明显，但也要注意码率膨胀——建议先调 psy-rd 到满意水平，再微调 psy-rdoq。',
+    commandExample: '-x265-params psy-rdoq=12.5',
+    effects: { quality: 3, fileSize: 2, speed: 2, compatibility: 1 },
+    warnings: ['psy-rdoq 必须配合 rdoq-level=1 或 2 使用——如果 rdoq-level=0（RDO-Q 关闭），此参数无效。', 'psy-rdoq > 30 时建议同时检查 flat 区域的块效应，高频系数过多保留可能使平坦背景出现"噪点感"。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.bframes': {
+    id: 'expl.libx265.bframes',
+    title: 'x265 最大连续 B 帧数 (bframes)',
+    short: '控制两个 P/I 帧之间最多允许插入多少个连续的 B 帧。B 帧因使用双向预测而压缩效率最高（典型比 P 帧省 20-40% 码率），但 B 帧越多编码延迟越大、解码端参考帧缓冲需求越高。范围 0-16，默认 4。',
+    detail: 'H.265 的帧间预测有三种类型：I 帧仅帧内编码（最大，无依赖性），P 帧单向参考前序帧，B 帧可同时参考前序和后续帧。B 帧的高压缩效率来自两个方向运动补偿的加权平均——当物体在两帧之间匀速运动时，B 帧可以从前后两帧"插值"出精确的运动信息，残差极小。连续使用多个 B 帧相当于让编码器在更长的时间跨度内寻找最优的双向匹配。对静态或缓慢变化的内容（访谈、风景纪录片），8-16 个 B 帧可显著降低码率（10-25%），因为大量帧之间差异极小。对快速运动或频繁场景切换的内容（体育、动作片），过多 B 帧收益递减——因为远距离的前后帧已经没有可用的双向相关性，B 帧退化为近似 P 帧的效率。硬件播放兼容性也是约束因素：部分老旧电视盒和嵌入式播放器对大量连续 B 帧支持不佳（参考帧缓冲不足），建议流媒体分发控制在 3-5。',
+    commandExample: '-x265-params bframes=4',
+    effects: { quality: 1, fileSize: 3, speed: 2, compatibility: 2 },
+    warnings: ['bframes=0 等同于关闭 B 帧——压缩效率显著下降，码率可能增加 20-40%，不推荐。', 'bframes 值受硬件播放器 DPB（解码图像缓冲）大小限制——蓝光和 OTT 设备通常限制 4-6 个连续 B 帧。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.bAdapt': {
+    id: 'expl.libx265.bAdapt',
+    title: 'x265 B 帧自适应放置策略 (b-adapt)',
+    short: '决定编码器如何在 GOP 中"安排"B 帧的位置——是机械地固定模式放置，还是通过率失真分析智能选择最优位置。0=关闭（固定 B 帧模式），1=快速启发式，2=完整 RDO 分析（最优但最慢）。',
+    detail: '固定 B 帧模式（b-adapt=0）在每个 P/I 帧之间放置恰好 bframes 个 B 帧，形成机械的 IBBBBPBBBBP 结构。这在所有内容类型上表现平均但不最优——例如场景切换前的最后几帧如果被安排为 B 帧，其参考帧可能来自完全不同场景的下一 GOP，压缩效率极差。b-adapt=1 使用快速启发式（基于帧间 SATD 代价梯度变化）判断哪些帧"适合"做 B 帧——当连续帧之间变化平缓时插入 B 帧，当检测到运动突变或场景边界时改用 P 帧。b-adapt=2 做完整的 RDO 分析：对多种候选 GOP 结构计算真实码率-失真代价，选整体最优方案——这是 x265 preset slow 及以上才启用的选项，编码时间显著增加（尤其是 bframes 设得较大时，候选结构组合爆炸），但 BD-Rate 通常比模式 1 额外节省 2-5%。对离线编码任务（文件转码、存档压缩），模式 2 的额外时间投入物有所值；对实时/近实时编码（直播、会议），建议使用模式 1。',
+    commandExample: '-x265-params b-adapt=2',
+    effects: { quality: 2, fileSize: 3, speed: 3, compatibility: 1 },
+    warnings: ['b-adapt=2 且 bframes >= 8 时编码时间显著增加——候选 GOP 结构数量随 bframes 指数增长。', 'b-adapt=0 在场景切换频繁的内容（预告片、广告）上可能产生明显画质损失——切换点 B 帧缺少有效参考帧。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.ref': {
+    id: 'expl.libx265.ref',
+    title: 'x265 最大参考帧数 (ref)',
+    short: '每个 P/B 帧在做运动估计时可搜索的历史帧数量。范围 1-16，默认 3-5（取决于 preset）。更多参考帧可能捕获跨越多帧的运动轨迹，提升压缩效率，但编码时间和内存消耗随 ref 线性增长。',
+    detail: '多参考帧机制是 H.265 区别于早期标准的重大改进之一。传统编码器每个 P 帧只能参考它的前一帧——如果物体在两帧内运动过大超出搜索范围，就只能残差编码。多参考帧允许编码器回溯 1-16 帧的历史画面，从中选择运动匹配最好的一帧（或多帧）作为参考——这对周期性运动（钟摆、风扇叶片、行走步伐）和遮挡/显露场景（物体经过遮挡物后重新出现）尤为有效。实际收益在 ref=1→3 时最明显（BD-Rate 节省 2-5%），3→5 时边际收益递减（1-2%），超过 6 后几乎只有学术意义——除非内容包含极长周期的往复运动（如体育赛事慢动作重放）。内存方面：每个额外参考帧需要存储一帧完整解码画面（DPB），对 4K 内容约 12 MB/帧。16 个参考帧 ≈ 额外 200 MB 编码内存。硬件编码器（NVENC、QSV、AMF）通常限制 ref ≤ 4，x265 软件编码无此限制但也极少需要超过 6。',
+    commandExample: '-x265-params ref=4',
+    effects: { quality: 2, fileSize: 2, speed: 2, compatibility: 2 },
+    warnings: ['ref 与 limit-refs 联动——ref 设置较大时建议同时启用 limit-refs=1 或 2 以控制实际搜索开销，否则编码时间成倍增长。', 'ref 过大可能超出硬件解码器 DPB 限制——蓝光标准限制 4 帧，移动设备通常限制 5-6 帧。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.scenecut': {
+    id: 'expl.libx265.scenecut',
+    title: 'x265 场景切换检测阈值 (scenecut)',
+    short: '控制编码器自动检测场景切换的灵敏度——当相邻帧之间的差异超过此阈值时，在该位置插入 I 帧（IDR）开启新 GOP。范围 0-100，0 关闭场景检测（所有 GOP 固定长度），默认 40。值越低越敏感。',
+    detail: '场景切换是视频压缩中的关键断点——切换前后的画面内容完全不同，帧间预测几乎失效。如果场景切换恰好落在 GOP 中间，切换后第一帧作为 P/B 帧参考前一 GOP 末尾的"旧场景"帧，残差极大，产生的码率尖峰可能让整个 GOP 的画质崩溃（VBV 缓冲溢出、QP 漂升）。scenecut 通过在编码前对每帧与前一帧做快速 SATD（Hadamard 变换域绝对差值和）比较来预判切换位置——如果两帧的 SATD 比值超过内部阈值（由 scenecut 值映射），就在该位置强行插入 IDR 帧。低值（10-20）：灵敏检测——适合微电影、MV、预告片等剪辑密集的内容，确保每次剪切都刷新 GOP。中值（30-50，默认）：通用平衡——匹配大多数自然内容和混合内容的剪辑频率。高值（60-100）：迟钝——只有极剧烈的场景变化才会触发，适合长镜头、纪录片等剪辑稀疏的内容，减少不必要的 I 帧可以节省码率（I 帧体积通常是 P 帧的 3-10 倍）。scenecut=0 完全关闭动态检测，GOP 长度固定为 keyint 值，仅适用于对 GOP 结构有严格要求的广播规范。',
+    commandExample: '-x265-params scenecut=40',
+    effects: { quality: 2, fileSize: 1, speed: 1, compatibility: 1 },
+    warnings: ['scenecut 过低（<10）可能产生过于密集的 I 帧，导致码率浪费在"假阳性"切换上（例如闪光灯、爆炸特效的瞬时亮度变化）。', '与 keyint（GOP 最大长度）联动——scenecut 在 keyint 范围内工作：即使 scenecut 检测不到切换，keyint 也会强制插入 I 帧。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.ctu': {
+    id: 'expl.libx265.ctu',
+    title: 'x265 编码树单元大小 (ctu)',
+    short: '决定 x265 画面划分的基本块大小——H.265 以 CTU 为根节点递归划分 CU。64×64 像素（默认）对 1080p 及以上内容压缩最优；32×32 和 16×16 适用于低分辨率或特殊需求。CTU 越大，编码效率越高，但内存和计算开销也越大。',
+    detail: 'CTU（Coding Tree Unit）是 H.265 编码的基本单元。每个 CTU 内部以四叉树结构递归划分为更小的 CU（编码单元），直到 8×8 的最小子块。CTU=64 意味着每个 CTU 覆盖 64×64 像素区域——对该区域编码器可以灵活地在 64×64、32×32、16×16、8×8 之间选择最优划分。大 CTU 的优势在于：大面积平坦区域（天空、墙面）可以用一个 64×64 的 CU 编码，只记录一个运动矢量和一个预测模式——极省码率。小 CTU 则在精细纹理和物体边缘有用，但需要更多划分层级。对 4K 内容，64×64 的 CTU 覆盖的物理面积相对合理；对 720p 或更低分辨率，64×64 块在画面上占比过大（覆盖 5% 以上的画面宽度），导致细节区域被迫使用更深的四叉树层次（因为大块内同时包含前景和背景），反而不如直接使用 32×32 的 CTU 扁平高效。兼容性方面：所有 H.265 Level 4 及以上设备均支持 64×64 CTU；H.265 Level 3/3.1（部分低端移动设备）限制 CTU ≤ 32。',
+    commandExample: '-x265-params ctu=64',
+    effects: { quality: 2, fileSize: 2, speed: 2, compatibility: 2 },
+    warnings: ['ctu=64 对 ≤ 480p 内容几乎没有收益——在极小分辨率上大块划分的不灵活性抵消了压缩效率优势。', '部分低端硬件解码器（早期 4K 电视、廉价 OTT 盒子）不支持 CTU=64，如遇播放故障可降为 32。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.me': {
+    id: 'expl.libx265.me',
+    title: 'x265 运动估计搜索算法 (me)',
+    short: '决定编码器如何在参考帧中搜索运动匹配块——菱形 (dia) 和六边形 (hex) 适用于快速编码；非均匀多六边形 (umh) 是默认通用最优选择；星形 (star) 和连续消除 (sea) 提供更高搜索精度；全搜索 (full) 穷尽所有可能位置，最精确但最慢。',
+    detail: '运动估计（ME）是视频编码中最耗时的环节——占编码总时间的 40-70%。ME 的本质是在参考帧中找到一个与当前块"最像"的像素区域，两者位置差即为运动矢量（MV）。理想的最优解是全搜索（full）——在搜索范围内逐个像素比较，找到真正的最优匹配。但对每个 CU 做全搜索的计算量惊人（对 64×64 块在 ±57 像素搜索范围内需检验约 13000 个候选位置），因此实际使用启发式搜索：dia（菱形）从中心向外以菱形模式搜索，速度快但易陷入局部最优；hex（六边形）比菱形搜索更细的网格；umh（非均匀多六边形）先用粗网格快速定位大致区域再用细网格精细搜索——性价比最高，是 x265 medium/slow 预设的默认选择；star（星形）在 umh 基础上增加了对角线方向的采样密度；sea（连续消除）利用 Hadamard 变换的数学性质快速排除"绝不可能"的候选区域，在保持接近全搜索精度的同时大幅减少计算。对离线高质量编码，建议 me=star 或 sea（配合 subme ≥ 5）；对快速预览或实时编码，me=hex 即可。',
+    commandExample: '-x265-params me=star',
+    effects: { quality: 3, fileSize: 1, speed: 4, compatibility: 1 },
+    warnings: ['me=full 在 4K 内容上可能使编码时间增加数倍而画质改善微乎其微——不推荐，umh 或 star 已接近全搜索精度。', 'me 与 merange 联动——merange 越大，搜索算法差异越明显；merange < 16 时所有算法表现接近。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.subme': {
+    id: 'expl.libx265.subme',
+    title: 'x265 子像素运动估计精度 (subme)',
+    short: '控制运动估计的像素级以下细化精度——整数像素搜索找到大致位置后，围绕该位置做 1/2、1/4 甚至 1/8 像素级别的精细调整。范围 0-7，默认 2-5（取决于 preset）。值越高，运动矢量越精确，但子像素搜索的计算量随精度级数指数增长。',
+    detail: '现实中的物体运动很少恰好落在整数像素格点上——当物体移动 3.7 像素时，整数搜索只能找到偏移 4 或 3 的匹配，残差中残留不可忽视的高频能量。子像素 ME 通过插值生成"亚像素"参考图像（1/2 像素用 8 抽头滤波器，1/4 像素用 7 抽头滤波器），在插值后的高分辨率参考帧中搜索更精细的匹配。subme 级别控制插值精度和搜索细化策略：0=仅整数像素（最快，但运动场景会出现明显的"锯齿状"运动伪影）；2=1/2 像素 + SATD 代价；5=1/4 像素 + 全 RDO 代价（推荐的最低质量级别）；7=1/4 像素 + 多轮迭代细化（适用于最挑剔的离线编码）。从 subme=5 提升到 7，典型编码时间增加 15-25%，BD-Rate 改善 0.5-2%，画质差异在高速运动场景（体育、动作）中肉眼可辨。对静态访谈类内容，subme 的收益几乎不可见——运动本身太少。',
+    commandExample: '-x265-params subme=5',
+    effects: { quality: 3, fileSize: 1, speed: 3, compatibility: 1 },
+    warnings: ['subme < 3 在高速运动内容上可能产生明显的运动矢量误差累积——表现为快速移动物体边缘的闪烁模糊。', 'subme=7 对 CPU 编码线程利用率有负面影响——精细的子像素搜索可能成为并行瓶颈。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.merange': {
+    id: 'expl.libx265.merange',
+    title: 'x265 运动估计搜索范围 (merange)',
+    short: '以像素为单位决定 ME 在参考帧中的最大搜索半径——值越大，编码器能在更远距离上追踪物体运动，但搜索计算量以 O(r²) 增长。范围 0-32768，默认 57。对 1080p 内容 57 即可覆盖大多数运动场景；对 4K 高速运动可能需要增大到 128-256。',
+    detail: 'merange 的本质是"编码器愿在当前参考帧中跑多远去找匹配块"。如果物体的帧间位移超过 merange，编码器找不到有效运动矢量，只能退化为帧内编码或次优残差编码——后果是运动场景的码率尖峰和局部模糊。选 merange 的经验公式：merange ≥ 画面高度 × 最大物体运动速度（画面占比每秒）÷ 帧率。例如 1080p 画面中一只鸟以 0.3 画面高度/秒的速度飞过，帧率 30，最小 merange = 1080 × 0.3 / 30 = 10.8——57 的默认值很充裕。但对 4K（2160p）极限运动场景（赛车、体育慢动作），merange=57 仅覆盖约 2.6% 的画面高度，快速移动的小物体（球、飞鸟）可能被遗漏——建议增大至 128-256。merange 不能"越大越好"：搜索面积与 merange² 成正比，merange=256 是 merange=57 的约 20 倍搜索面积——编码时间显著增长。',
+    commandExample: '-x265-params merange=57',
+    effects: { quality: 2, fileSize: 1, speed: 3, compatibility: 1 },
+    warnings: ['merange > 512 在大多数内容上仅增加编码时间而不改善画质——只有 8K 极限运动场景才需要如此大的搜索范围。', 'merange 与 me 联动——快速算法（hex、dia）在大 merange 下的搜索效率下降更严重，建议 merange > 128 时同时使用 umh 或 star。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.noOpenGop': {
+    id: 'expl.libx265.noOpenGop',
+    title: 'x265 关闭开放 GOP (no-open-gop)',
+    short: '开放 GOP 允许当前 GOP 末尾的 B 帧参考下一个 GOP 的 I 帧——这提供了额外的时间预测信息，略微提升压缩效率。关闭开放 GOP（no-open-gop=1）后每个 GOP 完全独立，更适合需要精确 seek 和章节定位的场景。',
+    detail: '开放 GOP（Open Group of Pictures）的核心思想是：GOP 边界不应成为运动预测的"硬墙"。典型开放 GOP 结构中，GOP 末尾的 B 帧可以在时间上前向参考当前 GOP 的 P 帧，后向参考下一个 GOP 的开头 I 帧——这个双向跨 GOP 的参考关系为 B 帧提供了更完整的时间上下文，压缩效率比封闭 GOP 高约 1-5%。但开放 GOP 的代价是兼容性和可编辑性：删除或损坏一个 GOP 会影响相邻 GOP 的末尾 B 帧（因为它们依赖于"隔壁"的 I 帧）；精确 seek 到某帧时需要先解码其参考链中可能来自另一个 GOP 的帧；视频编辑软件（Premiere、DaVinci Resolve）的智能剪切通常要求封闭 GOP。关闭开放 GOP 适用场景：蓝光制作、广播级分发、需要精确帧级剪辑的工作流、基于 HTTP 自适应流的分段视频（HLS/DASH）。保持开放 GOP 适用场景：本地存储播放（播放器线性解码，不受影响）、对文件大小敏感的在线分发。',
+    commandExample: '-x265-params no-open-gop=1',
+    effects: { quality: 1, fileSize: 1, speed: 1, compatibility: 3 },
+    warnings: ['关闭开放 GOP 后每个 GOP 的首个 I 帧不能为后续 GOP 的 B 帧所用——需略微提高 I 帧质量（降低 I 帧 QP）补偿边际效率损失。', 'HLS/DASH 分段流媒体建议关闭开放 GOP 以确保每段完全独立可解码。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.noSao': {
+    id: 'expl.libx265.noSao',
+    title: 'x265 关闭样点自适应偏移滤波 (no-sao)',
+    short: 'SAO（Sample Adaptive Offset）是 H.265 环路滤波的第二阶段——在去块滤波之后，按类别对重建像素施加微小偏移以补偿量化误差。关闭 SAO 可节省编码时间 5-15%，但平缓渐变区域（天空、水面）可能出现肉眼可察的色带。',
+    detail: 'H.265 的去块滤波（Deblocking Filter）仅作用于块边界——在 8×8 块边缘平滑量化不连续性。但它无法处理块内部的量化误差累积：例如一个从亮到暗的平滑渐变区域，量化后可能出现"阶梯状"的离散亮度跳变（色带效应）。SAO 解决这个问题：编码器将每个 CTU 的像素按边缘方向或亮度区间分类，对每个类别计算一个"全局偏移量"加到重建像素上——这个偏移量由编码器分析原始像素与重建像素的系统性偏差后确定，写入码流供解码器执行。关闭 SAO（no-sao=1）意味着跳过整个 SAO 分析-计算-应用流程，编码时间节省明显，但代价是：1）平滑渐变区可能出现色带；2）尖锐边缘附近可能出现轻微的振铃伪影（因为 SAO 的边缘偏移模式也负责抑制这种伪影）；3）整体画面看起来略微"粗糙"。对动漫内容（大面积平坦色块 + 锐利边缘），SAO 的正面作用尤为关键——关闭后色带极明显。对噪点丰富的实拍内容，SAO 的改善相对微妙——因为噪点本身掩盖了量化伪影。不建议关闭 SAO，除非编码速度是绝对优先级且内容本身噪声足够高。',
+    commandExample: '-x265-params no-sao=0',
+    effects: { quality: 3, fileSize: 1, speed: 3, compatibility: 1 },
+    warnings: ['关闭 SAO 对动画和 CGI 内容的画质影响远大于实拍内容——动画的平坦色块是色带的"完美画布"。', 'SAO 与去块滤波是互补关系——关闭 SAO 不等于关闭去块滤波，两者分别处理块边界和块内部的不同伪影类型。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.selectiveSao': {
+    id: 'expl.libx265.selectiveSao',
+    title: 'x265 选择性 SAO 应用 (selective-sao)',
+    short: '智能跳过 SAO 收益微小的 CTU 而非全帧应用——在对画质影响极小的情况下收回 SAO 消耗的部分编码时间。0=关闭（全帧应用 SAO），1=开启选择性跳过，2=增强跳过（更激进的跳过策略）。',
+    detail: '全帧 SAO 存在一个效率浪费：对纹理丰富的 CTU（草地、织物、树叶），量化误差被高频纹理掩盖，SAO 施加的微小像素偏移对人眼完全不可见——但编码器仍为每个这样的 CTU 计算 SAO 参数并写入码流。selectiveSao 在 SAO 分析阶段引入一个"收益预判"步骤：编码器快速评估 SAO 在每个 CTU 上的率失真收益（施加偏移后的质量改善 vs 写入 SAO 参数的码率开销），如果收益低于阈值则直接跳过该 CTU 的 SAO 处理。模式 1 使用保守阈值——仅跳过"几乎确定无收益"的 CTU，安全性高。模式 2 使用更宽松的阈值——可能跳过更多 CTU，画质影响轻微但仍建议 ABX 对比确认。在大多数内容上，selectiveSao=1 可以在画质损失 <0.1% dB 的前提下回收 20-40% 的 SAO 耗时。对极致质量追求，保持模式 0（全帧 SAO）。对速度敏感但不愿完全关闭 SAO（避免色带灾难）的场景，模式 1 是最佳折中。',
+    commandExample: '-x265-params selective-sao=1',
+    effects: { quality: 1, fileSize: 1, speed: 2, compatibility: 1 },
+    warnings: ['selectiveSao=2 对动画内容需谨慎——动画的平坦区域面积大，SAO 收益明显，激进跳过可能导致局部色带。', 'selectiveSao 与 noSao 互斥——no-sao=1 时此参数无意义。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.saoNonDeblock': {
+    id: 'expl.libx265.saoNonDeblock',
+    title: 'x265 SAO 非去块模式 (sao-non-deblock)',
+    short: '开启后 SAO 仅处理未被去块滤波修改的像素——避免对已被去块滤波器"修复"的块边界像素再做偏移，减少两阶段环路滤波之间的交互伪影。值为 1 时开启此限制，默认 0（SAO 处理所有像素）。',
+    detail: 'H.265 的环路滤波分为两个顺序阶段：先去块滤波（Deblocking）再 SAO。去块滤波在块边界修正 0-2 个像素的灰度值以平滑边界不连续性——这些被修正的像素已经从"编码残差+量化误差"的被污染状态恢复到了接近原始的状态。如果紧接着 SAO 再次修改这些像素（基于 CTU 级别的分类偏移），存在过度修正风险——去块滤波已经推了一把，SAO 可能推过头。sao-non-deblock=1 告诉 SAO："跳过那些被去块滤波碰过的像素，只处理块内部的未被污染的像素"。这避免了双重滤波干扰，画面更干净自然，但代价是块边界附近的少量像素失去了 SAO 对量化误差的补偿——不过去块滤波本身已经处理了这部分误差。对大多数内容，开启此选项带来的改善非常微妙（通常在 ABX 测试中不可分辨），但在某些边缘密集型内容（文字叠加、UI 界面录制、动漫线条）上，可以观察到边界清晰度的轻微提升——因为 SAO 不再"软化"被去块滤波锐化过的边缘。',
+    commandExample: '-x265-params sao-non-deblock=1',
+    effects: { quality: 1, fileSize: 1, speed: 1, compatibility: 1 },
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
+  'expl.libx265.noStrongIntraSmoothing': {
+    id: 'expl.libx265.noStrongIntraSmoothing',
+    title: 'x265 关闭帧内强平滑滤波 (no-strong-intra-smoothing)',
+    short: 'x265 默认对 32×32 帧内预测块施加一个强平滑滤波器以减少平坦区域的轮廓伪影。关闭后纹理细节和噪点得到更好保留，但可能在平滑渐变区域出现细微的块状轮廓。值为 1 时关闭平滑。',
+    detail: '帧内预测是通过相邻已编码块的边界像素"外推"当前块内容的过程——当 32×32 的大块使用 DC 或平面模式时，预测块是相邻边界像素的平滑外推结果，内部天然缺乏纹理变化。如果原始画面此处恰好有微妙的纹理（皮肤毛孔、胶片颗粒、织物纹理），大块帧内预测会产生明显的"塑料感"——块内部过于平滑而边缘处纹理突然恢复，形成视觉上的块状轮廓。强帧内平滑（Strong Intra Smoothing）在帧内预测生成大块预测信号后，对参考边界像素施加一次额外的高斯式平滑——使外推结果更"软"，减少轮廓伪影，但代价是边界像素携带的纹理信息被削弱。关闭此平滑（no-strong-intra-smoothing=1）让帧内预测块尽可能忠实于相邻像素的纹理特征——对噪点多、颗粒感强的胶片内容和手持暗光拍摄素材更有利，保留了材质的"质感"。对干净的数码摄影和 CGI，保持平滑开启（默认）能预防平坦区域的孤立轮廓线。',
+    commandExample: '-x265-params no-strong-intra-smoothing=1',
+    effects: { quality: 2, fileSize: 1, speed: 1, compatibility: 1 },
+    warnings: ['此参数仅影响帧内预测，不影响帧间预测（P/B 帧）——帧间预测有自己的插值滤波器，不受此开关控制。', '关闭强平滑后如果 I 帧质量不足（CRF 偏高），大块帧内预测块的"脏纹理"可能比平滑伪影更刺眼。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/libx265.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libx265.c' }],
+  },
+
   'expl.libx265.noConstrainedIntra': {
     id: 'expl.libx265.noConstrainedIntra',
     title: 'x265 无约束帧内预测 (no-constrained-intra)',
@@ -3570,6 +3757,16 @@ export const explanations: Record<string, ExplanationDefinition> = {
     detail: 'B 帧作为参考的能力是现代编码器压缩效率的核心——它增加了参考候选的丰富度。AMF 通过 AMD 硬件 B 帧参考引擎支持这一特性。关闭后 GOP 结构退化为"仅 P 帧参考"模式——压缩效率下降但解码更简单，对极低功耗解码器可能有微小益处。',
     commandExample: '-b_frame_ref 1',
     effects: { quality: 2, fileSize: 3, speed: 1, compatibility: 1 },
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/amfenc.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/amfenc.c' }],
+  },
+  'expl.amf.headerInsertionMode': {
+    id: 'expl.amf.headerInsertionMode',
+    title: 'AMF SEI 头信息插入模式 (-header_insertion_mode)',
+    short: '控制 VPS/SPS/PPS 等参数集 NAL 单元的插入频率——0=不重复插入（仅码流开头一处），1=每个 GOP 开头重复一次，2=每个 IDR 帧处重复。重复插入增加微小码率但提升随机接入和丢包恢复能力。',
+    detail: 'H.264/H.265 码流中的参数集（SPS/PPS/VPS）告诉解码器如何解析后续的视频数据——包括分辨率、Profile/Level、熵编码模式等关键信息。如果不重复插入（模式 0），参数集只在码流的最开头出现一次，解码器必须从头开始解码才能获取这些信息。这对本地播放完全没问题，但对流媒体和广播场景可能致命：中途加入的观众（切换频道、直播延迟加入）收到第一个 IDR 帧后不知道如何解码，需要等待下一个包含参数集的片段。模式 1（每个 GOP）在每个 GOP 开头的 I 帧前附带一份参数集副本——约增加几十字节/GOP，但确保了 GOP 级别的独立可解码性。模式 2（每个 IDR）更激进——在每一处 IDR（包括场景切换触发的 IDR）前都插入参数集，适合 HLS/DASH 等基于 IDR 对齐的分段流媒体方案。对本地文件编码，三种模式实际解码效果无差异，选 0 节省微小的重复开销即可。',
+    commandExample: '-header_insertion_mode 1',
+    effects: { quality: 0, fileSize: 1, speed: 0, compatibility: 3 },
+    warnings: ['模式 1 和 2 对编解码兼容性有积极影响——部分老旧解码器在参数集缺失时可能报错或花屏，重复插入可避免此问题。', '对 HLS/DASH 分发建议至少选择模式 1，确保每段独立可解。'],
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/amfenc.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/amfenc.c' }],
   },
   'expl.amf.queryTimeout': {
