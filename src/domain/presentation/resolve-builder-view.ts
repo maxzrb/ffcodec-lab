@@ -12,6 +12,7 @@ import type { CommandPlan } from '../command/command-ast'
 import {
   resolveInputSection,
   resolveVideoSection,
+  resolveGenericCodecSection,
   resolveVideoAdvancedSection,
   resolveFrameSection,
   resolveColorSection,
@@ -39,6 +40,7 @@ export function resolveBuilderView(
   const sections = [
     resolveInputSection(config, fieldStates),
     resolveVideoSection(config, catalog, fieldStates),
+    resolveGenericCodecSection(config, catalog, fieldStates),
     resolveVideoAdvancedSection(config, catalog, fieldStates),
     resolveFrameSection(config, fieldStates),
     resolveColorSection(config, fieldStates),
@@ -167,8 +169,9 @@ function resolvePanelStateNotice(
 
 /** 同一工作台内保留来源分组语义，避免两个区域显示完全相同的标题。 */
 function resolvePanelSectionLabel(panelId: string, sectionId: string, fallback: string): string {
-  if (panelId === 'video' && sectionId === 'section.video-advanced') return '编码器高级参数'
-  if (panelId === 'quality' && sectionId === 'section.video-advanced') return '编码器高级参数'
+  if (panelId === 'video' && sectionId === 'section.encoder-private') return '编码器私有参数'
+  if (panelId === 'quality' && sectionId === 'section.encoder-private') return '编码器私有参数'
+  if (panelId === 'quality' && sectionId === 'section.generic-codec') return '通用编码选项'
   if (panelId === 'quality' && sectionId === 'section.video') return '码率与编码器参数'
   if (panelId === 'color' && sectionId === 'section.video') return '像素格式'
   if (panelId === 'color' && sectionId === 'section.color') return '色彩元数据'

@@ -24,6 +24,27 @@ import {
   resolveStructuredDictionaryValue,
 } from '../catalog/parameter-dictionary'
 
+// -- generic codec arg classification ---------------------------
+
+/** FFmpeg libavcodec 层通用编码选项的 argName 集合。
+ * 这些参数不是编码器私有参数，大多数编码器都支持。
+ * 它们在各编码器的 specialParameters 中可能以编码器自定义默认值出现（通过 advanced-quality.ts 去重），
+ * 但参数语义始终是通用语义。 */
+const GENERIC_CODEC_ARG_NAMES = new Set([
+  '-g',              // GOP 大小 / 关键帧间隔
+  '-bf',             // 最大 B 帧数
+  '-keyint_min',     // 最小关键帧间隔
+  '-qmin',           // 量化最小值
+  '-qmax',           // 量化最大值
+  '-qcomp',          // 量化曲线压缩系数
+  '-refs',           // 参考帧数
+  '-level',          // 编码级别
+  '-rc-lookahead',   // 码率控制前瞻帧数
+  '-aq-strength',    // 自适应量化强度
+  '-sc_threshold',   // 场景切换检测阈值
+  '-threads',        // 编码线程数
+])
+
 // -- section builders -------------------------------------------
 
 export function resolveInputSection(
@@ -245,7 +266,44 @@ export function resolveVideoSection(
   return { id: 'section.video', label: '视频编码', fields }
 }
 
-/** 当前视频编码器的私有高级参数。全部采用显式启用语义并默认折叠。 */
+/** 通用 FFmpeg 编码选项（libavcodec 层选项，大多数编码器都支持）。
+ *  从当前编码器的 specialParameters 中筛选通用 argName，已通过
+ *  advanced-quality.ts 去重逻辑处理了各编码器自定义默认值的情况。 */
+export function resolveGenericCodecSection(
+  config: ProjectConfig,
+  catalog: Catalog,
+  fieldStates: Record<string, FieldState>,
+): ResolvedSection {
+  const encoder = config.video.mode === 'encode' && config.video.encoderId
+    ? catalog.encoders.video[config.video.encoderId]
+    : undefined
+  if (!encoder) return { id: 'section.generic-codec', label: '通用编码选项', fields: [] }
+
+  const fields = encoder.specialParameters
+    .filter((control) => !isRawParameterDictionary(control))
+    .filter((control) => GENERIC_CODEC_ARG_NAMES.has(control.commandBinding?.argName ?? ''))
+    .map((control) => {
+      const optionalControl = { ...control, optional: true }
+      const configPath = control.configBinding?.path ?? `video.specialParameters.${control.id}`
+      const field = resolveControlField(optionalControl, config, configPath, fieldStates, encoder)
+      if (control.commandBinding?.dictionary?.key) {
+        field.value = resolveStructuredDictionaryValue(encoder, control, config.video.specialParameters)
+      }
+      field.panelId = 'quality'
+      field.groupId = 'generic-codec'
+      field.tier = 'advanced'
+      return field
+    })
+
+  return {
+    id: 'section.generic-codec',
+    label: '通用编码选项',
+    description: 'FFmpeg libavcodec 层通用选项，适用于大多数编码器。每项默认不设置，留空时使用编码器内建值。',
+    fields,
+  }
+}
+
+/** 当前视频编码器的私有参数。不包括通用编码选项和附加参数字典文本框。 */
 export function resolveVideoAdvancedSection(
   config: ProjectConfig,
   catalog: Catalog,
@@ -254,27 +312,30 @@ export function resolveVideoAdvancedSection(
   const encoder = config.video.mode === 'encode' && config.video.encoderId
     ? catalog.encoders.video[config.video.encoderId]
     : undefined
-  if (!encoder) return { id: 'section.video-advanced', label: '编码器高级参数', fields: [] }
+  if (!encoder) return { id: 'section.encoder-private', label: '编码器私有参数', fields: [] }
 
-  const fields = encoder.specialParameters.filter((control) => !isRawParameterDictionary(control)).map((control) => {
-    // EncoderDefinition.specialParameters 中的默认值只描述编码器行为，
-    // 不代表项目应主动发射；界面必须允许保持空值。
-    const optionalControl = { ...control, optional: true }
-    const configPath = control.configBinding?.path ?? `video.specialParameters.${control.id}`
-    const field = resolveControlField(optionalControl, config, configPath, fieldStates, encoder)
-    if (control.commandBinding?.dictionary?.key) {
-      field.value = resolveStructuredDictionaryValue(encoder, control, config.video.specialParameters)
-    }
-    field.panelId = 'quality'
-    field.groupId = 'encoder-advanced'
-    field.tier = 'advanced'
-    return field
-  })
+  const fields = encoder.specialParameters
+    .filter((control) => !isRawParameterDictionary(control))
+    .filter((control) => !GENERIC_CODEC_ARG_NAMES.has(control.commandBinding?.argName ?? ''))
+    .map((control) => {
+      // EncoderDefinition.specialParameters 中的默认值只描述编码器行为，
+      // 不代表项目应主动发射；界面必须允许保持空值。
+      const optionalControl = { ...control, optional: true }
+      const configPath = control.configBinding?.path ?? `video.specialParameters.${control.id}`
+      const field = resolveControlField(optionalControl, config, configPath, fieldStates, encoder)
+      if (control.commandBinding?.dictionary?.key) {
+        field.value = resolveStructuredDictionaryValue(encoder, control, config.video.specialParameters)
+      }
+      field.panelId = 'quality'
+      field.groupId = 'encoder-private'
+      field.tier = 'advanced'
+      return field
+    })
 
   return {
-    id: 'section.video-advanced',
-    label: '编码器高级参数',
-    description: '仅显示当前编码器支持的私有选项；全部默认不设置，附加参数文本框位于质量控制栏底部。',
+    id: 'section.encoder-private',
+    label: '编码器私有参数',
+    description: '仅当前编码器支持的专有选项；全部默认不设置，留空时使用编码器内建值。',
     fields,
   }
 }
