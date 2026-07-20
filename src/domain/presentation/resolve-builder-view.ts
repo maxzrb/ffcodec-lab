@@ -168,6 +168,8 @@ function resolvePanelStateNotice(
 /** 同一工作台内保留来源分组语义，避免两个区域显示完全相同的标题。 */
 function resolvePanelSectionLabel(panelId: string, sectionId: string, fallback: string): string {
   if (panelId === 'video' && sectionId === 'section.video-advanced') return '编码器高级参数'
+  if (panelId === 'quality' && sectionId === 'section.video-advanced') return '编码器高级参数'
+  if (panelId === 'quality' && sectionId === 'section.video') return '码率与编码器参数'
   if (panelId === 'color' && sectionId === 'section.video') return '像素格式'
   if (panelId === 'color' && sectionId === 'section.color') return '色彩元数据'
   if (panelId === 'streams-container' && sectionId === 'section.input') return '流选择'

@@ -228,13 +228,13 @@ export function resolveVideoSection(
       }
     }
 
-    // 自由附加参数固定放在视频编码栏底部，并显示与结构化字典控件同步后的内容。
+    // 自由附加参数固定放在质量控制栏底部，并显示与结构化字典控件同步后的内容。
     for (const control of encoder.specialParameters.filter(isRawParameterDictionary)) {
       const optionalControl = { ...control, optional: true }
       const configPath = control.configBinding?.path ?? `video.specialParameters.${control.id}`
       const field = resolveControlField(optionalControl, config, configPath, fieldStates, encoder)
       field.value = resolveRawParameterDictionaryValue(encoder, control, config.video.specialParameters, true)
-      field.panelId = 'video'
+      field.panelId = 'quality'
       field.groupId = 'encoder-additional-parameters'
       field.tier = 'advanced'
       fields.push(field)
@@ -265,7 +265,7 @@ export function resolveVideoAdvancedSection(
     if (control.commandBinding?.dictionary?.key) {
       field.value = resolveStructuredDictionaryValue(encoder, control, config.video.specialParameters)
     }
-    field.panelId = 'video'
+    field.panelId = 'quality'
     field.groupId = 'encoder-advanced'
     field.tier = 'advanced'
     return field
@@ -274,7 +274,7 @@ export function resolveVideoAdvancedSection(
   return {
     id: 'section.video-advanced',
     label: '编码器高级参数',
-    description: '仅显示当前编码器支持的私有选项；全部默认不设置，附加参数文本框位于视频编码栏底部。',
+    description: '仅显示当前编码器支持的私有选项；全部默认不设置，附加参数文本框位于质量控制栏底部。',
     fields,
   }
 }
