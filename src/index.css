@@ -19,7 +19,7 @@
   text-rendering: optimizeLegibility;
   --bg: #eef3f8;
   --bg-elevated: rgba(255, 255, 255, 0.92);
-  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card: #ffffff;
   --bg-input: #f7fafc;
   --bg-hover: #e7f3f1;
   --text: #172033;
@@ -42,6 +42,7 @@
   --radius: 12px;
   --radius-lg: 18px;
   --shadow: 0 18px 55px rgba(39, 61, 84, 0.14);
+  --shadow-card: 0 12px 34px rgba(39, 61, 84, 0.1);
   --body-background: radial-gradient(circle at 12% -5%, rgba(8, 127, 108, 0.11), transparent 28rem), radial-gradient(circle at 88% 8%, rgba(23, 105, 170, 0.1), transparent 30rem), linear-gradient(180deg, #f8fafc 0%, var(--bg) 48%, #e8eef5 100%);
   --input-surface: rgba(255, 255, 255, 0.92);
   --focus-surface: #ffffff;
@@ -70,7 +71,7 @@
   background: #07111f;
   --bg: #07111f;
   --bg-elevated: rgba(13, 28, 47, 0.88);
-  --bg-card: rgba(14, 31, 52, 0.82);
+  --bg-card: #0e1f34;
   --bg-input: #102842;
   --bg-hover: #173a5c;
   --text: #e9f2ff;
@@ -91,6 +92,7 @@
   --info: #70b9ff;
   --success: #6ae3b6;
   --shadow: 0 18px 55px rgba(0, 0, 0, 0.28);
+  --shadow-card: 0 12px 34px rgba(0, 0, 0, 0.35);
   --body-background: radial-gradient(circle at 12% -5%, rgba(49, 210, 180, 0.14), transparent 28rem), radial-gradient(circle at 88% 8%, rgba(101, 169, 255, 0.14), transparent 30rem), linear-gradient(180deg, #091523 0%, var(--bg) 48%, #050c16 100%);
   --input-surface: rgba(7, 19, 33, 0.78);
   --focus-surface: #091a2c;
@@ -203,7 +205,7 @@ input[type="number"]:hover {
   background: var(--input-surface);
   color: var(--text-soft);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .multiselect-option:has(input:checked) {
@@ -227,7 +229,7 @@ input[type="number"]:hover {
   border-radius: var(--radius);
   color: var(--text-dim);
   background: var(--section-surface);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -244,7 +246,7 @@ input[type="number"]:hover {
   border-radius: 999px;
   background: var(--pill-surface);
   color: var(--text-soft);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -270,7 +272,7 @@ input[type="number"]:hover {
   background: var(--accent-glow);
   margin: -6px -6px 4px -6px;
   padding: 5px 10px 3px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
 }
@@ -742,8 +744,7 @@ code {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-card);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-card);
 }
 
 .parameter-section {
@@ -787,7 +788,7 @@ code {
   min-width: 88px;
   min-height: 30px;
   padding: 4px 7px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .parameter-section__toggle:hover {
@@ -802,7 +803,7 @@ code {
   border-radius: 7px;
   background: rgba(101, 169, 255, 0.1);
   color: var(--blue);
-  font-size: 9px;
+  font-size: 10px;
   transition: transform 180ms ease;
 }
 
@@ -811,13 +812,13 @@ code {
 }
 
 .parameter-section__title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 750;
 }
 
 .parameter-section__description {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -866,14 +867,14 @@ code {
 .param-field__label {
   flex: 1;
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 680;
 }
 
 .param-field__description,
 .param-field__reason {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .param-field__description {
@@ -893,7 +894,7 @@ code {
   border-radius: 8px;
   padding: 0;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .switch-control {
@@ -903,7 +904,7 @@ code {
   width: fit-content;
   cursor: pointer;
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .switch-control--disabled {
@@ -1066,7 +1067,7 @@ code {
 .button-ghost {
   border-radius: 8px;
   padding: 6px 9px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .button-ghost--active {
@@ -1313,7 +1314,7 @@ code {
   border-radius: 20px;
   background: var(--modal-surface);
   padding: 20px;
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow);
 }
 
 .modal-card__header {
