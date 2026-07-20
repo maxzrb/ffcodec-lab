@@ -12,6 +12,27 @@ import { useBuilderStore } from '../../store'
 import { createDefaultProjectConfig } from '../../domain/config/defaults'
 import type { ProjectConfig } from '../../domain/config/project-config'
 
+/**
+ * 在自定义 Dropdown 中选择选项。
+ * 点击触发器打开面板 → 通过 data-value 找到选项 → 点击。
+ */
+async function chooseDropdown(label: string | RegExp, value: string) {
+  const trigger = screen.getByLabelText(label)
+  await userEvent.click(trigger)
+  // 等待面板出现后用 data-value 找到目标选项
+  const panel = document.querySelector('.custom-select-panel')
+  if (!panel) throw new Error(`Dropdown panel not found after clicking "${label}"`)
+  const option = panel.querySelector(`[data-value="${value}"]`)
+  if (!option) throw new Error(`Option with data-value="${value}" not found in dropdown "${label}"`)
+  await userEvent.click(option as HTMLElement)
+}
+
+/** 获取下拉按钮当前显示的文本 */
+function dropdownText(label: string | RegExp): string {
+  const trigger = screen.getByLabelText(label)
+  return trigger.querySelector('.custom-select__text')?.textContent ?? ''
+}
+
 /** 创建指定视频编码器并展开相关区域的测试配置。 */
 function makeConfig(encoderId: string): ProjectConfig {
   const config = createDefaultProjectConfig()
@@ -138,8 +159,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<BuilderPage />)
     await openPanel('视频编码')
 
-    await userEvent.selectOptions(screen.getByLabelText('编解码标准'), 'av1')
-    await userEvent.selectOptions(screen.getByLabelText('视频编码器'), 'libsvtav1')
+    await chooseDropdown('编解码标准', 'av1')
+    await chooseDropdown('视频编码器', 'libsvtav1')
 
     await openPanel('质量控制')
     const advancedToggle = screen.getByRole('button', { name: /编码器私有参数/ })
@@ -148,11 +169,11 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.getByLabelText('SVT-AV1 附加参数 (-svtav1-params)')).toHaveValue('')
 
     expect(screen.getByLabelText('Film Grain Synthesis 强度')).toHaveValue(null)
-    expect(screen.getByLabelText('Film Grain 去噪')).toHaveValue('')
+    expect(dropdownText('Film Grain 去噪')).toContain('不设置')
     expect(screen.getByLabelText('SVT-AV1 附加参数 (-svtav1-params)')).toHaveValue('')
 
     await userEvent.type(screen.getByLabelText('Film Grain Synthesis 强度'), '4')
-    await userEvent.selectOptions(screen.getByLabelText('Film Grain 去噪'), 'true')
+    await chooseDropdown('Film Grain 去噪', 'true')
     expect(screen.getByLabelText('SVT-AV1 附加参数 (-svtav1-params)'))
       .toHaveValue('film-grain=4:film-grain-denoise=1')
 
@@ -165,25 +186,25 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await userEvent.clear(rawParameters)
     await userEvent.type(rawParameters, 'tune=0:film-grain=7:film-grain-denoise=0')
     expect(screen.getByLabelText('Film Grain Synthesis 强度')).toHaveValue(7)
-    expect(screen.getByLabelText('Film Grain 去噪')).toHaveValue('false')
+    expect(dropdownText('Film Grain 去噪')).toContain('关闭')
   })
 
   it('复制或禁用媒体流时解释参数缺失原因，并允许从空质量页返回视频编码', async () => {
     render(<BuilderPage />)
     await openPanel('视频编码')
-    await userEvent.selectOptions(screen.getByLabelText('视频处理方式'), 'copy')
+    await chooseDropdown('视频处理方式', 'copy')
     expect(screen.getByText('正在复制视频流')).toBeInTheDocument()
 
     await openPanel('质量控制')
     expect(screen.getByText('复制模式不需要质量控制')).toBeInTheDocument()
     expect(screen.getByText(/视频数据会原样写入输出文件/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '前往视频编码' }))
-    expect(screen.getByLabelText('视频处理方式')).toHaveValue('copy')
+    expect(dropdownText('视频处理方式')).toContain('复制')
 
     await openPanel('音频')
-    await userEvent.selectOptions(screen.getByLabelText('音频处理方式'), 'copy')
+    await chooseDropdown('音频处理方式', 'copy')
     expect(screen.getByText('正在复制音频流')).toBeInTheDocument()
-    await userEvent.selectOptions(screen.getByLabelText('音频处理方式'), 'disabled')
+    await chooseDropdown('音频处理方式', 'disabled')
     expect(screen.getByText('当前不输出音频')).toBeInTheDocument()
   })
 
@@ -208,12 +229,12 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<BuilderPage />)
     await openPanel('色彩管理')
 
-    await userEvent.selectOptions(screen.getByLabelText('色彩空间操作方式'), 'convert-and-tag')
-    await userEvent.selectOptions(screen.getByLabelText('矩阵 / 色彩空间'), 'bt709')
-    await userEvent.selectOptions(screen.getByLabelText('色域 / 原色'), 'bt709')
-    await userEvent.selectOptions(screen.getByLabelText('传输特性'), 'bt709')
-    await userEvent.selectOptions(screen.getByLabelText('色彩范围'), 'tv')
-    await userEvent.selectOptions(screen.getByLabelText('色调映射算法'), 'mobius')
+    await chooseDropdown('色彩空间操作方式', 'convert-and-tag')
+    await chooseDropdown('矩阵 / 色彩空间', 'bt709')
+    await chooseDropdown('色域 / 原色', 'bt709')
+    await chooseDropdown('传输特性', 'bt709')
+    await chooseDropdown('色彩范围', 'tv')
+    await chooseDropdown('色调映射算法', 'mobius')
 
     expect(useBuilderStore.getState().config.video.color?.operation).toBe('convert-and-tag')
     const command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
@@ -223,8 +244,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
   it('移动端模块选择器可切换到字幕栏且不会重复挂载工作台', async () => {
     render(<BuilderPage />)
-    const selector = screen.getByLabelText('当前模块')
-    await userEvent.selectOptions(selector, 'subtitle')
+    await chooseDropdown('当前模块', 'subtitle')
     const subtitleToggle = screen.getAllByRole('button', { name: '字幕' })
       .find((button) => button.hasAttribute('aria-expanded'))
     expect(subtitleToggle).toBeDefined()
@@ -258,9 +278,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    const selector = screen.getByLabelText('空间 AQ (-spatial_aq)')
-    expect(selector).toHaveValue('')
-    await userEvent.selectOptions(selector, 'false')
+    expect(dropdownText('空间 AQ (-spatial_aq)')).toContain('不设置')
+    await chooseDropdown('空间 AQ (-spatial_aq)', 'false')
 
     // 再验证 ProjectConfig 已同步；修复前 applyFieldChange 会拒绝此变更。
     const config = useBuilderStore.getState().config
@@ -270,7 +289,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     const value = sp['spatialAq'] ?? sp['h264_nvenc.spatialaq']
     expect(value).toBe(false)
 
-    await userEvent.selectOptions(selector, 'true')
+    await chooseDropdown('空间 AQ (-spatial_aq)', 'true')
 
     const config2 = useBuilderStore.getState().config
     const sp2 = config2.video.specialParameters
@@ -285,9 +304,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    const selector = screen.getByLabelText('时间 AQ (-temporal_aq)')
-    expect(selector).toHaveValue('')
-    await userEvent.selectOptions(selector, 'true')
+    expect(dropdownText('时间 AQ (-temporal_aq)')).toContain('不设置')
+    await chooseDropdown('时间 AQ (-temporal_aq)', 'true')
 
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters
@@ -304,9 +322,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    const selector = screen.getByLabelText('低功耗模式 (-low_power)')
-    expect(selector).toHaveValue('')
-    await userEvent.selectOptions(selector, 'true')
+    expect(dropdownText('低功耗模式 (-low_power)')).toContain('不设置')
+    await chooseDropdown('低功耗模式 (-low_power)', 'true')
 
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters
@@ -323,9 +340,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    const selector = screen.getByLabelText('空间 AQ (-spatial_aq)')
-    expect(selector).toHaveValue('')
-    await userEvent.selectOptions(selector, 'false')
+    expect(dropdownText('空间 AQ (-spatial_aq)')).toContain('不设置')
+    await chooseDropdown('空间 AQ (-spatial_aq)', 'false')
 
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters
@@ -378,14 +394,18 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<BuilderPage />)
     await openPanel('音频')
 
-    const application = screen.getByLabelText('编码应用类型')
-    expect(application).toHaveValue('')
-    expect(screen.getAllByRole('option', { name: '不设置（使用编码器默认）' }).length).toBeGreaterThan(0)
+    expect(dropdownText('编码应用类型')).toContain('不设置')
+    // 打开下拉并验证"不设置"选项存在
+    const appTrigger = screen.getByLabelText('编码应用类型')
+    await userEvent.click(appTrigger)
+    expect(screen.getByRole('option', { name: '不设置（使用编码器默认）' })).toBeInTheDocument()
+    // 关闭面板
+    await userEvent.click(appTrigger)
 
-    await userEvent.selectOptions(application, 'voip')
+    await chooseDropdown('编码应用类型', 'voip')
     expect(useBuilderStore.getState().config.audio.qualityValues.application).toBe('voip')
 
-    await userEvent.selectOptions(application, '')
+    await chooseDropdown('编码应用类型', '')
     expect(useBuilderStore.getState().config.audio.qualityValues.application).toBe('')
   })
 
@@ -462,8 +482,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<BuilderPage />)
     await openPanel('视频编码')
 
-    const encoderSelect = await screen.findByLabelText('视频编码器')
-    await userEvent.selectOptions(encoderSelect, 'h264_amf')
+    await chooseDropdown('视频编码器', 'h264_amf')
 
     await waitFor(() => {
       expect(useBuilderStore.getState().config.video.encoderId).toBe('h264_amf')
@@ -580,14 +599,13 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await openPanel('音频')
 
     const amount = screen.getByLabelText('音频码率 (-b:a)')
-    const unit = screen.getByLabelText('音频码率 (-b:a)单位')
     expect(amount).toHaveAttribute('type', 'number')
     expect(amount).toHaveValue(192)
-    expect(unit).toHaveValue('k')
+    expect(dropdownText('音频码率 (-b:a)单位')).toBe('kbps')
 
     await userEvent.clear(amount)
     await userEvent.type(amount, '256')
-    await userEvent.selectOptions(unit, 'M')
+    await chooseDropdown('音频码率 (-b:a)单位', 'M')
 
     expect(useBuilderStore.getState().config.audio.bitrate).toBe('256M')
   })
@@ -652,7 +670,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<BuilderPage />)
     await openPanel('流与封装')
 
-    await userEvent.selectOptions(screen.getByLabelText('输出容器'), 'mkv')
+    await chooseDropdown('输出容器', 'mkv')
     await openPanel('输入与输出')
 
     await waitFor(() => {

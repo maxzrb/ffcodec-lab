@@ -28,6 +28,7 @@ import { CommandEditor } from './components/CommandEditor'
 import { VisitCounter } from '../../features/analytics/VisitCounter'
 import { WorkbenchShell } from './components/WorkbenchShell'
 import { WorkbenchStateNotice } from './components/WorkbenchStateNotice'
+import { Dropdown } from './components/Dropdown'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
@@ -427,14 +428,13 @@ function SubtitleSectionActions({
   return (
     <>
       {tracks.length > 0 && (
-        <select
+        <Dropdown
           value={selectedTrackId}
-          onChange={(event) => setSelectedTrackId(event.target.value)}
-          aria-label={locale === 'zh-CN' ? '选择要删除的字幕轨道' : 'Select subtitle track to remove'}
+          options={tracks.map((track) => ({ value: track.id, label: track.id }))}
+          onChange={(v) => setSelectedTrackId(v)}
           className="section-action-select"
-        >
-          {tracks.map((track) => <option key={track.id} value={track.id}>{track.id}</option>)}
-        </select>
+          ariaLabel={locale === 'zh-CN' ? '选择要删除的字幕轨道' : 'Select subtitle track to remove'}
+        />
       )}
       <button type="button" className="button-ghost" onClick={onAdd}>{locale === 'zh-CN' ? '添加轨道' : 'Add track'}</button>
       <button

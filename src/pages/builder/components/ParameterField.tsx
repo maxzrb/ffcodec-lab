@@ -6,6 +6,7 @@
 
 import type { ResolvedField } from '../../../domain/presentation/resolved-field'
 import { useI18n } from '../../../features/i18n/i18n'
+import { Dropdown } from './Dropdown'
 
 interface ParameterFieldProps {
   field: ResolvedField
@@ -94,18 +95,20 @@ function renderControl(
 
     case 'select':
       return (
-        <select
+        <Dropdown
           id={controlId}
           value={String(field.value ?? '')}
-          onChange={(e) => onChange(e.target.value)}
+          options={field.options?.map((opt) => ({
+            value: opt.value,
+            label: text(opt.label),
+            description: opt.description ? text(opt.description) : undefined,
+            group: opt.group ? text(opt.group) : undefined,
+            badge: opt.badge ? text(opt.badge) : undefined,
+          })) ?? []}
+          onChange={(v) => onChange(v)}
           disabled={disabled}
-        >
-          {field.options?.map((opt) => (
-            <option key={String(opt.value)} value={String(opt.value)}>
-              {text(opt.label)}{opt.badge ? ` · ${text(opt.badge)}` : ''}
-            </option>
-          ))}
-        </select>
+          ariaLabel={text(field.label)}
+        />
       )
 
     case 'number':
@@ -128,19 +131,18 @@ function renderControl(
     case 'switch':
       if (field.optional) {
         return (
-          <select
+          <Dropdown
             id={controlId}
             value={field.value === true ? 'true' : field.value === false ? 'false' : ''}
-            onChange={(event) => {
-              const value = event.target.value
-              onChange(value === '' ? undefined : value === 'true')
-            }}
+            options={[
+              { value: '', label: text('不设置（使用编码器默认）') },
+              { value: 'true', label: text('开启') },
+              { value: 'false', label: text('关闭') },
+            ]}
+            onChange={(v) => onChange(v === '' ? undefined : v === 'true')}
             disabled={disabled}
-          >
-            <option value="">{text('不设置（使用编码器默认）')}</option>
-            <option value="true">{text('开启')}</option>
-            <option value="false">{text('关闭')}</option>
-          </select>
+            ariaLabel={text(field.label)}
+          />
         )
       }
       return (
@@ -279,17 +281,18 @@ function BitrateControl({
         onChange={(event) => emit(event.target.value, parsed.unit)}
         disabled={disabled}
       />
-      <select
-        aria-label={`${label}单位`}
+      <Dropdown
         value={parsed.unit}
-        onChange={(event) => emit(parsed.amount, event.target.value as BitrateUnit)}
+        options={[
+          { value: '', label: 'bps' },
+          { value: 'k', label: 'kbps' },
+          { value: 'M', label: 'Mbps' },
+        ]}
+        onChange={(v) => emit(parsed.amount, v as BitrateUnit)}
         disabled={disabled}
         className="unit-input__unit"
-      >
-        <option value="">bps</option>
-        <option value="k">kbps</option>
-        <option value="M">Mbps</option>
-      </select>
+        ariaLabel={`${label}单位`}
+      />
     </div>
   )
 }

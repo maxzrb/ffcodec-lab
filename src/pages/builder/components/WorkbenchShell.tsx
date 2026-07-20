@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { ResolvedWorkspacePanel } from '../../../domain/presentation/resolved-field'
 import { useI18n } from '../../../features/i18n/i18n'
+import { Dropdown } from './Dropdown'
 
 interface WorkbenchShellProps {
   panels: ResolvedWorkspacePanel[]
@@ -50,9 +51,12 @@ export function WorkbenchShell({
     <div className={`workbench-shell ${sidebarCollapsed ? 'workbench-shell--nav-collapsed' : ''}`}>
       <label className="workbench-mobile-nav">
         <span>{locale === 'zh-CN' ? '当前模块' : 'Current module'}</span>
-        <select value={activePanelId} onChange={(event) => onPanelChange(event.target.value)}>
-          {panels.map((panel) => <option key={panel.id} value={panel.id}>{text(panel.label)}</option>)}
-        </select>
+        <Dropdown
+          value={activePanelId}
+          options={panels.map((panel) => ({ value: panel.id, label: text(panel.label) }))}
+          onChange={(v) => onPanelChange(v)}
+          ariaLabel={locale === 'zh-CN' ? '当前模块' : 'Current module'}
+        />
       </label>
 
       <nav className="workbench-nav" aria-label={locale === 'zh-CN' ? '参数模块' : 'Parameter modules'}>
