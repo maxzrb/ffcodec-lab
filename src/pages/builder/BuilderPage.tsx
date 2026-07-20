@@ -249,7 +249,7 @@ export function BuilderPage() {
     <main className="builder-page">
       <header className="product-header">
         <div className="product-header__brand">
-          <div className="brand-mark" aria-hidden="true">FF</div>
+          <img className="brand-mark" src="/assets/ffcodec-lab-icon.svg" alt="FFCodec Lab" />
           <div>
             <p className="eyebrow">FFCodec Lab · Command Workbench</p>
             <h1>{isZh ? 'FFmpeg 命令生成器' : 'FFmpeg Command Builder'}</h1>
