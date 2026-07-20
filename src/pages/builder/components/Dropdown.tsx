@@ -2,9 +2,12 @@
 // Dropdown — custom select replacement with frosted glass popup.
 // Replaces native <select> so the options panel can use
 // backdrop-filter blur (毛玻璃 / frosted glass).
+// Panel is rendered via Portal to document.body to avoid
+// parent overflow:hidden clipping.
 // ============================================================
 
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
 
 export interface DropdownOption {
   value: string | number
@@ -25,6 +28,12 @@ interface DropdownProps {
   placeholder?: string
 }
 
+interface PanelRect {
+  top: number
+  left: number
+  width: number
+}
+
 export function Dropdown({
   id,
   value,
@@ -37,12 +46,32 @@ export function Dropdown({
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [focusIndex, setFocusIndex] = useState(-1)
+  const [panelRect, setPanelRect] = useState<PanelRect>({ top: 0, left: 0, width: 0 })
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const optionRefs = useRef<Map<number, HTMLButtonElement>>(new Map())
 
   const selectedOption = options.find((opt) => String(opt.value) === value)
   const displayText = selectedOption?.label ?? placeholder ?? ''
+
+  // Compute panel position from trigger bounding rect
+  const updatePanelRect = useCallback(() => {
+    if (!triggerRef.current) return
+    const rect = triggerRef.current.getBoundingClientRect()
+    setPanelRect({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+  }, [])
+
+  // Update position on scroll / resize
+  useEffect(() => {
+    if (!open) return
+    updatePanelRect()
+    window.addEventListener('scroll', updatePanelRect, { passive: true })
+    window.addEventListener('resize', updatePanelRect)
+    return () => {
+      window.removeEventListener('scroll', updatePanelRect)
+      window.removeEventListener('resize', updatePanelRect)
+    }
+  }, [open, updatePanelRect])
 
   // Close on click outside
   useEffect(() => {
@@ -94,6 +123,7 @@ export function Dropdown({
         case ' ':
           event.preventDefault()
           if (!open) {
+            updatePanelRect()
             setOpen(true)
           } else if (focusIndex >= 0) {
             const opt = options[focusIndex]
@@ -103,6 +133,7 @@ export function Dropdown({
         case 'ArrowDown':
           event.preventDefault()
           if (!open) {
+            updatePanelRect()
             setOpen(true)
           } else {
             setFocusIndex((prev) => {
@@ -130,7 +161,7 @@ export function Dropdown({
           break
       }
     },
-    [open, focusIndex, options, selectOption],
+    [open, focusIndex, options, selectOption, updatePanelRect],
   )
 
   // Group options by group label
@@ -145,6 +176,61 @@ export function Dropdown({
     .filter(Boolean)
     .join(' ')
 
+  const panelElement = open && (
+    <div
+      ref={panelRef}
+      className="custom-select-panel"
+      role="listbox"
+      aria-label={ariaLabel}
+      style={{
+        position: 'fixed',
+        top: panelRect.top,
+        left: panelRect.left,
+        width: panelRect.width,
+        zIndex: 200,
+      }}
+    >
+      {grouped.map((group, groupIdx) => (
+        <div key={group.label ?? `__nogroup_${groupIdx}`} className="custom-select-panel__group">
+          {group.label && (
+            <div className="custom-select-panel__group-label">{group.label}</div>
+          )}
+          {group.options.map((opt) => {
+            const optIndex = options.indexOf(opt)
+            const isSelected = String(opt.value) === value
+            const isFocused = optIndex === focusIndex
+            return (
+              <button
+                key={String(opt.value)}
+                ref={(el) => {
+                  if (el) optionRefs.current.set(optIndex, el)
+                  else optionRefs.current.delete(optIndex)
+                }}
+                type="button"
+                data-value={String(opt.value)}
+                className={`custom-select-panel__option ${
+                  isSelected ? 'custom-select-panel__option--selected' : ''
+                } ${isFocused ? 'custom-select-panel__option--focused' : ''}`}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => selectOption(String(opt.value))}
+                onMouseEnter={() => setFocusIndex(optIndex)}
+              >
+                <span className="custom-select-panel__label">
+                  {opt.label}
+                  {opt.badge && <span className="custom-select__badge">{opt.badge}</span>}
+                </span>
+                {opt.description && (
+                  <span className="custom-select-panel__desc">{opt.description}</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+
   return (
     <div className="custom-select-wrapper">
       <button
@@ -152,7 +238,11 @@ export function Dropdown({
         id={id}
         type="button"
         className={triggerClasses}
-        onClick={() => !disabled && setOpen((prev) => !prev)}
+        onClick={() => {
+          if (disabled) return
+          if (!open) updatePanelRect()
+          setOpen((prev) => !prev)
+        }}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         role="combobox"
@@ -175,53 +265,7 @@ export function Dropdown({
         </span>
       </button>
 
-      {open && (
-        <div
-          ref={panelRef}
-          className="custom-select-panel"
-          role="listbox"
-          aria-label={ariaLabel}
-        >
-          {grouped.map((group, groupIdx) => (
-            <div key={group.label ?? `__nogroup_${groupIdx}`} className="custom-select-panel__group">
-              {group.label && (
-                <div className="custom-select-panel__group-label">{group.label}</div>
-              )}
-              {group.options.map((opt) => {
-                const optIndex = options.indexOf(opt)
-                const isSelected = String(opt.value) === value
-                const isFocused = optIndex === focusIndex
-                return (
-                  <button
-                    key={String(opt.value)}
-                    ref={(el) => {
-                      if (el) optionRefs.current.set(optIndex, el)
-                      else optionRefs.current.delete(optIndex)
-                    }}
-                    type="button"
-                    data-value={String(opt.value)}
-                    className={`custom-select-panel__option ${
-                      isSelected ? 'custom-select-panel__option--selected' : ''
-                    } ${isFocused ? 'custom-select-panel__option--focused' : ''}`}
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => selectOption(String(opt.value))}
-                    onMouseEnter={() => setFocusIndex(optIndex)}
-                  >
-                    <span className="custom-select-panel__label">
-                      {opt.label}
-                      {opt.badge && <span className="custom-select__badge">{opt.badge}</span>}
-                    </span>
-                    {opt.description && (
-                      <span className="custom-select-panel__desc">{opt.description}</span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          ))}
-        </div>
-      )}
+      {panelElement && createPortal(panelElement, document.body)}
     </div>
   )
 }
