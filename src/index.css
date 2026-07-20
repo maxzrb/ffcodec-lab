@@ -774,9 +774,24 @@ code {
   text-align: center;
 }
 
-.workbench-content,
+.workbench-content {
+  min-width: 0;
+  animation: panel-slide-in 220ms ease-out;
+}
+
 .workbench-inspector {
   min-width: 0;
+}
+
+@keyframes panel-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .workbench-mobile-nav,
@@ -808,6 +823,10 @@ code {
   background: var(--surface-strong);
   color: var(--text);
   font-weight: 700;
+}
+
+.inspector-panel {
+  animation: panel-slide-in 180ms ease-out;
 }
 
 .inspector-tab__badge {
@@ -991,10 +1010,24 @@ code {
 
 .parameter-section__body {
   display: grid;
-  gap: 7px;
+  grid-template-rows: 1fr;
   border-top: 1px solid var(--border);
-  padding: 10px;
   background: var(--section-surface);
+  transition: grid-template-rows 280ms ease;
+}
+
+.parameter-section__body--collapsed {
+  grid-template-rows: 0fr;
+}
+
+.parameter-section__body-inner {
+  overflow: hidden;
+}
+
+.parameter-section__body--expanded .parameter-section__body-inner {
+  padding: 10px;
+  display: grid;
+  gap: 7px;
 }
 
 .param-field {
@@ -1359,6 +1392,33 @@ code {
   display: grid;
   gap: 8px;
   padding: 9px;
+}
+
+.diagnostic-panel__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: var(--text-dim);
+}
+
+.diagnostic-panel__empty-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-glow);
+  color: var(--accent-strong);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.diagnostic-panel__empty p {
+  margin: 0;
+  font-size: 13px;
 }
 
 .diagnostic-card {

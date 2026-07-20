@@ -218,7 +218,9 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     await userEvent.click(pixelFormatSection)
     expect(pixelFormatSection).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByLabelText('像素格式 (pix_fmt)')).not.toBeInTheDocument()
+    // 折叠后 body 容器添加 collapsed 类（grid-template-rows: 0fr + overflow:hidden）
+    const body = pixelFormatSection.closest('.parameter-section')?.querySelector('.parameter-section__body')
+    expect(body).toHaveClass('parameter-section__body--collapsed')
 
     await openPanel('流与封装')
     expect(screen.getByRole('button', { name: /^流选择/ })).toBeInTheDocument()

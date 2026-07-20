@@ -338,7 +338,7 @@ export function BuilderPage() {
               </button>
             </div>
             {inspectorTab === 'command' ? (
-              <>
+              <div className="inspector-panel" key="command">
                 <CommandPreview
                   commandPlan={pipeline.commandPlan}
                   renderedCommand={pipeline.renderedCommand}
@@ -353,19 +353,21 @@ export function BuilderPage() {
                   generatedCommand={commandPreviewCleared ? '' : pipeline.renderedCommand.text}
                   cleared={commandPreviewCleared}
                 />
-              </>
+              </div>
             ) : (
-              <DiagnosticPanel
-                diagnostics={view.messages}
-                catalog={catalog}
-                getOriginLabel={(originId) => {
-                  const field = view.fieldIndex[originId]
-                    ?? Object.values(view.fieldIndex).find((candidate) => originId.startsWith(candidate.id))
-                  return field ? text(field.label) : originId
-                }}
-                onLocate={handleTokenClick}
-                onApplyFix={handleApplyDiagnosticFix}
-              />
+              <div className="inspector-panel" key="diagnostics">
+                <DiagnosticPanel
+                  diagnostics={view.messages}
+                  catalog={catalog}
+                  getOriginLabel={(originId) => {
+                    const field = view.fieldIndex[originId]
+                      ?? Object.values(view.fieldIndex).find((candidate) => originId.startsWith(candidate.id))
+                    return field ? text(field.label) : originId
+                  }}
+                  onLocate={handleTokenClick}
+                  onApplyFix={handleApplyDiagnosticFix}
+                />
+              </div>
             )}
           </>
         )}

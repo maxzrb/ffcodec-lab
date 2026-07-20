@@ -96,7 +96,7 @@ export function WorkbenchShell({
         ))}
       </nav>
 
-      <section className="workbench-content">{content}</section>
+      <section className="workbench-content" key={activePanelId}>{content}</section>
       <button
         type="button"
         className="workbench-mobile-inspector-toggle"

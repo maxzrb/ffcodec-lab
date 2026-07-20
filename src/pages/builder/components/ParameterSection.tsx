@@ -124,8 +124,8 @@ export function ParameterSection({
         {actions && <div className="parameter-section__actions">{actions}</div>}
       </div>
 
-      {expanded && (
-        <div className="parameter-section__body">
+      <div className={`parameter-section__body ${expanded ? 'parameter-section__body--expanded' : 'parameter-section__body--collapsed'}`}>
+        <div className="parameter-section__body-inner">
           {navigableGroups.length > 1 && <GroupNav groups={navigableGroups} text={text} />}
           {hasGroups
             ? groups.map((group) => (
@@ -137,7 +137,7 @@ export function ParameterSection({
             : groups[0]?.fields.map(renderField)
           }
         </div>
-      )}
+      </div>
     </section>
   )
 }

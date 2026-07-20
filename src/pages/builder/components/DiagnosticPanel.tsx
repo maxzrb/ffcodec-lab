@@ -20,7 +20,6 @@ export function DiagnosticPanel({
   onApplyFix,
 }: DiagnosticPanelProps) {
   const { locale } = useI18n()
-  if (diagnostics.length === 0) return null
 
   return (
     <section className="diagnostic-panel" aria-label={locale === 'zh-CN' ? '诊断与建议' : 'Diagnostics and suggestions'}>
@@ -28,8 +27,14 @@ export function DiagnosticPanel({
         <strong>{locale === 'zh-CN' ? '诊断与建议' : 'Diagnostics & suggestions'}</strong>
         <span>{diagnostics.length}</span>
       </div>
-      <div className="diagnostic-panel__list">
-        {diagnostics.map((diagnostic, index) => {
+      {diagnostics.length === 0 ? (
+        <div className="diagnostic-panel__empty">
+          <span className="diagnostic-panel__empty-icon" aria-hidden="true">✓</span>
+          <p>{locale === 'zh-CN' ? '无诊断信息' : 'No diagnostics'}</p>
+        </div>
+      ) : (
+        <div className="diagnostic-panel__list">
+          {diagnostics.map((diagnostic, index) => {
           const copy = presentDiagnostic(diagnostic, locale)
           const fixes = buildFixSuggestions(diagnostic, catalog)
           return (
@@ -66,7 +71,8 @@ export function DiagnosticPanel({
             </article>
           )
         })}
-      </div>
+        </div>
+      )}
     </section>
   )
 }
