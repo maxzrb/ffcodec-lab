@@ -21,7 +21,7 @@ export const av1Qsv: EncoderDefinition = {
 
   capabilityScope: {
     ffmpeg: { minVersion: '7.0' },
-    buildRequirements: ['--enable-libmfx', '--enable-encoder=av1_qsv'],
+    buildRequirements: ['--enable-qsv'],
     hardware: [
       {
         vendor: 'intel',

@@ -21,7 +21,7 @@ export const hevcQsv: EncoderDefinition = {
 
   capabilityScope: {
     ffmpeg: { minVersion: '3.4' },
-    buildRequirements: ['--enable-libmfx', '--enable-encoder=hevc_qsv'],
+    buildRequirements: ['--enable-qsv'],
     hardware: [
       {
         vendor: 'intel',
@@ -93,14 +93,14 @@ export const hevcQsv: EncoderDefinition = {
     ],
     notes: [
       'HEVC QSV 需要 Broadwell (5th Gen) 以上 Intel GPU',
-      'QSV 编码器可用性取决于 FFmpeg --enable-libmfx 编译',
+      'QSV 编码器可用性取决于 FFmpeg --enable-qsv 编译（Intel oneVPL）',
       '实际可用性取决于 Intel 图形硬件、驱动和运行时',
       'FFCodec 只生成命令 — 未检测本机环境',
     ],
   },
 
   availabilityNote:
-    'Intel QSV HEVC 硬件编码器。需要 Broadwell 以上 Intel GPU 和 FFmpeg --enable-libmfx 编译。FFCodec 不检测本机硬件。',
+    'Intel QSV HEVC 硬件编码器。需要 Broadwell 以上 Intel GPU 和 FFmpeg --enable-qsv 编译。FFCodec 不检测本机硬件。',
 
   capabilities: {
     copy: false,

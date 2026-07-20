@@ -167,6 +167,18 @@ const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
       guidance: 'Prefer a confirmed container, or test a short sample with FFmpeg and the target player first.',
     },
   },
+  'info.category.placeholder': {
+    'zh-CN': {
+      title: '当前编解码标准尚无可用编码器',
+      explanation: '该标准在 FFmpeg 8.1.2 发行版中没有内置编码器实现，无法执行编码操作。',
+      guidance: '请切换到其他有编码器支持的标准（如 H.264、HEVC、AV1），或等待 FFmpeg 上游合并相应编码器。',
+    },
+    en: {
+      title: 'No encoder available for this codec standard',
+      explanation: 'This standard has no built-in encoder in FFmpeg 8.1.2, encoding cannot be performed.',
+      guidance: 'Switch to a standard with encoder support (e.g. H.264, HEVC, AV1), or wait for FFmpeg upstream to merge a corresponding encoder.',
+    },
+  },
   'info.compat.transcode': {
     'zh-CN': {
       title: '建议转码以提高兼容性',

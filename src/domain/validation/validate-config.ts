@@ -1,5 +1,6 @@
 import type { ProjectConfig } from '../config/project-config'
 import type { Catalog } from '../catalog/catalog-types'
+import { CODEC_CATEGORIES } from '../catalog/catalog-types'
 import type { EvaluationResult, Diagnostic } from '../rules/rule-types'
 import { validateCompatibility } from './compatibility-validator'
 import { RuleIndex } from '../rules/rule-index'
@@ -23,11 +24,14 @@ export function validateConfig(
   const colorMessages = validateColorProcessing(config)
   const targetSizeMessages = calculateTargetSize(config, catalog).diagnostics
 
+  const placeholderMessages = validatePlaceholderCategory(config)
+
   return [
     ...ruleResult.messages,
     ...compatMessages,
     ...subtitleMessages,
     ...colorMessages,
+    ...placeholderMessages,
     ...targetSizeMessages,
   ]
 }
@@ -100,6 +104,25 @@ function validateSubtitleTracks(config: ProjectConfig): Diagnostic[] {
     context: {
       trackIds: unknownCopyTracks.map((track) => track.id),
       containerId: config.output.containerId,
+    },
+  }]
+}
+
+function validatePlaceholderCategory(config: ProjectConfig): Diagnostic[] {
+  if (config.video.mode !== 'encode' || !config.video.codecCategory) return []
+
+  const category = CODEC_CATEGORIES.find((c) => c.id === config.video.codecCategory)
+  if (!category?.placeholder) return []
+
+  return [{
+    code: 'info.category.placeholder',
+    severity: 'info',
+    category: 'availability',
+    message: category.placeholderNote ?? `"${category.label}" 分类在当前 FFmpeg 发行版中暂无可用编码器。`,
+    originIds: ['video.codecCategory', 'video.encoderId'],
+    context: {
+      codecCategory: config.video.codecCategory,
+      placeholderNote: category.placeholderNote,
     },
   }]
 }

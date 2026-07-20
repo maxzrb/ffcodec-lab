@@ -39,7 +39,7 @@ export const CODEC_CATEGORIES: CodecCategoryDef[] = [
   { id: 'hevc', label: 'H.265 / HEVC', families: ['hevc'] },
   { id: 'vvc', label: 'H.266 / VVC', families: ['vvc'] },
   { id: 'av1', label: 'AV1', families: ['av1'] },
-  { id: 'av2', label: 'AV2', families: [], placeholder: true, placeholderNote: '截至 FFmpeg 8.1.2 发行版，AOMedia 尚未发布 AV2 正式规范，FFmpeg 中无任何 AV2 编解码器。保留以等待标准发布。' },
+  { id: 'av2', label: 'AV2', families: [], placeholder: true, placeholderNote: 'AV2 正式规范已于 2025 年 5 月由 AOMedia 发布，但截至 FFmpeg 8.1.2 发行版，上游尚未合并任何 AV2 编解码器。保留以等待 FFmpeg 实现。' },
   { id: 'vp8', label: 'VP8', families: ['vp8'] },
   { id: 'vp9', label: 'VP9', families: ['vp9'] },
   { id: 'avs', label: 'AVS (AVS1-P2)', families: ['avs'] },

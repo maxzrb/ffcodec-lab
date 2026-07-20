@@ -17,7 +17,7 @@ export const av1Vulkan: EncoderDefinition = {
   mediaType: 'video',
   family: 'av1' as const,
   implementation: 'other' as const,
-  availabilityClass: 'hardware-dependent',
+  availabilityClass: 'experimental',
 
   capabilityScope: {
     ffmpeg: { minVersion: '8.0' },
@@ -57,7 +57,7 @@ export const av1Vulkan: EncoderDefinition = {
   },
 
   availabilityNote:
-    '跨厂商 Vulkan Video AV1 硬件编码器（FFmpeg 8.0+，实验性）。统一 API 覆盖 NVIDIA/AMD/Intel AV1 编解码硬件。需 GPU 驱动暴露 Vulkan Video 扩展。',
+    '⚠️ 实验性：跨厂商 Vulkan Video AV1 硬件编码器（FFmpeg 8.0+）。FFmpeg 8.1.2 中标记为实验性功能，API 与行为可能在未来版本变化。需 GPU 驱动暴露 VK_KHR_video_encode_av1 扩展。',
 
   capabilities: {
     copy: false,

@@ -419,7 +419,238 @@ const ENGLISH_TEXT: Record<string, string> = {
   'subtitles（通用字幕）': 'subtitles (general subtitles)',
 }
 
-/** 翻译目录标签；未知的技术名词保持原样，不猜测含义。 */
+/** Chinese → English term dictionary applied BEFORE pattern matching. */
+const ZH_TERM_MAP: Record<string, string> = {
+  // -- 编码 / 解码 / 处理 -----------------------
+  编码器: 'encoder', 硬件编码器: 'hardware encoder', 软件编码器: 'software encoder',
+  编码: 'encoding', 解码: 'decoding', 编解码: 'codec',
+  转码: 'transcoding', 压缩: 'compression',
+  // -- 帧类型 ------------------------------------
+  'I 帧': 'I-frame', 'P 帧': 'P-frame', 'B 帧': 'B-frame',
+  '关键帧': 'keyframe', '参考帧': 'reference frames',
+  '帧内': 'intra', '帧间': 'inter',
+  // -- 码率 / 质量 ------------------------------
+  码率: 'bitrate', 目标码率: 'target bitrate', 最大码率: 'maximum bitrate',
+  最小码率: 'minimum bitrate', 平均码率: 'average bitrate',
+  恒定码率: 'constant bitrate', 可变码率: 'variable bitrate',
+  动态码率: 'variable bitrate', 峰值码率: 'peak bitrate',
+  恒定量化参数: 'constant quantizer', 恒定量化: 'constant quantizer',
+  '恒定 QP': 'constant QP', 恒定质量: 'constant quality',
+  固定量化参数: 'constant quantizer',
+  // -- 量化 ------------------------------------
+  量化参数: 'quantizer', 量化值: 'quantizer',
+  量化: 'quantization', 量化矩阵: 'quantization matrix',
+  // -- 控制 / 模式 ------------------------------
+  质量控制: 'quality control', 质量控制模式: 'rate-control mode',
+  智能恒定质量: 'intelligent constant quality',
+  前瞻智能恒定质量: 'look-ahead intelligent quality',
+  二次编码: 'two-pass encoding', 双遍: 'two-pass',
+  双遍编码: 'two-pass encoding', 双遍可变码率: 'two-pass VBR',
+  质量可变码率: 'quality VBR',
+  智能恒定: 'intelligent constant',
+  // -- 滤波 / 处理 ------------------------------
+  去块滤波: 'deblocking filter', 环路滤波: 'loop filter',
+  熵编码: 'entropy coding', 熵编码器: 'entropy coder',
+  降噪: 'denoising', 去噪: 'denoise',
+  锐化: 'sharpening', 去隔行: 'deinterlacing',
+  自适应量化: 'adaptive quantization',
+  空间自适应量化: 'spatial AQ', 时间自适应量化: 'temporal AQ',
+  场景切换: 'scene change', 场景检测: 'scene detection',
+  // -- 选项 / 配置 ------------------------------
+  编码配置: 'profile', 配置文件: 'profile',
+  编码预设: 'preset', 质量预设: 'quality preset',
+  使用场景: 'usage', 场景优化: 'tuning',
+  像素格式: 'pixel format', 采样格式: 'sample format',
+  压缩级别: 'compression level',
+  编码级别: 'encoding level', 级别: 'level',
+  附加参数: 'advanced options', 编码算法: 'encoding algorithm',
+  // -- 线程 / 性能 ------------------------------
+  编码线程: 'encoding threads', 编码线程数: 'encoding threads',
+  编码速度: 'encoding speed', 速度等级: 'speed level',
+  多线程: 'multithreading', 行级多线程: 'row-based multithreading',
+  // -- 异步 / 延迟 ------------------------------
+  异步深度: 'async depth', 异步编码深度: 'async encoding depth',
+  低延迟: 'low latency', 超低延迟: 'ultra-low latency',
+  零延迟: 'zero latency',
+  // -- 硬件 / GPU -------------------------------
+  'GPU 选择': 'GPU selection', 'GPU 设备': 'GPU device',
+  硬件: 'hardware', 软件: 'software',
+  // -- 模式 / 状态 ------------------------------
+  前瞻: 'lookahead', 前瞻深度: 'look-ahead depth',
+  前瞻帧数: 'lookahead frames', 前瞻距离: 'lookahead distance',
+  前瞻等级: 'lookahead level',
+  前向参考帧: 'forward reference frames',
+  码率控制前瞻: 'rate-control lookahead',
+  码率控制: 'rate control',
+  // -- 滤波参数 --------------------------------
+  'SAO 滤波': 'SAO filter',
+  'CDEF 滤波': 'CDEF filter',
+  // -- 切片 / Tile -----------------------------
+  'Tile 列数': 'tile columns', 'Tile 行数': 'tile rows',
+  'Tile 总数': 'total tiles',
+  'Slice 数量': 'slice count', 'Slice 大小': 'slice size',
+  // -- 质量 / 速度 ------------------------------
+  质量: 'quality', 最高质量: 'highest quality',
+  质量优先: 'quality priority', 速度优先: 'speed priority',
+  最快: 'fastest', 最慢: 'slowest', 极快: 'very fast',
+  中速: 'balanced', 快速: 'fast',
+  常规质量: 'good quality',
+  平衡: 'balanced', 均衡: 'balanced',
+  音乐: 'music', 游戏: 'game',
+  // -- 搜索 / 运动估计 --------------------------
+  运动估计: 'motion estimation',
+  '全搜索': 'full search', '菱形': 'diamond',
+  '六边形': 'hexagon', '星形': 'star',
+  '非均匀多六边形': 'uneven multi-hexagon',
+  '连续消除': 'sea',
+  // -- 其他常用词 --------------------------------
+  开启: 'on', 关闭: 'off', 启用: 'enabled', 禁用: 'disabled',
+  自动: 'auto', 默认: 'default', 推荐: 'recommended',
+  无损: 'lossless', 有损: 'lossy',
+  强度: 'strength', 阈值: 'threshold',
+  区间: 'interval', 周期: 'period',
+  范围: 'range', 搜索: 'search',
+  增强: 'enhanced',
+  完整: 'full', 部分: 'partial',
+  亮度: 'luma', 色度: 'chroma',
+  条带: 'stripes', 切片: 'slices',
+  主观质量: 'subjective quality',
+  客观质量: 'objective quality',
+  视觉质量: 'visual quality',
+  视觉调优: 'visual tuning',
+  心理视觉: 'psychovisual',
+  感知优化: 'perceptual optimization',
+  加权预测: 'weighted prediction',
+  运动: 'motion',
+  补偿: 'compensation',
+  预测: 'prediction',
+  参考: 'reference',
+  '上下文模型': 'context model',
+  '上下文': 'context',
+  分区: 'partitions',
+  宏块: 'macroblock',
+  子像素: 'sub-pixel',
+  '半像素': 'half-pixel',
+  '四分之一像素': 'quarter-pixel',
+  缓冲区: 'buffer',
+  缓冲: 'buffer',
+  切换: 'switching',
+  检测: 'detection',
+  插入: 'insertion',
+  模式: 'mode',
+  类型: 'type',
+  策略: 'strategy',
+  限制: 'limit',
+  约束: 'constraint',
+  恢复: 'recovery',
+  错误: 'error',
+  信令: 'signaling',
+  元数据: 'metadata',
+  哈希: 'hash',
+  校验: 'checksum',
+  汇编优化: 'assembly optimization',
+  逻辑处理器: 'logical processors',
+  调试日志: 'debug log',
+  厂商标识: 'vendor ID',
+  其他: 'other',
+  // -- more specific technical terms ---------------
+  小型: 'small', 大型: 'large',
+  自动选择: 'auto', 全部开启: 'all on',
+  开放: 'open', '封闭 GOP': 'closed GOP',
+  '开放 GOP': 'open GOP',
+  金字塔: 'pyramid', '方差': 'variance', '方差 AQ': 'variance AQ',
+  '自动方差': 'auto variance', '复杂度': 'complexity', '复杂度 AQ': 'complexity AQ',
+  基准: 'baseline', 加权: 'weighted', 简单加权: 'simple weighted',
+  智能加权: 'smart weighted', 循环: 'cyclic', 轻度: 'mild', 中度: 'moderate',
+  垂直条带: 'vertical stripes', 水平条带: 'horizontal stripes',
+  每个: 'each', '每个 GOP': 'each GOP', '每个 IDR': 'each IDR',
+  '仅非关键帧': 'non-keyframe only',
+  暗景偏向: 'dark scene bias',
+  不插入: 'do not insert', 分隔符: 'separator',
+  偏向: 'bias', 使用偏向: 'bias',
+  放置策略: 'placement strategy', 自适应策略: 'adaptive strategy',
+  最优压缩: 'best compression', '最佳压缩': 'best compression',
+  '多线程，生产推荐': 'multi-threaded, production recommended',
+  生产推荐: 'production recommended', 存档推荐: 'archive recommended',
+  收敛速度: 'convergence speed', '精度': 'accuracy',
+  质量优化: 'quality optimization', 通道位深: 'channel bit depth',
+  偏移: 'offset', 最大参考帧: 'maximum reference frames',
+  降噪帧数: 'denoise frame count', 降噪强度: 'denoise strength',
+  大小: 'size', 错误恢复: 'error resilience',
+  帧级并行: 'frame-parallel', 帧级并行解码: 'frame-parallel decoding',
+  帧内块复制: 'intra block copy',
+  限制参考帧候选: 'limit reference frame candidates',
+  心理视觉降噪: 'psychovisual denoise',
+  '快速 P-skip': 'fast P-skip', '快速帧内': 'fast intra',
+  'B 帧帧内': 'B-frame intra',
+  '提前 Skip 检测': 'early skip detection',
+  每帧重复: 'repeat per frame',
+  覆盖层: 'overlay', 覆盖层增强: 'overlay enhancement',
+  时域滤波: 'temporal filtering', 时域滤波强度: 'temporal filtering strength',
+  全局运动: 'global motion',
+  环路恢复: 'loop restoration',
+  '非去块模式': 'non-deblock mode',
+  '选择性 SAO': 'selective SAO',
+  '限制 CU 模式': 'limit CU modes',
+  运动估计方法: 'motion estimation method',
+  拼接模式: 'concatenation mode',
+  分割: 'segmentation', 请求: 'request',
+  '查询超时': 'query timeout',
+  '前置帧模式': 'frames before mode', '后置帧模式': 'frames after mode',
+  '要求软件编码': 'require software encoding',
+  关键帧间隔: 'keyframe interval',
+  帧内刷新类型: 'intra refresh type',
+  重复头信息: 'repeat headers',
+  'SEI 头插入模式': 'SEI header insertion mode',
+  '单 SEI NAL 单元': 'single SEI NAL unit',
+  '单一 SEI NAL': 'single SEI NAL',
+  '图像时序 SEI': 'picture timing SEI',
+  恢复点: 'recovery point',
+  '关闭 SAO 滤波': 'disable SAO filter',
+  '关闭 CU-tree': 'disable CU-tree',
+  '关闭帧内强平滑': 'disable strong intra smoothing',
+  '关闭场景检测': 'disable scene detection',
+  '关闭开放 GOP': 'disable open GOP',
+  '关闭约束帧内预测': 'disable constrained intra prediction',
+  '不写入编码器信息': 'do not write encoder info',
+  敏感度: 'sensitivity', 曲线压缩: 'curve compression',
+  步长: 'step size',
+  '心理视觉 RDO-Q': 'psychovisual RDO-Q',
+  '心理视觉 RDO': 'psychovisual RDO',
+  'AVBR 精度': 'AVBR accuracy', 'AVBR 收敛速度': 'AVBR convergence speed',
+  // -- remaining specific terms
+  位深: 'bit depth', 八分位: 'octile',
+  '八分位阈值': 'octile threshold',
+  '平面': 'planar',
+  '根据': 'by', '根据 profile': 'by profile',
+  '指标': 'metric', '调优模式': 'tuning mode',
+  常量: 'constant', '计算 SSE': 'compute SSE',
+  '预分析': 'pre-analysis',
+  '前置帧': 'frames before', '后置帧': 'frames after',
+  '内部': 'internal', 'Surface': 'surface', '内部 Surface 数': 'internal surface count',
+  '初始': 'initial', '初始 I 帧': 'initial I-frame', '初始 P 帧': 'initial P-frame', '初始 B 帧': 'initial B-frame',
+  '实时': 'real-time',
+  摄像头: 'webcam',
+  存档: 'archive',
+  显示回放: 'display playback',
+  低功耗: 'low-power',
+  节能优先: 'power efficiency',
+  允许软件回退: 'allow software fallback',
+  预编码分析: 'pre-encode analysis',
+  扩展码率控制: 'extended bitrate control',
+  受限: 'constrained',
+  // -- 特殊编码器名称片段 ------------------------
+  无损存档编码: 'lossless archiving encoder',
+  '需补丁': 'requires patch',
+  // -- 质控模式标签 ------------------------------
+  决定质量: 'determines quality',
+  // -- 编码器/控件包含性提示 ----------------------
+  无: 'none',
+}
+
+/** Translate catalog labels by checking exact match first, then applying
+ *  a comprehensive Chinese→English term map followed by structural patterns.
+ *  Unknown technical nouns are preserved; only known Chinese terms are replaced. */
 export function translateText(value: string, locale: Locale): string {
   if (locale === 'zh-CN') return value
   const exact = ENGLISH_TEXT[value]
@@ -430,24 +661,58 @@ export function translateText(value: string, locale: Locale): string {
   const subtitleTrack = value.match(/^字幕: (.+)$/)
   if (subtitleTrack) return `Subtitle: ${subtitleTrack[1]}`
 
-  return value
-    .replace(/（恒定码率）|\(恒定码率\)/g, '(CBR)')
-    .replace(/（可变码率）|\(可变码率\)/g, '(VBR)')
-    .replace(/（恒定质量）|\(恒定质量\)/g, '(constant quality)')
-    .replace(/（恒定量化）|\(恒定量化\)/g, '(constant quantizer)')
-    .replace(/（固定量化参数）/g, '(constant quantizer)')
-    .replace(/ — 推荐/g, ' — recommended')
-    .replace(/ — 默认/g, ' — default')
-    .replace(/ — 最快/g, ' — fastest')
-    .replace(/ — 最慢/g, ' — slowest')
-    .replace(/ — 最高质量/g, ' — highest quality')
-    .replace(/ — 质量优先/g, ' — quality')
-    .replace(/ — 速度优先/g, ' — speed')
-    .replace(/ — 平衡/g, ' — balanced')
-    .replace(/ — 音乐/g, ' — music')
-    .replace(/ — 低延迟/g, ' — low latency')
-    .replace(/ — 零延迟/g, ' — zero latency')
-    .replace(/ — 无损/g, ' — lossless')
+  // 1) Apply Chinese term dictionary (longest match first)
+  const sortedTerms = Object.keys(ZH_TERM_MAP).sort((a, b) => b.length - a.length)
+  let result = value
+  for (const zh of sortedTerms) {
+    const en = ZH_TERM_MAP[zh]
+    // Only replace standalone terms (not substrings of longer technical terms that would break)
+    result = result.replace(new RegExp(escapeZhRegex(zh), 'g'), en)
+  }
+
+  // 2) Structural patterns that remain after term replacement
+  result = result
+    // Chinese parentheses → English
+    .replace(/（([^）]*)）/g, ' ($1)')
+    // " — X (Y)" → " — X (Y)" (keep structure)
+    .replace(/ \(默认\)/g, ' (default)')
+    .replace(/ \(推荐\)/g, ' (recommended)')
+    .replace(/ \(无损\)/g, ' (lossless)')
+    .replace(/ \(必需\)/g, ' (required)')
+    // Remove leftover Chinese parenthetical qualifiers (fully Chinese)
+    .replace(/\s*\([一-鿿]+\)/g, '')
+
+  // 3) Clean up whitespace
+  result = result.replace(/\s+/g, ' ').trim()
+
+  // 4) Fallback: remove any remaining fullwidth parens
+  result = result.replace(/（/g, '(').replace(/）/g, ')')
+
+  // 5) Last-resort: strip any remaining Chinese characters so no label
+  //    returns Chinese text in English mode. This is a safety net for
+  //    compound terms not yet in the dictionary.
+  if (/[一-龥]/.test(result)) {
+    result = result
+      // Remove isolated Chinese phrases in parentheses
+      .replace(/\([一-龥][^)]*[一-龥]\)/g, '')
+      // Replace remaining fullwidth-parenthesized Chinese
+      .replace(/（[一-龥][^）]*[一-龥]）/g, '')
+      // Strip any remaining Chinese characters
+      .replace(/[一-龥]+/g, '')
+      // Clean up whitespace again
+      .replace(/\s+/g, ' ').trim()
+      // Remove empty parens
+      .replace(/\(\s*\)/g, '')
+      .replace(/—\s*$/g, '')
+      .replace(/\s*—\s*$/g, '')
+  }
+
+  return result
+}
+
+/** Escape a Chinese string for use in a RegExp (escape regex metacharacters). */
+function escapeZhRegex(zh: string): string {
+  return zh.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 const ENGLISH_EXPLANATIONS: Record<string, { title?: string; short: string; detail?: string }> = {
@@ -598,6 +863,12 @@ export function localizeExplanation(explanation: ExplanationDefinition, locale: 
 }
 
 function translateExplanationTitle(title: string): string {
+  // Use the shared ZH_TERM_MAP + structural cleanup from translateText
+  const preprocessed = translateText(title, 'en')
+  // If translateText already removed all Chinese, return it
+  if (!/[一-龥]/.test(preprocessed)) return preprocessed
+
+  // Additional exact title matches not covered by the term map
   const exact: Record<string, string> = {
     '二次编码': 'Two-pass encoding',
     '音频码率': 'Audio bitrate',
@@ -608,94 +879,12 @@ function translateExplanationTitle(title: string): string {
     'CRF 值': 'CRF value',
     'QP 值': 'QP value',
     '缓冲区大小': 'Buffer size',
-    '编码线程数': 'Encoding threads',
-    'FFmpeg 原生 AAC': 'FFmpeg native AAC',
     'VBR 开关': 'VBR switch',
-    'libaom-av1 软件编码器': 'libaom-av1 software encoder',
     'AV1 Profile': 'AV1 profile',
-    'libaom 像素格式': 'libaom pixel format',
-    'libaom 恒定质量': 'libaom constant quality',
-    'libaom CRF': 'libaom CRF',
-    'libaom VBR': 'libaom VBR',
-    'libaom 目标码率': 'libaom target bitrate',
-    'libaom 速度等级': 'libaom speed level',
-    'libaom 行级多线程': 'libaom row-based multithreading',
-    'AOM 附加参数': 'Additional AOM options',
-    'libvvenc H.266/VVC 编码器': 'libvvenc H.266/VVC encoder',
-    'VVenC 编码预设': 'VVenC encoding preset',
-    'VVenC 输入像素格式': 'VVenC input pixel format',
-    'VVenC 恒定量化': 'VVenC constant quantizer',
-    'VVenC QP': 'VVenC QP',
-    'VVenC 码率模式': 'VVenC bitrate mode',
-    'VVenC 目标码率': 'VVenC target bitrate',
-    'VVenC 感知优化': 'VVenC perceptual optimization',
     'VVC Tier': 'VVC tier',
     '帧内刷新周期': 'Intra refresh period',
-    'VVenC 附加参数': 'Additional VVenC options',
-    '码率控制前瞻 (-rc-lookahead)': 'Rate-control lookahead (-rc-lookahead)',
-    '最大 B 帧数 (-bf)': 'Maximum B-frames (-bf)',
-    'ICQ (智能恒定质量)': 'ICQ (intelligent constant quality)',
-    'LA-ICQ (前瞻智能恒定质量)': 'LA-ICQ (look-ahead intelligent quality)',
-    '实时编码提示': 'Real-time encoding hint',
-    '全局质量': 'Global quality',
-    '前瞻深度': 'Look-ahead depth',
-    '低功耗模式': 'Low-power mode',
-    'B 帧数': 'B-frames',
-    'GOP 大小': 'GOP size',
-    '参考帧数': 'Reference frames',
-    '空间自适应量化 (-spatial_aq)': 'Spatial adaptive quantization (-spatial_aq)',
-    '时间自适应量化 (-temporal_aq)': 'Temporal adaptive quantization (-temporal_aq)',
-    '预编码分析': 'Pre-encode analysis',
-    '允许软件回退': 'Allow software fallback',
-    '节能优先': 'Prefer power efficiency',
-    '关键帧间隔': 'Keyframe interval',
-    '最大 B 帧数': 'Maximum B-frames',
-    '最小关键帧间隔': 'Minimum keyframe interval',
-    '最低量化值': 'Minimum quantizer',
-    '最高量化值': 'Maximum quantizer',
-    '量化曲线压缩': 'Quantizer curve compression',
-    '码率控制前瞻': 'Rate-control lookahead',
-    '自适应量化强度': 'Adaptive quantization strength',
-    '场景切换阈值': 'Scene-change threshold',
-    '编码级别': 'Encoding level',
-    'NVENC 前瞻等级': 'NVENC lookahead level',
-    'Intel 扩展码率控制': 'Intel extended bitrate control',
-    'AMD QVBR 质量级别': 'AMD QVBR quality level',
   }
   if (exact[title]) return exact[title]
 
-  return title
-    .replace('硬件编码器', 'hardware encoder')
-    .replace('编码器', 'encoder')
-    .replace('恒定量化参数', 'constant quantizer')
-    .replace('恒定量化', 'constant quantizer')
-    .replace('恒定 QP', 'constant QP')
-    .replace('恒定质量', 'constant quality')
-    .replace('动态码率', 'variable bitrate')
-    .replace('可变码率', 'variable bitrate')
-    .replace('恒定码率', 'constant bitrate')
-    .replace('附加参数', 'advanced options')
-    .replace('编码算法', 'encoding algorithm')
-    .replace('编码预设', 'preset')
-    .replace('质量预设', 'quality preset')
-    .replace('编码配置', 'profile')
-    .replace('使用场景', 'usage')
-    .replace('场景优化', 'tuning')
-    .replace('像素格式', 'pixel format')
-    .replace('目标码率', 'target bitrate')
-    .replace('平均码率', 'average bitrate')
-    .replace('最大码率', 'maximum bitrate')
-    .replace('码率约束', 'bitrate constraints')
-    .replace('缓冲大小', 'buffer size')
-    .replace('压缩级别', 'compression level')
-    .replace('采样格式', 'sample format')
-    .replace('帧类型', 'frame-type')
-    .replace('异步深度', 'async depth')
-    .replace('GPU 选择', 'GPU selection')
-    .replace('前瞻智能恒定质量', 'look-ahead intelligent quality')
-    .replace('智能恒定质量', 'intelligent constant quality')
-    .replace('低功耗模式', 'low-power mode')
-    .replace('B 帧数', 'B-frames')
-    .replace('GOP 大小', 'GOP size')
-    .replace('参考帧数', 'reference frames')
+  return preprocessed
 }

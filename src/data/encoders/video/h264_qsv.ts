@@ -21,7 +21,7 @@ export const h264Qsv: EncoderDefinition = {
 
   capabilityScope: {
     ffmpeg: { minVersion: '3.3' },
-    buildRequirements: ['--enable-libmfx', '--enable-encoder=h264_qsv'],
+    buildRequirements: ['--enable-qsv'],
     hardware: [
       {
         vendor: 'intel',
@@ -96,7 +96,7 @@ export const h264Qsv: EncoderDefinition = {
       },
     ],
     notes: [
-      'QSV 编码器可用性取决于 FFmpeg 编译配置（--enable-libmfx）',
+      'QSV 编码器可用性取决于 FFmpeg 编译配置（--enable-qsv，Intel oneVPL）',
       '实际可用性取决于 Intel 图形硬件、iHD/i965 驱动和运行时',
       'Linux 上推荐使用 iHD 驱动（Intel Media Driver），Windows 上推荐使用 Intel 官方驱动',
       'FFCodec 只生成命令 — 未检测本机环境',
@@ -104,7 +104,7 @@ export const h264Qsv: EncoderDefinition = {
   },
 
   availabilityNote:
-    'Intel QSV H.264 硬件编码器。需要 Intel 集成/独立显卡和 FFmpeg --enable-libmfx 编译。FFCodec 不检测本机硬件。',
+    'Intel QSV H.264 硬件编码器。需要 Intel 集成/独立显卡和 FFmpeg --enable-qsv 编译。FFCodec 不检测本机硬件。',
 
   capabilities: {
     copy: false,

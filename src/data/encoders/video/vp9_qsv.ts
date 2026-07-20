@@ -10,14 +10,14 @@ export const vp9Qsv: EncoderDefinition = {
   mediaType: 'video', family: 'vp9' as const, implementation: 'intel' as const,
   availabilityClass: 'hardware-dependent',
   capabilityScope: {
-    ffmpeg: { minVersion: '4.3' }, buildRequirements: ['--enable-libmfx'],
+    ffmpeg: { minVersion: '4.3' }, buildRequirements: ['--enable-qsv'],
     hardware: [
       { vendor: 'intel', feature: 'VP9 QSV 硬件编码', minimumGeneration: 'Kaby Lake+ (7th Gen)',
         minimumDriver: 'Intel Media Driver 21.1+', verificationLevel: 'cross-verified', sourceRefs: [{ ...src }] },
     ],
     notes: ['Intel QSV VP9 编码器，从 FFmpeg 4.3 开始可用', 'VP9 QSV 不支持 B 帧（VP9 编解码限制）'],
   },
-  availabilityNote: 'Intel QSV VP9 硬件编码器。需要 Kaby Lake+ Intel GPU 和 --enable-libmfx。',
+  availabilityNote: 'Intel QSV VP9 硬件编码器。需要 Kaby Lake+ Intel GPU 和 --enable-qsv 编译选项。',
   capabilities: { copy: false, disabled: false, supportsTwoPass: false, supportsLossless: false,
     supportedContainers: ['mkv', 'webm', 'mp4'] },
   qualityModes: [

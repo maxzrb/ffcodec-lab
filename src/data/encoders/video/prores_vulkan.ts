@@ -8,7 +8,7 @@ const src = { repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026
 export const proresVulkan: EncoderDefinition = {
   id: 'prores_vulkan', label: 'prores_vulkan (ProRes — Vulkan Compute)', ffmpegName: 'prores_vulkan',
   mediaType: 'video', family: 'prores' as const, implementation: 'other' as const,
-  availabilityClass: 'hardware-dependent',
+  availabilityClass: 'experimental',
   capabilityScope: {
     ffmpeg: { minVersion: '8.1' }, buildRequirements: ['--enable-vulkan'],
     hardware: [
@@ -21,7 +21,7 @@ export const proresVulkan: EncoderDefinition = {
     ],
     notes: ['跨厂商 Vulkan Compute（非 Vulkan Video）ProRes 编码', 'FFmpeg 8.1 新增，实验性功能'],
   },
-  availabilityNote: '跨厂商 Vulkan Compute ProRes 编码器（FFmpeg 8.1+，实验性）。任何 Vulkan 1.3+ GPU 均可使用。',
+  availabilityNote: '⚠️ 实验性：跨厂商 Vulkan Compute ProRes 编码器（FFmpeg 8.1+）。FFmpeg 8.1.2 中标记为实验性功能，API 与行为可能在未来版本变化。任何 Vulkan 1.3+ GPU 均可使用。',
   capabilities: { copy: false, disabled: false, supportsTwoPass: false, supportsLossless: false,
     supportedContainers: ['mov', 'mkv'] },
   profile: {
