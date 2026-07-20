@@ -5,7 +5,7 @@ import { isValidConfigPath, configPath, CONFIG_PATHS } from '../../domain/config
 
 describe('Capability catalog', () => {
   it('all video encoders have valid family and implementation', () => {
-    const VALID_FAMILIES = ['h264', 'hevc', 'av1', 'vvc', 'vp9', 'prores', 'other']
+    const VALID_FAMILIES = ['h264', 'hevc', 'av1', 'vvc', 'vp8', 'vp9', 'avs', 'avs2', 'avs3', 'ffv1', 'prores', 'other']
     const VALID_IMPLS = ['software', 'nvidia', 'intel', 'amd', 'apple', 'other']
     for (const enc of Object.values(videoEncoders)) {
       expect(VALID_FAMILIES).toContain(enc.family)

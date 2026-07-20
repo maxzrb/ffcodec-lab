@@ -7,6 +7,7 @@ import type { ProjectConfig } from '../config/project-config'
 import { createDefaultAdvancedVideoFilters } from '../config/defaults'
 import type { Catalog } from '../catalog/catalog-types'
 import type { SourceRef } from '../catalog/catalog-types'
+import { CODEC_CATEGORIES, FALLBACK_CATEGORY_ID } from '../catalog/catalog-types'
 import type { FieldState } from '../rules/rule-types'
 import type { ResolvedField, ResolvedSection } from './resolved-field'
 import { CONFIG_PATHS } from '../config/config-path'
@@ -162,8 +163,6 @@ export function resolveVideoSection(
   // Video encoder selector (only when mode=encode)
   const videoEncoderParam = catalog.parameters['param.video.encoder']
   if (videoEncoderParam) {
-    const encField = resolveParameterField(videoEncoderParam, config, 'video.encoderId', fieldStates)
-    // 编码器选择器完全由目录生成，并保留实现厂商信息供界面展示。
     const implementationLabels: Record<string, string> = {
       software: 'CPU',
       nvidia: 'NVIDIA',
@@ -172,14 +171,85 @@ export function resolveVideoSection(
       apple: 'Apple',
       other: '其他',
     }
-    encField.options = Object.values(catalog.encoders.video).map((enc) => ({
+
+    // 从当前编码器推导所属类别（或使用已保存的类别选择）
+    const currentEncoder = config.video.encoderId
+      ? catalog.encoders.video[config.video.encoderId]
+      : undefined
+    const derivedCategoryId = currentEncoder
+      ? (CODEC_CATEGORIES.find((c) => c.families.includes(currentEncoder.family))?.id ?? config.video.codecCategory ?? FALLBACK_CATEGORY_ID)
+      : (config.video.codecCategory ?? FALLBACK_CATEGORY_ID)
+
+    const selectedCategoryId = derivedCategoryId
+    const selectedCategory = CODEC_CATEGORIES.find((c) => c.id === selectedCategoryId)
+
+    // -- 一级：编解码类别选择 ----------------------------------------
+    fields.push({
+      id: 'video.codecCategory',
+      label: '编解码标准',
+      controlType: 'select',
+      value: selectedCategoryId,
+      visible: true,
+      disabled: false,
+      options: CODEC_CATEGORIES.map((cat) => ({
+        value: cat.id,
+        label: cat.label + (cat.placeholder ? ' (暂无编码器)' : ''),
+      })),
+      sourceRefs: [],
+      verificationLevel: 'project-derived',
+      needsCrossVerification: false,
+      commandOrigins: [],
+      diagnostics: [],
+      configBinding: { path: CONFIG_PATHS.video.codecCategory },
+    })
+
+    // -- 二级：编码器选择（按类别过滤）-------------------------------
+    const categoryFamilies = selectedCategory?.families ?? []
+    const filteredEncoders = Object.values(catalog.encoders.video).filter((enc) =>
+      categoryFamilies.includes(enc.family),
+    )
+
+    // 如果当前编码器不在过滤后的列表中，自动选择第一个可用编码器
+    let effectiveEncoderId = config.video.encoderId
+    if (!effectiveEncoderId || !filteredEncoders.some((e) => e.id === effectiveEncoderId)) {
+      effectiveEncoderId = filteredEncoders[0]?.id
+      // 标记为需要自动切换（实际切换在 applyFieldChange 中处理）
+    }
+
+    const encField = resolveParameterField(videoEncoderParam, config, 'video.encoderId', fieldStates)
+    encField.description = selectedCategory?.placeholder
+      ? (selectedCategory.placeholderNote ?? '此编解码标准尚无可用编码器')
+      : undefined
+
+    encField.options = filteredEncoders.map((enc) => ({
       value: enc.id,
       label: enc.label,
       group: enc.family,
       badge: implementationLabels[enc.implementation] ?? enc.implementation,
       description: enc.availabilityNote?.slice(0, 80),
     }))
+    encField.disabled = filteredEncoders.length === 0
+    encField.disabledReason = filteredEncoders.length === 0
+      ? (selectedCategory?.placeholderNote ?? '截至 FFmpeg 8.1.2 发行版，此编解码标准暂无编码器实现')
+      : undefined
     fields.push(encField)
+
+    // 占位分类 — 选中后显示提示信息
+    if (filteredEncoders.length === 0) {
+      fields.push({
+        id: 'video.codecCategory.emptyHint',
+        label: selectedCategory?.label ?? '当前分类',
+        controlType: 'section',
+        value: selectedCategory?.placeholderNote ?? '截至 FFmpeg 8.1.2 发行版，此编解码标准暂无编码器实现。',
+        visible: true,
+        disabled: false,
+        sourceRefs: [],
+        verificationLevel: 'project-derived',
+        needsCrossVerification: false,
+        commandOrigins: [],
+        diagnostics: [],
+      })
+    }
   }
 
   // Encoder-specific controls
@@ -187,6 +257,30 @@ export function resolveVideoSection(
     ? catalog.encoders.video[config.video.encoderId]
     : undefined
   const targetSizeEnabled = config.tools?.targetSize.enabled ?? false
+
+  // 占位分类：无编码器时显示质量控制不可用提示
+  if (!encoder && config.video.mode === 'encode') {
+    const selCat = CODEC_CATEGORIES.find((c) => c.id === config.video.codecCategory)
+    const note = selCat?.placeholderNote ?? '截至 FFmpeg 8.1.2 发行版，此编解码标准暂无编码器实现。'
+    fields.push({
+      id: 'video.rateControl.mode',
+      label: '质量控制模式',
+      controlType: 'select',
+      value: '',
+      visible: true,
+      disabled: true,
+      disabledReason: note,
+      options: [],
+      sourceRefs: [],
+      verificationLevel: 'project-derived',
+      needsCrossVerification: false,
+      commandOrigins: [],
+      diagnostics: [],
+      panelId: 'quality',
+      groupId: 'rate-control',
+      tier: 'basic',
+    })
+  }
 
   if (encoder && config.video.mode === 'encode') {
     // Preset

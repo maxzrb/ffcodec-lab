@@ -131,6 +131,7 @@ const subtitleTrackSchema = z.object({
 
 const videoConfigSchema = z.object({
   mode: z.enum(['encode', 'copy', 'disabled']),
+  codecCategory: z.string().optional(),
   encoderId: z.string().optional(),
   rateControl: rateControlSchema.optional(),
   preset: z.union([z.string(), z.number()]).optional(),

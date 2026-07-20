@@ -216,7 +216,7 @@ function validateRules() {
 }
 
 // -- Phase 3 audit: codec family & implementation -----------------
-const VALID_FAMILIES = new Set(['h264', 'hevc', 'av1', 'vvc', 'vp9', 'prores', 'aac', 'opus', 'flac', 'other'])
+const VALID_FAMILIES = new Set(['h264', 'hevc', 'av1', 'vvc', 'vp8', 'vp9', 'avs', 'avs2', 'avs3', 'ffv1', 'prores', 'aac', 'opus', 'flac', 'other'])
 const VALID_IMPLEMENTATIONS = new Set(['software', 'nvidia', 'intel', 'amd', 'apple', 'other'])
 const VALID_AVAILABILITY = new Set([
   'generally-available', 'ffmpeg-build-dependent', 'hardware-dependent',
@@ -299,7 +299,9 @@ function checkConfigBindings(encoder: EncoderDefinition) {
   }
   // Error if any encoder has qualityModes but no controls with configBinding
   // (legacy fallback has been removed — all controls must have configBinding)
-  if (encoder.qualityModes.length > 0 && !hasConfigBinding) {
+  // Skip encoders where all quality modes have zero controls (e.g. FFV1/ProRes placeholder modes)
+  const allQmControlsEmpty = encoder.qualityModes.length > 0 && encoder.qualityModes.every((qm) => qm.controls.length === 0)
+  if (encoder.qualityModes.length > 0 && !hasConfigBinding && !allQmControlsEmpty) {
     errors.push(`[configbinding] Encoder "${encoder.id}" has no controls with configBinding (all controls must use configBinding)`)
   }
 

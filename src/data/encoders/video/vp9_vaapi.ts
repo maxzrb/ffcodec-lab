@@ -1,0 +1,63 @@
+import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
+
+const src = { repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20',
+  file: 'libavcodec/vaapi_encode_vp9.c', sourceType: 'ffmpeg-official' as const,
+  url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/vaapi_encode_vp9.c' }
+
+export const vp9Vaapi: EncoderDefinition = {
+  id: 'vp9_vaapi', label: 'vp9_vaapi (VP9 — Linux VAAPI)', ffmpegName: 'vp9_vaapi',
+  mediaType: 'video', family: 'vp9' as const, implementation: 'other' as const,
+  availabilityClass: 'platform-dependent',
+  capabilityScope: {
+    ffmpeg: { minVersion: '4.0' }, buildRequirements: ['--enable-vaapi'],
+    hardware: [
+      { vendor: 'intel', feature: 'VP9 VAAPI 硬件编码', minimumGeneration: 'Kaby Lake+',
+        operatingSystems: ['linux'], verificationLevel: 'cross-verified', sourceRefs: [{ ...src }] },
+      { vendor: 'amd', feature: 'VP9 VAAPI 硬件编码', minimumGeneration: 'Raven Ridge+ / Mesa RADV',
+        operatingSystems: ['linux'], verificationLevel: 'cross-verified', sourceRefs: [{ ...src }] },
+    ],
+    notes: ['仅 Linux 可用', 'VP9 VAAPI 编码需要较新 GPU（Kaby Lake 以上 Intel / Raven Ridge 以上 AMD）'],
+  },
+  availabilityNote: 'Linux VAAPI 硬件 VP9 编码器。仅 Linux，需要 --enable-vaapi 和兼容 GPU。',
+  capabilities: { copy: false, disabled: false, supportsTwoPass: false, supportsLossless: false,
+    supportedContainers: ['mkv', 'webm', 'mp4'] },
+  qualityModes: [
+    { id: 'cqp', label: 'CQP', emitterId: 'emitter.vaapi_vp9.cqp', explanationId: 'expl.vp9_vaapi.cqp',
+      modeArguments: [{ argName: '-rc_mode', value: 'CQP', phase: 'VIDEO_RATE_CONTROL' }],
+      sourceRefs: [{ ...src }],
+      controls: [{ id: 'vp9_vaapi.cqp.qp', label: 'QP 值 (-qp)', control: 'number',
+        commandBinding: { argName: '-qp', prefix: '-qp', phase: 'VIDEO_RATE_CONTROL' },
+        configBinding: { path: CONFIG_PATHS.video.rateControl.qualityValue },
+        range: { min: 0, max: 63, step: 1 }, defaultValue: 31, explanationId: 'expl.vp9_vaapi.cqp.qp' }] },
+    { id: 'vbr', label: 'VBR', emitterId: 'emitter.vaapi_vp9.vbr', explanationId: 'expl.vp9_vaapi.vbr',
+      modeArguments: [{ argName: '-rc_mode', value: 'VBR', phase: 'VIDEO_RATE_CONTROL' }],
+      sourceRefs: [{ ...src }],
+      controls: [{ id: 'vp9_vaapi.vbr.bitrate', label: '目标码率 (-b:v)', control: 'text',
+        commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+        configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate }, defaultValue: '2000k',
+        explanationId: 'expl.vp9_vaapi.vbr.bitrate' }] },
+    { id: 'cbr', label: 'CBR', emitterId: 'emitter.vaapi_vp9.cbr', explanationId: 'expl.vp9_vaapi.cbr',
+      modeArguments: [{ argName: '-rc_mode', value: 'CBR', phase: 'VIDEO_RATE_CONTROL' }],
+      sourceRefs: [{ ...src }],
+      controls: [{ id: 'vp9_vaapi.cbr.bitrate', label: '目标码率 (-b:v)', control: 'text',
+        commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+        configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate }, defaultValue: '2000k',
+        explanationId: 'expl.vp9_vaapi.cbr.bitrate' }] },
+  ],
+  specialParameters: [
+    { id: 'vp9_vaapi.quality', label: '质量级别 (-quality)', control: 'number',
+      configBinding: { path: videoSpecialParamPath('quality') },
+      commandBinding: { argName: '-quality', prefix: '-quality', phase: 'VIDEO_CODEC' },
+      range: { min: 0, max: 8 }, optional: true, explanationId: 'expl.vp9_vaapi.quality', sourceRefs: [src] },
+    { id: 'vp9_vaapi.keyint', label: 'GOP 大小 (-g)', control: 'number',
+      configBinding: { path: videoSpecialParamPath('keyint') },
+      commandBinding: { argName: '-g', prefix: '-g', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.vp9_vaapi.keyint', sourceRefs: [src] },
+  ],
+  requiredArguments: [], defaultArguments: [],
+  explanationId: 'expl.vp9_vaapi',
+  sourceRefs: [{ ...src }],
+  sourceAuthority: 'encoder-official', verificationLevel: 'cross-verified',
+  needsCrossVerification: false, status: 'verified',
+}

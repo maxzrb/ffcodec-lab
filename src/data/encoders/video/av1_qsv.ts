@@ -1,0 +1,470 @@
+import type { EncoderDefinition } from '../../../domain/catalog/catalog-types'
+import { CONFIG_PATHS, videoSpecialParamPath } from '../../../domain/config/config-path'
+
+const qsvAv1Source = {
+  repository: 'FFmpeg/FFmpeg',
+  branch: 'master',
+  snapshotDate: '2026-07-20',
+  file: 'libavcodec/qsvenc_av1.c',
+  sourceType: 'ffmpeg-official' as const,
+  url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/qsvenc_av1.c',
+}
+
+export const av1Qsv: EncoderDefinition = {
+  id: 'av1_qsv',
+  label: 'av1_qsv (AV1 — Intel QSV)',
+  ffmpegName: 'av1_qsv',
+  mediaType: 'video',
+  family: 'av1' as const,
+  implementation: 'intel' as const,
+  availabilityClass: 'hardware-dependent',
+
+  capabilityScope: {
+    ffmpeg: { minVersion: '7.0' },
+    buildRequirements: ['--enable-libmfx', '--enable-encoder=av1_qsv'],
+    hardware: [
+      {
+        vendor: 'intel',
+        feature: 'AV1 硬件编码 (Intel QSV)',
+        minimumGeneration: 'Arc (Alchemist, 12th Gen)',
+        minimumDriver: 'Intel Media Driver 23.1+ / iHD',
+        operatingSystems: ['linux', 'windows'],
+        verificationLevel: 'cross-verified',
+        sourceRefs: [
+          {
+            repository: 'FFmpeg/FFmpeg',
+            snapshotDate: '2026-07-10',
+            file: 'libavcodec/qsvenc_av1.c',
+            sourceType: 'ffmpeg-official',
+            url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/qsvenc_av1.c',
+            note: 'QSV AV1 编码器需要 Arc 独显或更新核显上的 AV1 硬件编码单元',
+          },
+        ],
+      },
+    ],
+    notes: [
+      '仅 Intel Arc 独显 (A380/A750/A770) 或 Meteor Lake / Lunar Lake 核显支持 AV1 QSV 编码',
+      '运行 ffmpeg -encoders | grep av1_qsv 检查可用性',
+    ],
+  },
+
+  availabilityNote:
+    'Intel QSV 硬件 AV1 编码器。需 Intel Arc 独显或 Meteor Lake+ 处理器，FFCodec 不检测本机硬件。',
+
+  capabilities: {
+    copy: false,
+    disabled: false,
+    supportsTwoPass: false,
+    supportsLossless: false,
+    supportedContainers: ['mp4', 'mkv', 'webm', 'mov'],
+  },
+
+  preset: {
+    id: 'av1_qsv.preset',
+    label: '编码预设 (preset)',
+    control: 'select',
+    commandBinding: { argName: '-preset', prefix: '-preset', phase: 'VIDEO_CODEC' },
+    options: [
+      { value: 'veryfast', label: 'veryfast — 极快' },
+      { value: 'faster', label: 'faster' },
+      { value: 'fast', label: 'fast' },
+      { value: 'medium', label: 'medium — 中速 (默认)' },
+      { value: 'slow', label: 'slow' },
+      { value: 'slower', label: 'slower' },
+      { value: 'veryslow', label: 'veryslow — 最慢 (最高质量)' },
+    ],
+    defaultValue: 'medium',
+    explanationId: 'expl.av1_qsv.preset',
+  },
+
+  profile: {
+    id: 'av1_qsv.profile',
+    label: '配置文件 (profile)',
+    control: 'select',
+    commandBinding: { argName: '-profile:v', prefix: '-profile:v', phase: 'VIDEO_PROFILE' },
+    options: [
+      { value: 'auto', label: '自动' },
+      { value: 'main', label: 'main (8-bit 4:2:0)' },
+      { value: 'main10', label: 'main10 (10-bit 4:2:0)' },
+    ],
+    defaultValue: 'auto',
+    explanationId: 'expl.av1_qsv.profile',
+  },
+
+  pixelFormat: {
+    id: 'av1_qsv.pixelFormat',
+    label: '像素格式 (pix_fmt)',
+    control: 'select',
+    commandBinding: { argName: '-pix_fmt', prefix: '-pix_fmt', phase: 'VIDEO_CODEC' },
+    options: [
+      { value: 'auto', label: '自动' },
+      { value: 'nv12', label: 'nv12' },
+      { value: 'p010le', label: 'p010le (10-bit)' },
+    ],
+    defaultValue: 'auto',
+    explanationId: 'expl.av1_qsv.pixfmt',
+  },
+
+  qualityModes: [
+    {
+      id: 'av1-qsv-icq',
+      label: 'ICQ (智能恒定质量)',
+      emitterId: 'emitter.av1_qsv.icq',
+      explanationId: 'expl.av1_qsv.icq',
+      sourceRefs: [{ ...qsvAv1Source, note: 'QSV ICQ 模式' }],
+      recommendedValues: [
+        { label: '高质量', value: 18, description: '高画质编码' },
+        { label: '默认', value: 23, description: '画质与体积平衡' },
+        { label: '一般', value: 28, description: '文件较小' },
+      ],
+      controls: [
+        {
+          id: 'av1_qsv.icq.value',
+          label: '全局质量 (-global_quality)',
+          control: 'number',
+          commandBinding: { argName: '-global_quality', prefix: '-global_quality', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.qualityValue },
+          range: { min: 1, max: 51, step: 1 },
+          defaultValue: 23,
+          explanationId: 'expl.av1_qsv.icq.value',
+        },
+      ],
+    },
+    {
+      id: 'cqp',
+      label: 'CQP (恒定量化参数)',
+      emitterId: 'emitter.av1_qsv.cqp',
+      explanationId: 'expl.av1_qsv.cqp',
+      sourceRefs: [{ ...qsvAv1Source, note: 'QSV CQP 模式' }],
+      controls: [
+        {
+          id: 'av1_qsv.cqp.value',
+          label: 'QP 值 (-qp)',
+          control: 'number',
+          commandBinding: { argName: '-qp', prefix: '-qp', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.qualityValue },
+          range: { min: 0, max: 51, step: 1 },
+          defaultValue: 23,
+          explanationId: 'expl.av1_qsv.cqp.value',
+        },
+      ],
+    },
+    {
+      id: 'vbr',
+      label: 'VBR (可变码率)',
+      emitterId: 'emitter.av1_qsv.vbr',
+      explanationId: 'expl.av1_qsv.vbr',
+      sourceRefs: [{ ...qsvAv1Source, note: 'QSV VBR 模式' }],
+      controls: [
+        {
+          id: 'av1_qsv.vbr.bitrate',
+          label: '目标码率 (-b:v)',
+          control: 'text',
+          commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
+          defaultValue: '5000k',
+          explanationId: 'expl.av1_qsv.vbr.bitrate',
+        },
+        {
+          id: 'av1_qsv.vbr.maxrate',
+          label: '最大码率 (-maxrate)',
+          control: 'text',
+          commandBinding: { argName: '-maxrate', prefix: '-maxrate', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.maxRate },
+          explanationId: 'expl.av1_qsv.vbr.maxrate',
+        },
+        {
+          id: 'av1_qsv.vbr.bufsize',
+          label: '缓冲区 (-bufsize)',
+          control: 'text',
+          commandBinding: { argName: '-bufsize', prefix: '-bufsize', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bufferSize },
+          explanationId: 'expl.av1_qsv.vbr.bufsize',
+        },
+      ],
+    },
+    {
+      id: 'cbr',
+      label: 'CBR (恒定码率)',
+      emitterId: 'emitter.av1_qsv.cbr',
+      explanationId: 'expl.av1_qsv.cbr',
+      sourceRefs: [{ ...qsvAv1Source, note: 'QSV CBR 模式' }],
+      controls: [
+        {
+          id: 'av1_qsv.cbr.bitrate',
+          label: '目标码率 (-b:v)',
+          control: 'text',
+          commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
+          defaultValue: '5000k',
+          explanationId: 'expl.av1_qsv.cbr.bitrate',
+        },
+      ],
+    },
+    {
+      id: 'av1-qsv-qvbr',
+      label: 'QVBR (质量可变码率)',
+      emitterId: 'emitter.av1_qsv.qvbr',
+      explanationId: 'expl.av1_qsv.qvbr',
+      sourceRefs: [{ ...qsvAv1Source, note: 'QSV QVBR 模式' }],
+      controls: [
+        {
+          id: 'av1_qsv.qvbr.level',
+          label: '质量级别 (-qvbr_quality_level)',
+          control: 'number',
+          commandBinding: { argName: '-qvbr_quality_level', prefix: '-qvbr_quality_level', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.qualityValue },
+          range: { min: 0, max: 51, step: 1 },
+          defaultValue: 23,
+          explanationId: 'expl.av1_qsv.qvbr.level',
+        },
+        {
+          id: 'av1_qsv.qvbr.bitrate',
+          label: '目标码率 (-b:v)',
+          control: 'text',
+          commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
+          defaultValue: '5000k',
+          explanationId: 'expl.av1_qsv.qvbr.bitrate',
+        },
+      ],
+    },
+  ],
+
+  specialParameters: [
+    // -- 异步与功耗 ----------------------------------------------
+    {
+      id: 'av1_qsv.asyncDepth', label: '异步编码深度 (-async_depth)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('asyncDepth') },
+      commandBinding: { argName: '-async_depth', prefix: '-async_depth', phase: 'VIDEO_CODEC' },
+      range: { min: 1, max: 255 }, defaultValue: 4, optional: true,
+      explanationId: 'expl.av1_qsv.asyncDepth', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.lowPower', label: '低功耗模式 (-low_power)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('lowPower') },
+      commandBinding: { argName: '-low_power', prefix: '-low_power', phase: 'VIDEO_CODEC' },
+      defaultValue: 0, optional: true,
+      explanationId: 'expl.av1_qsv.lowPower', sourceRefs: [qsvAv1Source],
+    },
+    // -- 帧结构 --------------------------------------------------
+    {
+      id: 'av1_qsv.bf', label: '最大 B 帧数 (-bf)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('bFrames') },
+      commandBinding: { argName: '-bf', prefix: '-bf', phase: 'VIDEO_CODEC' },
+      range: { min: 0, max: 7 }, defaultValue: 3, optional: true,
+      explanationId: 'expl.av1_qsv.bf', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.gopSize', label: 'GOP 大小 (-g)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('gopSize') },
+      commandBinding: { argName: '-g', prefix: '-g', phase: 'VIDEO_CODEC' },
+      range: { min: 1, max: 1000, step: 1 }, optional: true,
+      explanationId: 'expl.av1_qsv.gopSize', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.refs', label: '参考帧数 (-refs)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('refs') },
+      commandBinding: { argName: '-refs', prefix: '-refs', phase: 'VIDEO_CODEC' },
+      range: { min: 1, max: 16 }, optional: true,
+      explanationId: 'expl.av1_qsv.refs', sourceRefs: [qsvAv1Source],
+    },
+    // -- 自适应帧类型 --------------------------------------------
+    {
+      id: 'av1_qsv.adaptiveI', label: '自适应 I 帧 (-adaptive_i)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('adaptiveI') },
+      commandBinding: { argName: '-adaptive_i', prefix: '-adaptive_i', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.av1_qsv.adaptiveI', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.adaptiveB', label: '自适应 B 帧 (-adaptive_b)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('adaptiveB') },
+      commandBinding: { argName: '-adaptive_b', prefix: '-adaptive_b', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.av1_qsv.adaptiveB', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.bStrategy', label: 'B 帧放置策略 (-b_strategy)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('bStrategy') },
+      commandBinding: { argName: '-b_strategy', prefix: '-b_strategy', phase: 'VIDEO_CODEC' },
+      range: { min: 0, max: 1 }, optional: true,
+      explanationId: 'expl.av1_qsv.bStrategy', sourceRefs: [qsvAv1Source],
+    },
+    // -- 关键帧控制 ----------------------------------------------
+    {
+      id: 'av1_qsv.idrInterval', label: 'IDR 帧间隔 (-idr_interval)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('idrInterval') },
+      commandBinding: { argName: '-idr_interval', prefix: '-idr_interval', phase: 'VIDEO_CODEC' },
+      range: { min: 0, max: 9999, step: 1 }, optional: true,
+      explanationId: 'expl.av1_qsv.idrInterval', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.intRefType', label: '帧内刷新类型 (-int_ref_type)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('intRefType') },
+      commandBinding: { argName: '-int_ref_type', prefix: '-int_ref_type', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: 'none', label: 'none — 关闭' },
+        { value: 'vertical', label: 'vertical — 垂直条带' },
+        { value: 'horizontal', label: 'horizontal — 水平条带' },
+      ],
+      optional: true, explanationId: 'expl.av1_qsv.intRefType', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.intRefCycleSize', label: '帧内刷新周期 (-int_ref_cycle_size)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('intRefCycleSize') },
+      commandBinding: { argName: '-int_ref_cycle_size', prefix: '-int_ref_cycle_size', phase: 'VIDEO_CODEC' },
+      range: { min: 1, max: 9999, step: 1 }, optional: true,
+      explanationId: 'expl.av1_qsv.intRefCycleSize', sourceRefs: [qsvAv1Source],
+    },
+    // -- 码率控制高级 --------------------------------------------
+    {
+      id: 'av1_qsv.maxFrameSize', label: '最大帧体积 (-max_frame_size)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('maxFrameSize') },
+      commandBinding: { argName: '-max_frame_size', prefix: '-max_frame_size', phase: 'VIDEO_RATE_CONTROL' },
+      range: { min: 0, max: 52428800 }, optional: true,
+      explanationId: 'expl.av1_qsv.maxFrameSize', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.maxSliceSize', label: '最大 Slice 体积 (-max_slice_size)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('maxSliceSize') },
+      commandBinding: { argName: '-max_slice_size', prefix: '-max_slice_size', phase: 'VIDEO_RATE_CONTROL' },
+      range: { min: 0, max: 52428800 }, optional: true,
+      explanationId: 'expl.av1_qsv.maxSliceSize', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.mbbrc', label: '宏块级码控 (-mbbrc)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('mbbrc') },
+      commandBinding: { argName: '-mbbrc', prefix: '-mbbrc', phase: 'VIDEO_RATE_CONTROL' },
+      optional: true, explanationId: 'expl.av1_qsv.mbbrc', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.extbrc', label: '扩展码率控制 (-extbrc)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('extbrc') },
+      commandBinding: { argName: '-extbrc', prefix: '-extbrc', phase: 'VIDEO_RATE_CONTROL' },
+      optional: true, explanationId: 'expl.av1_qsv.extbrc', sourceRefs: [qsvAv1Source],
+    },
+    // -- 场景与前瞻 ----------------------------------------------
+    {
+      id: 'av1_qsv.scenario', label: '使用场景 (-scenario)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('scenario') },
+      commandBinding: { argName: '-scenario', prefix: '-scenario', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: 'unknown', label: 'unknown — 未知' },
+        { value: 'display', label: 'display — 显示回放' },
+        { value: 'game', label: 'game — 游戏' },
+        { value: 'archive', label: 'archive — 存档' },
+      ],
+      optional: true, explanationId: 'expl.av1_qsv.scenario', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.lookAheadDepth', label: '前瞻深度 (-look_ahead_depth)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('lookAheadDepth') },
+      commandBinding: { argName: '-look_ahead_depth', prefix: '-look_ahead_depth', phase: 'VIDEO_RATE_CONTROL' },
+      range: { min: 0, max: 100 }, defaultValue: 0, optional: true,
+      explanationId: 'expl.av1_qsv.lookAheadDepth', sourceRefs: [qsvAv1Source],
+    },
+    // -- AVBR ---------------------------------------------------
+    {
+      id: 'av1_qsv.avbrAccuracy', label: 'AVBR 精度 (-avbr_accuracy)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('avbrAccuracy') },
+      commandBinding: { argName: '-avbr_accuracy', prefix: '-avbr_accuracy', phase: 'VIDEO_RATE_CONTROL' },
+      range: { min: 0, max: 65535 }, optional: true,
+      explanationId: 'expl.av1_qsv.avbrAccuracy', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.avbrConvergence', label: 'AVBR 收敛速度 (-avbr_convergence)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('avbrConvergence') },
+      commandBinding: { argName: '-avbr_convergence', prefix: '-avbr_convergence', phase: 'VIDEO_RATE_CONTROL' },
+      range: { min: 0, max: 65535 }, optional: true,
+      explanationId: 'expl.av1_qsv.avbrConvergence', sourceRefs: [qsvAv1Source],
+    },
+    // -- SEI / 流控制 -------------------------------------------
+    {
+      id: 'av1_qsv.picTimingSei', label: '图像时序 SEI (-pic_timing_sei)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('picTimingSei') },
+      commandBinding: { argName: '-pic_timing_sei', prefix: '-pic_timing_sei', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.av1_qsv.picTimingSei', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.recoveryPointSei', label: '恢复点 SEI (-recovery_point_sei)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('recoveryPointSei') },
+      commandBinding: { argName: '-recovery_point_sei', prefix: '-recovery_point_sei', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.av1_qsv.recoveryPointSei', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.repeatPps', label: '重复 OBU 头 (-repeat_pps)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('repeatPps') },
+      commandBinding: { argName: '-repeat_pps', prefix: '-repeat_pps', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.av1_qsv.repeatPps', sourceRefs: [qsvAv1Source],
+    },
+    {
+      id: 'av1_qsv.singleSeiNalUnit', label: '单一 SEI NAL (-single_sei_nal_unit)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('singleSeiNalUnit') },
+      commandBinding: { argName: '-single_sei_nal_unit', prefix: '-single_sei_nal_unit', phase: 'VIDEO_CODEC' },
+      optional: true, explanationId: 'expl.av1_qsv.singleSeiNalUnit', sourceRefs: [qsvAv1Source],
+    },
+    // -- RDO -----------------------------------------------------
+    {
+      id: 'av1_qsv.rdo', label: 'RDO 级别 (-rdo)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('rdo') },
+      commandBinding: { argName: '-rdo', prefix: '-rdo', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: '0', label: '0 — 关闭' },
+        { value: '1', label: '1 — 轻度' },
+        { value: '2', label: '2 — 中度' },
+        { value: '3', label: '3 — 完整' },
+      ],
+      optional: true, explanationId: 'expl.av1_qsv.rdo', sourceRefs: [qsvAv1Source],
+    },
+    // -- 低延迟码控 ----------------------------------------------
+    {
+      id: 'av1_qsv.lowDelayBrc', label: '低延迟码控 (-low_delay_brc)',
+      control: 'switch',
+      configBinding: { path: videoSpecialParamPath('lowDelayBrc') },
+      commandBinding: { argName: '-low_delay_brc', prefix: '-low_delay_brc', phase: 'VIDEO_RATE_CONTROL' },
+      optional: true, explanationId: 'expl.av1_qsv.lowDelayBrc', sourceRefs: [qsvAv1Source],
+    },
+  ],
+
+  requiredArguments: [],
+  defaultArguments: [],
+
+  explanationId: 'expl.av1_qsv',
+  sourceRefs: [
+    {
+      repository: 'Intel/media-driver',
+      snapshotDate: '2026-07-10',
+      file: 'README.md',
+      sourceType: 'encoder-official',
+      url: 'https://github.com/intel/media-driver',
+      note: 'Intel Media Driver 提供 QSV 运行时支持',
+    },
+  ],
+  sourceAuthority: 'encoder-official',
+  verificationLevel: 'cross-verified',
+  needsCrossVerification: false,
+  status: 'verified',
+}

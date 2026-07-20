@@ -68,7 +68,7 @@ async function openPanel(label: string) {
 }
 
 async function expandEncoderAdvanced() {
-  const toggle = screen.getByRole('button', { name: /编码器高级参数/ })
+  const toggle = screen.getByRole('button', { name: /编码器私有参数/ })
   if (toggle.getAttribute('aria-expanded') === 'false') {
     await userEvent.click(toggle)
   }
@@ -138,13 +138,14 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<BuilderPage />)
     await openPanel('视频编码')
 
-    const advancedToggle = screen.getByRole('button', { name: /编码器高级参数/ })
-    expect(advancedToggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByLabelText('Film Grain Synthesis 强度')).not.toBeInTheDocument()
-
+    await userEvent.selectOptions(screen.getByLabelText('编解码标准'), 'av1')
     await userEvent.selectOptions(screen.getByLabelText('视频编码器'), 'libsvtav1')
+
+    await openPanel('质量控制')
+    const advancedToggle = screen.getByRole('button', { name: /编码器私有参数/ })
+    // 默认展开：私有参数字段可见
+    expect(advancedToggle).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByLabelText('SVT-AV1 附加参数 (-svtav1-params)')).toHaveValue('')
-    await userEvent.click(advancedToggle)
 
     expect(screen.getByLabelText('Film Grain Synthesis 强度')).toHaveValue(null)
     expect(screen.getByLabelText('Film Grain 去噪')).toHaveValue('')
@@ -254,10 +255,10 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('NVENC spatial AQ optional switch persists explicit values in ProjectConfig', async () => {
     presetStore(makeConfig('h264_nvenc'))
     render(<BuilderPage />)
-    await openPanel('视频编码')
+    await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    const selector = screen.getByLabelText('空间自适应量化 (-spatial-aq)')
+    const selector = screen.getByLabelText('空间 AQ (-spatial_aq)')
     expect(selector).toHaveValue('')
     await userEvent.selectOptions(selector, 'false')
 
@@ -281,10 +282,10 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('NVENC temporal AQ remains unset until explicitly enabled', async () => {
     presetStore(makeConfig('h264_nvenc'))
     render(<BuilderPage />)
-    await openPanel('视频编码')
+    await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    const selector = screen.getByLabelText('时间自适应量化 (-temporal-aq)')
+    const selector = screen.getByLabelText('时间 AQ (-temporal_aq)')
     expect(selector).toHaveValue('')
     await userEvent.selectOptions(selector, 'true')
 
@@ -300,7 +301,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('QSV low power optional switch toggles and persists', async () => {
     presetStore(makeConfig('h264_qsv'))
     render(<BuilderPage />)
-    await openPanel('视频编码')
+    await openPanel('质量控制')
     await expandEncoderAdvanced()
 
     const selector = screen.getByLabelText('低功耗模式 (-low_power)')
@@ -319,10 +320,10 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('HEVC NVENC spatial AQ optional switch toggles and persists', async () => {
     presetStore(makeConfig('hevc_nvenc'))
     render(<BuilderPage />)
-    await openPanel('视频编码')
+    await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    const selector = screen.getByLabelText('空间自适应量化 (-spatial-aq)')
+    const selector = screen.getByLabelText('空间 AQ (-spatial_aq)')
     expect(selector).toHaveValue('')
     await userEvent.selectOptions(selector, 'false')
 

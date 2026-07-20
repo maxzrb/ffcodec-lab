@@ -11,12 +11,45 @@ export type CodecFamily =
   | 'hevc'
   | 'av1'
   | 'vvc'
+  | 'vp8'
   | 'vp9'
+  | 'avs'
+  | 'avs2'
+  | 'avs3'
+  | 'ffv1'
   | 'prores'
   | 'aac'
   | 'opus'
   | 'flac'
   | 'other'
+
+// -- codec category (UI grouping level above family) ---------------
+
+export interface CodecCategoryDef {
+  id: string
+  label: string
+  families: CodecFamily[]
+  /** true 时该分类尚无可用编码器（如 AV2 占位） */
+  placeholder?: boolean
+  placeholderNote?: string
+}
+
+export const CODEC_CATEGORIES: CodecCategoryDef[] = [
+  { id: 'avc', label: 'H.264 / AVC', families: ['h264'] },
+  { id: 'hevc', label: 'H.265 / HEVC', families: ['hevc'] },
+  { id: 'vvc', label: 'H.266 / VVC', families: ['vvc'] },
+  { id: 'av1', label: 'AV1', families: ['av1'] },
+  { id: 'av2', label: 'AV2', families: [], placeholder: true, placeholderNote: '截至 FFmpeg 8.1.2 发行版，AOMedia 尚未发布 AV2 正式规范，FFmpeg 中无任何 AV2 编解码器。保留以等待标准发布。' },
+  { id: 'vp8', label: 'VP8', families: ['vp8'] },
+  { id: 'vp9', label: 'VP9', families: ['vp9'] },
+  { id: 'avs', label: 'AVS (AVS1-P2)', families: ['avs'] },
+  { id: 'avs2', label: 'AVS2', families: ['avs2'] },
+  { id: 'avs3', label: 'AVS3', families: ['avs3'], placeholder: true, placeholderNote: '截至 FFmpeg 8.1.2 发行版，编码器 uavs3e 未合并入上游。FFmpeg 仅内置 AVS3 解码 (libuavs3d)，编码需自行打补丁编译。' },
+  { id: 'ffv1', label: 'FFV1', families: ['ffv1'] },
+  { id: 'prores', label: 'Apple ProRes', families: ['prores'] },
+]
+
+export const FALLBACK_CATEGORY_ID = 'avc'
 
 export type EncoderImplementation =
   | 'software'
@@ -125,6 +158,15 @@ export type RateControlModeId =
   | 'qsv-vbr'
   | 'qsv-cbr'
   | 'qsv-la-vbr'
+  | 'av1-nvenc-cq'
+  | 'av1-qsv-icq'
+  | 'av1-qsv-qvbr'
+  | 'av1-amf-cqp'
+  | 'av1-amf-qvbr'
+  | 'av1-vulkan-cqp'
+  | 'rav1e-cqp'
+  | 'vp9-crf'
+  | 'ffv1-default'
 
 // -- parameter definition -------------------------------------
 

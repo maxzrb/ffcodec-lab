@@ -54,6 +54,9 @@ describe('Control Binding Contract', () => {
   it('every encoder with quality modes has at least one control with configBinding', () => {
     for (const enc of [...Object.values(catalog.encoders.video), ...Object.values(catalog.encoders.audio)]) {
       if (enc.qualityModes.length > 0) {
+        // Only check if at least one quality mode has controls (FFV1/ProRes have placeholder modes with no controls)
+        const hasAnyControls = enc.qualityModes.some((qm) => qm.controls.length > 0)
+        if (!hasAnyControls) continue
         const hasAny = enc.qualityModes.some((qm) =>
           qm.controls.some((ctrl) => ctrl.configBinding)
         )

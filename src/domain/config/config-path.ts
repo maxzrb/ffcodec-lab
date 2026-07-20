@@ -89,6 +89,7 @@ export const CONFIG_PATHS = {
 
   video: {
     mode: configPath(['video', 'mode']),
+    codecCategory: configPath(['video', 'codecCategory']),
     encoderId: configPath(['video', 'encoderId']),
     preset: configPath(['video', 'preset']),
     profile: configPath(['video', 'profile']),

@@ -86,6 +86,7 @@ export interface StreamSelectionConfig {
 
 export interface VideoConfig {
   mode: 'encode' | 'copy' | 'disabled'
+  codecCategory?: string
   encoderId?: string
   rateControl?: RateControlConfig
   preset?: string | number

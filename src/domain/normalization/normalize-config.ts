@@ -1,5 +1,6 @@
 import type { ProjectConfig, RateControlConfig } from '../config/project-config'
 import type { Catalog } from '../catalog/catalog-types'
+import { CODEC_CATEGORIES } from '../catalog/catalog-types'
 import type { NormalizationNotice } from '../rules/rule-types'
 
 export interface NormalizationResult {
@@ -55,6 +56,78 @@ export function normalizeConfig(
         to: matchedContainer.id,
         reason: `输出路径使用 .${matchedContainer.extension}，同步切换输出容器`,
       })
+    }
+  }
+
+  // -- codec category → encoder auto-switch ------------------------
+  // 当用户切换编解码类别时，如果当前编码器不属于新类别，自动切换到该类别下的第一个编码器
+  if (next.video.mode === 'encode' && next.video.codecCategory) {
+    const category = CODEC_CATEGORIES.find((c) => c.id === next.video.codecCategory)
+    if (category) {
+      // 占位分类：清空编码器，让 UI 展示 "暂无编码器" 状态
+      if (category.placeholder) {
+        if (next.video.encoderId) {
+          notices.push({
+            fieldId: 'video.codecCategory',
+            from: next.video.encoderId,
+            to: '<none>',
+            reason: category.placeholderNote ?? `"${category.label}" 在 FFmpeg 8.1.2 发行版中暂无编码器实现`,
+          })
+          config = {
+            ...config,
+            video: {
+              ...config.video,
+              encoderId: '',
+              codecCategory: next.video.codecCategory,
+            },
+          }
+        }
+      } else {
+        const currentEncoder = next.video.encoderId
+          ? catalog.encoders.video[next.video.encoderId]
+          : undefined
+        const belongsToCategory = currentEncoder
+          ? category.families.includes(currentEncoder.family)
+          : false
+
+        if (!belongsToCategory) {
+          const firstEncoder = Object.values(catalog.encoders.video).find((enc) =>
+            category.families.includes(enc.family),
+          )
+          if (firstEncoder) {
+            notices.push({
+              fieldId: 'video.codecCategory',
+              from: previous.video.encoderId ?? '<none>',
+              to: firstEncoder.id,
+              reason: `编解码类别切换至 "${category.label}"，编码器自动切换为 ${firstEncoder.id}`,
+            })
+            config = {
+              ...config,
+              video: {
+                ...config.video,
+                encoderId: firstEncoder.id,
+                codecCategory: next.video.codecCategory,
+              },
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Derive category from encoder if no explicit category selected
+  if (next.video.mode === 'encode' && next.video.encoderId && !next.video.codecCategory) {
+    const encoder = catalog.encoders.video[next.video.encoderId]
+    if (encoder) {
+      const derivedCategory = CODEC_CATEGORIES.find((c) =>
+        c.families.includes(encoder.family),
+      )
+      if (derivedCategory) {
+        config = {
+          ...config,
+          video: { ...config.video, codecCategory: derivedCategory.id },
+        }
+      }
     }
   }
 

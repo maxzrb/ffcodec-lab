@@ -7,6 +7,12 @@ import { resolveVideoSection } from '../../domain/presentation/resolve-section'
 import { renderBash } from '../../domain/shell/bash-renderer'
 import { isRawParameterDictionary, synchronizeVideoParameterDictionary } from '../../domain/catalog/parameter-dictionary'
 
+// 与 resolve-section.ts 中的 GENERIC_CODEC_ARG_NAMES 保持一致
+const GENERIC_CODEC_ARG_NAMES = new Set([
+  '-g', '-bf', '-keyint_min', '-qmin', '-qmax', '-qcomp',
+  '-refs', '-level', '-rc-lookahead', '-aq-strength', '-sc_threshold', '-threads',
+])
+
 const catalog = loadCatalog()
 
 function configForEncoder(encoderId: string) {
@@ -35,9 +41,9 @@ function configForEncoder(encoderId: string) {
 }
 
 describe('视频编码器高级参数统一契约', () => {
-  it('13 个编码器都提供独立高级参数，空配置不会发射私有默认值', () => {
+  it('40 个编码器都提供独立高级参数，空配置不会发射私有默认值', () => {
     const encoders = Object.values(catalog.encoders.video)
-    expect(encoders).toHaveLength(13)
+    expect(encoders).toHaveLength(40)
 
     for (const encoder of encoders) {
       expect(encoder.specialParameters.length, encoder.id).toBeGreaterThan(0)
@@ -45,8 +51,10 @@ describe('视频编码器高级参数统一契约', () => {
       const section = resolveVideoAdvancedSection(config, catalog, {})
       const plan = buildCommandPlan(config, catalog, [])
 
-      expect(section.id).toBe('section.video-advanced')
-      const advancedControls = encoder.specialParameters.filter((control) => !isRawParameterDictionary(control))
+      expect(section.id).toBe('section.encoder-private')
+      const advancedControls = encoder.specialParameters
+        .filter((control) => !isRawParameterDictionary(control))
+        .filter((control) => !GENERIC_CODEC_ARG_NAMES.has(control.commandBinding?.argName ?? ''))
       expect(section.fields.length, encoder.id).toBe(advancedControls.length)
       expect(section.fields.every((field) => field.optional && field.value === '')).toBe(true)
       expect(plan.invocations[0].output.codecArgs.some((arg) => arg.id.startsWith('codec.special.'))).toBe(false)
