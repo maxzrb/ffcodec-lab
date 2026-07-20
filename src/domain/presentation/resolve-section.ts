@@ -696,10 +696,13 @@ export function resolveFrameSection(
     value: unknown,
     options?: ResolvedField['options'],
     range?: { min?: number; max?: number; step?: number },
+    extra?: { description?: string; explanationId?: string },
   ) => {
     fields.push({
       id,
       label,
+      description: extra?.description,
+      explanationId: extra?.explanationId,
       controlType,
       value,
       options,
@@ -720,10 +723,10 @@ export function resolveFrameSection(
   const filters = config.frame.filters ?? createDefaultAdvancedVideoFilters()
   addFilterField('frame.filters.crop.enabled', '启用裁剪', 'switch', filters.crop.enabled)
   if (filters.crop.enabled) {
-    addFilterField('frame.filters.crop.width', '裁剪宽度', 'number', filters.crop.width, undefined, { min: 2, max: 7680, step: 2 })
-    addFilterField('frame.filters.crop.height', '裁剪高度', 'number', filters.crop.height, undefined, { min: 2, max: 4320, step: 2 })
-    addFilterField('frame.filters.crop.x', '裁剪起点 X', 'number', filters.crop.x, undefined, { min: 0, max: 7680, step: 2 })
-    addFilterField('frame.filters.crop.y', '裁剪起点 Y', 'number', filters.crop.y, undefined, { min: 0, max: 4320, step: 2 })
+    addFilterField('frame.filters.crop.width', '裁剪宽度', 'number', filters.crop.width, undefined, { min: 2, max: 7680, step: 2 }, { description: '裁剪后保留的画面宽度，单位像素。', explanationId: 'expl.filter.crop.width' })
+    addFilterField('frame.filters.crop.height', '裁剪高度', 'number', filters.crop.height, undefined, { min: 2, max: 4320, step: 2 }, { description: '裁剪后保留的画面高度，单位像素。', explanationId: 'expl.filter.crop.height' })
+    addFilterField('frame.filters.crop.x', '左侧偏移', 'number', filters.crop.x, undefined, { min: 0, max: 7680, step: 2 }, { description: '从画面左边缘往右跳过多少像素后开始保留。0 从最左边开始。', explanationId: 'expl.filter.crop.x' })
+    addFilterField('frame.filters.crop.y', '顶部偏移', 'number', filters.crop.y, undefined, { min: 0, max: 4320, step: 2 }, { description: '从画面上边缘往下跳过多少像素后开始保留。0 从最顶部开始。', explanationId: 'expl.filter.crop.y' })
   }
 
   addFilterField(

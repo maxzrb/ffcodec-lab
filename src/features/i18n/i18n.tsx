@@ -279,6 +279,14 @@ const ENGLISH_TEXT: Record<string, string> = {
   '通用转码': 'General transcoding',
   '高质量': 'High quality',
   '启用裁剪': 'Enable crop',
+  '裁剪宽度': 'Crop width',
+  '裁剪高度': 'Crop height',
+  '左侧偏移': 'Left offset',
+  '顶部偏移': 'Top offset',
+  '裁剪后保留的画面宽度，单位像素。': 'Width in pixels to keep after cropping.',
+  '裁剪后保留的画面高度，单位像素。': 'Height in pixels to keep after cropping.',
+  '从画面左边缘往右跳过多少像素后开始保留。0 从最左边开始。': 'Pixels to skip from the left edge before keeping content. 0 starts from the very left.',
+  '从画面上边缘往下跳过多少像素后开始保留。0 从最顶部开始。': 'Pixels to skip from the top edge before keeping content. 0 starts from the very top.',
   '旋转': 'Rotation',
   '水平镜像': 'Flip horizontally',
   '垂直镜像': 'Flip vertically',
@@ -818,6 +826,27 @@ const ENGLISH_EXPLANATIONS: Record<string, { title?: string; short: string; deta
     title: 'Tone-map desaturation strength',
     short: 'Controls how strongly high-brightness colors are desaturated during HDR→SDR tone-mapping, preventing unnaturally vivid mapped colors.',
     detail: 'When HDR brightness is compressed to SDR range, bright areas can appear unnaturally over-saturated. The desat parameter (tonemap desat) exponentially decays saturation in these areas for a more natural look. 0 = no desaturation, higher = stronger effect; starting from 2 is recommended. Too high makes the image look washed out.',
+  },
+  // -- crop filter parameters --
+  'expl.filter.crop.width': {
+    title: 'Crop width',
+    short: 'Width in pixels to keep after cropping. Corresponds to the w parameter of the FFmpeg crop filter: crop=w:h:x:y.',
+    detail: 'Sets the horizontal output dimension in pixels. The difference from the source width is discarded. For example, with a 1920×1080 source, setting width to 1280 trims 640 total pixels from the left and right edges.',
+  },
+  'expl.filter.crop.height': {
+    title: 'Crop height',
+    short: 'Height in pixels to keep after cropping. Corresponds to the h parameter of the FFmpeg crop filter: crop=w:h:x:y.',
+    detail: 'Sets the vertical output dimension in pixels. The difference from the source height is discarded. For example, with a 1920×1080 source, setting height to 720 trims 360 total pixels from the top and bottom edges.',
+  },
+  'expl.filter.crop.x': {
+    title: 'Left offset',
+    short: 'Number of pixels to skip from the left edge before keeping content. 0 starts from the very left.',
+    detail: 'Corresponds to the x parameter of the FFmpeg crop filter. 0 keeps from the leftmost pixel; 320 skips the first 320 pixels. Example: 1920×1080 source, crop width 1280, left offset 320 → keeps the center 1280-pixel horizontal band.',
+  },
+  'expl.filter.crop.y': {
+    title: 'Top offset',
+    short: 'Number of pixels to skip from the top edge before keeping content. 0 starts from the very top.',
+    detail: 'Corresponds to the y parameter of the FFmpeg crop filter. 0 keeps from the topmost pixel; 180 skips the first 180 pixels. Example: 1920×1080 source, crop height 720, top offset 180 → removes 180-pixel letterbox bars top and bottom.',
   },
 }
 

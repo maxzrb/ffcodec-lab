@@ -1343,6 +1343,44 @@ export const explanations: Record<string, ExplanationDefinition> = {
     ],
   },
 
+  // -- 裁剪参数 -----------------------------------------------------
+  'expl.filter.crop.width': {
+    id: 'expl.filter.crop.width',
+    title: '裁剪宽度',
+    short: '最终保留的画面宽度（像素）。相当于 FFmpeg crop 滤镜的 w 参数——crop=w:h:x:y。',
+    detail: '设置裁剪后输出画面的水平像素数。与原始画面宽度的差值部分会被丢弃。例如原始 1920×1080，设置宽度 1280 则左右共裁掉 640 像素。配合左侧偏移可以精确控制保留哪个水平区域。',
+    sourceRefs: [
+      { repository: 'FFmpeg', snapshotDate: '2026-07-10', file: 'ffmpeg-filters.html#crop', sourceType: 'ffmpeg-official' },
+    ],
+  },
+  'expl.filter.crop.height': {
+    id: 'expl.filter.crop.height',
+    title: '裁剪高度',
+    short: '最终保留的画面高度（像素）。相当于 FFmpeg crop 滤镜的 h 参数——crop=w:h:x:y。',
+    detail: '设置裁剪后输出画面的垂直像素数。与原始画面高度的差值部分会被丢弃。例如原始 1920×1080，设置高度 720 则上下共裁掉 360 像素。配合顶部偏移可以精确控制保留哪个垂直区域。',
+    sourceRefs: [
+      { repository: 'FFmpeg', snapshotDate: '2026-07-10', file: 'ffmpeg-filters.html#crop', sourceType: 'ffmpeg-official' },
+    ],
+  },
+  'expl.filter.crop.x': {
+    id: 'expl.filter.crop.x',
+    title: '左侧偏移',
+    short: '从画面左边缘起算，往右跳过多少像素后开始保留。0 表示从最左边开始。',
+    detail: '对应 FFmpeg crop 滤镜的 x 参数。设 0 保留最左端；设 320 则跳过左侧 320 像素，从第 321 像素开始保留。\n\n举例：原始 1920×1080，裁剪宽度 1280、左侧偏移 320，保留第 321 到第 1600 像素的水平区域——实现居中裁剪。',
+    sourceRefs: [
+      { repository: 'FFmpeg', snapshotDate: '2026-07-20', file: 'ffmpeg-filters.html#crop', sourceType: 'ffmpeg-official' },
+    ],
+  },
+  'expl.filter.crop.y': {
+    id: 'expl.filter.crop.y',
+    title: '顶部偏移',
+    short: '从画面上边缘起算，往下跳过多少像素后开始保留。0 表示从最顶部开始。',
+    detail: '对应 FFmpeg crop 滤镜的 y 参数。设 0 保留最顶端；设 180 则跳过顶部 180 像素，从第 181 像素开始保留。\n\n举例：原始 1920×1080，裁剪高度 720、顶部偏移 180，去除上下各 180 像素的黑边，保留中央 720 行。',
+    sourceRefs: [
+      { repository: 'FFmpeg', snapshotDate: '2026-07-20', file: 'ffmpeg-filters.html#crop', sourceType: 'ffmpeg-official' },
+    ],
+  },
+
   // -- NVENC encoders ---------------------------------------------
   'expl.h264_nvenc': {
     id: 'expl.h264_nvenc',
