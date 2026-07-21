@@ -15,4 +15,4 @@ CLAUDE.md
 Codex_FFmpeg命令生成器_项目指令集.md
 docs/codex/
 version/
-apps/web/tsconfig.tsbuildinfo
+*.tsbuildinfo
