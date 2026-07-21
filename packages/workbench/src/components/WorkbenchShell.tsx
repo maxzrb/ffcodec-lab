@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { ResolvedWorkspacePanel } from '@ffcodec/domain/presentation/resolved-field'
+import type { PathFieldRenderer, SettingsSectionExtension } from '@ffcodec/platform-api'
 import { useI18n } from '../features/i18n/i18n'
 import { Dropdown } from './Dropdown'
 import { usePlatform } from '@ffcodec/platform-api'
@@ -10,6 +11,10 @@ interface WorkbenchShellProps {
   onPanelChange: (panelId: string) => void
   content: ReactNode
   inspector: ReactNode
+  /** Platform-specific path field renderer, passed through to content. */
+  pathFieldRenderer?: PathFieldRenderer
+  /** Platform-provided settings sections rendered in the nav sidebar. */
+  settingsSections?: SettingsSectionExtension[]
 }
 
 const SIDEBAR_COLLAPSED_KEY = 'ffcodec-workbench-sidebar-collapsed'
@@ -33,6 +38,8 @@ export function WorkbenchShell({
   onPanelChange,
   content,
   inspector,
+  pathFieldRenderer: _pathFieldRenderer,
+  settingsSections,
 }: WorkbenchShellProps) {
   const { text, locale } = useI18n()
   const platform = usePlatform()
@@ -96,6 +103,16 @@ export function WorkbenchShell({
             </span>
           </button>
         ))}
+        {settingsSections && settingsSections.length > 0 && (
+          <div className="workbench-nav__settings">
+            {settingsSections.map((section) => (
+              <div key={section.id} className="workbench-nav__setting-section">
+                <p className="workbench-nav__setting-title">{section.title}</p>
+                {section.render()}
+              </div>
+            ))}
+          </div>
+        )}
       </nav>
 
       <section className="workbench-content" key={activePanelId}>{content}</section>

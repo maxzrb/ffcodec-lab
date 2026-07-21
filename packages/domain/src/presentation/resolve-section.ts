@@ -80,7 +80,7 @@ export function resolveInputSection(
         file: 'docs/Codex_FFmpeg命令生成器_项目指令集.md',
         sourceType: 'manual-note',
       },
-    ], { path: CONFIG_PATHS.input.path }),
+    ], { path: CONFIG_PATHS.input.path }, 'open-file'),
     resolveTextField(
       'output.path',
       '输出文件路径',
@@ -96,6 +96,7 @@ export function resolveInputSection(
         },
       ],
       { path: CONFIG_PATHS.output.path },
+      'save-file',
     ),
     resolveSwitchField(
       'output.overwrite',
@@ -1048,6 +1049,8 @@ export function resolveSubtitleSection(
         '文件路径',
         track.path,
         fieldStates,
+        undefined, undefined, undefined,
+        'open-file',
       ))
       fields.push({
         id: `subtitle.tracks.${track.id}.externalStreamIndex`,
@@ -1197,6 +1200,8 @@ export function resolveSubtitleSection(
           '字幕文件路径',
           config.subtitle.burn.externalPath,
           fieldStates,
+          undefined, undefined, undefined,
+          'open-file',
         ),
       )
     }

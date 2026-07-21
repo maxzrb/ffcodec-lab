@@ -4,7 +4,7 @@
 // Components contain ZERO FFmpeg business logic.
 // ============================================================
 
-import { useMemo, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useMemo, useCallback, useEffect, useState, Fragment, type ReactNode } from 'react'
 import { useBuilderStore } from './hooks'
 import { usePipeline } from './hooks/usePipeline'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
@@ -35,7 +35,7 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
-  const platform = usePlatform()
+  const { storage, extensions } = usePlatform()
   const config = useBuilderStore((s) => s.config)
   const setConfigValue = useBuilderStore((s) => s.setConfigValue)
   const setConfig = useBuilderStore((s) => s.setConfig)
@@ -49,23 +49,23 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
   const commandPreviewCleared = useBuilderStore((s) => s.commandPreviewCleared)
   const clearAllCommands = useBuilderStore((s) => s.clearAllCommands)
   const [theme, setTheme] = useState<ThemeKind>(() =>
-    platform.storage.getItem('ffcodec-theme') === 'dark' ? 'dark' : 'light',
+    storage.getItem('ffcodec-theme') === 'dark' ? 'dark' : 'light',
   )
   const [locale, setLocale] = useState<Locale>(() =>
-    platform.storage.getItem('ffcodec-locale') === 'en' ? 'en' : 'zh-CN',
+    storage.getItem('ffcodec-locale') === 'en' ? 'en' : 'zh-CN',
   )
   const isZh = locale === 'zh-CN'
   const text = useCallback((value: string) => translateText(value, locale), [locale])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    platform.storage.setItem('ffcodec-theme', theme)
-  }, [theme, platform])
+    storage.setItem('ffcodec-theme', theme)
+  }, [theme, storage])
 
   useEffect(() => {
     document.documentElement.lang = locale === 'zh-CN' ? 'zh-CN' : 'en'
-    platform.storage.setItem('ffcodec-locale', locale)
-  }, [locale, platform])
+    storage.setItem('ffcodec-locale', locale)
+  }, [locale, storage])
 
   const pipeline = usePipeline(config, catalog)
 
@@ -87,7 +87,7 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
   // Preset manager
   const [showPresetManager, setShowPresetManager] = useState(false)
   const [shareNotice, setShareNotice] = useState<string | null>(null)
-  const [inspectorTab, setInspectorTab] = useState<'command' | 'diagnostics'>('command')
+  const [inspectorTab, setInspectorTab] = useState<string>('command')
 
   useEffect(() => {
     if (!window.location.hash) return
@@ -293,6 +293,9 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
             {isZh ? '管理预设' : 'Presets'}
           </button>
           {shareNotice && <span className="share-notice" role="status">{shareNotice}</span>}
+          {extensions?.headerItems?.map((item, i) => (
+            <Fragment key={`header-ext-${i}`}>{item}</Fragment>
+          ))}
         </div>
       </header>
 
@@ -300,6 +303,7 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
         panels={view.panels}
         activePanelId={activePanel.id}
         onPanelChange={handlePanelChange}
+        settingsSections={extensions?.settingsSections}
         content={(
           <>
             {activePanel.stateNotice && (
@@ -314,6 +318,7 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
                 onFieldChange={handleFieldChange}
                 onExplain={handleExplain}
                 highlightedFieldId={highlightedFieldId}
+                pathFieldRenderer={extensions?.pathFieldRenderer}
                 actions={section.id === 'section.subtitle' ? (
                   <SubtitleSectionActions
                     tracks={config.subtitle.tracks}
@@ -337,6 +342,20 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
                   <span className="inspector-tab__badge">{view.messages.length}</span>
                 )}
               </button>
+              {extensions?.inspectorTabs?.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={inspectorTab === tab.id}
+                  onClick={() => setInspectorTab(tab.id)}
+                >
+                  {tab.label}
+                  {tab.badge != null && (
+                    <span className="inspector-tab__badge">{tab.badge}</span>
+                  )}
+                </button>
+              ))}
             </div>
             {inspectorTab === 'command' ? (
               <div className="inspector-panel" key="command">
@@ -349,13 +368,14 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
                   onShellChange={handleShellChange}
                   onClear={handleClearAllCommands}
                   onTokenClick={handleTokenClick}
+                  commandActions={extensions?.commandActions?.map((a) => a.render())}
                 />
                 <CommandEditor
                   generatedCommand={commandPreviewCleared ? '' : pipeline.renderedCommand.text}
                   cleared={commandPreviewCleared}
                 />
               </div>
-            ) : (
+            ) : inspectorTab === 'diagnostics' ? (
               <div className="inspector-panel" key="diagnostics">
                 <DiagnosticPanel
                   diagnostics={view.messages}
@@ -369,7 +389,11 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
                   onApplyFix={handleApplyDiagnosticFix}
                 />
               </div>
-            )}
+            ) : extensions?.inspectorTabs?.some((tab) => tab.id === inspectorTab) ? (
+              <div className="inspector-panel" key={inspectorTab}>
+                {extensions.inspectorTabs.find((tab) => tab.id === inspectorTab)!.render()}
+              </div>
+            ) : null}
           </>
         )}
       />

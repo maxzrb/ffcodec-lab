@@ -42,6 +42,8 @@ export default defineConfig({
       alias: {
         '@ffcodec/workbench': resolve(__dirname, '../../packages/workbench/src'),
         '@ffcodec/platform-api': resolve(__dirname, '../../packages/platform-api/src'),
+        '@ffcodec/domain': resolve(__dirname, '../../packages/domain/src'),
+        '@ffcodec/catalog': resolve(__dirname, '../../packages/catalog/src'),
       },
     },
   },

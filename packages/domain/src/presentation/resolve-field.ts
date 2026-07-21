@@ -131,6 +131,7 @@ export function resolveTextField(
   explanationId?: string,
   sourceRefs?: ResolvedField['sourceRefs'],
   configBinding?: ResolvedField['configBinding'],
+  pathKind?: ResolvedField['pathKind'],
 ): ResolvedField {
   const state = findFieldState(fieldStates, id)
   return {
@@ -148,6 +149,7 @@ export function resolveTextField(
     commandOrigins: [],
     diagnostics: [],
     configBinding,
+    pathKind,
   }
 }
 

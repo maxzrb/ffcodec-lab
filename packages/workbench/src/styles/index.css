@@ -1582,6 +1582,77 @@ code {
   overflow: auto;
 }
 
+/* ---- Desktop path field (text input + browse button) ---- */
+.desktop-path-field {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+}
+.desktop-path-field input {
+  flex: 1;
+  min-width: 0;
+}
+.desktop-path-field button {
+  flex-shrink: 0;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+/* ---- Desktop settings in workbench nav ---- */
+.workbench-nav__settings {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.workbench-nav__setting-section {
+  padding: 4px 8px;
+}
+.workbench-nav__setting-title {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* ---- Desktop settings section content ---- */
+.desktop-settings-section__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  color: var(--text);
+}
+.desktop-settings-section__hint {
+  margin: 0 0 4px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.desktop-settings-section__input {
+  width: 100%;
+  font-size: 11px;
+  padding: 3px 6px;
+}
+
+/* ---- Desktop status pill in header ---- */
+.desktop-status-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ---- Desktop run button ---- */
+.button--run {
+  margin-left: 4px;
+}
+
 @media (max-width: 980px) {
   .builder-page { width: min(100% - 24px, 760px); padding-top: 68px; }
   .product-header { align-items: flex-start; flex-direction: column; }

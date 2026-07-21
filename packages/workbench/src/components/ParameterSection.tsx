@@ -7,6 +7,7 @@
 
 import type { ResolvedField, ResolvedSection } from '@ffcodec/domain/presentation/resolved-field'
 import type { ReactNode } from 'react'
+import type { PathFieldRenderer } from '@ffcodec/platform-api'
 import { useCallback } from 'react'
 import { ParameterField } from './ParameterField'
 import { useI18n } from '../features/i18n/i18n'
@@ -19,6 +20,8 @@ interface ParameterSectionProps {
   onExplain: (fieldId: string) => void
   highlightedFieldId?: string
   actions?: ReactNode
+  /** Platform-specific path field renderer, passed through to ParameterField. */
+  pathFieldRenderer?: PathFieldRenderer
 }
 
 interface FieldGroup {
@@ -87,6 +90,7 @@ export function ParameterSection({
   onExplain,
   highlightedFieldId,
   actions,
+  pathFieldRenderer,
 }: ParameterSectionProps) {
   const { text } = useI18n()
 
@@ -97,6 +101,7 @@ export function ParameterSection({
       onChange={(v) => onFieldChange(field.id, v)}
       onExplain={onExplain}
       highlighted={field.id === highlightedFieldId}
+      pathFieldRenderer={pathFieldRenderer}
     />
   )
 

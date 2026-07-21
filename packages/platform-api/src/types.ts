@@ -34,6 +34,8 @@ export interface StorageAdapter {
 export interface PlatformAdapter {
   capabilities: PlatformCapabilities
   storage: StorageAdapter
+  /** Optional workbench extensions — desktop provides these; web omits them. */
+  extensions?: WorkbenchExtensions
 }
 
 // ---- Workbench extension points (desktop injects UI via these) ----

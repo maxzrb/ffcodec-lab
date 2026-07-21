@@ -7,15 +7,18 @@
 import type { ResolvedField } from '@ffcodec/domain/presentation/resolved-field'
 import { useI18n } from '../features/i18n/i18n'
 import { Dropdown } from './Dropdown'
+import type { PathFieldRenderer } from '@ffcodec/platform-api'
 
 interface ParameterFieldProps {
   field: ResolvedField
   onChange: (value: unknown) => void
   onExplain?: (fieldId: string) => void
   highlighted?: boolean
+  /** Platform-specific path field renderer (e.g. Browse button on desktop). */
+  pathFieldRenderer?: PathFieldRenderer
 }
 
-export function ParameterField({ field, onChange, onExplain, highlighted }: ParameterFieldProps) {
+export function ParameterField({ field, onChange, onExplain, highlighted, pathFieldRenderer }: ParameterFieldProps) {
   const { locale, text } = useI18n()
   if (!field.visible) return null
 
@@ -55,7 +58,7 @@ export function ParameterField({ field, onChange, onExplain, highlighted }: Para
         </div>
       )}
 
-      {renderControl(field, onChange, field.disabled, controlId, text)}
+      {renderControl(field, onChange, field.disabled, controlId, text, pathFieldRenderer)}
 
       {field.disabled && field.disabledReason && (
         <DisabledReason reason={text(field.disabledReason)} locale={locale} />
@@ -84,7 +87,18 @@ function renderControl(
   disabled: boolean,
   controlId: string,
   text: (value: string) => string,
+  pathFieldRenderer?: PathFieldRenderer,
 ) {
+  // If a platform path renderer is available and this field is a file path, delegate
+  if (field.pathKind && pathFieldRenderer) {
+    return pathFieldRenderer({
+      fieldId: field.id,
+      value: field.value !== undefined && field.value !== null ? String(field.value) : '',
+      kind: field.pathKind,
+      onChange: (v) => onChange(sanitizeTextValue(v)),
+    })
+  }
+
   switch (field.controlType) {
     case 'section':
       return (

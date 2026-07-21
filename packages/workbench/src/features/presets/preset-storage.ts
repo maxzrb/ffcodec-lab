@@ -4,12 +4,10 @@
 // or server-side storage later.
 // ============================================================
 
-export interface StorageAdapter {
-  getItem(key: string): string | null
-  setItem(key: string, value: string): void
-  removeItem(key: string): void
-  keys(): string[]
-}
+// Re-export the canonical StorageAdapter from platform-api
+import type { StorageAdapter } from '@ffcodec/platform-api'
+
+export type { StorageAdapter }
 
 export class LocalStorageAdapter implements StorageAdapter {
   getItem(key: string): string | null {

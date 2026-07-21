@@ -1,10 +1,15 @@
 // ============================================================
 // Desktop Platform Adapter — Electron implementation.
 // Phase 4: localStorage-based storage (same as web for now).
+// Phase 5: extensions for desktop-specific UI (path fields, etc.).
 // Later phases: electron-store for persistent settings.
 // ============================================================
 
-import type { PlatformAdapter, StorageAdapter } from '@ffcodec/platform-api'
+import type { PlatformAdapter, StorageAdapter, WorkbenchExtensions } from '@ffcodec/platform-api'
+import { DesktopPathField } from './components/DesktopPathField'
+import { DesktopHeaderItems } from './components/DesktopHeaderItems'
+import { desktopCommandActions } from './components/DesktopCommandActions'
+import { desktopSettingsSections } from './components/DesktopSettingsSection'
 
 /** localStorage-backed storage for Electron renderer (temporary). */
 class ElectronStorageAdapter implements StorageAdapter {
@@ -46,6 +51,13 @@ class ElectronStorageAdapter implements StorageAdapter {
   }
 }
 
+const desktopExtensions: WorkbenchExtensions = {
+  headerItems: [<DesktopHeaderItems key="ffmpeg-status" />],
+  pathFieldRenderer: DesktopPathField,
+  commandActions: desktopCommandActions,
+  settingsSections: desktopSettingsSections,
+}
+
 /** Full desktop platform adapter. Capabilities declare what desktop can do. */
 export const desktopPlatform: PlatformAdapter = {
   capabilities: {
@@ -56,4 +68,5 @@ export const desktopPlatform: PlatformAdapter = {
     persistentEncodingHistory: false, // Phase 11
   },
   storage: new ElectronStorageAdapter(),
+  extensions: desktopExtensions,
 }

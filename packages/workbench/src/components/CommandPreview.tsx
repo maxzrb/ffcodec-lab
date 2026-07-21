@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import type { CommandArg, CommandPlan } from '@ffcodec/domain/command/command-ast'
 import type { ShellKind } from '@ffcodec/domain/config/project-config'
 import type { RenderedCommand } from '@ffcodec/domain/shell/shell-types'
@@ -14,6 +14,8 @@ interface CommandPreviewProps {
   onShellChange: (shell: ShellKind) => void
   onClear: () => void
   onTokenClick?: (originId: string) => void
+  /** Platform-provided action buttons rendered in the command toolbar. */
+  commandActions?: ReactNode[]
 }
 
 export function CommandPreview({
@@ -25,6 +27,7 @@ export function CommandPreview({
   onShellChange,
   onClear,
   onTokenClick,
+  commandActions,
 }: CommandPreviewProps) {
   const { locale } = useI18n()
   const [multiline, setMultiline] = useState(false)
@@ -78,6 +81,9 @@ export function CommandPreview({
         >
           {locale === 'zh-CN' ? '清空全部' : 'Clear all'}
         </button>
+        {commandActions?.map((action, i) => (
+          <span key={`cmd-action-${i}`}>{action}</span>
+        ))}
         {!cleared && commandPlan.invocations.length > 1 && (
           <span className="meta-pill">
             {locale === 'zh-CN' ? `${commandPlan.invocations.length} 条两遍命令` : `${commandPlan.invocations.length} two-pass commands`}
