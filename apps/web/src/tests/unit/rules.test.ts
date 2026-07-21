@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateExpression, evaluateRules } from '../../domain/rules/rule-evaluator'
-import { RuleIndex } from '../../domain/rules/rule-index'
-import type { ProjectConfig } from '../../domain/config/project-config'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import type { RuleContext } from '../../domain/rules/rule-types'
+import { evaluateExpression, evaluateRules } from '@ffcodec/domain/rules/rule-evaluator'
+import { RuleIndex } from '@ffcodec/catalog/rule-index'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import type { RuleContext } from '@ffcodec/domain/rules/rule-types'
 
 const catalog = loadCatalog()
 

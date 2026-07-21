@@ -3,14 +3,14 @@
 // Never includes command text, local file paths, or customArgs.
 // ============================================================
 
-import type { ProjectConfig } from '../../domain/config/project-config'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 import {
   type ShareableProjectConfig,
   SHARE_PAYLOAD_VERSION,
   shareableConfigSchema,
 } from './share-schema'
-import { migrateConfig } from '../../domain/migration/migrate-config'
-import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '../../domain/migration/migration-registry'
+import { migrateConfig } from '@ffcodec/domain/migration/migrate-config'
+import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '@ffcodec/domain/migration/migration-registry'
 
 /** Maximum URL hash length before falling back to JSON export */
 const MAX_HASH_LENGTH = 2000

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { renderBash } from '../../domain/shell/bash-renderer'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import type { SubtitleTrackConfig } from '../../domain/config/project-config'
-import { validateConfig } from '../../domain/validation/validate-config'
-import { RuleIndex } from '../../domain/rules/rule-index'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import type { SubtitleTrackConfig } from '@ffcodec/domain/config/project-config'
+import { validateConfig } from '@ffcodec/domain/validation/validate-config'
+import { RuleIndex } from '@ffcodec/catalog/rule-index'
 
 const catalog = loadCatalog()
 

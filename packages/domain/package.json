@@ -1,0 +1,13 @@
+{
+  "name": "@ffcodec/domain",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FFCodec Lab — Pure domain logic, zero platform dependencies",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

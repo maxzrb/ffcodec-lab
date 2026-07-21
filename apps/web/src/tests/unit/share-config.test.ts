@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import {
   encodeConfigToShare,
   decodeConfigFromShare,
   toShareable,
 } from '../../features/sharing/share-codec'
-import { migrateConfig } from '../../domain/migration/migrate-config'
-import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '../../domain/migration/migration-registry'
+import { migrateConfig } from '@ffcodec/domain/migration/migrate-config'
+import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '@ffcodec/domain/migration/migration-registry'
 
 describe('Share config — encoding', () => {
   it('encodeConfigToShare returns hash for normal config', () => {

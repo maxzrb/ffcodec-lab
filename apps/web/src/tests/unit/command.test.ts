@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { renderBash } from '../../domain/shell/bash-renderer'
-import { renderPowerShell } from '../../domain/shell/powershell-renderer'
-import { renderCmd } from '../../domain/shell/cmd-renderer'
-import type { ProjectConfig } from '../../domain/config/project-config'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
+import { renderPowerShell } from '@ffcodec/domain/shell/powershell-renderer'
+import { renderCmd } from '@ffcodec/domain/shell/cmd-renderer'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 
 const catalog = loadCatalog()
 

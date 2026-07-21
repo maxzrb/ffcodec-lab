@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import type { ProjectConfig } from '../../domain/config/project-config'
-import { normalizeConfig } from '../../domain/normalization'
-import { applyFieldChange } from '../../domain/presentation/apply-field-change'
-import { resolveBuilderView } from '../../domain/presentation/resolve-builder-view'
-import { evaluateRules } from '../../domain/rules/rule-evaluator'
-import { RuleIndex } from '../../domain/rules/rule-index'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import { normalizeConfig } from '@ffcodec/domain/normalization'
+import { applyFieldChange } from '@ffcodec/domain/presentation/apply-field-change'
+import { resolveBuilderView } from '@ffcodec/domain/presentation/resolve-builder-view'
+import { evaluateRules } from '@ffcodec/domain/rules/rule-evaluator'
+import { RuleIndex } from '@ffcodec/catalog/rule-index'
 
 const catalog = loadCatalog()
 const rules = new RuleIndex()

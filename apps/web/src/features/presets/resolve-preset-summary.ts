@@ -4,8 +4,8 @@
 // Zero hardcoded encoder/container IDs.
 // ============================================================
 
-import type { ProjectConfig } from '../../domain/config/project-config'
-import type { Catalog } from '../../domain/catalog/catalog-types'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import type { Catalog } from '@ffcodec/domain/catalog/catalog-types'
 import type { Locale } from '../i18n/i18n'
 import { translateText } from '../i18n/i18n'
 

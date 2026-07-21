@@ -1,0 +1,10 @@
+{
+  "name": "@ffcodec/catalog",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FFCodec Lab — Encoder catalog, parameter definitions, container data",
+  "exports": {
+    "./*": "./src/*"
+  }
+}

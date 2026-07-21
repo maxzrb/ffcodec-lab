@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { buildFixSuggestions } from '../../domain/diagnostics/build-fix-suggestions'
-import { applyFix, isAllowedOperation } from '../../domain/diagnostics/apply-diagnostic-fix'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { CONFIG_PATHS } from '../../domain/config/config-path'
-import type { Diagnostic, DiagnosticFix } from '../../domain/rules/rule-types'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { buildFixSuggestions } from '@ffcodec/domain/diagnostics/build-fix-suggestions'
+import { applyFix, isAllowedOperation } from '@ffcodec/domain/diagnostics/apply-diagnostic-fix'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { CONFIG_PATHS } from '@ffcodec/domain/config/config-path'
+import type { Diagnostic, DiagnosticFix } from '@ffcodec/domain/rules/rule-types'
 
 const catalog = loadCatalog()
 

@@ -3,7 +3,7 @@
 // 来源引用仅供内部目录审计，不在产品界面暴露。
 // ============================================================
 
-import type { ExplanationDefinition } from '../../domain/catalog/catalog-types'
+import type { ExplanationDefinition } from '@ffcodec/domain/catalog/catalog-types'
 import { localizeExplanation, useI18n } from '../i18n/i18n'
 
 interface ExplanationPanelProps {

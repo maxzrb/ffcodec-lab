@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { addSubtitleTrack, removeSubtitleTrack } from '../../domain/config/project-actions'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { flattenInvocation } from '../../domain/command/argument-order'
+import { addSubtitleTrack, removeSubtitleTrack } from '@ffcodec/domain/config/project-actions'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { flattenInvocation } from '@ffcodec/domain/command/argument-order'
 import { decodeConfigFromShare, encodeConfigToShare } from '../../features/sharing/share-codec'
 
 const catalog = loadCatalog()

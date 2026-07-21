@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { renderBash } from '../../domain/shell/bash-renderer'
-import { audioEncoders } from '../../data/encoders/audio'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
+import { audioEncoders } from '@ffcodec/catalog/data/encoders/audio'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 
 const catalog = loadCatalog()
 

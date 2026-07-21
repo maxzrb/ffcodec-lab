@@ -6,10 +6,10 @@
 // ============================================================
 
 import { describe, it, expect } from 'vitest'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { getByPath } from '../../utils/object-path'
-import type { ControlDefinition, EncoderDefinition } from '../../domain/catalog/catalog-types'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { getByPath } from '@ffcodec/domain/utils/object-path'
+import type { ControlDefinition, EncoderDefinition } from '@ffcodec/domain/catalog/catalog-types'
 
 const catalog = loadCatalog()
 

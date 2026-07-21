@@ -12,13 +12,13 @@
  * Exit code 1 if any issues found.
  */
 
-import { videoEncoders } from '../apps/web/src/data/encoders/video'
-import { audioEncoders } from '../apps/web/src/data/encoders/audio'
-import { containers } from '../apps/web/src/data/containers'
-import { explanations } from '../apps/web/src/data/explanations'
-import { parameters } from '../apps/web/src/data/parameters'
-import { builtinRules } from '../apps/web/src/data/rules'
-import type { EncoderDefinition, ContainerDefinition, ParameterDefinition } from '../apps/web/src/domain/catalog/catalog-types'
+import { videoEncoders } from '@ffcodec/catalog/data/encoders/video'
+import { audioEncoders } from '@ffcodec/catalog/data/encoders/audio'
+import { containers } from '@ffcodec/catalog/data/containers'
+import { explanations } from '@ffcodec/catalog/data/explanations'
+import { parameters } from '@ffcodec/catalog/data/parameters'
+import { builtinRules } from '@ffcodec/catalog/data/rules'
+import type { EncoderDefinition, ContainerDefinition, ParameterDefinition } from '@ffcodec/domain/catalog/catalog-types'
 
 const errors: string[] = []
 const warnings: string[] = []
@@ -281,7 +281,7 @@ function checkQualityModeArgs(encoder: EncoderDefinition) {
 }
 
 // Check configBinding paths
-import { isValidConfigPath } from '../apps/web/src/domain/config/config-path'
+import { isValidConfigPath } from '@ffcodec/domain/config/config-path'
 
 function checkConfigBindings(encoder: EncoderDefinition) {
   let hasConfigBinding = false

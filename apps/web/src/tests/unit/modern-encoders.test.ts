@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { renderBash } from '../../domain/shell/bash-renderer'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
 
 const catalog = loadCatalog()
 

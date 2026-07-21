@@ -1,10 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ProjectConfig } from '../domain/config/project-config'
-import { createDefaultProjectConfig } from '../domain/config/defaults'
-import { projectConfigSchema } from '../domain/config/config-schema'
-import { migrateConfig } from '../domain/migration/migrate-config'
-import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '../domain/migration/migration-registry'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { projectConfigSchema } from '@ffcodec/domain/config/config-schema'
+import { migrateConfig } from '@ffcodec/domain/migration/migrate-config'
+import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '@ffcodec/domain/migration/migration-registry'
 
 // ============================================================
 // Zustand store — holds ProjectConfig and UI session state.

@@ -4,8 +4,8 @@
 // ============================================================
 
 import { z } from 'zod'
-import type { ProjectConfig } from '../../domain/config/project-config'
-import { projectConfigSchema } from '../../domain/config/config-schema'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import { projectConfigSchema } from '@ffcodec/domain/config/config-schema'
 
 /** Schema version for forward/backward compatibility */
 export const CURRENT_PRESET_SCHEMA_VERSION = 1

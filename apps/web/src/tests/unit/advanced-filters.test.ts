@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { projectConfigSchema } from '../../domain/config/config-schema'
-import { buildVideoFilterChain, renderFilterChain } from '../../domain/filters/video-filter-builder'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { validateConfig } from '../../domain/validation'
-import { RuleIndex } from '../../domain/rules/rule-index'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { projectConfigSchema } from '@ffcodec/domain/config/config-schema'
+import { buildVideoFilterChain, renderFilterChain } from '@ffcodec/domain/filters/video-filter-builder'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { validateConfig } from '@ffcodec/domain/validation'
+import { RuleIndex } from '@ffcodec/catalog/rule-index'
 
 describe('高级视频滤镜', () => {
   it('按固定顺序合并为单个 -vf 参数', () => {

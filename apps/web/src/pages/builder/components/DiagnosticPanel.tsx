@@ -1,7 +1,7 @@
-import type { Diagnostic, DiagnosticFix } from '../../../domain/rules/rule-types'
-import { buildFixSuggestions } from '../../../domain/diagnostics/build-fix-suggestions'
-import { presentDiagnostic } from '../../../domain/presentation/present-diagnostic'
-import type { Catalog } from '../../../domain/catalog/catalog-types'
+import type { Diagnostic, DiagnosticFix } from '@ffcodec/domain/rules/rule-types'
+import { buildFixSuggestions } from '@ffcodec/domain/diagnostics/build-fix-suggestions'
+import { presentDiagnostic } from '@ffcodec/domain/presentation/present-diagnostic'
+import type { Catalog } from '@ffcodec/domain/catalog/catalog-types'
 import { useI18n } from '../../../features/i18n/i18n'
 
 interface DiagnosticPanelProps {

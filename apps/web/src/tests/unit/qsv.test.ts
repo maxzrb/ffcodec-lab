@@ -3,13 +3,13 @@
 // ============================================================
 
 import { describe, it, expect } from 'vitest'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { renderBash, renderPowerShell, renderCmd } from '../../domain/shell'
-import { videoEncoders } from '../../data/encoders/video'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { normalizeConfig } from '../../domain/normalization'
-import type { ProjectConfig } from '../../domain/config/project-config'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { renderBash, renderPowerShell, renderCmd } from '@ffcodec/domain/shell'
+import { videoEncoders } from '@ffcodec/catalog/data/encoders/video'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { normalizeConfig } from '@ffcodec/domain/normalization'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 
 const catalog = loadCatalog()
 

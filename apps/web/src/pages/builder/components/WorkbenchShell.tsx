@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import type { ResolvedWorkspacePanel } from '../../../domain/presentation/resolved-field'
+import type { ResolvedWorkspacePanel } from '@ffcodec/domain/presentation/resolved-field'
 import { useI18n } from '../../../features/i18n/i18n'
 import { Dropdown } from './Dropdown'
 

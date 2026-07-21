@@ -5,7 +5,7 @@
 // nav bar rendered above the groups.
 // ============================================================
 
-import type { ResolvedField, ResolvedSection } from '../../../domain/presentation/resolved-field'
+import type { ResolvedField, ResolvedSection } from '@ffcodec/domain/presentation/resolved-field'
 import type { ReactNode } from 'react'
 import { useCallback } from 'react'
 import { ParameterField } from './ParameterField'

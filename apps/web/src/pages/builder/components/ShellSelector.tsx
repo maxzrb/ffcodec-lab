@@ -1,4 +1,4 @@
-import type { ShellKind } from '../../../domain/config/project-config'
+import type { ShellKind } from '@ffcodec/domain/config/project-config'
 import { useI18n } from '../../../features/i18n/i18n'
 
 interface ShellSelectorProps {

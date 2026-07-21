@@ -9,8 +9,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BuilderPage } from '../../pages/builder/BuilderPage'
 import { useBuilderStore } from '../../store'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import type { ProjectConfig } from '../../domain/config/project-config'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 
 /**
  * 在自定义 Dropdown 中选择选项。

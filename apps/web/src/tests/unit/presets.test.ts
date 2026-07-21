@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { PresetService } from '../../features/presets/preset-service'
 import { getBuiltinPresets } from '../../features/presets/preset-service'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import type { ProjectConfig } from '../../domain/config/project-config'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 
 // In-memory storage adapter for testing
 class MemoryStorage {

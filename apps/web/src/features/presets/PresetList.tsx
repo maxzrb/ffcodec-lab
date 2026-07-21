@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { UserPreset } from './preset-types'
-import type { Catalog } from '../../domain/catalog/catalog-types'
+import type { Catalog } from '@ffcodec/domain/catalog/catalog-types'
 import { resolvePresetSummary } from './resolve-preset-summary'
 import { useI18n } from '../i18n/i18n'
 

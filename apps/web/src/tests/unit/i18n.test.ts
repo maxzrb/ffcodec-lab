@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { localizeExplanation, translateText } from '../../features/i18n/i18n'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import {
   resolveAudioSection,
   resolveContainerSection,
@@ -11,7 +11,7 @@ import {
   resolveSubtitleSection,
   resolveVideoSection,
   resolveUtilityToolsSection,
-} from '../../domain/presentation/resolve-section'
+} from '@ffcodec/domain/presentation/resolve-section'
 
 const catalog = loadCatalog()
 const containsChinese = (value: string) => /[一-龥]/.test(value)

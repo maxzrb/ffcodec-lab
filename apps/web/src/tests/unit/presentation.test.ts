@@ -5,7 +5,7 @@ import {
   resolveTextField,
   resolveSwitchField,
   attachDiagnostics,
-} from '../../domain/presentation/resolve-field'
+} from '@ffcodec/domain/presentation/resolve-field'
 import {
   resolveInputSection,
   resolveVideoSection,
@@ -13,15 +13,15 @@ import {
   resolveAudioSection,
   resolveSubtitleSection,
   resolveContainerSection,
-} from '../../domain/presentation/resolve-section'
-import { resolveBuilderView } from '../../domain/presentation/resolve-builder-view'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { evaluateRules } from '../../domain/rules/rule-evaluator'
-import { RuleIndex } from '../../domain/rules/rule-index'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import type { ProjectConfig } from '../../domain/config/project-config'
-import type { ControlDefinition } from '../../domain/catalog/catalog-types'
+} from '@ffcodec/domain/presentation/resolve-section'
+import { resolveBuilderView } from '@ffcodec/domain/presentation/resolve-builder-view'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { evaluateRules } from '@ffcodec/domain/rules/rule-evaluator'
+import { RuleIndex } from '@ffcodec/catalog/rule-index'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import type { ControlDefinition } from '@ffcodec/domain/catalog/catalog-types'
 
 const catalog = loadCatalog()
 

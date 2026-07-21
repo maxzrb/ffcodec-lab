@@ -4,14 +4,14 @@
 // ============================================================
 
 import { useState, useCallback } from 'react'
-import type { ProjectConfig } from '../../domain/config/project-config'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import type { UserPreset } from './preset-types'
 import { getPresetService, getBuiltinPresets } from './preset-service'
 import { PresetList } from './PresetList'
 import { PresetEditorDialog } from './PresetEditorDialog'
 import { PresetImportDialog } from './PresetImportDialog'
-import type { NormalizationNotice } from '../../domain/rules/rule-types'
+import type { NormalizationNotice } from '@ffcodec/domain/rules/rule-types'
 import { useI18n } from '../i18n/i18n'
 
 interface PresetManagerProps {

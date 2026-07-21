@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { videoEncoders } from '../../data/encoders/video'
-import { audioEncoders } from '../../data/encoders/audio'
-import { isValidConfigPath, configPath, CONFIG_PATHS } from '../../domain/config/config-path'
+import { videoEncoders } from '@ffcodec/catalog/data/encoders/video'
+import { audioEncoders } from '@ffcodec/catalog/data/encoders/audio'
+import { isValidConfigPath, configPath, CONFIG_PATHS } from '@ffcodec/domain/config/config-path'
 
 describe('Capability catalog', () => {
   it('all video encoders have valid family and implementation', () => {

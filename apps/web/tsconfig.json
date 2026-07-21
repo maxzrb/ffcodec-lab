@@ -3,7 +3,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@ffcodec/domain/*": ["../../packages/domain/src/*"],
+      "@ffcodec/catalog/*": ["../../packages/catalog/src/*"]
     }
   },
   "include": ["src", "vite-env.d.ts"]

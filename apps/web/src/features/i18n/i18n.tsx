@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react'
-import type { ExplanationDefinition } from '../../domain/catalog/catalog-types'
+import type { ExplanationDefinition } from '@ffcodec/domain/catalog/catalog-types'
 
 export type Locale = 'zh-CN' | 'en'
 

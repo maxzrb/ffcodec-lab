@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeConfig } from '../../domain/normalization/normalize-config'
-import type { ProjectConfig } from '../../domain/config/project-config'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
+import { normalizeConfig } from '@ffcodec/domain/normalization/normalize-config'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 
 const catalog = loadCatalog()
 

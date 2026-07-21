@@ -1,9 +1,9 @@
 import { useBuilderStore } from '../../store'
 import { usePipeline } from '../../store/pipeline'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { CatalogIndex } from '../../domain/catalog/catalog-index'
-import type { ShellKind } from '../../domain/config/project-config'
-import type { RateControlConfig } from '../../domain/config/project-config'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { CatalogIndex } from '@ffcodec/catalog/catalog-index'
+import type { ShellKind } from '@ffcodec/domain/config/project-config'
+import type { RateControlConfig } from '@ffcodec/domain/config/project-config'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)

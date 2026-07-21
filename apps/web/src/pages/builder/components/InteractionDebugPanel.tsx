@@ -6,8 +6,8 @@
 // ============================================================
 
 import { useState, useEffect } from 'react'
-import type { ResolvedBuilderView } from '../../../domain/presentation/resolved-field'
-import type { AppliedFieldChange } from '../../../domain/presentation/apply-field-change'
+import type { ResolvedBuilderView } from '@ffcodec/domain/presentation/resolved-field'
+import type { AppliedFieldChange } from '@ffcodec/domain/presentation/apply-field-change'
 
 interface InteractionLogEntry {
   timestamp: number

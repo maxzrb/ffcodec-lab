@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { loadCatalog } from '../../domain/catalog/catalog-loader'
-import { buildCommandPlan } from '../../domain/command/command-builder'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { resolveVideoAdvancedSection } from '../../domain/presentation/resolve-section'
-import { resolveVideoSection } from '../../domain/presentation/resolve-section'
-import { renderBash } from '../../domain/shell/bash-renderer'
-import { isRawParameterDictionary, synchronizeVideoParameterDictionary } from '../../domain/catalog/parameter-dictionary'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { resolveVideoAdvancedSection } from '@ffcodec/domain/presentation/resolve-section'
+import { resolveVideoSection } from '@ffcodec/domain/presentation/resolve-section'
+import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
+import { isRawParameterDictionary, synchronizeVideoParameterDictionary } from '@ffcodec/domain/catalog/parameter-dictionary'
 
 // 与 resolve-section.ts 中的 GENERIC_CODEC_ARG_NAMES 保持一致
 const GENERIC_CODEC_ARG_NAMES = new Set([

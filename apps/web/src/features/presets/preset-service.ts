@@ -3,11 +3,11 @@
 // Stores ProjectConfig, never command strings.
 // ============================================================
 
-import type { ProjectConfig } from '../../domain/config/project-config'
-import { createDefaultProjectConfig } from '../../domain/config/defaults'
-import { projectConfigSchema } from '../../domain/config/config-schema'
-import { migrateConfig } from '../../domain/migration/migrate-config'
-import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '../../domain/migration/migration-registry'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
+import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { projectConfigSchema } from '@ffcodec/domain/config/config-schema'
+import { migrateConfig } from '@ffcodec/domain/migration/migrate-config'
+import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '@ffcodec/domain/migration/migration-registry'
 import type { UserPreset, UserPresetImport } from './preset-types'
 import {
   CURRENT_PRESET_SCHEMA_VERSION,
