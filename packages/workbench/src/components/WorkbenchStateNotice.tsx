@@ -1,5 +1,5 @@
 import type { ResolvedWorkspacePanel } from '@ffcodec/domain/presentation/resolved-field'
-import { useI18n } from '../../../features/i18n/i18n'
+import { useI18n } from '../features/i18n/i18n'
 
 interface WorkbenchStateNoticeProps {
   notice: NonNullable<ResolvedWorkspacePanel['stateNotice']>

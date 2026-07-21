@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import type { ResolvedWorkspacePanel } from '@ffcodec/domain/presentation/resolved-field'
-import { useI18n } from '../../../features/i18n/i18n'
+import { useI18n } from '../features/i18n/i18n'
 import { Dropdown } from './Dropdown'
+import { usePlatform } from '@ffcodec/platform-api'
 
 interface WorkbenchShellProps {
   panels: ResolvedWorkspacePanel[]
@@ -34,15 +35,16 @@ export function WorkbenchShell({
   inspector,
 }: WorkbenchShellProps) {
   const { text, locale } = useI18n()
+  const platform = usePlatform()
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    () => window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true',
+    () => platform.storage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true',
   )
 
   const toggleSidebar = () => {
     setSidebarCollapsed((collapsed) => {
       const next = !collapsed
-      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next))
+      platform.storage.setItem(SIDEBAR_COLLAPSED_KEY, String(next))
       return next
     })
   }

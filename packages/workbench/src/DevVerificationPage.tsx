@@ -1,5 +1,5 @@
-import { useBuilderStore } from '../../store'
-import { usePipeline } from '../../store/pipeline'
+import { useBuilderStore } from './hooks'
+import { usePipeline } from './hooks/usePipeline'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { CatalogIndex } from '@ffcodec/catalog/catalog-index'
 import type { ShellKind } from '@ffcodec/domain/config/project-config'

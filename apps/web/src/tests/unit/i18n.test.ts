@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
-import { localizeExplanation, translateText } from '../../features/i18n/i18n'
+import { localizeExplanation, translateText } from '@ffcodec/workbench/features/i18n/i18n'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import {
   resolveAudioSection,

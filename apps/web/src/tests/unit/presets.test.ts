@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { PresetService } from '../../features/presets/preset-service'
-import { getBuiltinPresets } from '../../features/presets/preset-service'
+import { PresetService } from '@ffcodec/workbench/features/presets/preset-service'
+import { getBuiltinPresets } from '@ffcodec/workbench/features/presets/preset-service'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 

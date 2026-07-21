@@ -9,7 +9,7 @@ import type { ResolvedField, ResolvedSection } from '@ffcodec/domain/presentatio
 import type { ReactNode } from 'react'
 import { useCallback } from 'react'
 import { ParameterField } from './ParameterField'
-import { useI18n } from '../../../features/i18n/i18n'
+import { useI18n } from '../features/i18n/i18n'
 
 interface ParameterSectionProps {
   section: ResolvedSection

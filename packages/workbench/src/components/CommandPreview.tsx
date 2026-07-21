@@ -3,7 +3,7 @@ import type { CommandArg, CommandPlan } from '@ffcodec/domain/command/command-as
 import type { ShellKind } from '@ffcodec/domain/config/project-config'
 import type { RenderedCommand } from '@ffcodec/domain/shell/shell-types'
 import { ShellSelector } from './ShellSelector'
-import { useI18n } from '../../../features/i18n/i18n'
+import { useI18n } from '../features/i18n/i18n'
 
 interface CommandPreviewProps {
   commandPlan: CommandPlan

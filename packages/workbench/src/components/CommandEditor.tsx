@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useI18n } from '../../../features/i18n/i18n'
+import { useI18n } from '../features/i18n/i18n'
 
 export function CommandEditor({
   generatedCommand,

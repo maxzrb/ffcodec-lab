@@ -20,7 +20,7 @@ import {
   makePresetKey,
   ACTIVE_CONFIG_KEY,
   parsePresetKey,
-} from '../persistence/storage-adapter'
+} from './preset-storage'
 
 // -- helpers ----------------------------------------------------
 

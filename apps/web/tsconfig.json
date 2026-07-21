@@ -5,7 +5,11 @@
     "paths": {
       "@/*": ["src/*"],
       "@ffcodec/domain/*": ["../../packages/domain/src/*"],
-      "@ffcodec/catalog/*": ["../../packages/catalog/src/*"]
+      "@ffcodec/catalog/*": ["../../packages/catalog/src/*"],
+      "@ffcodec/workbench": ["../../packages/workbench/src/index.ts"],
+      "@ffcodec/workbench/*": ["../../packages/workbench/src/*"],
+      "@ffcodec/platform-api": ["../../packages/platform-api/src/index.ts"],
+      "@ffcodec/platform-api/*": ["../../packages/platform-api/src/*"]
     }
   },
   "include": ["src", "vite-env.d.ts"]

@@ -1,12 +1,12 @@
 // ============================================================
-// BuilderPage — the formal product UI.
+// WorkbenchApp — the shared product UI for Web and Desktop.
 // Consumes pipeline output + resolved builder view.
 // Components contain ZERO FFmpeg business logic.
 // ============================================================
 
-import { useMemo, useCallback, useEffect, useState } from 'react'
-import { useBuilderStore } from '../../store'
-import { usePipeline } from '../../store/pipeline'
+import { useMemo, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useBuilderStore } from './hooks'
+import { usePipeline } from './hooks/usePipeline'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { CatalogIndex } from '@ffcodec/catalog/catalog-index'
 import { resolveBuilderView } from '@ffcodec/domain/presentation/resolve-builder-view'
@@ -16,25 +16,26 @@ import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 import type { SubtitleTrackConfig } from '@ffcodec/domain/config/project-config'
 import { ParameterSection } from './components/ParameterSection'
 import { CommandPreview } from './components/CommandPreview'
-import { ExplanationPanel } from '../../features/explanations/ExplanationPanel'
-import { PresetManager } from '../../features/presets/PresetManager'
+import { ExplanationPanel } from './features/explanations/ExplanationPanel'
+import { PresetManager } from './features/presets/PresetManager'
 import { addSubtitleTrack, removeSubtitleTrack } from '@ffcodec/domain/config/project-actions'
-import { decodeConfigFromShare, encodeConfigToShare } from '../../features/sharing/share-codec'
-import { I18nProvider, translateText, useI18n, type Locale } from '../../features/i18n/i18n'
+import { decodeConfigFromShare, encodeConfigToShare } from './features/sharing/share-codec'
+import { I18nProvider, translateText, useI18n, type Locale } from './features/i18n/i18n'
 import { DiagnosticPanel } from './components/DiagnosticPanel'
 import { applyFix } from '@ffcodec/domain/diagnostics/apply-diagnostic-fix'
 import type { DiagnosticFix } from '@ffcodec/domain/rules/rule-types'
 import { CommandEditor } from './components/CommandEditor'
-import { VisitCounter } from '../../features/analytics/VisitCounter'
 import { WorkbenchShell } from './components/WorkbenchShell'
 import { WorkbenchStateNotice } from './components/WorkbenchStateNotice'
 import { Dropdown } from './components/Dropdown'
+import { usePlatform } from '@ffcodec/platform-api'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
-export function BuilderPage() {
+export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
+  const platform = usePlatform()
   const config = useBuilderStore((s) => s.config)
   const setConfigValue = useBuilderStore((s) => s.setConfigValue)
   const setConfig = useBuilderStore((s) => s.setConfig)
@@ -48,23 +49,23 @@ export function BuilderPage() {
   const commandPreviewCleared = useBuilderStore((s) => s.commandPreviewCleared)
   const clearAllCommands = useBuilderStore((s) => s.clearAllCommands)
   const [theme, setTheme] = useState<ThemeKind>(() =>
-    window.localStorage.getItem('ffcodec-theme') === 'dark' ? 'dark' : 'light',
+    platform.storage.getItem('ffcodec-theme') === 'dark' ? 'dark' : 'light',
   )
   const [locale, setLocale] = useState<Locale>(() =>
-    window.localStorage.getItem('ffcodec-locale') === 'en' ? 'en' : 'zh-CN',
+    platform.storage.getItem('ffcodec-locale') === 'en' ? 'en' : 'zh-CN',
   )
   const isZh = locale === 'zh-CN'
   const text = useCallback((value: string) => translateText(value, locale), [locale])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    window.localStorage.setItem('ffcodec-theme', theme)
-  }, [theme])
+    platform.storage.setItem('ffcodec-theme', theme)
+  }, [theme, platform])
 
   useEffect(() => {
     document.documentElement.lang = locale === 'zh-CN' ? 'zh-CN' : 'en'
-    window.localStorage.setItem('ffcodec-locale', locale)
-  }, [locale])
+    platform.storage.setItem('ffcodec-locale', locale)
+  }, [locale, platform])
 
   const pipeline = usePipeline(config, catalog)
 
@@ -397,12 +398,7 @@ export function BuilderPage() {
             Lake1059/FFmpegFreeUI
           </a>
         </small>
-        <div className="builder-footer__stats">
-          <VisitCounter
-            todayLabel={isZh ? '今日访问' : "Today's visits"}
-            totalLabel={isZh ? '总计访问' : 'Total visits'}
-          />
-        </div>
+        {footerItems && <div className="builder-footer__stats">{footerItems}</div>}
       </footer>
     </main>
     </I18nProvider>

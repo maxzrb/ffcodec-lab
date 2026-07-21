@@ -5,13 +5,13 @@ import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
 import { flattenInvocation } from '@ffcodec/domain/command/argument-order'
-import { decodeConfigFromShare, encodeConfigToShare } from '../../features/sharing/share-codec'
+import { decodeConfigFromShare, encodeConfigToShare } from '@ffcodec/workbench/features/sharing/share-codec'
 
 const catalog = loadCatalog()
 
 describe('成品功能闭环', () => {
   it('为高内容量字幕面板预留滚动条槽位，切换模块时工作台不会横向偏移', () => {
-    const css = readFileSync('src/index.css', 'utf8')
+    const css = readFileSync('../../packages/workbench/src/styles/index.css', 'utf8')
     expect(css).toMatch(/html\s*\{[^}]*scrollbar-gutter:\s*stable;/s)
   })
 
