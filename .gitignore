@@ -1,8 +1,13 @@
 node_modules/
 dist/
+out/
+release/
 .vite/
 *.local
 .DS_Store
+
+# pnpm
+.pnpm-store/
 
 # AI agent records (local only, not pushed to remote)
 AGENTS.md
@@ -10,3 +15,4 @@ CLAUDE.md
 Codex_FFmpeg命令生成器_项目指令集.md
 docs/codex/
 version/
+apps/web/tsconfig.tsbuildinfo

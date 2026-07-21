@@ -19,11 +19,6 @@
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
-  },
-  "include": ["src", "scripts", "vite-env.d.ts"]
+    "sourceMap": true
+  }
 }
