@@ -115,6 +115,8 @@ declare global {
       clearEncodingHistory: () => Promise<{ ok: true; count: number }>
       onEncodingHistoryChanged: (callback: () => void) => () => void
 
+      getUsageStats: () => Promise<{ total: number; today: number } | null>
+
       revealInFolder: (path: string) => Promise<string>
       openExternal: (url: string) => Promise<void>
     }

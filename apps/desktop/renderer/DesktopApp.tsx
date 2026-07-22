@@ -7,13 +7,14 @@ import { WorkbenchApp } from '@ffcodec/workbench'
 import { PlatformProvider } from '@ffcodec/platform-api'
 import { desktopPlatform } from './desktop-platform'
 import { FFmpegStatusBar } from './components/FFmpegStatusBar'
+import { DesktopVisitCounter } from './components/DesktopVisitCounter'
 
 export function DesktopApp() {
   return (
     <PlatformProvider adapter={desktopPlatform}>
       <div className="app-shell desktop-shell">
         <main className="desktop-shell__content">
-          <WorkbenchApp />
+          <WorkbenchApp footerItems={<DesktopVisitCounter />} />
         </main>
         <FFmpegStatusBar />
       </div>

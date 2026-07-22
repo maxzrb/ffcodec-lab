@@ -4,7 +4,7 @@
 // Phase 9: FFmpeg job execution (start/cancel/query).
 // ============================================================
 
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
+import { ipcMain, dialog, shell, BrowserWindow, net } from 'electron'
 import { detectFFmpeg } from './ffmpeg-detect'
 import {
   launchJob,
@@ -194,6 +194,33 @@ function registerHistoryHandlers(): void {
   })
 }
 
+// ---- Desktop 使用统计（只读、失败不影响功能） ----
+
+function registerUsageStatsHandler(): void {
+  ipcMain.handle('usage:getStats', async () => {
+    try {
+      const response = await net.fetch('https://fflab.loliland.cn/api/visits?count=false', {
+        headers: {
+          Origin: 'https://fflab.loliland.cn',
+          Referer: 'https://fflab.loliland.cn/',
+        },
+        signal: AbortSignal.timeout(5_000),
+      })
+      if (!response.ok) return null
+
+      const payload = await response.json() as { total?: unknown; today?: unknown }
+      if (
+        typeof payload.total !== 'number' || !Number.isFinite(payload.total) ||
+        typeof payload.today !== 'number' || !Number.isFinite(payload.today)
+      ) return null
+
+      return { total: payload.total, today: payload.today }
+    } catch {
+      return null
+    }
+  })
+}
+
 // ---- Register all ----
 
 export function registerIpcHandlers(): void {
@@ -202,4 +229,5 @@ export function registerIpcHandlers(): void {
   registerShellHandlers()
   registerFFmpegJobHandlers()
   registerHistoryHandlers()
+  registerUsageStatsHandler()
 }

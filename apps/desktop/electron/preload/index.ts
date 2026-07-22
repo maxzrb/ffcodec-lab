@@ -152,6 +152,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('history:changed', handler)
   },
 
+  // Desktop 使用统计：只读查询，离线时返回 null。
+  getUsageStats: () =>
+    ipcRenderer.invoke('usage:getStats') as Promise<{ total: number; today: number } | null>,
+
   // Shell helpers
   revealInFolder: (targetPath: string) =>
     ipcRenderer.invoke('shell:openPath', targetPath) as Promise<string>,
@@ -198,6 +202,8 @@ declare global {
       deleteEncodingHistory: (historyId: string) => Promise<{ ok: boolean; error?: string }>
       clearEncodingHistory: () => Promise<{ ok: true; count: number }>
       onEncodingHistoryChanged: (callback: () => void) => () => void
+
+      getUsageStats: () => Promise<{ total: number; today: number } | null>
 
       revealInFolder: (path: string) => Promise<string>
       openExternal: (url: string) => Promise<void>
