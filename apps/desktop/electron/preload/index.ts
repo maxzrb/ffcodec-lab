@@ -5,6 +5,7 @@
 // ============================================================
 
 import { contextBridge, ipcRenderer } from 'electron'
+import type { HardwareMonitorStartResult, HardwareMonitorState, HardwareSnapshot } from '../../shared/hardware-monitor-types'
 
 // ---- Shared types (keep in sync with main process) ----
 
@@ -169,6 +170,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUsageStats: () =>
     ipcRenderer.invoke('usage:getStats') as Promise<{ total: number; today: number } | null>,
 
+  // LibreHardwareMonitor 只读性能监控
+  getHardwareMonitorState: () =>
+    ipcRenderer.invoke('hardware-monitor:getState') as Promise<HardwareMonitorState>,
+  startHardwareMonitor: (intervalMs?: number) =>
+    ipcRenderer.invoke('hardware-monitor:start', intervalMs) as Promise<HardwareMonitorStartResult>,
+  stopHardwareMonitor: () =>
+    ipcRenderer.invoke('hardware-monitor:stop') as Promise<HardwareMonitorState>,
+  getHardwareSnapshot: () =>
+    ipcRenderer.invoke('hardware-monitor:getSnapshot') as Promise<HardwareSnapshot | null>,
+  requestHardwareSnapshot: () => ipcRenderer.invoke('hardware-monitor:requestSnapshot') as Promise<void>,
+  setHardwareMonitorInterval: (intervalMs: number) =>
+    ipcRenderer.invoke('hardware-monitor:setInterval', intervalMs) as Promise<HardwareMonitorState>,
+  onHardwareSnapshot: (callback: (snapshot: HardwareSnapshot) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, snapshot: HardwareSnapshot) => callback(snapshot)
+    ipcRenderer.on('hardware-monitor:snapshot', handler)
+    return () => ipcRenderer.removeListener('hardware-monitor:snapshot', handler)
+  },
+  onHardwareMonitorStateChanged: (callback: (state: HardwareMonitorState) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, state: HardwareMonitorState) => callback(state)
+    ipcRenderer.on('hardware-monitor:state', handler)
+    return () => ipcRenderer.removeListener('hardware-monitor:state', handler)
+  },
+
   // Shell helpers
   revealInFolder: (targetPath: string) =>
     ipcRenderer.invoke('shell:openPath', targetPath) as Promise<string>,
@@ -223,6 +247,15 @@ declare global {
       onEncodingHistoryChanged: (callback: () => void) => () => void
 
       getUsageStats: () => Promise<{ total: number; today: number } | null>
+
+      getHardwareMonitorState: () => Promise<HardwareMonitorState>
+      startHardwareMonitor: (intervalMs?: number) => Promise<HardwareMonitorStartResult>
+      stopHardwareMonitor: () => Promise<HardwareMonitorState>
+      getHardwareSnapshot: () => Promise<HardwareSnapshot | null>
+      requestHardwareSnapshot: () => Promise<void>
+      setHardwareMonitorInterval: (intervalMs: number) => Promise<HardwareMonitorState>
+      onHardwareSnapshot: (callback: (snapshot: HardwareSnapshot) => void) => () => void
+      onHardwareMonitorStateChanged: (callback: (state: HardwareMonitorState) => void) => () => void
 
       revealInFolder: (path: string) => Promise<string>
       openExternal: (url: string) => Promise<void>

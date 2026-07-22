@@ -16,3 +16,7 @@ Codex_FFmpeg命令生成器_项目指令集.md
 docs/codex/
 version/
 *.tsbuildinfo
+
+# .NET native helper build artifacts
+**/bin/
+**/obj/

@@ -1,0 +1,20 @@
+LibreHardwareMonitor attribution
+================================
+
+FFCodec Lab uses the unmodified LibreHardwareMonitorLib NuGet package, version 0.9.6,
+to read local hardware sensor data on Windows.
+
+Project: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
+Package: https://www.nuget.org/packages/LibreHardwareMonitorLib/0.9.6
+License: Mozilla Public License 2.0
+License text: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/blob/master/LICENSE
+Third-party notices: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/blob/master/THIRD-PARTY-NOTICES.txt
+
+NuGet package SHA-256:
+60DB5E0D9135F4658B385CAE139D3B9EAEAC0A8E867D322D20B5DBE4C4039197
+
+The helper does not modify LibreHardwareMonitor source code. Sensor data remains on
+the local machine and is exchanged only between the helper and Electron main process.
+
+The accompanying LICENSE-MPL-2.0.txt and THIRD-PARTY-NOTICES.txt files contain the
+upstream license terms and notices distributed with this application.

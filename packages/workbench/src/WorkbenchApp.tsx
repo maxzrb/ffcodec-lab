@@ -34,7 +34,7 @@ const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
-export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
+export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {
   const { storage, extensions } = usePlatform()
   const config = useBuilderStore((s) => s.config)
   const setConfigValue = useBuilderStore((s) => s.setConfigValue)
@@ -388,6 +388,7 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
                   generatedCommand={commandPreviewCleared ? '' : pipeline.renderedCommand.text}
                   cleared={commandPreviewCleared}
                 />
+                {commandInspectorFooter}
               </div>
             ) : inspectorTab === 'diagnostics' ? (
               <div className="inspector-panel" key="diagnostics">

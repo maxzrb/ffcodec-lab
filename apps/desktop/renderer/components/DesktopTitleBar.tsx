@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useDesktopLocale } from '../useDesktopLocale'
+import { useHardwareMonitor } from '../hardware-monitor/HardwareMonitorContext'
 
 interface WindowState {
   maximized: boolean
@@ -13,6 +14,7 @@ export function DesktopTitleBar() {
   const locale = useDesktopLocale()
   const isZh = locale === 'zh-CN'
   const [state, setState] = useState(initialState)
+  const monitor = useHardwareMonitor()
 
   useEffect(() => {
     api?.getWindowState().then(setState).catch(() => undefined)
@@ -43,6 +45,16 @@ export function DesktopTitleBar() {
         <span>Desktop</span>
       </div>
       <div className="desktop-titlebar__actions" onDoubleClick={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          className={`desktop-titlebar__performance desktop-titlebar__performance--${monitor.state.status}${monitor.pageOpen ? ' desktop-titlebar__performance--active' : ''}`}
+          onClick={() => monitor.pageOpen ? monitor.closePage() : void monitor.openPage()}
+          title={isZh ? '打开性能监控；由 LibreHardwareMonitor 在本机只读采集' : 'Open performance monitor; read-only local data from LibreHardwareMonitor'}
+          aria-pressed={monitor.pageOpen}
+        >
+          <span className="desktop-titlebar__performance-icon" aria-hidden="true"><i /><i /><i /><i /></span>
+          <span className="desktop-titlebar__performance-label">{isZh ? '性能监控' : 'Performance'}</span>
+        </button>
         <button
           type="button"
           className={`desktop-titlebar__size-lock${state.sizeUnlocked ? ' desktop-titlebar__size-lock--unlocked' : ''}`}

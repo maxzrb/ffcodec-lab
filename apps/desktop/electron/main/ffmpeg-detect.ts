@@ -165,7 +165,7 @@ export async function detectAudioEncoderCapabilities(customPath?: string): Promi
     ])
     const encoders = encoderOutput
       .split(/\r?\n/)
-      .map((line) => line.match(/^\s*A[\.A-Z]{5}\s+(\S+)/)?.[1])
+      .map((line) => line.match(/^\s*A[.A-Z]{5}\s+(\S+)/)?.[1])
       .filter((name): name is string => Boolean(name))
     const aacOptions = ['twoloop', 'fast', 'nmr']
       .filter((option) => new RegExp(`^\\s+${option}\\s+`, 'm').test(aacHelp))

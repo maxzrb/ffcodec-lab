@@ -7,6 +7,7 @@ import { app, BrowserWindow } from 'electron'
 import { createMainWindow, getMainWindow } from './create-window'
 import { registerIpcHandlers } from './ipc-handlers'
 import { setMainWindow, hasActiveJob, shutdownActiveJob } from './ffmpeg/job-manager'
+import { getHardwareMonitorState, stopHardwareMonitor } from './hardware-monitor/process-manager'
 
 // 仅允许单实例
 const gotLock = app.requestSingleInstanceLock()
@@ -46,10 +47,13 @@ app.on('window-all-closed', () => {
 })
 
 // Phase 9: Clean up active FFmpeg job before quitting
+let shutdownStarted = false
 app.on('before-quit', async (event) => {
-  if (hasActiveJob()) {
+  if (!shutdownStarted && (hasActiveJob() || getHardwareMonitorState().status !== 'idle')) {
     event.preventDefault()
+    shutdownStarted = true
     await shutdownActiveJob()
+    await stopHardwareMonitor()
     app.quit()
   }
 })

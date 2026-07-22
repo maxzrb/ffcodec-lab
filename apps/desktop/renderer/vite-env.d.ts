@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+import type { HardwareMonitorStartResult, HardwareMonitorState, HardwareSnapshot } from '../shared/hardware-monitor-types'
+
 /**
  * Types shared between preload and renderer for the desktop platform.
  * ALL types below must stay in sync with electron/preload/index.ts.
@@ -122,6 +124,15 @@ declare global {
       onEncodingHistoryChanged: (callback: () => void) => () => void
 
       getUsageStats: () => Promise<{ total: number; today: number } | null>
+
+      getHardwareMonitorState: () => Promise<HardwareMonitorState>
+      startHardwareMonitor: (intervalMs?: number) => Promise<HardwareMonitorStartResult>
+      stopHardwareMonitor: () => Promise<HardwareMonitorState>
+      getHardwareSnapshot: () => Promise<HardwareSnapshot | null>
+      requestHardwareSnapshot: () => Promise<void>
+      setHardwareMonitorInterval: (intervalMs: number) => Promise<HardwareMonitorState>
+      onHardwareSnapshot: (callback: (snapshot: HardwareSnapshot) => void) => () => void
+      onHardwareMonitorStateChanged: (callback: (state: HardwareMonitorState) => void) => () => void
 
       revealInFolder: (path: string) => Promise<string>
       openExternal: (url: string) => Promise<void>

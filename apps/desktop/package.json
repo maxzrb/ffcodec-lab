@@ -5,26 +5,75 @@
   "description": "FFCodec Lab — Electron desktop application",
   "main": "./dist/main/index.js",
   "scripts": {
+    "predev": "pnpm build:native",
     "dev": "set ELECTRON_RUN_AS_NODE=&& electron-vite dev",
-    "build": "set ELECTRON_RUN_AS_NODE=&& electron-vite build",
+    "build:native": "dotnet build native/FFCodec.HardwareMonitor/FFCodec.HardwareMonitor.csproj -c Release",
+    "publish:native": "dotnet publish native/FFCodec.HardwareMonitor/FFCodec.HardwareMonitor.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o ../../out/hardware-monitor/win-x64",
+    "build": "pnpm build:native && set ELECTRON_RUN_AS_NODE=&& electron-vite build",
+    "build:win": "pnpm publish:native && pnpm build && node --use-system-ca node_modules/electron-builder/out/cli/cli.js --win nsis portable",
     "preview": "set ELECTRON_RUN_AS_NODE=&& electron-vite preview",
     "typecheck": "tsc -b --noEmit",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "pnpm build:native && vitest run electron/main/hardware-monitor"
   },
   "dependencies": {
     "@ffcodec/command-plan": "workspace:*",
     "@ffcodec/platform-api": "workspace:*",
     "@ffcodec/workbench": "workspace:*"
   },
+  "build": {
+    "appId": "cn.loliland.ffcodec-lab",
+    "productName": "FFCodec Lab",
+    "asar": true,
+    "directories": {
+      "output": "../../release/desktop"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../out/hardware-monitor/win-x64",
+        "to": "hardware-monitor",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "native/licenses",
+        "to": "licenses/LibreHardwareMonitor",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
     "@vitejs/plugin-react": "^4.3.1",
     "electron": "^35.1.2",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^3.1.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.5.3",
-    "vite": "^5.3.4"
+    "vite": "^5.3.4",
+    "vitest": "^2.1.9"
   }
 }

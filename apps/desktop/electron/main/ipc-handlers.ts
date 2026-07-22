@@ -23,6 +23,14 @@ import {
   readEncodingLog,
 } from './history-store'
 import { LOCKED_WINDOW_MINIMUM, UNLOCKED_WINDOW_MINIMUM } from './create-window'
+import {
+  getHardwareMonitorState,
+  getLatestHardwareSnapshot,
+  requestHardwareSnapshot,
+  setHardwareMonitorInterval,
+  startHardwareMonitor,
+  stopHardwareMonitor,
+} from './hardware-monitor/process-manager'
 
 // ---- Media file filters for open/save dialogs ----
 
@@ -272,6 +280,22 @@ function registerUsageStatsHandler(): void {
   })
 }
 
+// ---- LibreHardwareMonitor 性能采集 ----
+
+function registerHardwareMonitorHandlers(): void {
+  ipcMain.handle('hardware-monitor:getState', () => getHardwareMonitorState())
+  ipcMain.handle('hardware-monitor:start', (_event, intervalMs?: number) =>
+    startHardwareMonitor(typeof intervalMs === 'number' ? intervalMs : undefined))
+  ipcMain.handle('hardware-monitor:stop', async () => {
+    await stopHardwareMonitor()
+    return getHardwareMonitorState()
+  })
+  ipcMain.handle('hardware-monitor:getSnapshot', () => getLatestHardwareSnapshot())
+  ipcMain.handle('hardware-monitor:requestSnapshot', () => requestHardwareSnapshot())
+  ipcMain.handle('hardware-monitor:setInterval', (_event, intervalMs: number) =>
+    setHardwareMonitorInterval(intervalMs))
+}
+
 // ---- Register all ----
 
 export function registerIpcHandlers(): void {
@@ -282,4 +306,5 @@ export function registerIpcHandlers(): void {
   registerFFmpegJobHandlers()
   registerHistoryHandlers()
   registerUsageStatsHandler()
+  registerHardwareMonitorHandlers()
 }
