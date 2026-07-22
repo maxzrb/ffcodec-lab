@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useDesktopLocale } from '../useDesktopLocale'
 import { Gauge } from './Gauge'
 import { useHardwareMonitor } from './HardwareMonitorContext'
-import { TimeSeriesCanvas } from './TimeSeriesCanvas'
+import { UPlotChart } from './UPlotChart'
 
-const colors = ['#27a88a', '#4b8fe2', '#e0a33a', '#d85b6a', '#8b6fd8', '#43a9bd', '#b07744', '#6d9b45']
 const valueText = (value: number | null | undefined, suffix: string, digits = 0) => value == null ? '--' : `${value.toFixed(digits)}${suffix}`
 
 export function PerformancePage() {
@@ -26,18 +25,8 @@ export function PerformancePage() {
   const currentGpu = snapshot?.gpu.find((item) => item.id === gpuId) ?? snapshot?.gpu[0]
   const currentStorage = snapshot?.storage.find((item) => item.id === storageId) ?? snapshot?.storage[0]
 
-  const cpuSeries = useMemo(() => (currentCpu?.cores ?? []).map((core, index) => ({
-    label: core.name,
-    color: colors[index % colors.length],
-    values: visibleHistory.map((item) => item.cpu.find((cpu) => cpu.id === currentCpu?.id)?.cores.find((candidate) => candidate.id === core.id)?.load ?? null),
-  })), [currentCpu, visibleHistory])
-  const gpuSeries = useMemo(() => [{
-    label: 'GPU', color: colors[1],
-    values: visibleHistory.map((item) => item.gpu.find((gpu) => gpu.id === currentGpu?.id)?.load ?? null),
-  }], [currentGpu, visibleHistory])
-  const memorySeries = useMemo(() => [{
-    label: isZh ? '内存' : 'Memory', color: colors[0], values: visibleHistory.map((item) => item.memory?.load ?? null),
-  }], [isZh, visibleHistory])
+  const gpuValues = useMemo(() => visibleHistory.map((item) => item.gpu.find((gpu) => gpu.id === currentGpu?.id)?.load ?? null), [currentGpu, visibleHistory])
+  const memoryValues = useMemo(() => visibleHistory.map((item) => item.memory?.load ?? null), [visibleHistory])
 
   const togglePaused = () => {
     if (!paused) setFrozenHistory(history)
@@ -52,11 +41,9 @@ export function PerformancePage() {
           <h2>{isZh ? '性能监控' : 'Performance Monitor'}</h2>
         </div>
         <div className="performance-page__controls">
-          <label className="performance-summary-toggle">
-            <input type="checkbox" checked={summaryEnabled} onChange={(event) => setSummaryEnabled(event.target.checked)} />
-            {isZh ? '在主界面显示性能摘要' : 'Show summary on main page'}
-          </label>
-          <span className={`performance-status performance-status--${state.status}`}>{state.status}</span>
+          <span className={`performance-status performance-status--${state.status}`}>
+            {state.status} · {state.elevated ? (isZh ? '管理员采集' : 'Elevated') : (isZh ? '标准权限' : 'Standard access')}
+          </span>
           {(state.status === 'unavailable' || state.status === 'limited') && <button type="button" className="button" onClick={() => void retry()}>{isZh ? '重试' : 'Retry'}</button>}
           <button type="button" className="button" onClick={togglePaused}>{paused ? (isZh ? '继续' : 'Resume') : (isZh ? '暂停' : 'Pause')}</button>
           <button type="button" className="button button--primary" onClick={closePage}>{isZh ? '返回工作台' : 'Back to workbench'}</button>
@@ -64,6 +51,18 @@ export function PerformancePage() {
       </header>
 
       {state.message && <div className="performance-page__notice" role="status">{state.message}</div>}
+
+      <div className="performance-page__settings">
+        <div>
+          <strong>{isZh ? '主界面性能摘要' : 'Main page performance summary'}</strong>
+          <small>{isZh ? '在命令检查器下方显示 CPU、GPU 与内存仪表；详情页入口始终位于标题栏。' : 'Show CPU, GPU, and memory gauges below the command inspector. The title bar remains the only detail-page entry.'}</small>
+        </div>
+        <label className="performance-summary-toggle">
+          <input type="checkbox" checked={summaryEnabled} onChange={(event) => setSummaryEnabled(event.target.checked)} />
+          <span aria-hidden="true" />
+          {summaryEnabled ? (isZh ? '已开启' : 'On') : (isZh ? '已关闭' : 'Off')}
+        </label>
+      </div>
 
       <div className="performance-page__grid">
         <article className="performance-panel performance-panel--cpu">
@@ -80,9 +79,18 @@ export function PerformancePage() {
               <div><dt>{isZh ? '线程' : 'Threads'}</dt><dd>{currentCpu?.cores.length ?? 0}</dd></div>
             </dl>
           </div>
-          <TimeSeriesCanvas series={cpuSeries} label={isZh ? 'CPU 各核心使用率历史' : 'CPU core usage history'} />
+          <div className="cpu-logical-header">
+            <strong>{isZh ? '逻辑处理器' : 'Logical processors'}</strong>
+            <small>{isZh ? '最近 60 秒 · 每个逻辑核心独立显示' : 'Last 60 seconds · one graph per logical processor'}</small>
+          </div>
           <div className="cpu-core-grid">
-            {currentCpu?.cores.map((core, index) => <div key={core.id}><span style={{ backgroundColor: colors[index % colors.length] }} /><small>{core.name.replace('CPU ', '')}</small><strong>{valueText(core.load, '%')}</strong><i><b style={{ width: `${Math.max(0, Math.min(100, core.load ?? 0))}%` }} /></i></div>)}
+            {currentCpu?.cores.map((core) => {
+              const values = visibleHistory.map((item) => item.cpu.find((cpu) => cpu.id === currentCpu.id)?.cores.find((candidate) => candidate.id === core.id)?.load ?? null)
+              return <div className="cpu-core-chart" key={core.id}>
+                <header><span>{core.name.replace('CPU ', '')}</span><strong>{valueText(core.load, '%')}</strong></header>
+                <UPlotChart values={values} label={`${core.name} ${isZh ? '使用率' : 'usage'}`} color="var(--accent)" height={76} compact />
+              </div>
+            })}
           </div>
         </article>
 
@@ -100,14 +108,14 @@ export function PerformancePage() {
               <div><dt>{isZh ? '显存' : 'VRAM'}</dt><dd>{currentGpu?.memoryUsedGb != null && currentGpu.memoryTotalGb != null ? `${currentGpu.memoryUsedGb.toFixed(1)} / ${currentGpu.memoryTotalGb.toFixed(1)} GB` : '--'}</dd></div>
             </dl>
           </div>
-          <TimeSeriesCanvas series={gpuSeries} label={isZh ? 'GPU 使用率历史' : 'GPU usage history'} />
+          <UPlotChart values={gpuValues} label={isZh ? 'GPU 使用率历史' : 'GPU usage history'} color="var(--blue)" height={112} />
         </article>
 
         <article className="performance-panel performance-panel--resources">
           <header><div><span>{isZh ? '内存与硬盘' : 'Memory & Storage'}</span><strong>{snapshot?.memory?.name ?? '--'}</strong></div></header>
           <div className="performance-resources">
             <Gauge label={isZh ? '内存' : 'Memory'} value={snapshot?.memory?.load ?? null} compact detail={snapshot?.memory?.usedGb != null && snapshot.memory.totalGb != null ? `${snapshot.memory.usedGb.toFixed(1)} / ${snapshot.memory.totalGb.toFixed(1)} GB` : undefined} />
-            <TimeSeriesCanvas series={memorySeries} label={isZh ? '内存使用率历史' : 'Memory usage history'} />
+            <UPlotChart values={memoryValues} label={isZh ? '内存使用率历史' : 'Memory usage history'} color="var(--accent)" height={82} />
           </div>
           {snapshot && snapshot.storage.length > 0 ? <div className="storage-metrics">
             <select value={currentStorage?.id} onChange={(event) => setStorageId(event.target.value)}>{snapshot.storage.map((storage) => <option key={storage.id} value={storage.id}>{storage.name}</option>)}</select>

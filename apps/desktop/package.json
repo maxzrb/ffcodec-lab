@@ -19,7 +19,8 @@
   "dependencies": {
     "@ffcodec/command-plan": "workspace:*",
     "@ffcodec/platform-api": "workspace:*",
-    "@ffcodec/workbench": "workspace:*"
+    "@ffcodec/workbench": "workspace:*",
+    "uplot": "1.6.32"
   },
   "build": {
     "appId": "cn.loliland.ffcodec-lab",
@@ -42,7 +43,7 @@
       },
       {
         "from": "native/licenses",
-        "to": "licenses/LibreHardwareMonitor",
+        "to": "licenses/third-party",
         "filter": [
           "**/*"
         ]

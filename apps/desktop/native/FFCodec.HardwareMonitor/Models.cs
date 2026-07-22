@@ -7,7 +7,8 @@ internal sealed record MonitorMessage(
     int ProtocolVersion = 1,
     string? Message = null,
     HardwareSnapshot? Snapshot = null,
-    int? IntervalMs = null);
+    int? IntervalMs = null,
+    bool? Elevated = null);
 
 internal sealed record HardwareSnapshot(
     long Sequence,

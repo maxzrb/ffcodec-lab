@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { HardwareMonitorState, HardwareSnapshot } from '../../shared/hardware-monitor-types'
 
 const SUMMARY_STORAGE_KEY = 'ffcodec-desktop-performance-summary-enabled'
-const initialState: HardwareMonitorState = { status: 'idle', message: null, intervalMs: 1_000 }
+const initialState: HardwareMonitorState = { status: 'idle', message: null, intervalMs: 1_000, elevated: false }
 
 interface HardwareMonitorContextValue {
   state: HardwareMonitorState
@@ -39,7 +39,8 @@ export function HardwareMonitorProvider({ children }: { children: ReactNode }) {
     void api.getHardwareSnapshot().then((value) => value && setSnapshot(value))
     const offSnapshot = api.onHardwareSnapshot((value) => {
       setSnapshot(value)
-      setHistory((current) => [...current, value].slice(-900))
+      // 默认 1 秒采样，仅保留最近 5 分钟，避免长时间开启摘要时无界增长。
+      setHistory((current) => [...current, value].slice(-300))
     })
     const offState = api.onHardwareMonitorStateChanged(setState)
     return () => {

@@ -15,6 +15,11 @@ if (!gotLock) {
   app.quit()
 }
 
+// 仅用于自动截图回归，不在普通开发或生产启动中开放调试端口。
+if (!app.isPackaged && process.env.FFCODEC_CAPTURE_UI === '1') {
+  app.commandLine.appendSwitch('remote-debugging-port', '9223')
+}
+
 app.on('second-instance', () => {
   const win = getMainWindow()
   if (win) {

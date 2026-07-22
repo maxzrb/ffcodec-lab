@@ -73,6 +73,7 @@ export interface HardwareMonitorState {
   status: HardwareMonitorStatus
   message: string | null
   intervalMs: number
+  elevated: boolean
 }
 
 export interface HardwareMonitorStartResult {

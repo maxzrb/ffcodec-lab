@@ -7,6 +7,7 @@ interface HelperMessage {
   protocolVersion?: number
   message?: string | null
   intervalMs?: number | null
+  elevated?: boolean | null
   snapshot?: HardwareSnapshot | null
 }
 
@@ -69,6 +70,7 @@ export function parseHelperMessage(line: string): HelperMessage | null {
     const message: HelperMessage = { type: value.type as HelperMessage['type'] }
     if (typeof value.message === 'string') message.message = value.message.slice(0, 1_024)
     if (typeof value.intervalMs === 'number' && Number.isFinite(value.intervalMs)) message.intervalMs = value.intervalMs
+    if (typeof value.elevated === 'boolean') message.elevated = value.elevated
     if (message.type === 'snapshot') {
       message.snapshot = sanitizeSnapshot(value.snapshot)
       if (!message.snapshot) return null
