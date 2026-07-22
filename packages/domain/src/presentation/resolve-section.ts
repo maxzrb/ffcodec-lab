@@ -5,8 +5,7 @@
 
 import type { ProjectConfig } from '../config/project-config'
 import { createDefaultAdvancedVideoFilters } from '../config/defaults'
-import type { Catalog } from '../catalog/catalog-types'
-import type { SourceRef } from '../catalog/catalog-types'
+import type { Catalog, ControlDefinition, SourceRef } from '../catalog/catalog-types'
 import { CODEC_CATEGORIES, FALLBACK_CATEGORY_ID } from '../catalog/catalog-types'
 import type { FieldState } from '../rules/rule-types'
 import type { ResolvedField, ResolvedSection } from './resolved-field'
@@ -24,6 +23,7 @@ import {
   resolveRawParameterDictionaryValue,
   resolveStructuredDictionaryValue,
 } from '../catalog/parameter-dictionary'
+import { isControlActive } from '../catalog/control-condition'
 
 // -- generic codec arg classification ---------------------------
 
@@ -856,12 +856,55 @@ export function resolveAudioSection(
     const audioEncoderParam = catalog.parameters['param.audio.encoder']
     if (audioEncoderParam) {
       const encField = resolveParameterField(audioEncoderParam, config, 'audio.encoderId', fieldStates)
-      // Populate with actual encoder list from catalog
-      encField.options = Object.values(catalog.encoders.audio).map((enc) => ({
-        value: enc.id,
-        label: enc.label,
-        badge: enc.family === 'flac' ? '无损' : undefined,
-      }))
+      const categoryLabels = {
+        aac: 'AAC 家族',
+        'general-lossy': '通用有损',
+        lossless: '无损编码',
+        pcm: 'PCM / WAV',
+        platform: '平台专属',
+        voice: '语音编码',
+        legacy: '旧格式',
+        experimental: '实验性',
+      }
+      const recommendations: Record<string, string[]> = {
+        webm: ['libopus', 'libvorbis'],
+        mp4: ['aac', 'libfdk_aac', 'alac', 'libmp3lame'],
+        mov: ['aac', 'alac', 'libfdk_aac', 'pcm_s16le'],
+        m4a: ['aac', 'libfdk_aac', 'alac', 'libmp3lame'],
+        mkv: ['libopus', 'aac', 'flac', 'ac3'],
+      }
+      const recommendedIds = recommendations[config.output.containerId]
+        ?? ['aac', 'libopus', 'flac', 'libmp3lame']
+      encField.description = '先从当前容器的常用推荐中选择，或搜索并浏览全部编码器。'
+      encField.options = Object.values(catalog.encoders.audio).map((enc) => {
+        const category = enc.audioCategory ?? 'legacy'
+        const containerCompatibility = catalog.containers[config.output.containerId]?.audioCodecs[enc.id]
+        const availabilityBadge = enc.availabilityClass === 'generally-available'
+          ? '内置'
+          : enc.availabilityClass === 'platform-dependent'
+            ? '平台专属'
+            : enc.availabilityClass === 'experimental'
+              ? '实验性'
+              : '需特定构建'
+        return {
+          value: enc.id,
+          label: enc.label,
+          description: enc.availabilityNote,
+          group: categoryLabels[category],
+          badge: enc.ffmpegName,
+          badges: [
+            enc.audioCategory === 'pcm' ? 'PCM' : enc.capabilities.supportsLossless ? '无损' : '有损',
+            availabilityBadge,
+          ],
+          recommended: recommendedIds.includes(enc.id),
+          compatibility: containerCompatibility === 'unsupported'
+            ? 'unsupported'
+            : containerCompatibility && containerCompatibility !== 'unknown'
+              ? 'supported'
+              : 'unknown',
+          availabilityNote: enc.availabilityNote,
+        } as const
+      })
       fields.push(encField)
     }
 
@@ -952,15 +995,126 @@ export function resolveAudioSection(
         diagnostics: [],
       })
 
-      // Encoder-specific special parameters
-      for (const sp of audioEncoder.specialParameters) {
-        const configPath = sp.configBinding?.path ?? `audio.qualityValues.${sp.id}`
-        fields.push(resolveControlField(sp, config, configPath, fieldStates, audioEncoder))
-      }
     }
   }
 
   return { id: 'section.audio', label: '音频参数', fields }
+}
+
+/** 当前音频编码器的私有参数，独立折叠以避免基础音频面板过长。 */
+export function resolveAudioAdvancedSection(
+  config: ProjectConfig,
+  catalog: Catalog,
+  fieldStates: Record<string, FieldState>,
+): ResolvedSection {
+  const encoder = config.audio.mode === 'encode' && config.audio.encoderId
+    ? catalog.encoders.audio[config.audio.encoderId]
+    : undefined
+  if (!encoder) return { id: 'section.audio-advanced', label: '音频高级参数', fields: [] }
+
+  const fields = encoder.specialParameters
+    .filter((control) => isControlActive(control, config))
+    .map((control) => {
+      const configPath = control.configBinding?.path ?? `audio.qualityValues.${control.id}`
+      const field = resolveControlField(control, config, configPath, fieldStates, encoder)
+      field.tier = 'advanced'
+      return field
+    })
+
+  return {
+    id: 'section.audio-advanced',
+    label: '音频高级参数',
+    description: '仅当前音频编码器支持的专有选项；保持默认时使用 FFmpeg 内建行为。',
+    fields,
+  }
+}
+
+/** FFmpeg loudnorm 单遍动态响度标准化。 */
+export function resolveAudioLoudnessSection(
+  config: ProjectConfig,
+  fieldStates: Record<string, FieldState>,
+): ResolvedSection {
+  if (config.audio.mode !== 'encode') {
+    return { id: 'section.audio-loudness', label: '响度标准化', fields: [] }
+  }
+
+  const sourceRefs: SourceRef[] = [{
+    repository: 'FFmpeg/FFmpeg',
+    branch: 'master',
+    snapshotDate: '2026-07-22',
+    file: 'doc/filters.texi#loudnorm',
+    sourceType: 'ffmpeg-official',
+    url: 'https://ffmpeg.org/ffmpeg-filters.html#loudnorm',
+  }]
+  const controls = [
+    {
+      id: 'audio.loudnessNormalization.integratedLoudnessEnabled', label: '启用目标响度', control: 'switch',
+      configBinding: { path: CONFIG_PATHS.audio.loudnessNormalization.integratedLoudnessEnabled },
+      defaultValue: false, explanationId: 'expl.audio.loudnorm.I', sourceRefs,
+    },
+    {
+      id: 'audio.loudnessNormalization.integratedLoudness', label: '目标响度 I (LUFS)', control: 'number',
+      configBinding: { path: CONFIG_PATHS.audio.loudnessNormalization.integratedLoudness },
+      range: { min: -70, max: -5, step: 1 }, defaultValue: -24,
+      explanationId: 'expl.audio.loudnorm.I', sourceRefs,
+    },
+    {
+      id: 'audio.loudnessNormalization.loudnessRangeEnabled', label: '启用动态范围', control: 'switch',
+      configBinding: { path: CONFIG_PATHS.audio.loudnessNormalization.loudnessRangeEnabled },
+      defaultValue: false, explanationId: 'expl.audio.loudnorm.LRA', sourceRefs,
+    },
+    {
+      id: 'audio.loudnessNormalization.loudnessRange', label: '动态范围 LRA (LU)', control: 'number',
+      configBinding: { path: CONFIG_PATHS.audio.loudnessNormalization.loudnessRange },
+      range: { min: 1, max: 50, step: 1 }, defaultValue: 7,
+      explanationId: 'expl.audio.loudnorm.LRA', sourceRefs,
+    },
+    {
+      id: 'audio.loudnessNormalization.truePeakEnabled', label: '启用峰值电平', control: 'switch',
+      configBinding: { path: CONFIG_PATHS.audio.loudnessNormalization.truePeakEnabled },
+      defaultValue: false, explanationId: 'expl.audio.loudnorm.TP', sourceRefs,
+    },
+    {
+      id: 'audio.loudnessNormalization.truePeak', label: '峰值电平 TP (dBTP)', control: 'number',
+      configBinding: { path: CONFIG_PATHS.audio.loudnessNormalization.truePeak },
+      range: { min: -9, max: 0, step: 0.1 }, defaultValue: -2,
+      explanationId: 'expl.audio.loudnorm.TP', sourceRefs,
+    },
+    {
+      id: 'audio.loudnessNormalization.dualMono', label: '单声道按立体声播放补偿', control: 'switch',
+      configBinding: { path: CONFIG_PATHS.audio.loudnessNormalization.dualMono },
+      defaultValue: false, explanationId: 'expl.audio.loudnorm.dualMono', sourceRefs,
+    },
+  ] satisfies ControlDefinition[]
+
+  const loudness = config.audio.loudnessNormalization
+  const anyTargetEnabled = loudness.integratedLoudnessEnabled
+    || loudness.loudnessRangeEnabled
+    || loudness.truePeakEnabled
+  const enabledForValue: Record<string, boolean> = {
+    'audio.loudnessNormalization.integratedLoudness': loudness.integratedLoudnessEnabled,
+    'audio.loudnessNormalization.loudnessRange': loudness.loudnessRangeEnabled,
+    'audio.loudnessNormalization.truePeak': loudness.truePeakEnabled,
+    'audio.loudnessNormalization.dualMono': anyTargetEnabled,
+  }
+  const fields = controls.map((control) => {
+    const field = resolveControlField(control, config, control.configBinding.path, fieldStates)
+    field.tier = 'advanced'
+    if (enabledForValue[control.id] === false) {
+      field.disabled = true
+      field.disabledReason = control.id.endsWith('dualMono')
+        ? '请先启用至少一个响度目标。'
+        : '请先开启此项目。'
+    }
+    return field
+  })
+
+  return {
+    id: 'section.audio-loudness',
+    label: '响度标准化',
+    description: 'FFmpeg loudnorm 单遍动态模式；歌曲通常可用 -16 LUFS，影视/广播常用 -23 或 -24 LUFS。',
+    fields,
+  }
 }
 
 export function resolveSubtitleSection(
@@ -1341,10 +1495,15 @@ export function resolveContainerSection(
   if (containerParam) {
     const field = resolveParameterField(containerParam, config, 'output.containerId', fieldStates)
     // Override with dynamic options from catalog
-    field.options = Object.values(catalog.containers).map((c) => ({
-      value: c.id,
-      label: c.label,
-    }))
+    field.options = Object.values(catalog.containers).map((c) => {
+      const supportsVideo = Object.values(c.videoCodecs).some((level) => level !== 'unsupported')
+      const supportsAudio = Object.values(c.audioCodecs).some((level) => level !== 'unsupported')
+      return {
+        value: c.id,
+        label: c.label,
+        badge: supportsVideo && supportsAudio ? '视频 / 音频' : supportsVideo ? '视频' : '音频',
+      }
+    })
     fields.push(field)
   }
 

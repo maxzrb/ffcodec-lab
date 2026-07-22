@@ -216,7 +216,10 @@ function validateRules() {
 }
 
 // -- Phase 3 audit: codec family & implementation -----------------
-const VALID_FAMILIES = new Set(['h264', 'hevc', 'av1', 'vvc', 'vp8', 'vp9', 'avs', 'avs2', 'avs3', 'ffv1', 'prores', 'aac', 'opus', 'flac', 'other'])
+const VALID_FAMILIES = new Set([
+  'h264', 'hevc', 'av1', 'vvc', 'vp8', 'vp9', 'avs', 'avs2', 'avs3', 'ffv1', 'prores',
+  'aac', 'opus', 'flac', 'mp3', 'alac', 'ac3', 'eac3', 'vorbis', 'wavpack', 'pcm', 'other',
+])
 const VALID_IMPLEMENTATIONS = new Set(['software', 'nvidia', 'intel', 'amd', 'apple', 'other'])
 const VALID_AVAILABILITY = new Set([
   'generally-available', 'ffmpeg-build-dependent', 'hardware-dependent',

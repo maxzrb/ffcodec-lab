@@ -7,6 +7,8 @@ export const libopus: EncoderDefinition = {
   ffmpegName: 'libopus',
   mediaType: 'audio',
   family: 'opus' as const,
+  audioCategory: 'general-lossy',
+  defaultAudioBitrate: '128k',
   implementation: 'software' as const,
   availabilityClass: 'ffmpeg-build-dependent',
   capabilityScope: {

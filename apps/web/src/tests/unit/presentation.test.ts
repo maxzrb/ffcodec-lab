@@ -11,6 +11,7 @@ import {
   resolveVideoSection,
   resolveFrameSection,
   resolveAudioSection,
+  resolveAudioAdvancedSection,
   resolveSubtitleSection,
   resolveContainerSection,
 } from '@ffcodec/domain/presentation/resolve-section'
@@ -256,6 +257,11 @@ describe('Resolver — section resolution', () => {
     expect(channelLayout?.options?.some((option) => option.value === '7.1')).toBe(true)
     expect(sampleRate?.options?.length).toBeGreaterThanOrEqual(14)
     expect(sampleRate?.options?.some((option) => option.value === 192000)).toBe(true)
+    expect(section.fields.some((f) => f.id === 'aac.nmrSpeed')).toBe(false)
+
+    config.audio.qualityValues.coder = 'nmr'
+    const nmrSection = resolveAudioAdvancedSection(config, catalog, {})
+    expect(nmrSection.fields.some((f) => f.id === 'aac.nmrSpeed')).toBe(true)
   })
 
   it('hides audio quality controls in copy mode', () => {
@@ -304,6 +310,8 @@ describe('Resolver — section resolution', () => {
     const containerField = section.fields.find((f) => f.id === 'param.container')
     expect(containerField).toBeDefined()
     expect(containerField!.options!.length).toBeGreaterThanOrEqual(4) // mp4, mkv, webm, mov
+    expect(containerField!.options!.find((option) => option.value === 'mp4')?.badge).toBe('视频 / 音频')
+    expect(containerField!.options!.find((option) => option.value === 'wav')?.badge).toBe('音频')
   })
 })
 

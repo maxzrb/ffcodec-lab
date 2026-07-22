@@ -9,7 +9,7 @@
 //   - concatenate argument names
 // ============================================================
 
-import type { ConfigPath } from '../config/config-path'
+import { audioQualityValuePath, type ConfigPath } from '../config/config-path'
 import type { ProjectConfig } from '../config/project-config'
 import type { Catalog } from '../catalog/catalog-types'
 import type { ResolvedField } from './resolved-field'
@@ -126,7 +126,42 @@ export function applyFieldChangeToConfig(
   const change = applyFieldChange(fieldId, nextValue, fieldIndex)
   if (!change.accepted || !change.path) return { config: previous, change }
 
-  const next = setByPath(previous, change.path, change.value)
+  let next = setByPath(previous, change.path, change.value)
+  const currentAudioEncoder = previous.audio.encoderId
+    ? catalog.encoders.audio[previous.audio.encoderId]
+    : undefined
+  const changedAudioParameter = currentAudioEncoder?.specialParameters.find(
+    (parameter) => parameter.configBinding?.path === change.path,
+  )
+  const selectsAudioQuality = ['-q:a', '-vbr'].includes(changedAudioParameter?.commandBinding?.argName ?? '')
+    && change.value !== undefined && change.value !== null && change.value !== ''
+  if (selectsAudioQuality) {
+    // FFmpeg 的质量档与目标码率是两种互斥的速率控制方式，避免同时发射 -q:a/-vbr 与 -b:a。
+    next = { ...next, audio: { ...next.audio, bitrate: undefined } }
+  }
+  if (fieldId === 'audio.bitrate' && change.value) {
+    const encoder = next.audio.encoderId ? catalog.encoders.audio[next.audio.encoderId] : undefined
+    for (const parameter of encoder?.specialParameters ?? []) {
+      if (!['-q:a', '-vbr'].includes(parameter.commandBinding?.argName ?? '')) continue
+      const boundParts = parameter.configBinding?.path.split('.') ?? []
+      const idParts = parameter.id.split('.')
+      const configKey = boundParts[boundParts.length - 1] ?? idParts[idParts.length - 1]
+      if (configKey) next = setByPath(next, audioQualityValuePath(configKey), undefined)
+    }
+  }
+  if (fieldId === 'param.audio.encoder' && change.value !== previous.audio.encoderId) {
+    const audioEncoder = typeof change.value === 'string'
+      ? catalog.encoders.audio[change.value]
+      : undefined
+    next = {
+      ...next,
+      audio: {
+        ...next.audio,
+        bitrate: audioEncoder?.defaultAudioBitrate,
+        qualityValues: {},
+      },
+    }
+  }
   const normalized = normalizeConfig(previous, next, catalog)
   const encoder = normalized.config.video.encoderId
     ? catalog.encoders.video[normalized.config.video.encoderId]

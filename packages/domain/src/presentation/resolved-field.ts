@@ -16,6 +16,10 @@ export interface ResolvedOption {
   group?: string
   /** Implementation badge text, e.g. "NVIDIA", "Intel", "CPU" */
   badge?: string
+  badges?: string[]
+  recommended?: boolean
+  compatibility?: 'supported' | 'unsupported' | 'unknown'
+  availabilityNote?: string
 }
 
 /**

@@ -74,4 +74,10 @@ export interface WorkbenchExtensions {
   commandActions?: CommandActionExtension[]
   pathFieldRenderer?: PathFieldRenderer
   settingsSections?: SettingsSectionExtension[]
+  getAudioEncoderCapabilities?: () => Promise<{
+    encoders: string[]
+    aacOptions: string[]
+  } | null>
+  getAudioCapabilityOverride?: () => boolean
+  onAudioCapabilityOverrideChange?: (listener: (enabled: boolean) => void) => () => void
 }

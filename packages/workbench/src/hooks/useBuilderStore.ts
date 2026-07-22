@@ -47,6 +47,8 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
     'section.video-advanced': false,
     'section.frame': true,
     'section.audio': true,
+    'section.audio-advanced': false,
+    'section.audio-loudness': false,
     'section.subtitle': true,
     'section.container': true,
     'section.customArgs': true,

@@ -17,6 +17,8 @@ import {
   resolveFrameSection,
   resolveColorSection,
   resolveAudioSection,
+  resolveAudioAdvancedSection,
+  resolveAudioLoudnessSection,
   resolveSubtitleSection,
   resolveContainerSection,
   resolveCustomArgsSection,
@@ -45,6 +47,8 @@ export function resolveBuilderView(
     resolveFrameSection(config, fieldStates),
     resolveColorSection(config, fieldStates),
     resolveAudioSection(config, catalog, fieldStates),
+    resolveAudioAdvancedSection(config, catalog, fieldStates),
+    resolveAudioLoudnessSection(config, fieldStates),
     resolveSubtitleSection(config, catalog, fieldStates),
     resolveContainerSection(config, catalog, fieldStates),
     resolveUtilityToolsSection(config, catalog),
@@ -169,6 +173,8 @@ function resolvePanelStateNotice(
 
 /** 同一工作台内保留来源分组语义，避免两个区域显示完全相同的标题。 */
 function resolvePanelSectionLabel(panelId: string, sectionId: string, fallback: string): string {
+  if (panelId === 'audio' && sectionId === 'section.audio-advanced') return '音频高级参数'
+  if (panelId === 'audio' && sectionId === 'section.audio-loudness') return '响度标准化'
   if (panelId === 'video' && sectionId === 'section.encoder-private') return '编码器私有参数'
   if (panelId === 'quality' && sectionId === 'section.encoder-private') return '编码器私有参数'
   if (panelId === 'quality' && sectionId === 'section.generic-codec') return '通用编码选项'
@@ -191,6 +197,8 @@ function resolvePanelId(sectionId: string, field: ResolvedField): string {
   if (sectionId === 'section.frame') return 'filters'
   if (sectionId === 'section.color') return 'color'
   if (sectionId === 'section.audio') return 'audio'
+  if (sectionId === 'section.audio-advanced') return 'audio'
+  if (sectionId === 'section.audio-loudness') return 'audio'
   if (sectionId === 'section.subtitle') return 'subtitle'
   if (sectionId === 'section.tools') return 'tools'
   return 'custom'

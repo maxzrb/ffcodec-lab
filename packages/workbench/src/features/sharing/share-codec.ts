@@ -43,6 +43,15 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       channelLayout: config.audio.channelLayout,
       sampleRate: config.audio.sampleRate,
       qualityValues: config.audio.qualityValues,
+      ln: {
+        ei: config.audio.loudnessNormalization.integratedLoudnessEnabled,
+        i: config.audio.loudnessNormalization.integratedLoudness,
+        el: config.audio.loudnessNormalization.loudnessRangeEnabled,
+        l: config.audio.loudnessNormalization.loudnessRange,
+        et: config.audio.loudnessNormalization.truePeakEnabled,
+        t: config.audio.loudnessNormalization.truePeak,
+        dm: config.audio.loudnessNormalization.dualMono,
+      },
     },
     s: {
       tracks: config.subtitle.tracks.map((t) => ({
@@ -124,6 +133,19 @@ export function fromShareable(
       channelLayout: shareable.a.channelLayout,
       sampleRate: shareable.a.sampleRate,
       qualityValues: shareable.a.qualityValues,
+      loudnessNormalization: shareable.a.ln ? {
+        integratedLoudnessEnabled: shareable.a.ln.ei,
+        integratedLoudness: shareable.a.ln.i,
+        loudnessRangeEnabled: shareable.a.ln.el,
+        loudnessRange: shareable.a.ln.l,
+        truePeakEnabled: shareable.a.ln.et,
+        truePeak: shareable.a.ln.t,
+        dualMono: shareable.a.ln.dm,
+      } : {
+        integratedLoudnessEnabled: false, integratedLoudness: -24,
+        loudnessRangeEnabled: false, loudnessRange: 7,
+        truePeakEnabled: false, truePeak: -2, dualMono: false,
+      },
     },
     subtitle: {
       tracks: shareable.s.tracks.map((t) => ({

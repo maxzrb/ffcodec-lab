@@ -12,6 +12,7 @@ import { buildVideoFilterChain, renderFilterChain } from '../filters/video-filte
 import { getByPath } from '@ffcodec/domain/utils/object-path'
 import { extractConfigKey } from '../config/config-path'
 import { calculateTargetSize, type TargetSizeCalculation } from '../tools/target-size'
+import { isControlActive } from '../catalog/control-condition'
 
 /**
  * Builds the CommandPlan from ProjectConfig + Catalog.
@@ -430,7 +431,7 @@ function buildOutput(
         explanationId: aEncoder.explanationId,
       })
 
-      if (config.audio.bitrate) {
+      if (config.audio.bitrate && aEncoder.qualityModes.length > 0) {
         output.audioArgs.push({
           id: 'quality.a.bitrate',
           originId: 'audio.bitrate',
@@ -457,9 +458,35 @@ function buildOutput(
         })
       }
 
+      const loudness = config.audio.loudnessNormalization
+      const loudnessTargets = [
+        loudness.integratedLoudnessEnabled ? `I=${loudness.integratedLoudness}` : undefined,
+        loudness.loudnessRangeEnabled ? `LRA=${loudness.loudnessRange}` : undefined,
+        loudness.truePeakEnabled ? `TP=${loudness.truePeak}` : undefined,
+      ].filter((value): value is string => Boolean(value))
+      if (loudnessTargets.length > 0) {
+        const filter = [
+          ...loudnessTargets,
+          'linear=false',
+          `dual_mono=${loudness.dualMono ? 'true' : 'false'}`,
+        ].join(':')
+        output.audioArgs.push({
+          id: 'filter.audio.loudnorm',
+          originId: loudness.integratedLoudnessEnabled
+            ? 'audio.loudnessNormalization.integratedLoudness'
+            : loudness.loudnessRangeEnabled
+              ? 'audio.loudnessNormalization.loudnessRange'
+              : 'audio.loudnessNormalization.truePeak',
+          phase: 'AUDIO_QUALITY',
+          tokens: ['-filter:a', `loudnorm=${filter}`],
+          explanationId: 'expl.audio.loudnorm',
+        })
+      }
+
       // 音频特殊参数同样通过目录定义生成，确保界面、配置和命令使用同一绑定。
       for (const sp of aEncoder.specialParameters) {
         if (!sp.commandBinding) continue
+        if (!isControlActive(sp, config)) continue
         const configKey = sp.configBinding?.path
           ? extractConfigKey(sp.configBinding.path)
           : sp.id
@@ -467,7 +494,7 @@ function buildOutput(
         const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
         if (val === undefined || val === null || val === '') continue
         // `auto` 是界面层的“交由 FFmpeg 自动选择”哨兵值，不是编码器参数值。
-        // 例如原生 AAC 的 -aac_coder 只接受 twoloop/fast/anmr，传入 auto 会直接失败。
+        // 例如原生 AAC 的 -aac_coder 只接受具体算法名，传入 auto 会直接失败。
         if (val === 'auto') continue
         const tokens = buildSpecialParameterTokens(sp, val)
         if (!tokens) continue

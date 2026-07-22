@@ -20,6 +20,11 @@ export interface FFmpegInfo {
   error?: string
 }
 
+export interface AudioEncoderCapabilities {
+  encoders: string[]
+  aacOptions: string[]
+}
+
 // ---- Constants ----
 
 /** Timeout for ffmpeg -version (ms). */
@@ -145,5 +150,27 @@ export async function detectFFmpeg(customPath?: string): Promise<FFmpegInfo> {
     path: '',
     source: 'none',
     error: 'FFmpeg not found. Please install FFmpeg or configure the path in settings.',
+  }
+}
+
+/** 读取当前 FFmpeg 实际提供的音频 encoder，并单独探测 AAC 新旧算法选项。 */
+export async function detectAudioEncoderCapabilities(customPath?: string): Promise<AudioEncoderCapabilities | null> {
+  const info = await detectFFmpeg(customPath)
+  if (!info.found || !info.path) return null
+
+  try {
+    const [{ stdout: encoderOutput }, { stdout: aacHelp }] = await Promise.all([
+      runExecFile(info.path, ['-hide_banner', '-encoders']),
+      runExecFile(info.path, ['-hide_banner', '-h', 'encoder=aac']),
+    ])
+    const encoders = encoderOutput
+      .split(/\r?\n/)
+      .map((line) => line.match(/^\s*A[\.A-Z]{5}\s+(\S+)/)?.[1])
+      .filter((name): name is string => Boolean(name))
+    const aacOptions = ['twoloop', 'fast', 'nmr']
+      .filter((option) => new RegExp(`^\\s+${option}\\s+`, 'm').test(aacHelp))
+    return { encoders, aacOptions }
+  } catch {
+    return null
   }
 }

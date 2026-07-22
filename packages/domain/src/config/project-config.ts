@@ -194,6 +194,15 @@ export interface AudioConfig {
   sampleRate?: number
   sampleFormat?: string
   qualityValues: Record<string, unknown>
+  loudnessNormalization: {
+    integratedLoudnessEnabled: boolean
+    integratedLoudness: number
+    loudnessRangeEnabled: boolean
+    loudnessRange: number
+    truePeakEnabled: boolean
+    truePeak: number
+    dualMono: boolean
+  }
 }
 
 export interface SubtitleConfig {

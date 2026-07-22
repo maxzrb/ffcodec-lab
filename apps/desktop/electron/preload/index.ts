@@ -102,6 +102,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   detectFFmpeg: (customPath?: string) =>
     ipcRenderer.invoke('ffmpeg:detect', customPath),
 
+  getAudioEncoderCapabilities: (customPath?: string) =>
+    ipcRenderer.invoke('ffmpeg:audioCapabilities', customPath) as Promise<{
+      encoders: string[]
+      aacOptions: string[]
+    } | null>,
+
   // FFmpeg job execution (Phase 9)
   startFFmpegJob: (request: FFmpegJobStartRequest) =>
     ipcRenderer.invoke('ffmpeg:startJob', request) as Promise<JobStartResult>,
@@ -152,6 +158,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('history:changed', handler)
   },
 
+  // 自定义标题栏与窗口尺寸锁
+  getWindowState: () => ipcRenderer.invoke('window:getState') as Promise<{ maximized: boolean; sizeUnlocked: boolean }>,
+  setWindowSizeUnlocked: (unlocked: boolean) => ipcRenderer.invoke('window:setSizeUnlocked', unlocked) as Promise<{ maximized: boolean; sizeUnlocked: boolean }>,
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize') as Promise<void>,
+  toggleMaximizeWindow: () => ipcRenderer.invoke('window:toggleMaximize') as Promise<{ maximized: boolean; sizeUnlocked: boolean }>,
+  closeWindow: () => ipcRenderer.invoke('window:close') as Promise<void>,
+
   // Desktop 使用统计：只读查询，离线时返回 null。
   getUsageStats: () =>
     ipcRenderer.invoke('usage:getStats') as Promise<{ total: number; today: number } | null>,
@@ -183,9 +196,15 @@ declare global {
         chrome: string
         electron: string
       }
+      getWindowState: () => Promise<{ maximized: boolean; sizeUnlocked: boolean }>
+      setWindowSizeUnlocked: (unlocked: boolean) => Promise<{ maximized: boolean; sizeUnlocked: boolean }>
+      minimizeWindow: () => Promise<void>
+      toggleMaximizeWindow: () => Promise<{ maximized: boolean; sizeUnlocked: boolean }>
+      closeWindow: () => Promise<void>
       showOpenDialog: (opts: { kind: 'file' | 'files' | 'save' | 'directory'; defaultPath?: string }) =>
         Promise<{ canceled: boolean; filePath?: string; filePaths?: string[] }>
       detectFFmpeg: (customPath?: string) => Promise<FFmpegInfo>
+      getAudioEncoderCapabilities: (customPath?: string) => Promise<{ encoders: string[]; aacOptions: string[] } | null>
 
       // Phase 9: FFmpeg job execution
       startFFmpegJob: (request: FFmpegJobStartRequest) => Promise<JobStartResult>

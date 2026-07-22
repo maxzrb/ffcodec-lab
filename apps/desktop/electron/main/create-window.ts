@@ -7,6 +7,9 @@ import { join } from 'path'
 
 let mainWindow: BrowserWindow | null = null
 
+export const LOCKED_WINDOW_MINIMUM = { width: 1280, height: 720 } as const
+export const UNLOCKED_WINDOW_MINIMUM = { width: 640, height: 480 } as const
+
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow
 }
@@ -15,8 +18,10 @@ export function createMainWindow(): BrowserWindow {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    minWidth: LOCKED_WINDOW_MINIMUM.width,
+    minHeight: LOCKED_WINDOW_MINIMUM.height,
+    frame: false,
+    titleBarStyle: 'hidden',
     show: false, // ready-to-show 后再显示，避免白屏闪烁
     title: 'FFCodec Lab',
     webPreferences: {

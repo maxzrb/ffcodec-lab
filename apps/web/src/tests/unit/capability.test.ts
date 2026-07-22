@@ -14,7 +14,9 @@ describe('Capability catalog', () => {
   })
 
   it('all audio encoders have valid family and implementation', () => {
-    const VALID_FAMILIES = ['aac', 'opus', 'flac', 'other']
+    const VALID_FAMILIES = [
+      'aac', 'opus', 'flac', 'mp3', 'alac', 'ac3', 'eac3', 'vorbis', 'wavpack', 'pcm', 'other',
+    ]
     for (const enc of Object.values(audioEncoders)) {
       expect(VALID_FAMILIES).toContain(enc.family)
       expect(enc.implementation).toBe('software')
@@ -30,10 +32,12 @@ describe('Capability catalog', () => {
     }
   })
 
-  it('software encoders have build-dependent or generally-available', () => {
+  it('software encoders declare a supported availability class', () => {
     for (const enc of [...Object.values(videoEncoders), ...Object.values(audioEncoders)]) {
       if (enc.implementation === 'software') {
-        expect(['ffmpeg-build-dependent', 'generally-available']).toContain(enc.availabilityClass)
+        expect([
+          'ffmpeg-build-dependent', 'platform-dependent', 'generally-available', 'experimental',
+        ]).toContain(enc.availabilityClass)
       }
     }
   })

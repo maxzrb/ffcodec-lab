@@ -9,6 +9,11 @@ import type { PlatformAdapter, StorageAdapter, WorkbenchExtensions } from '@ffco
 import { DesktopPathField } from './components/DesktopPathField'
 import { desktopCommandActions } from './components/DesktopCommandActions'
 import { desktopSettingsSections } from './components/DesktopSettingsSection'
+import { AudioCapabilityUnlockButton } from './components/AudioCapabilityUnlockButton'
+import {
+  getAudioCapabilityOverride,
+  onAudioCapabilityOverrideChange,
+} from './audio-capability-override'
 
 /** localStorage-backed storage for Electron renderer (temporary). */
 class ElectronStorageAdapter implements StorageAdapter {
@@ -51,9 +56,16 @@ class ElectronStorageAdapter implements StorageAdapter {
 }
 
 const desktopExtensions: WorkbenchExtensions = {
+  headerItems: [<AudioCapabilityUnlockButton key="audio-capability-unlock" />],
   pathFieldRenderer: DesktopPathField,
   commandActions: desktopCommandActions,
   settingsSections: desktopSettingsSections,
+  getAudioEncoderCapabilities: () => {
+    const customPath = localStorage.getItem('ffcodec-desktop-ffmpeg-path')?.trim() || undefined
+    return window.electronAPI?.getAudioEncoderCapabilities(customPath) ?? Promise.resolve(null)
+  },
+  getAudioCapabilityOverride,
+  onAudioCapabilityOverrideChange,
 }
 
 /** Full desktop platform adapter. Capabilities declare what desktop can do. */

@@ -5,7 +5,7 @@
 // ============================================================
 
 import { ipcMain, dialog, shell, BrowserWindow, net } from 'electron'
-import { detectFFmpeg } from './ffmpeg-detect'
+import { detectAudioEncoderCapabilities, detectFFmpeg } from './ffmpeg-detect'
 import {
   launchJob,
   cancelActiveJob,
@@ -22,6 +22,7 @@ import {
   listEncodingHistory,
   readEncodingLog,
 } from './history-store'
+import { LOCKED_WINDOW_MINIMUM, UNLOCKED_WINDOW_MINIMUM } from './create-window'
 
 // ---- Media file filters for open/save dialogs ----
 
@@ -194,6 +195,53 @@ function registerHistoryHandlers(): void {
   })
 }
 
+function getSenderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null {
+  return BrowserWindow.fromWebContents(event.sender)
+}
+
+function windowState(win: BrowserWindow, sizeUnlocked: boolean) {
+  return {
+    maximized: win.isMaximized(),
+    sizeUnlocked,
+  }
+}
+
+// ---- 自定义标题栏与窗口尺寸锁 ----
+
+function registerWindowHandlers(): void {
+  let sizeUnlocked = false
+
+  ipcMain.handle('window:getState', (event) => {
+    const win = getSenderWindow(event)
+    return win ? windowState(win, sizeUnlocked) : { maximized: false, sizeUnlocked }
+  })
+
+  ipcMain.handle('window:setSizeUnlocked', (event, unlocked: boolean) => {
+    const win = getSenderWindow(event)
+    if (!win) return { maximized: false, sizeUnlocked }
+
+    sizeUnlocked = unlocked === true
+    const minimum = sizeUnlocked ? UNLOCKED_WINDOW_MINIMUM : LOCKED_WINDOW_MINIMUM
+    win.setMinimumSize(minimum.width, minimum.height)
+
+    if (!sizeUnlocked && !win.isMaximized()) {
+      const [width, height] = win.getSize()
+      win.setSize(Math.max(width, minimum.width), Math.max(height, minimum.height), true)
+    }
+    return windowState(win, sizeUnlocked)
+  })
+
+  ipcMain.handle('window:minimize', (event) => getSenderWindow(event)?.minimize())
+  ipcMain.handle('window:toggleMaximize', (event) => {
+    const win = getSenderWindow(event)
+    if (!win) return { maximized: false, sizeUnlocked }
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
+    return windowState(win, sizeUnlocked)
+  })
+  ipcMain.handle('window:close', (event) => getSenderWindow(event)?.close())
+}
+
 // ---- Desktop 使用统计（只读、失败不影响功能） ----
 
 function registerUsageStatsHandler(): void {
@@ -219,11 +267,15 @@ function registerUsageStatsHandler(): void {
       return null
     }
   })
+  ipcMain.handle('ffmpeg:audioCapabilities', async (_event, customPath?: string) => {
+    return detectAudioEncoderCapabilities(customPath)
+  })
 }
 
 // ---- Register all ----
 
 export function registerIpcHandlers(): void {
+  registerWindowHandlers()
   registerDialogHandlers()
   registerFFmpegHandlers()
   registerShellHandlers()

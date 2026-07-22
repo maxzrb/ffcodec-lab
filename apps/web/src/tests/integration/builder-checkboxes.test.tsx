@@ -5,7 +5,7 @@
 // ============================================================
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { WorkbenchApp } from '@ffcodec/workbench'
 import { useBuilderStore } from '../../store'
@@ -105,6 +105,8 @@ function presetStore(config: ProjectConfig) {
       'section.video-advanced': false,
       'section.frame': false,
       'section.audio': true,
+      'section.audio-advanced': false,
+      'section.audio-loudness': false,
       'section.subtitle': false,
       'section.container': false,
     },
@@ -139,6 +141,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
         'section.video-advanced': false,
         'section.frame': false,
         'section.audio': true,
+        'section.audio-advanced': false,
+        'section.audio-loudness': false,
         'section.subtitle': false,
         'section.container': false,
       },
@@ -231,9 +235,9 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(dropdownText('视频处理方式')).toContain('复制')
 
     await openPanel('音频')
-    await chooseDropdown('音频处理方式', 'copy')
+    await userEvent.click(screen.getByRole('button', { name: '复制音频流 (copy)' }))
     expect(screen.getByText('正在复制音频流')).toBeInTheDocument()
-    await chooseDropdown('音频处理方式', 'disabled')
+    await userEvent.click(screen.getByRole('button', { name: '不输出音频 (-an)' }))
     expect(screen.getByText('当前不输出音频')).toBeInTheDocument()
   })
 
@@ -639,6 +643,144 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await chooseDropdown('音频码率 (-b:a)单位', 'M')
 
     expect(useBuilderStore.getState().config.audio.bitrate).toBe('256M')
+  })
+
+  it('音频编码器提供推荐卡片和可搜索分类选择器', async () => {
+    const config = makeAudioConfig('aac')
+    config.output.containerId = 'mkv'
+    presetStore(config)
+    render(<TestWrapper />)
+    await openPanel('音频')
+
+    expect(screen.getByText('当前容器推荐')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /FFmpeg 原生 AAC/ })).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: /搜索全部编码器/ }))
+    const search = screen.getByPlaceholderText('搜索名称、FFmpeg encoder 或分类…')
+    await userEvent.type(search, 'pcm_f64le')
+
+    const pcmFloat = screen.getByRole('button', { name: /WAV PCM 64-bit float/ })
+    expect(pcmFloat).toBeEnabled()
+    await userEvent.click(pcmFloat)
+    expect(useBuilderStore.getState().config.audio.encoderId).toBe('pcm_f64le')
+    expect(useBuilderStore.getState().config.audio.bitrate).toBeUndefined()
+  })
+
+  it('音频编码器私有选项放在独立的高级参数折叠栏', async () => {
+    presetStore(makeAudioConfig('aac'))
+    render(<TestWrapper />)
+    await openPanel('音频')
+
+    const toggle = screen.getByRole('button', { name: /音频高级参数/ })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByLabelText('AAC 编码配置')).toBeInTheDocument()
+
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(useBuilderStore.getState().expandedSections['section.audio-advanced']).toBe(true)
+  })
+
+  it('响度标准化提供三个独立开关和官方范围滑杆', async () => {
+    presetStore(makeAudioConfig('aac'))
+    render(<TestWrapper />)
+    await openPanel('音频')
+
+    const sectionToggle = screen.getByRole('button', { name: /响度标准化/ })
+    expect(sectionToggle).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(sectionToggle)
+
+    const targetI = screen.getByLabelText('目标响度 I (LUFS)')
+    const targetLra = screen.getByLabelText('动态范围 LRA (LU)')
+    const targetTp = screen.getByLabelText('峰值电平 TP (dBTP)')
+    expect(targetI).toHaveAttribute('type', 'range')
+    expect(targetI).toHaveAttribute('min', '-70')
+    expect(targetI).toHaveAttribute('max', '-5')
+    expect(targetLra).toHaveAttribute('min', '1')
+    expect(targetLra).toHaveAttribute('max', '50')
+    expect(targetTp).toHaveAttribute('min', '-9')
+    expect(targetTp).toHaveAttribute('max', '0')
+    expect(targetI).toBeDisabled()
+    expect(targetLra).toBeDisabled()
+    expect(targetTp).toBeDisabled()
+
+    await userEvent.click(screen.getByLabelText('启用目标响度'))
+    await userEvent.click(screen.getByLabelText('启用峰值电平'))
+    expect(targetI).toBeEnabled()
+    expect(targetLra).toBeDisabled()
+    expect(targetTp).toBeEnabled()
+    expect(useBuilderStore.getState().config.audio.loudnessNormalization.integratedLoudnessEnabled).toBe(true)
+    expect(useBuilderStore.getState().config.audio.loudnessNormalization.truePeakEnabled).toBe(true)
+  })
+
+  it('Desktop 根据本机 FFmpeg 能力禁用缺失编码器并隐藏不可用的 AAC NMR', async () => {
+    const config = makeAudioConfig('aac')
+    config.output.containerId = 'mkv'
+    presetStore(config)
+    testPlatform = {
+      ...testPlatform,
+      capabilities: { ...testPlatform.capabilities, desktop: true, ffmpegDetect: true },
+      extensions: {
+        getAudioEncoderCapabilities: async () => ({
+          encoders: ['aac', 'flac'],
+          aacOptions: ['twoloop', 'fast'],
+        }),
+      },
+    }
+    render(<TestWrapper />)
+    await openPanel('音频')
+
+    expect(await screen.findByText('当前 FFmpeg 未提供 NMR；已隐藏该选项。')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /搜索全部编码器/ }))
+    await userEvent.type(screen.getByPlaceholderText('搜索名称、FFmpeg encoder 或分类…'), 'libmp3lame')
+
+    const lame = screen.getByRole('button', { name: /LAME MP3/ })
+    expect(lame).toBeDisabled()
+    expect(lame).toHaveTextContent('当前 FFmpeg 不可用')
+  })
+
+  it('Desktop 解锁开关会恢复所有受 FFmpeg 能力检测限制的音频选项', async () => {
+    const overrideListeners = new Set<(enabled: boolean) => void>()
+    presetStore(makeAudioConfig('aac'))
+    testPlatform = {
+      ...testPlatform,
+      capabilities: { ...testPlatform.capabilities, desktop: true, ffmpegDetect: true },
+      extensions: {
+        getAudioEncoderCapabilities: async () => ({ encoders: ['aac'], aacOptions: ['fast'] }),
+        getAudioCapabilityOverride: () => false,
+        onAudioCapabilityOverrideChange: (listener) => {
+          overrideListeners.add(listener)
+          return () => { overrideListeners.delete(listener) }
+        },
+      },
+    }
+    render(<TestWrapper />)
+    await openPanel('音频')
+    expect(await screen.findByText('当前 FFmpeg 未提供 NMR；已隐藏该选项。')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /LAME MP3/ })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /搜索全部编码器/ }))
+    await userEvent.type(screen.getByPlaceholderText('搜索名称、FFmpeg encoder 或分类…'), 'libmp3lame')
+    expect(screen.getAllByRole('button', { name: /LAME MP3/ }).every((button) => button.hasAttribute('disabled'))).toBe(true)
+
+    act(() => { for (const listener of overrideListeners) listener(true) })
+    expect(screen.queryByText('当前 FFmpeg 未提供 NMR；已隐藏该选项。')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /LAME MP3/ }).every((button) => !button.hasAttribute('disabled'))).toBe(true)
+  })
+
+  it('音频质量档与目标码率互斥，避免生成冲突的 FFmpeg 参数', async () => {
+    presetStore(makeAudioConfig('libmp3lame'))
+    render(<TestWrapper />)
+    await openPanel('音频')
+
+    const quality = screen.getByLabelText('VBR 质量 (-q:a，0最好)')
+    await userEvent.type(quality, '2')
+    expect(useBuilderStore.getState().config.audio.qualityValues.quality).toBe(2)
+    expect(useBuilderStore.getState().config.audio.bitrate).toBeUndefined()
+
+    const bitrate = screen.getByLabelText('音频码率 (-b:a)')
+    await userEvent.type(bitrate, '192')
+    expect(useBuilderStore.getState().config.audio.bitrate).toBe('192k')
+    expect(useBuilderStore.getState().config.audio.qualityValues.quality).toBeUndefined()
   })
 
   it('参数说明不显示内部数据来源，并提供有决策价值的编码器介绍', async () => {

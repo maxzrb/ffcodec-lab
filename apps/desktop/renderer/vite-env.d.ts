@@ -93,11 +93,17 @@ declare global {
         chrome: string
         electron: string
       }
+      getWindowState: () => Promise<{ maximized: boolean; sizeUnlocked: boolean }>
+      setWindowSizeUnlocked: (unlocked: boolean) => Promise<{ maximized: boolean; sizeUnlocked: boolean }>
+      minimizeWindow: () => Promise<void>
+      toggleMaximizeWindow: () => Promise<{ maximized: boolean; sizeUnlocked: boolean }>
+      closeWindow: () => Promise<void>
       showOpenDialog: (opts: {
         kind: 'file' | 'files' | 'save' | 'directory'
         defaultPath?: string
       }) => Promise<{ canceled: boolean; filePath?: string; filePaths?: string[] }>
       detectFFmpeg: (customPath?: string) => Promise<FFmpegInfo>
+      getAudioEncoderCapabilities: (customPath?: string) => Promise<{ encoders: string[]; aacOptions: string[] } | null>
 
       // Phase 9: FFmpeg job execution
       startFFmpegJob: (request: FFmpegJobStartRequest) => Promise<JobStartResult>

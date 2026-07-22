@@ -63,7 +63,7 @@ describe('Command AST — Invariants', () => {
 
     expect(rendered.text).not.toContain('-aac_coder')
 
-    config.audio.qualityValues.profile = 'twoloop'
+    config.audio.qualityValues.coder = 'twoloop'
     rendered = renderBash(buildCommandPlan(config, catalog, []))
     expect(rendered.text).toContain('-aac_coder twoloop')
   })

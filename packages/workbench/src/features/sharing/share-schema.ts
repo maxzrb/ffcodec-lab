@@ -86,6 +86,12 @@ export const shareableConfigSchema = z.object({
     channelLayout: z.string().optional(),
     sampleRate: z.number().optional(),
     qualityValues: z.record(z.unknown()).default({}),
+    ln: z.object({
+      ei: z.boolean(), i: z.number().min(-70).max(-5),
+      el: z.boolean(), l: z.number().min(1).max(50),
+      et: z.boolean(), t: z.number().min(-9).max(0),
+      dm: z.boolean(),
+    }).optional(),
   }),
   s: z.object({
     tracks: z.array(z.object({

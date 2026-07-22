@@ -135,6 +135,15 @@ export const CONFIG_PATHS = {
     sampleRate: configPath(['audio', 'sampleRate']),
     sampleFormat: configPath(['audio', 'sampleFormat']),
     qualityValues: configPath(['audio', 'qualityValues']),
+    loudnessNormalization: {
+      integratedLoudnessEnabled: configPath(['audio', 'loudnessNormalization', 'integratedLoudnessEnabled']),
+      integratedLoudness: configPath(['audio', 'loudnessNormalization', 'integratedLoudness']),
+      loudnessRangeEnabled: configPath(['audio', 'loudnessNormalization', 'loudnessRangeEnabled']),
+      loudnessRange: configPath(['audio', 'loudnessNormalization', 'loudnessRange']),
+      truePeakEnabled: configPath(['audio', 'loudnessNormalization', 'truePeakEnabled']),
+      truePeak: configPath(['audio', 'loudnessNormalization', 'truePeak']),
+      dualMono: configPath(['audio', 'loudnessNormalization', 'dualMono']),
+    },
   },
 
   subtitle: {

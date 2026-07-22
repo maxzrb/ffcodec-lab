@@ -8,11 +8,13 @@ import { PlatformProvider } from '@ffcodec/platform-api'
 import { desktopPlatform } from './desktop-platform'
 import { FFmpegStatusBar } from './components/FFmpegStatusBar'
 import { DesktopVisitCounter } from './components/DesktopVisitCounter'
+import { DesktopTitleBar } from './components/DesktopTitleBar'
 
 export function DesktopApp() {
   return (
     <PlatformProvider adapter={desktopPlatform}>
       <div className="app-shell desktop-shell">
+        <DesktopTitleBar />
         <main className="desktop-shell__content">
           <WorkbenchApp footerItems={<DesktopVisitCounter />} />
         </main>

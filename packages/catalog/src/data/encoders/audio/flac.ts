@@ -7,6 +7,7 @@ export const flac: EncoderDefinition = {
   ffmpegName: 'flac',
   mediaType: 'audio',
   family: 'flac' as const,
+  audioCategory: 'lossless',
   implementation: 'software' as const,
   availabilityClass: 'generally-available',
 

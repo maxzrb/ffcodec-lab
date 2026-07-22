@@ -166,6 +166,23 @@ const audioConfigSchema = z.object({
   sampleRate: z.number().optional(),
   sampleFormat: z.string().optional(),
   qualityValues: z.record(z.unknown()),
+  loudnessNormalization: z.object({
+    integratedLoudnessEnabled: z.boolean(),
+    integratedLoudness: z.number().min(-70).max(-5),
+    loudnessRangeEnabled: z.boolean(),
+    loudnessRange: z.number().min(1).max(50),
+    truePeakEnabled: z.boolean(),
+    truePeak: z.number().min(-9).max(0),
+    dualMono: z.boolean(),
+  }).default({
+    integratedLoudnessEnabled: false,
+    integratedLoudness: -24,
+    loudnessRangeEnabled: false,
+    loudnessRange: 7,
+    truePeakEnabled: false,
+    truePeak: -2,
+    dualMono: false,
+  }),
 })
 
 const metadataConfigSchema = z.object({

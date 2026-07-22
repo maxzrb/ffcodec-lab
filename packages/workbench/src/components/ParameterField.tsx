@@ -8,6 +8,7 @@ import type { ResolvedField } from '@ffcodec/domain/presentation/resolved-field'
 import { useI18n } from '../features/i18n/i18n'
 import { Dropdown } from './Dropdown'
 import type { PathFieldRenderer } from '@ffcodec/platform-api'
+import { AacCoderPicker, AudioEncoderPicker, AudioModePicker } from './AudioEncoderPicker'
 
 interface ParameterFieldProps {
   field: ResolvedField
@@ -89,6 +90,51 @@ function renderControl(
   text: (value: string) => string,
   pathFieldRenderer?: PathFieldRenderer,
 ) {
+  if (field.id === 'param.audio.mode') {
+    return (
+      <AudioModePicker
+        options={field.options ?? []}
+        value={field.value}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    )
+  }
+  if (field.id === 'param.audio.encoder') {
+    return (
+      <AudioEncoderPicker
+        options={field.options ?? []}
+        value={field.value}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    )
+  }
+  if (field.id === 'aac.coder') {
+    return (
+      <AacCoderPicker
+        id={controlId}
+        value={field.value}
+        options={field.options ?? []}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    )
+  }
+  if (field.id.startsWith('audio.loudnessNormalization.') && field.controlType === 'number') {
+    return (
+      <LoudnessSlider
+        id={controlId}
+        label={text(field.label)}
+        value={Number(field.value)}
+        min={field.min ?? 0}
+        max={field.max ?? 100}
+        step={field.step ?? 1}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    )
+  }
   // If a platform path renderer is available and this field is a file path, delegate
   if (field.pathKind && pathFieldRenderer) {
     return pathFieldRenderer({
@@ -260,6 +306,53 @@ function renderControl(
         />
       )
   }
+}
+
+function LoudnessSlider({ id, label, value, min, max, step, disabled, onChange }: {
+  id: string
+  label: string
+  value: number
+  min: number
+  max: number
+  step: number
+  disabled: boolean
+  onChange: (value: unknown) => void
+}) {
+  const safeValue = Number.isFinite(value) ? value : min
+  const update = (raw: string) => {
+    const parsed = Number(raw)
+    if (Number.isFinite(parsed)) onChange(parsed)
+  }
+  return (
+    <div className="loudness-slider">
+      <output className="loudness-slider__value" htmlFor={id}>{safeValue}</output>
+      <input
+        id={id}
+        className="loudness-slider__range"
+        type="range"
+        value={safeValue}
+        min={min}
+        max={max}
+        step={step}
+        disabled={disabled}
+        onChange={(event) => update(event.target.value)}
+      />
+      <div className="loudness-slider__limits" aria-hidden="true">
+        <span>{min}</span><span>{max}</span>
+      </div>
+      <input
+        className="loudness-slider__number"
+        type="number"
+        aria-label={`${label}精确值`}
+        value={safeValue}
+        min={min}
+        max={max}
+        step={step}
+        disabled={disabled}
+        onChange={(event) => update(event.target.value)}
+      />
+    </div>
+  )
 }
 
 type BitrateUnit = '' | 'k' | 'M'

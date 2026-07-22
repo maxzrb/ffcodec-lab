@@ -11,6 +11,7 @@ interface WorkbenchShellProps {
   onPanelChange: (panelId: string) => void
   content: ReactNode
   inspector: ReactNode
+  footer?: ReactNode
   /** Platform-specific path field renderer, passed through to content. */
   pathFieldRenderer?: PathFieldRenderer
   /** Platform-provided settings sections rendered in the nav sidebar. */
@@ -38,6 +39,7 @@ export function WorkbenchShell({
   onPanelChange,
   content,
   inspector,
+  footer,
   pathFieldRenderer: _pathFieldRenderer,
   settingsSections,
 }: WorkbenchShellProps) {
@@ -130,6 +132,7 @@ export function WorkbenchShell({
         className={`workbench-inspector ${mobileInspectorOpen ? 'workbench-inspector--mobile-open' : ''}`}
         aria-label={locale === 'zh-CN' ? '命令检查器' : 'Command inspector'}
       >{inspector}</aside>
+      {footer}
     </div>
   )
 }

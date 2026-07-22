@@ -21,7 +21,24 @@ export type CodecFamily =
   | 'aac'
   | 'opus'
   | 'flac'
+  | 'mp3'
+  | 'alac'
+  | 'ac3'
+  | 'eac3'
+  | 'vorbis'
+  | 'wavpack'
+  | 'pcm'
   | 'other'
+
+export type AudioEncoderCategory =
+  | 'aac'
+  | 'general-lossy'
+  | 'lossless'
+  | 'pcm'
+  | 'platform'
+  | 'voice'
+  | 'legacy'
+  | 'experimental'
 
 // -- codec category (UI grouping level above family) ---------------
 
@@ -267,6 +284,10 @@ export interface EncoderDefinition {
   ffmpegName: string
   mediaType: 'video' | 'audio' | 'image'
   family: CodecFamily
+  /** 音频选择器分组；视频编码器不使用。 */
+  audioCategory?: AudioEncoderCategory
+  /** 切换到该有损音频 encoder 时使用的建议起始码率；无损/PCM 省略。 */
+  defaultAudioBitrate?: string
   implementation: EncoderImplementation
   /** Encoder-level availability classification */
   availabilityClass: AvailabilityClass
@@ -312,6 +333,11 @@ export interface ControlDefinition {
   defaultValue?: unknown
   /** 可选参数不由目录默认值自动写入命令，用户可明确选择“不设置”。 */
   optional?: boolean
+  /** 控件仅在指定配置条件成立时展示和发射，避免隐藏的陈旧值进入命令。 */
+  activeWhen?: {
+    path: string
+    equals: unknown
+  }
   /** 控件在工作台中的展示位置，业务页面不据此推导命令。 */
   uiPlacement?: {
     panelId: string

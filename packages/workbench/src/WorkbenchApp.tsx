@@ -261,6 +261,9 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
           </div>
         </div>
         <div className="product-header__actions">
+          {extensions?.headerItems?.map((item, i) => (
+            <Fragment key={`header-ext-${i}`}>{item}</Fragment>
+          ))}
           <button
             type="button"
             onClick={() => setLocale((current) => current === 'zh-CN' ? 'en' : 'zh-CN')}
@@ -293,9 +296,6 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
             {isZh ? '管理预设' : 'Presets'}
           </button>
           {shareNotice && <span className="share-notice" role="status">{shareNotice}</span>}
-          {extensions?.headerItems?.map((item, i) => (
-            <Fragment key={`header-ext-${i}`}>{item}</Fragment>
-          ))}
         </div>
       </header>
 
@@ -304,6 +304,19 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
         activePanelId={activePanel.id}
         onPanelChange={handlePanelChange}
         settingsSections={extensions?.settingsSections}
+        footer={(
+          <footer className="builder-footer">
+            <small>
+              {isZh
+                ? '本项目部分参数参考自 '
+                : 'Some parameters referenced from '}
+              <a href="https://github.com/Lake1059/FFmpegFreeUI" target="_blank" rel="noopener noreferrer">
+                Lake1059/FFmpegFreeUI
+              </a>
+            </small>
+            {footerItems && <div className="builder-footer__stats">{footerItems}</div>}
+          </footer>
+        )}
         content={(
           <>
             {activePanel.stateNotice && (
@@ -413,17 +426,6 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
         />
       )}
 
-      <footer className="builder-footer">
-        <small>
-          {isZh
-            ? '本项目部分参数参考自 '
-            : 'Some parameters referenced from '}
-          <a href="https://github.com/Lake1059/FFmpegFreeUI" target="_blank" rel="noopener noreferrer">
-            Lake1059/FFmpegFreeUI
-          </a>
-        </small>
-        {footerItems && <div className="builder-footer__stats">{footerItems}</div>}
-      </footer>
     </main>
     </I18nProvider>
   )

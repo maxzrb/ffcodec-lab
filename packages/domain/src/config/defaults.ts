@@ -66,6 +66,15 @@ export function createDefaultProjectConfig(): ProjectConfig {
       channelLayout: 'stereo',
       sampleRate: 48000,
       qualityValues: {},
+      loudnessNormalization: {
+        integratedLoudnessEnabled: false,
+        integratedLoudness: -24,
+        loudnessRangeEnabled: false,
+        loudnessRange: 7,
+        truePeakEnabled: false,
+        truePeak: -2,
+        dualMono: false,
+      },
     },
     subtitle: {
       tracks: [],

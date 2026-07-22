@@ -1,6 +1,8 @@
 import type { ExplanationDefinition } from '@ffcodec/domain/catalog/catalog-types'
+import { audioExpandedExplanations } from './audio-expanded'
 
 export const explanations: Record<string, ExplanationDefinition> = {
+  ...audioExpandedExplanations,
   // -- video encoders -------------------------------------------
   'expl.libx264': {
     id: 'expl.libx264',
@@ -998,7 +1000,7 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.aac.profile': {
     id: 'expl.aac.profile',
     title: 'AAC 编码算法',
-    short: 'twoloop 提供更好质量，fast 速度更快。',
+    short: 'twoloop 提供稳定质量，fast 优先速度；nmr 是新版噪声掩蔽比搜索算法，使用前需核验 FFmpeg 构建。',
     sourceRefs: [
       {
         repository: 'Lake1059/FFmpegFreeUI',
@@ -1009,6 +1011,47 @@ export const explanations: Record<string, ExplanationDefinition> = {
         sourceType: 'ffmpegfreeui',
       },
     ],
+  },
+
+  'expl.aac.nmrSpeed': {
+    id: 'expl.aac.nmrSpeed',
+    title: 'NMR 搜索速度',
+    short: '仅用于 NMR coder；0 最慢且质量最高，数值越高搜索越快，范围 0~4。',
+    sourceRefs: [{
+      repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-22',
+      file: 'libavcodec/aacenc.c', symbol: 'aac_nmr_speed', sourceType: 'ffmpeg-official',
+      url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/aacenc.c',
+    }],
+  },
+
+  'expl.aac.ms': {
+    id: 'expl.aac.ms', title: 'M/S 立体声',
+    short: '控制中/侧声道立体声编码；通常保留编码器默认，仅在明确需要时强制关闭或开启。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-22', file: 'libavcodec/aacenc.c', symbol: 'aac_ms', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/aacenc.c' }],
+  },
+
+  'expl.aac.is': {
+    id: 'expl.aac.is', title: '强度立体声',
+    short: '允许编码器以强度信息表示部分高频立体声内容；低码率可能受益，默认交由编码器决定。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-22', file: 'libavcodec/aacenc.c', symbol: 'aac_is', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/aacenc.c' }],
+  },
+
+  'expl.aac.pns': {
+    id: 'expl.aac.pns', title: '感知噪声替代',
+    short: '以参数化噪声替代部分噪声状频谱，可能改善低码率效率；默认交由编码器决定。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-22', file: 'libavcodec/aacenc.c', symbol: 'aac_pns', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/aacenc.c' }],
+  },
+
+  'expl.aac.tns': {
+    id: 'expl.aac.tns', title: '时域噪声整形',
+    short: '对瞬态信号的量化噪声进行时域整形；通常保留编码器默认。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-22', file: 'libavcodec/aacenc.c', symbol: 'aac_tns', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/aacenc.c' }],
+  },
+
+  'expl.aac.pce': {
+    id: 'expl.aac.pce', title: 'PCE 声道配置',
+    short: '强制写入 Program Config Element；仅在特定多声道兼容需求下开启。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-22', file: 'libavcodec/aacenc.c', symbol: 'aac_pce', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/aacenc.c' }],
   },
 
   // -- libopus explanations ------------------------------------

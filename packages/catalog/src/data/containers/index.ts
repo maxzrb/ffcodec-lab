@@ -1,5 +1,23 @@
 import type { ContainerDefinition } from '@ffcodec/domain/catalog/catalog-types'
 
+const ALL_AUDIO_ENCODERS = [
+  'aac', 'libfdk_aac', 'aac_at', 'libopus', 'opus', 'libmp3lame', 'flac', 'alac', 'alac_at',
+  'ac3', 'eac3', 'dca', 'truehd', 'tta', 'wavpack', 'libvorbis', 'vorbis', 'mp2', 'libtwolame',
+  'real_144', 'libopencore_amrnb', 'libvo_amrwbenc', 'ilbc_at',
+  'pcm_s16le', 'pcm_s32le', 'pcm_s64le', 'pcm_f64le', 'pcm_alaw_at', 'pcm_mulaw_at',
+  'copy',
+]
+
+function audioCompatibility(
+  supported: string[],
+  caveats: string[] = [],
+): ContainerDefinition['audioCodecs'] {
+  return Object.fromEntries(ALL_AUDIO_ENCODERS.map((id) => [
+    id,
+    supported.includes(id) ? 'supported' : caveats.includes(id) ? 'supported-with-caveat' : 'unsupported',
+  ]))
+}
+
 const mp4: ContainerDefinition = {
   id: 'mp4',
   label: 'MP4',
@@ -20,12 +38,10 @@ const mp4: ContainerDefinition = {
     hevc_videotoolbox: 'supported',
     copy: 'supported',
   },
-  audioCodecs: {
-    aac: 'supported',
-    libopus: 'supported-with-caveat',
-    flac: 'supported-with-caveat',
-    copy: 'supported',
-  },
+  audioCodecs: audioCompatibility(
+    ['aac', 'libfdk_aac', 'aac_at', 'libmp3lame', 'alac', 'alac_at', 'ac3', 'eac3', 'copy'],
+    ['libopus', 'flac'],
+  ),
   subtitleCodecs: {
     mov_text: 'supported',
     copy: 'supported',
@@ -68,12 +84,7 @@ const mkv: ContainerDefinition = {
     hevc_videotoolbox: 'supported',
     copy: 'supported',
   },
-  audioCodecs: {
-    aac: 'supported',
-    libopus: 'supported',
-    flac: 'supported',
-    copy: 'supported',
-  },
+  audioCodecs: audioCompatibility(ALL_AUDIO_ENCODERS),
   subtitleCodecs: {
     copy: 'supported',
     srt: 'supported',
@@ -116,12 +127,7 @@ const webm: ContainerDefinition = {
     hevc_videotoolbox: 'unsupported',
     copy: 'supported',
   },
-  audioCodecs: {
-    libopus: 'supported',
-    aac: 'unsupported',
-    flac: 'unsupported',
-    copy: 'supported',
-  },
+  audioCodecs: audioCompatibility(['libopus', 'opus', 'libvorbis', 'vorbis', 'copy']),
   subtitleCodecs: {
     webvtt: 'supported',
     copy: 'supported',
@@ -164,12 +170,12 @@ const mov: ContainerDefinition = {
     hevc_videotoolbox: 'supported',
     copy: 'supported',
   },
-  audioCodecs: {
-    aac: 'supported',
-    libopus: 'supported-with-caveat',
-    flac: 'supported-with-caveat',
-    copy: 'supported',
-  },
+  audioCodecs: audioCompatibility(
+    ['aac', 'libfdk_aac', 'aac_at', 'libmp3lame', 'alac', 'alac_at', 'ac3', 'eac3',
+      'pcm_s16le', 'pcm_s32le', 'pcm_s64le', 'pcm_f64le', 'pcm_alaw_at', 'pcm_mulaw_at',
+      'libopencore_amrnb', 'libvo_amrwbenc', 'ilbc_at', 'copy'],
+    ['libopus', 'flac'],
+  ),
   subtitleCodecs: {
     mov_text: 'supported',
     copy: 'supported',
@@ -199,11 +205,7 @@ const ogg: ContainerDefinition = {
   videoCodecs: {
     copy: 'supported',
   },
-  audioCodecs: {
-    flac: 'supported',
-    libopus: 'supported',
-    copy: 'supported',
-  },
+  audioCodecs: audioCompatibility(['flac', 'libopus', 'opus', 'libvorbis', 'vorbis', 'copy']),
   subtitleCodecs: {
     copy: 'supported',
   },
@@ -219,10 +221,28 @@ const ogg: ContainerDefinition = {
   ],
 }
 
+const wav: ContainerDefinition = {
+  id: 'wav',
+  label: 'WAV',
+  extension: 'wav',
+  videoCodecs: { copy: 'unsupported' },
+  audioCodecs: audioCompatibility([
+    'pcm_s16le', 'pcm_s32le', 'pcm_s64le', 'pcm_f64le', 'pcm_alaw_at', 'pcm_mulaw_at', 'copy',
+  ]),
+  subtitleCodecs: { copy: 'unsupported' },
+  muxerArguments: [],
+  sourceRefs: [{
+    repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-22',
+    file: 'libavformat/wavenc.c', sourceType: 'ffmpeg-official',
+    url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/wavenc.c',
+  }],
+}
+
 export const containers: Record<string, ContainerDefinition> = {
   mp4,
   mkv,
   webm,
   mov,
   ogg,
+  wav,
 }
