@@ -4,9 +4,9 @@
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react'
-import { useI18n } from '@ffcodec/workbench'
 import { useEncodingJob } from './useEncodingJob'
 import { EncodingLogDialog } from './EncodingLogDialog'
+import { useDesktopLocale } from '../useDesktopLocale'
 
 const STORAGE_KEY = 'ffcodec-desktop-ffmpeg-path'
 
@@ -22,7 +22,7 @@ const SOURCE_LABELS: Record<string, { zh: string; en: string }> = {
 }
 
 export function FFmpegStatusBar() {
-  const { locale } = useI18n()
+  const locale = useDesktopLocale()
   const isZh = locale === 'zh-CN'
   const [status, setStatus] = useState<StatusState>({ kind: 'detecting' })
   const [history, setHistory] = useState<EncodingHistoryItem[]>([])

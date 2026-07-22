@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useDesktopLocale } from '../useDesktopLocale'
 
 interface WindowState {
   maximized: boolean
@@ -9,6 +10,8 @@ const initialState: WindowState = { maximized: false, sizeUnlocked: false }
 
 export function DesktopTitleBar() {
   const api = window.electronAPI
+  const locale = useDesktopLocale()
+  const isZh = locale === 'zh-CN'
   const [state, setState] = useState(initialState)
 
   useEffect(() => {
@@ -45,17 +48,19 @@ export function DesktopTitleBar() {
           className={`desktop-titlebar__size-lock${state.sizeUnlocked ? ' desktop-titlebar__size-lock--unlocked' : ''}`}
           onClick={() => void toggleSizeLock()}
           title={state.sizeUnlocked
-            ? '重新锁定推荐最小窗口尺寸'
-            : '解锁窗口大小；缩小后将显示细滚动条，避免内容被截断'}
+            ? (isZh ? '重新锁定推荐最小窗口尺寸' : 'Restore the recommended minimum window size')
+            : (isZh ? '解锁窗口大小；缩小后将显示细滚动条，避免内容被截断' : 'Unlock window sizing; thin scrollbars prevent clipped content at smaller sizes')}
           aria-pressed={state.sizeUnlocked}
         >
           <span aria-hidden="true">{state.sizeUnlocked ? '🔓' : '🔒'}</span>
-          {state.sizeUnlocked ? '尺寸已解锁' : '解锁窗口大小'}
+          {state.sizeUnlocked
+            ? (isZh ? '尺寸已解锁' : 'Size unlocked')
+            : (isZh ? '解锁窗口大小' : 'Unlock window size')}
         </button>
-        <button type="button" onClick={() => void api?.minimizeWindow()} aria-label="最小化">
+        <button type="button" onClick={() => void api?.minimizeWindow()} aria-label={isZh ? '最小化' : 'Minimize'}>
           <span className="desktop-titlebar__window-icon desktop-titlebar__window-icon--minimize" aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => void toggleMaximize()} aria-label={state.maximized ? '还原' : '最大化'}>
+        <button type="button" onClick={() => void toggleMaximize()} aria-label={state.maximized ? (isZh ? '还原' : 'Restore') : (isZh ? '最大化' : 'Maximize')}>
           <span
             className={`desktop-titlebar__window-icon ${state.maximized
               ? 'desktop-titlebar__window-icon--restore'
@@ -63,7 +68,7 @@ export function DesktopTitleBar() {
             aria-hidden="true"
           />
         </button>
-        <button type="button" className="desktop-titlebar__close" onClick={() => void api?.closeWindow()} aria-label="关闭">
+        <button type="button" className="desktop-titlebar__close" onClick={() => void api?.closeWindow()} aria-label={isZh ? '关闭' : 'Close'}>
           <span className="desktop-titlebar__window-icon desktop-titlebar__window-icon--close" aria-hidden="true" />
         </button>
       </div>

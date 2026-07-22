@@ -12,9 +12,10 @@ interface AudioEncoderPickerProps {
 }
 
 export function AudioModePicker({ options, value, disabled, onChange }: AudioEncoderPickerProps) {
+  const { locale, text } = useI18n()
   const selected = String(value ?? 'encode')
   return (
-    <div className="audio-mode-picker" role="group" aria-label="音频处理方式">
+    <div className="audio-mode-picker" role="group" aria-label={locale === 'zh-CN' ? '音频处理方式' : 'Audio handling'}>
       {options.map((option) => (
         <button
           key={String(option.value)}
@@ -24,7 +25,7 @@ export function AudioModePicker({ options, value, disabled, onChange }: AudioEnc
           disabled={disabled}
           aria-pressed={selected === String(option.value)}
         >
-          {option.label}
+          {text(option.label)}
         </button>
       ))}
     </div>
@@ -43,10 +44,10 @@ export function AudioEncoderPicker({ options, value, disabled, onChange }: Audio
   const normalizedQuery = query.trim().toLocaleLowerCase()
   const filtered = useMemo(() => options.filter((option) => {
     if (!normalizedQuery) return true
-    return [option.label, option.badge, option.group, option.description]
+    return [option.label, text(option.label), option.badge, option.group, text(option.group ?? ''), option.description, text(option.description ?? '')]
       .filter(Boolean)
       .some((part) => String(part).toLocaleLowerCase().includes(normalizedQuery))
-  }), [normalizedQuery, options])
+  }), [normalizedQuery, options, text])
   const groups = useMemo(() => {
     const result = new Map<string, ResolvedOption[]>()
     for (const option of filtered) {
@@ -136,7 +137,7 @@ function EncoderOptionButton({ option, selected, disabled, runtimeUnavailable, o
   onClick: () => void
   compact?: boolean
 }) {
-  const { locale } = useI18n()
+  const { locale, text } = useI18n()
   return (
     <button
       type="button"
@@ -144,12 +145,12 @@ function EncoderOptionButton({ option, selected, disabled, runtimeUnavailable, o
       onClick={onClick}
       disabled={disabled}
       aria-pressed={selected}
-      title={option.availabilityNote}
+      title={option.availabilityNote ? text(option.availabilityNote) : undefined}
     >
-      <span className="audio-encoder-option__title">{option.label}</span>
+      <span className="audio-encoder-option__title">{text(option.label)}</span>
       <span className="audio-encoder-option__codec">{option.badge}</span>
       <span className="audio-encoder-option__badges">
-        {option.badges?.map((badge) => <span key={badge}>{badge}</span>)}
+        {option.badges?.map((badge) => <span key={badge}>{text(badge)}</span>)}
         {option.compatibility === 'unsupported' && (
           <span className="audio-encoder-option__incompatible">
             {locale === 'zh-CN' ? '容器不支持' : 'Unsupported container'}
@@ -174,7 +175,7 @@ export function AacCoderPicker({
   disabled: boolean
   onChange: (value: unknown) => void
 }) {
-  const { locale } = useI18n()
+  const { locale, text } = useI18n()
   const capabilities = useAudioEncoderCapabilities()
   const nmrUnavailable = Boolean(capabilities && !capabilities.aacOptions.includes('nmr'))
   const availableOptions = nmrUnavailable
@@ -185,10 +186,14 @@ export function AacCoderPicker({
       <Dropdown
         id={id}
         value={String(value ?? 'auto')}
-        options={availableOptions}
+        options={availableOptions.map((option) => ({
+          ...option,
+          label: text(option.label),
+          description: option.description ? text(option.description) : undefined,
+        }))}
         onChange={onChange}
         disabled={disabled}
-        ariaLabel="AAC 编码配置"
+        ariaLabel={text('AAC 编码配置')}
       />
       {nmrUnavailable && (
         <span className="aac-coder-picker__notice">

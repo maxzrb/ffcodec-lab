@@ -118,7 +118,11 @@ describe('全局中英文切换', () => {
         ...(field.disabledReason ? [{ id: field.id, value: field.disabledReason }] : []),
         ...(field.options ?? []).flatMap((option) => [
           { id: field.id, value: option.label },
+          ...(option.description ? [{ id: field.id, value: option.description }] : []),
+          ...(option.group ? [{ id: field.id, value: option.group }] : []),
           ...(option.badge ? [{ id: field.id, value: option.badge }] : []),
+          ...(option.badges ?? []).map((badge) => ({ id: field.id, value: badge })),
+          ...(option.availabilityNote ? [{ id: field.id, value: option.availabilityNote }] : []),
         ]),
       ]),
     ])

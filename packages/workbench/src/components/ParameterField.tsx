@@ -148,7 +148,7 @@ function renderControl(
   switch (field.controlType) {
     case 'section':
       return (
-        <div className="section-divider" role="separator" aria-label={field.label}>
+      <div className="section-divider" role="separator" aria-label={text(field.label)}>
           {field.value !== undefined && field.value !== null && field.value !== '' ? String(field.value) : text(field.label)}
         </div>
       )
@@ -263,7 +263,7 @@ function renderControl(
     case 'multiselect': {
       const selectedValues = Array.isArray(field.value) ? field.value : []
       return (
-        <div id={controlId} className="multiselect-grid" role="group" aria-label={field.label}>
+        <div id={controlId} className="multiselect-grid" role="group" aria-label={text(field.label)}>
           {field.options?.map((option) => {
             const checked = selectedValues.some((value) => String(value) === String(option.value))
             const isOnlySelection = checked && selectedValues.length === 1
@@ -280,7 +280,7 @@ function renderControl(
                     onChange(nextValues)
                   }}
                 />
-                <span>{option.label}</span>
+                <span>{text(option.label)}</span>
               </label>
             )
           })}
@@ -318,6 +318,7 @@ function LoudnessSlider({ id, label, value, min, max, step, disabled, onChange }
   disabled: boolean
   onChange: (value: unknown) => void
 }) {
+  const { locale } = useI18n()
   const safeValue = Number.isFinite(value) ? value : min
   const update = (raw: string) => {
     const parsed = Number(raw)
@@ -343,7 +344,7 @@ function LoudnessSlider({ id, label, value, min, max, step, disabled, onChange }
       <input
         className="loudness-slider__number"
         type="number"
-        aria-label={`${label}精确值`}
+        aria-label={locale === 'zh-CN' ? `${label}精确值` : `${label} exact value`}
         value={safeValue}
         min={min}
         max={max}
@@ -370,6 +371,7 @@ function BitrateControl({
   disabled: boolean
   onChange: (value: unknown) => void
 }) {
+  const { locale } = useI18n()
   const parsed = parseBitrate(value)
 
   const emit = (amount: string, unit: BitrateUnit) => {
@@ -398,7 +400,7 @@ function BitrateControl({
         onChange={(v) => emit(parsed.amount, v as BitrateUnit)}
         disabled={disabled}
         className="unit-input__unit"
-        ariaLabel={`${label}单位`}
+        ariaLabel={locale === 'zh-CN' ? `${label}单位` : `${label} unit`}
       />
     </div>
   )

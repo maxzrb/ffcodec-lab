@@ -65,6 +65,7 @@ export function WorkbenchApp({ footerItems }: { footerItems?: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = locale === 'zh-CN' ? 'zh-CN' : 'en'
     storage.setItem('ffcodec-locale', locale)
+    window.dispatchEvent(new CustomEvent('ffcodec:locale-change', { detail: locale }))
   }, [locale, storage])
 
   const pipeline = usePipeline(config, catalog)

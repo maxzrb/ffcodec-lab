@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useI18n } from '@ffcodec/workbench'
 
 interface UsageStats {
   total: number
@@ -6,6 +7,8 @@ interface UsageStats {
 }
 
 export function DesktopVisitCounter() {
+  const { locale } = useI18n()
+  const isZh = locale === 'zh-CN'
   const [stats, setStats] = useState<UsageStats | null>(null)
 
   useEffect(() => {
@@ -24,12 +27,12 @@ export function DesktopVisitCounter() {
   }, [])
 
   return (
-    <span className="visit-dashboard" aria-label="使用统计">
+    <span className="visit-dashboard" aria-label={isZh ? '使用统计' : 'Usage statistics'}>
       <span className="meta-pill visit-pill">
-        今日访问 <strong>{stats ? stats.today.toLocaleString() : '-'}</strong>
+        {isZh ? '今日访问' : 'Today'} <strong>{stats ? stats.today.toLocaleString() : '-'}</strong>
       </span>
       <span className="meta-pill visit-pill">
-        总计访问 <strong>{stats ? stats.total.toLocaleString() : '-'}</strong>
+        {isZh ? '总计访问' : 'Total'} <strong>{stats ? stats.total.toLocaleString() : '-'}</strong>
       </span>
     </span>
   )

@@ -574,6 +574,27 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(englishPageText).not.toMatch(/[\u4e00-\u9fff]/)
   })
 
+  it('英文音频页会翻译处理方式、推荐卡片、分类标签和高级参数', async () => {
+    presetStore(makeAudioConfig('aac'))
+    render(<TestWrapper />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Switch to English' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Audio/ }))
+
+    expect(screen.getByRole('group', { name: 'Audio handling' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /FFmpeg native AAC/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Search all encoders/ }))
+    expect(screen.getByRole('heading', { name: 'AAC' })).toBeInTheDocument()
+    expect(screen.getAllByText('Lossy').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Built-in').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: /Audio advanced parameters/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Loudness normalization/ })).toBeInTheDocument()
+
+    const multilingualTitle = document.querySelector('[data-multilingual-title]')?.textContent ?? ''
+    const englishPageText = (document.body.textContent ?? '').replace(multilingualTitle, '').replace('中', '')
+    expect(englishPageText).not.toMatch(/[\u4e00-\u9fff]/)
+  })
+
   it('标题区使用简洁的模块化工作台说明', () => {
     render(<TestWrapper />)
     const title = document.querySelector('[data-multilingual-title]')
