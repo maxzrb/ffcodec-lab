@@ -10,6 +10,7 @@ import { usePipeline } from './hooks/usePipeline'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { CatalogIndex } from '@ffcodec/catalog/catalog-index'
 import { resolveBuilderView } from '@ffcodec/domain/presentation/resolve-builder-view'
+import type { ResolvedSection, ResolvedWorkspacePanel } from '@ffcodec/domain/presentation/resolved-field'
 import { applyFieldChangeToConfig } from '@ffcodec/domain/presentation/apply-field-change'
 import type { ShellKind } from '@ffcodec/domain/config/project-config'
 import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
@@ -29,13 +30,18 @@ import { WorkbenchShell } from './components/WorkbenchShell'
 import { WorkbenchStateNotice } from './components/WorkbenchStateNotice'
 import { Dropdown } from './components/Dropdown'
 import { usePlatform } from '@ffcodec/platform-api'
+import { useAppDialog } from './features/dialog/AppDialogProvider'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
+const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
+const APP_VERSION = 'v1.0'
+
 export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {
   const { storage, extensions } = usePlatform()
+  const dialog = useAppDialog()
   const config = useBuilderStore((s) => s.config)
   const setConfigValue = useBuilderStore((s) => s.setConfigValue)
   const setConfig = useBuilderStore((s) => s.setConfig)
@@ -223,10 +229,14 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
     [setConfigValue],
   )
 
-  const handleClearAllCommands = useCallback(() => {
-    const confirmed = window.confirm(isZh
-      ? '清空所有命令并将参数工作台恢复默认值？此操作会丢弃当前参数和自由编辑内容。'
-      : 'Clear all commands and restore the parameter workbench defaults? Current parameters and manual edits will be discarded.')
+  const handleClearAllCommands = useCallback(async () => {
+    const confirmed = await dialog.confirm({
+      title: isZh ? '清空全部命令？' : 'Clear all commands?',
+      message: isZh ? '参数工作台将恢复默认值，当前参数和自由编辑内容都会丢失。' : 'The parameter workbench will reset; current parameters and manual edits will be discarded.',
+      confirmLabel: isZh ? '清空并重置' : 'Clear and reset',
+      cancelLabel: isZh ? '取消' : 'Cancel',
+      tone: 'danger',
+    })
     if (!confirmed) return
 
     clearAllCommands()
@@ -238,21 +248,35 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
     setShareNotice(isZh
       ? '已清空所有命令并重置参数工作台'
       : 'All commands cleared and parameter workbench reset')
-  }, [clearAllCommands, isZh])
+  }, [clearAllCommands, dialog, isZh])
 
   // Current explanation data
   const currentExplanation = selectedExplanationId
     ? catalogIndex.getExplanation(selectedExplanationId)
     : undefined
 
-  const activePanel = view.panels.find((panel) => panel.id === activePanelId) ?? view.panels[0]
+  // Merge catalog panels with custom extension panels
+  const allPanels: ResolvedWorkspacePanel[] = useMemo(() => {
+    const custom: ResolvedWorkspacePanel[] = (extensions?.panels ?? []).map((p) => ({
+      id: p.id,
+      label: p.label,
+      stateNotice: undefined,
+      sections: [] as ResolvedSection[],
+      diagnosticCount: 0,
+      enabledAdvancedCount: 0,
+    }))
+    return [...view.panels, ...custom]
+  }, [view.panels, extensions?.panels])
+
+  const activePanel = allPanels.find((panel) => panel.id === activePanelId) ?? allPanels[0]
+  const activeCustomPanel = extensions?.panels?.find((p) => p.id === activePanel?.id)
 
   return (
     <I18nProvider locale={locale}>
     <main className="builder-page">
       <header className="product-header">
         <div className="product-header__brand">
-          <img className="brand-mark" src="/assets/ffcodec-lab-icon.svg" alt="FFCodec Lab" />
+          <img className="brand-mark" src="./assets/ffcodec-lab-avatar.png" alt="FFCodec Lab" />
           <div>
             <p className="eyebrow">FFCodec Lab · Command Workbench</p>
             <h1>{isZh ? 'FFmpeg 命令生成器' : 'FFmpeg Command Builder'}</h1>
@@ -301,10 +325,11 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
       </header>
 
       <WorkbenchShell
-        panels={view.panels}
+        panels={allPanels}
         activePanelId={activePanel.id}
         onPanelChange={handlePanelChange}
         settingsSections={extensions?.settingsSections}
+        contentSections={extensions?.contentSections}
         footer={(
           <footer className="builder-footer">
             <small>
@@ -315,10 +340,29 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                 Lake1059/FFmpegFreeUI
               </a>
             </small>
+            <div className="builder-footer__project">
+              <a
+                className="builder-footer__project-link"
+                href={PROJECT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={isZh ? '在 GitHub 打开 FFCodec Lab 项目' : 'Open FFCodec Lab on GitHub'}
+                title={PROJECT_URL}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49 0-.24-.01-1.05-.02-1.9-2.78.62-3.37-1.21-3.37-1.21-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .08 1.53 1.05 1.53 1.05.9 1.57 2.35 1.12 2.92.86.09-.66.35-1.12.64-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.36 9.36 0 0 1 12 7.45c.85 0 1.69.12 2.48.34 1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.95.68 1.92 0 1.39-.01 2.5-.01 2.84 0 .27.18.59.69.49A10.25 10.25 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z" />
+                </svg>
+                <span>maxzrb/ffcodec-lab</span>
+              </a>
+              <span className="builder-footer__separator" aria-hidden="true" />
+              <span className="builder-footer__version">FFCodec Lab {APP_VERSION}</span>
+            </div>
             {footerItems && <div className="builder-footer__stats">{footerItems}</div>}
           </footer>
         )}
-        content={(
+        content={activeCustomPanel
+          ? activeCustomPanel.render()
+          : (
           <>
             {activePanel.stateNotice && (
               <WorkbenchStateNotice notice={activePanel.stateNotice} onPanelChange={handlePanelChange} />
@@ -387,6 +431,7 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                 <CommandEditor
                   generatedCommand={commandPreviewCleared ? '' : pipeline.renderedCommand.text}
                   cleared={commandPreviewCleared}
+                  renderActions={extensions?.renderCommandEditorActions}
                 />
                 {commandInspectorFooter}
               </div>

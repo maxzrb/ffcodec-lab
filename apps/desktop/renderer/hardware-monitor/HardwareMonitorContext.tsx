@@ -14,6 +14,9 @@ interface HardwareMonitorContextValue {
   closePage: () => void
   setSummaryEnabled: (enabled: boolean) => void
   retry: () => Promise<void>
+  installPawnIo: () => Promise<void>
+  pawnIoInstalling: boolean
+  pawnIoError: string | null
 }
 
 const HardwareMonitorContext = createContext<HardwareMonitorContextValue | null>(null)
@@ -25,7 +28,9 @@ export function HardwareMonitorProvider({ children }: { children: ReactNode }) {
   const [history, setHistory] = useState<HardwareSnapshot[]>([])
   const [pageOpen, setPageOpen] = useState(false)
   const [summaryEnabledState, setSummaryEnabledState] = useState(() =>
-    window.localStorage.getItem(SUMMARY_STORAGE_KEY) === 'true')
+    (window.localStorage.getItem(SUMMARY_STORAGE_KEY) ?? window.electronAPI?.storageGetItem(SUMMARY_STORAGE_KEY)) === 'true')
+  const [pawnIoInstalling, setPawnIoInstalling] = useState(false)
+  const [pawnIoError, setPawnIoError] = useState<string | null>(null)
   const stopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const cancelStop = useCallback(() => {
@@ -49,6 +54,45 @@ export function HardwareMonitorProvider({ children }: { children: ReactNode }) {
       cancelStop()
     }
   }, [api, cancelStop])
+
+  useEffect(() => {
+    const statusBar = document.querySelector<HTMLElement>('.desktop-status-bar')
+    const updateStatusBarHeight = () => {
+      const height = statusBar?.getBoundingClientRect().height ?? 38
+      document.documentElement.style.setProperty('--desktop-status-bar-height', `${Math.ceil(height)}px`)
+    }
+    const statusBarObserver = statusBar && typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(updateStatusBarHeight)
+      : null
+    updateStatusBarHeight()
+    if (statusBar) statusBarObserver?.observe(statusBar)
+    return () => {
+      statusBarObserver?.disconnect()
+      document.documentElement.style.removeProperty('--desktop-status-bar-height')
+    }
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('performance-page-open', pageOpen)
+    const lockedRegions = Array.from(document.querySelectorAll<HTMLElement>('.desktop-shell__content'))
+    const lockedScrollY = window.scrollY
+    const keepMainPageStill = () => {
+      if (pageOpen && window.scrollY !== lockedScrollY) window.scrollTo({ top: lockedScrollY })
+    }
+    for (const region of lockedRegions) {
+      if (pageOpen) region.setAttribute('inert', '')
+      else region.removeAttribute('inert')
+    }
+    if (pageOpen) {
+      window.addEventListener('scroll', keepMainPageStill, { passive: true })
+      requestAnimationFrame(() => document.querySelector<HTMLElement>('.performance-page button')?.focus())
+    }
+    return () => {
+      window.removeEventListener('scroll', keepMainPageStill)
+      document.documentElement.classList.remove('performance-page-open')
+      for (const region of lockedRegions) region.removeAttribute('inert')
+    }
+  }, [pageOpen])
 
   useEffect(() => {
     if (!api) return
@@ -85,7 +129,8 @@ export function HardwareMonitorProvider({ children }: { children: ReactNode }) {
 
   const setSummaryEnabled = useCallback((enabled: boolean) => {
     setSummaryEnabledState(enabled)
-    window.localStorage.setItem(SUMMARY_STORAGE_KEY, String(enabled))
+    window.electronAPI?.storageSetItem(SUMMARY_STORAGE_KEY, String(enabled))
+    try { window.localStorage.setItem(SUMMARY_STORAGE_KEY, String(enabled)) } catch { /* ignore */ }
     if (enabled) {
       cancelStop()
       void start()
@@ -99,10 +144,22 @@ export function HardwareMonitorProvider({ children }: { children: ReactNode }) {
     if (summaryEnabledState) void start()
   }, [start, summaryEnabledState])
 
+  const installPawnIo = useCallback(async () => {
+    if (!api || pawnIoInstalling) return
+    setPawnIoInstalling(true)
+    setPawnIoError(null)
+    try {
+      const result = await api.installPawnIo()
+      if (!result.ok) setPawnIoError(result.error ?? 'PawnIO installation failed.')
+    } finally {
+      setPawnIoInstalling(false)
+    }
+  }, [api, pawnIoInstalling])
+
   const value = useMemo<HardwareMonitorContextValue>(() => ({
     state, snapshot, history, pageOpen, summaryEnabled: summaryEnabledState,
-    openPage, closePage, setSummaryEnabled, retry: start,
-  }), [state, snapshot, history, pageOpen, summaryEnabledState, openPage, closePage, setSummaryEnabled, start])
+    openPage, closePage, setSummaryEnabled, retry: start, installPawnIo, pawnIoInstalling, pawnIoError,
+  }), [state, snapshot, history, pageOpen, summaryEnabledState, openPage, closePage, setSummaryEnabled, start, installPawnIo, pawnIoInstalling, pawnIoError])
 
   return <HardwareMonitorContext.Provider value={value}>{children}</HardwareMonitorContext.Provider>
 }

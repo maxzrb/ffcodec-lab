@@ -40,7 +40,7 @@ export function DesktopTitleBar() {
   return (
     <header className="desktop-titlebar" onDoubleClick={() => void toggleMaximize()}>
       <div className="desktop-titlebar__identity">
-        <span className="desktop-titlebar__mark" aria-hidden="true">FF</span>
+        <img className="desktop-titlebar__mark" src="./assets/ffcodec-lab-avatar.png" alt="" aria-hidden="true" />
         <strong>FFCodec Lab</strong>
         <span>Desktop</span>
       </div>

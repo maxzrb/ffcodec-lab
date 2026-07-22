@@ -15,6 +15,12 @@ var intervalMs = 1_000;
 var running = false;
 var elevated = IsElevated();
 
+if (args.Contains("--dump-sensors", StringComparer.OrdinalIgnoreCase))
+{
+    Console.WriteLine(JsonSerializer.Serialize(collector.DumpSensors(), jsonOptions));
+    return;
+}
+
 NamedPipeClientStream? pipe = null;
 TextReader input = Console.In;
 TextWriter output = Console.Out;

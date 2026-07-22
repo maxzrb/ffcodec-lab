@@ -33,7 +33,8 @@ describe('LibreHardwareMonitor JSON Lines 协议', () => {
     const oversized = {
       ...snapshot,
       gpu: Array.from({ length: 20 }, (_, index) => ({
-        id: `/gpu/${index}`, name: 'GPU', kind: 'GpuAmd', load: 1, memoryLoad: null,
+        id: `/gpu/${index}`, name: 'GPU', kind: 'GpuAmd', load: 1, threeDLoad: 2, copyLoad: 2.5,
+        videoDecodeLoad: 3, videoEncodeLoad: 4, memoryLoad: null,
         memoryUsedGb: null, memoryTotalGb: null, temperatureC: null, powerW: null,
         coreClockMhz: null, memoryClockMhz: null, fanRpm: null,
       })),
@@ -41,6 +42,7 @@ describe('LibreHardwareMonitor JSON Lines 协议', () => {
     }
     const message = parseHelperMessage(JSON.stringify({ type: 'snapshot', snapshot: oversized }))
     expect(message?.snapshot?.gpu).toHaveLength(16)
+    expect(message?.snapshot?.gpu[0]).toMatchObject({ threeDLoad: 2, copyLoad: 2.5, videoDecodeLoad: 3, videoEncodeLoad: 4 })
     expect(message?.snapshot?.diagnostics[0]?.message).toHaveLength(1_024)
   })
 })

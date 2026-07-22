@@ -35,6 +35,7 @@ export type FFmpegJobPhase =
 
 export interface FFmpegJobSnapshot {
   jobId: string
+  commandSource?: 'generated' | 'custom'
   phase: FFmpegJobPhase
   createdAt: number
   startedAt: number | null
@@ -82,6 +83,8 @@ export interface FFmpegJobStartRequest {
   customFfmpegPath?: string
   /** Overwrite policy. */
   overwriteMode: 'replace' | 'fail'
+  /** Distinguishes structured workbench jobs from freely edited commands. */
+  commandSource?: 'generated' | 'custom'
 }
 
 // ---- Internal job state (not sent to renderer) ----

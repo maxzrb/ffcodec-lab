@@ -1,7 +1,7 @@
 {
   "name": "@ffcodec/web",
   "private": true,
-  "version": "0.8.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "FFCodec Lab — Pure frontend FFmpeg encoding command builder (Web)",
   "scripts": {

@@ -4,8 +4,21 @@
 // Phase 9: FFmpeg job execution (start/cancel/query).
 // ============================================================
 
-import { ipcMain, dialog, shell, BrowserWindow, net } from 'electron'
+import { ipcMain, dialog, shell, BrowserWindow, net, app } from 'electron'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { detectAudioEncoderCapabilities, detectFFmpeg } from './ffmpeg-detect'
+import {
+  initStore,
+  getItem as storageGetItem,
+  setItem as storageSetItem,
+  removeItem as storageRemoveItem,
+  keys as storageKeys,
+  getMode as storageGetMode,
+  getIniPath as storageGetIniPath,
+  switchMode as storageSwitchMode,
+  importFromMap as storageImportFromMap,
+} from './storage/ini-store'
 import {
   launchJob,
   cancelActiveJob,
@@ -26,6 +39,7 @@ import { LOCKED_WINDOW_MINIMUM, UNLOCKED_WINDOW_MINIMUM } from './create-window'
 import {
   getHardwareMonitorState,
   getLatestHardwareSnapshot,
+  installPawnIo,
   requestHardwareSnapshot,
   setHardwareMonitorInterval,
   startHardwareMonitor,
@@ -127,6 +141,11 @@ function registerShellHandlers(): void {
   ipcMain.handle('shell:openPath', async (_event, targetPath: string) => {
     const error = await shell.openPath(targetPath)
     return error // empty string on success, error message on failure
+  })
+
+  ipcMain.handle('shell:revealInFolder', (_event, targetPath: string) => {
+    if (typeof targetPath !== 'string' || targetPath.trim() === '') return
+    shell.showItemInFolder(targetPath)
   })
 
   ipcMain.handle('shell:openExternal', async (_event, url: string) => {
@@ -250,33 +269,113 @@ function registerWindowHandlers(): void {
   ipcMain.handle('window:close', (event) => getSenderWindow(event)?.close())
 }
 
-// ---- Desktop 使用统计（只读、失败不影响功能） ----
+// ---- Desktop 使用统计（单设备 4 小时最多计数一次，失败不影响功能） ----
+
+const VISIT_THROTTLE_MS = 4 * 60 * 60 * 1_000
+let lastVisitCountAt = 0
+let usageStatsRequest: Promise<{ total: number; today: number } | null> | null = null
+
+async function readVisitCountTime(): Promise<number> {
+  try {
+    const raw = await readFile(path.join(app.getPath('userData'), 'visit-count.json'), 'utf8')
+    const parsed = JSON.parse(raw) as { countedAt?: unknown }
+    return typeof parsed.countedAt === 'number' && Number.isFinite(parsed.countedAt) && parsed.countedAt > 0 && parsed.countedAt <= Date.now()
+      ? parsed.countedAt
+      : 0
+  } catch {
+    return 0
+  }
+}
+
+async function saveVisitCountTime(countedAt: number): Promise<void> {
+  try {
+    const userData = app.getPath('userData')
+    await mkdir(userData, { recursive: true })
+    await writeFile(path.join(userData, 'visit-count.json'), JSON.stringify({ countedAt }), 'utf8')
+  } catch {
+    // 统计持久化失败不影响 Desktop 功能；进程内时间戳仍可避免重复上报。
+  }
+}
+
+async function requestUsageStats(): Promise<{ total: number; today: number } | null> {
+  const persistedAt = await readVisitCountTime()
+  const previousCountAt = Math.max(lastVisitCountAt, persistedAt)
+  const shouldCount = Date.now() - previousCountAt >= VISIT_THROTTLE_MS
+  try {
+    const endpoint = shouldCount
+      ? 'https://fflab.loliland.cn/api/visits'
+      : 'https://fflab.loliland.cn/api/visits?count=false'
+    const response = await net.fetch(endpoint, {
+      headers: {
+        Origin: 'https://fflab.loliland.cn',
+        Referer: 'https://fflab.loliland.cn/',
+      },
+      signal: AbortSignal.timeout(5_000),
+    })
+    if (!response.ok) return null
+
+    const payload = await response.json() as { total?: unknown; today?: unknown }
+    if (
+      typeof payload.total !== 'number' || !Number.isFinite(payload.total) ||
+      typeof payload.today !== 'number' || !Number.isFinite(payload.today)
+    ) return null
+
+    if (shouldCount) {
+      lastVisitCountAt = Date.now()
+      await saveVisitCountTime(lastVisitCountAt)
+    }
+    return { total: payload.total, today: payload.today }
+  } catch {
+    return null
+  }
+}
 
 function registerUsageStatsHandler(): void {
-  ipcMain.handle('usage:getStats', async () => {
-    try {
-      const response = await net.fetch('https://fflab.loliland.cn/api/visits?count=false', {
-        headers: {
-          Origin: 'https://fflab.loliland.cn',
-          Referer: 'https://fflab.loliland.cn/',
-        },
-        signal: AbortSignal.timeout(5_000),
-      })
-      if (!response.ok) return null
-
-      const payload = await response.json() as { total?: unknown; today?: unknown }
-      if (
-        typeof payload.total !== 'number' || !Number.isFinite(payload.total) ||
-        typeof payload.today !== 'number' || !Number.isFinite(payload.today)
-      ) return null
-
-      return { total: payload.total, today: payload.today }
-    } catch {
-      return null
+  ipcMain.handle('usage:getStats', () => {
+    if (!usageStatsRequest) {
+      usageStatsRequest = requestUsageStats().finally(() => { usageStatsRequest = null })
     }
+    return usageStatsRequest
   })
   ipcMain.handle('ffmpeg:audioCapabilities', async (_event, customPath?: string) => {
     return detectAudioEncoderCapabilities(customPath)
+  })
+}
+
+// ---- 用户偏好持久化（INI store）----
+
+function registerStorageIpcHandlers(): void {
+  // Sync reads — fast, just lookups from the in-memory cache
+  ipcMain.on('storage:getItem', (event, key: string) => {
+    event.returnValue = storageGetItem(key)
+  })
+  ipcMain.on('storage:keys', (event) => {
+    event.returnValue = storageKeys()
+  })
+
+  // Async writes
+  ipcMain.handle('storage:setItem', (_event, key: string, value: string) => {
+    storageSetItem(key, value)
+  })
+  ipcMain.handle('storage:removeItem', (_event, key: string) => {
+    storageRemoveItem(key)
+  })
+
+  // Mode
+  ipcMain.handle('storage:getMode', () => ({
+    mode: storageGetMode(),
+    path: storageGetIniPath(),
+  }))
+  ipcMain.handle('storage:setMode', (_event, newMode: string) => {
+    if (newMode !== 'portable' && newMode !== 'user') {
+      return { ok: false, error: `Unknown mode: ${newMode}` }
+    }
+    return storageSwitchMode(newMode)
+  })
+
+  // One-time import from localStorage
+  ipcMain.handle('storage:import', (_event, entries: [string, string][]) => {
+    storageImportFromMap(entries)
   })
 }
 
@@ -291,6 +390,7 @@ function registerHardwareMonitorHandlers(): void {
     return getHardwareMonitorState()
   })
   ipcMain.handle('hardware-monitor:getSnapshot', () => getLatestHardwareSnapshot())
+  ipcMain.handle('hardware-monitor:installPawnIo', () => installPawnIo())
   ipcMain.handle('hardware-monitor:requestSnapshot', () => requestHardwareSnapshot())
   ipcMain.handle('hardware-monitor:setInterval', (_event, intervalMs: number) =>
     setHardwareMonitorInterval(intervalMs))
@@ -299,6 +399,7 @@ function registerHardwareMonitorHandlers(): void {
 // ---- Register all ----
 
 export function registerIpcHandlers(): void {
+  initStore()
   registerWindowHandlers()
   registerDialogHandlers()
   registerFFmpegHandlers()
@@ -306,5 +407,6 @@ export function registerIpcHandlers(): void {
   registerFFmpegJobHandlers()
   registerHistoryHandlers()
   registerUsageStatsHandler()
+  registerStorageIpcHandlers()
   registerHardwareMonitorHandlers()
 }

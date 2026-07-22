@@ -123,7 +123,7 @@ export function ParameterSection({
           </span>
           <span className="parameter-section__title">{text(section.label)}</span>
           {section.description && (
-            <span className="parameter-section__description">— {text(section.description)}</span>
+            <span className="parameter-section__description" title={text(section.description)}>— {text(section.description)}</span>
           )}
         </button>
         {actions && <div className="parameter-section__actions">{actions}</div>}

@@ -1,8 +1,10 @@
 {
   "name": "@ffcodec/desktop",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "FFCodec Lab — Electron desktop application",
+  "author": "maxzrb",
+  "homepage": "https://github.com/maxzrb/ffcodec-lab",
   "main": "./dist/main/index.js",
   "scripts": {
     "predev": "pnpm build:native",
@@ -10,7 +12,7 @@
     "build:native": "dotnet build native/FFCodec.HardwareMonitor/FFCodec.HardwareMonitor.csproj -c Release",
     "publish:native": "dotnet publish native/FFCodec.HardwareMonitor/FFCodec.HardwareMonitor.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o ../../out/hardware-monitor/win-x64",
     "build": "pnpm build:native && set ELECTRON_RUN_AS_NODE=&& electron-vite build",
-    "build:win": "pnpm publish:native && pnpm build && node --use-system-ca node_modules/electron-builder/out/cli/cli.js --win nsis portable",
+    "build:win": "pnpm publish:native && set ELECTRON_RUN_AS_NODE=&& electron-vite build && node --use-system-ca node_modules/electron-builder/out/cli/cli.js --win nsis zip",
     "preview": "set ELECTRON_RUN_AS_NODE=&& electron-vite preview",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
@@ -47,17 +49,36 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "native/third-party/PawnIO",
+        "to": "hardware-monitor/pawnio",
+        "filter": [
+          "PawnIO_setup.exe",
+          "COPYING"
+        ]
       }
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis",
-        "portable"
+        "zip"
       ]
     },
     "nsis": {
+      "artifactName": "FFCodec-Lab-Setup-${version}.${ext}",
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "allowElevation": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "include": "build/installer.nsh"
+    },
+    "zip": {
+      "artifactName": "FFCodec-Lab-Portable-${version}.${ext}"
     }
   },
   "devDependencies": {

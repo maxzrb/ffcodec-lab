@@ -5,15 +5,17 @@
 
 import { useCallback, useMemo } from 'react'
 import type { CommandActionExtension } from '@ffcodec/platform-api'
-import { useI18n, useBuilderStore, usePipeline } from '@ffcodec/workbench'
+import { useAppDialog, useI18n, useBuilderStore, usePipeline } from '@ffcodec/workbench'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { buildExecutionPlans } from '@ffcodec/command-plan'
 import { useEncodingJob } from './useEncodingJob'
+import { localizeJobError } from './encoding-job'
 
 const catalog = loadCatalog()
 
 function RunButton() {
   const { locale } = useI18n()
+  const dialog = useAppDialog()
   const isZh = locale === 'zh-CN'
   const config = useBuilderStore((s) => s.config)
 
@@ -45,15 +47,23 @@ function RunButton() {
     // sequential execution of both passes automatically.
     const plan = plans[0]
 
-    // Resolve FFmpeg custom path from localStorage (same key as DesktopSettingsSection)
-    const customFfmpegPath = localStorage.getItem('ffcodec-desktop-ffmpeg-path')?.trim() || undefined
+    // Resolve FFmpeg custom path from INI store (fallback to localStorage)
+    const customFfmpegPath = (localStorage.getItem('ffcodec-desktop-ffmpeg-path') ?? window.electronAPI?.storageGetItem('ffcodec-desktop-ffmpeg-path'))?.trim() || undefined
 
-    await start({
+    const result = await start({
       executionPlan: plan,
       customFfmpegPath,
       overwriteMode: 'replace',
     })
-  }, [canRun, isRunning, pipeline.commandPlan, start])
+    if (!result.ok) {
+      await dialog.alert({
+        title: isZh ? '编码任务未能启动' : 'Encoding job did not start',
+        message: localizeJobError(result.error, isZh),
+        confirmLabel: isZh ? '知道了' : 'OK',
+        tone: 'danger',
+      })
+    }
+  }, [canRun, dialog, isRunning, isZh, pipeline.commandPlan, start])
 
   const canCancel = jobState.phase === 'running'
 

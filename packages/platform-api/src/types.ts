@@ -68,12 +68,23 @@ export interface SettingsSectionExtension {
   render: () => ReactNode
 }
 
+export interface CustomPanelExtension {
+  id: string
+  label: string
+  render: () => ReactNode
+}
+
 export interface WorkbenchExtensions {
   headerItems?: ReactNode[]
   inspectorTabs?: InspectorTabExtension[]
   commandActions?: CommandActionExtension[]
+  renderCommandEditorActions?: (context: { command: string; dirty: boolean }) => ReactNode
   pathFieldRenderer?: PathFieldRenderer
   settingsSections?: SettingsSectionExtension[]
+  /** Additional React nodes rendered at the top of the workbench content area. */
+  contentSections?: ReactNode[]
+  /** Custom panels appended to the workbench navigation tabs. */
+  panels?: CustomPanelExtension[]
   getAudioEncoderCapabilities?: () => Promise<{
     encoders: string[]
     aacOptions: string[]

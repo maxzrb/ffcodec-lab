@@ -20,6 +20,22 @@ export interface ValidationResult {
   errors: string[]
 }
 
+export function validateCustomExecutionPlan(plan: ExecutionPlan): string[] {
+  const errors: string[] = []
+  const forbidden = new Set(['|', '||', '&', '&&', ';', '>', '>>', '<'])
+  if (plan.args.length > 4_096) errors.push('Custom command has too many arguments.')
+  if (plan.args.some((arg) => arg.includes('\0') || arg.length > 32_768)) errors.push('Custom command contains an invalid argument.')
+  if (plan.args.some((arg) => forbidden.has(arg))) errors.push('Shell operators are not allowed in custom FFmpeg commands.')
+  const declaredInputs = plan.args.filter((_, index) => index > 0 && plan.args[index - 1] === '-i')
+  if (declaredInputs.length !== plan.inputPaths.length || declaredInputs.some((input, index) => input !== plan.inputPaths[index])) {
+    errors.push('Custom command input paths do not match its -i arguments.')
+  }
+  if (plan.outputPaths.length !== 1 || plan.args.at(-1) !== plan.outputPaths[0]) {
+    errors.push('Custom command must end with exactly one local output path.')
+  }
+  return errors
+}
+
 /**
  * Full pre-execution validation.
  *

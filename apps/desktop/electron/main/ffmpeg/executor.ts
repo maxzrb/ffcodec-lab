@@ -61,6 +61,7 @@ export function startJob(
   // Initial snapshot
   const snapshot: FFmpegJobSnapshot = {
     jobId,
+    commandSource: request.commandSource ?? 'generated',
     phase: 'starting',
     createdAt,
     startedAt: null,
@@ -88,6 +89,7 @@ export function startJob(
   logStream.write(`=== FFCodec Lab Job ${jobId} ===\n`)
   logStream.write(`Started: ${new Date(createdAt).toISOString()}\n`)
   logStream.write(`FFmpeg: ${ffmpegPath}\n`)
+  logStream.write(`Source: ${request.commandSource ?? 'generated'}\n`)
   logStream.write(`Args: ${finalArgs.join(' ')}\n`)
   logStream.write(`--- FFmpeg stderr ---\n\n`)
 
@@ -278,12 +280,13 @@ function buildFinalArgs(userArgs: string[], overwriteMode: 'replace' | 'fail'): 
 const PROGRESS_FLAGS = new Set([
   '-progress', '-nostats', '-stats_period',
 ])
+const PROGRESS_FLAGS_WITH_VALUE = new Set(['-progress', '-stats_period'])
 
 function filterExistingProgress(args: string[]): string[] {
   const result: string[] = []
   for (let i = 0; i < args.length; i++) {
     if (PROGRESS_FLAGS.has(args[i])) {
-      i++ // skip the value for -progress and -stats_period
+      if (PROGRESS_FLAGS_WITH_VALUE.has(args[i])) i++
       continue
     }
     result.push(args[i])

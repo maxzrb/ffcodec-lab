@@ -9,7 +9,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { detectFFmpeg, tryFFmpegPath } from '../ffmpeg-detect'
 import { startJob } from './executor'
-import { validateBeforeExecution } from './validation'
+import { validateBeforeExecution, validateCustomExecutionPlan } from './validation'
 import { probeMediaProgress } from './probe-media'
 import {
   createEncodingHistory,
@@ -85,6 +85,11 @@ export async function launchJob(
 
   // ---- Pre-execution validation ----
   const { executionPlan: plan, overwriteMode } = request
+
+  if (request.commandSource === 'custom') {
+    const customErrors = validateCustomExecutionPlan(plan)
+    if (customErrors.length > 0) return { ok: false, error: customErrors.join('\n') }
+  }
 
   const validation = validateBeforeExecution(plan, overwriteMode)
   if (!validation.ok) {

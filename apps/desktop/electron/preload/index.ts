@@ -5,7 +5,7 @@
 // ============================================================
 
 import { contextBridge, ipcRenderer } from 'electron'
-import type { HardwareMonitorStartResult, HardwareMonitorState, HardwareSnapshot } from '../../shared/hardware-monitor-types'
+import type { HardwareMonitorStartResult, HardwareMonitorState, HardwareSnapshot, PawnIoInstallResult } from '../../shared/hardware-monitor-types'
 
 // ---- Shared types (keep in sync with main process) ----
 
@@ -19,10 +19,12 @@ interface FFmpegJobStartRequest {
   }
   customFfmpegPath?: string
   overwriteMode: 'replace' | 'fail'
+  commandSource?: 'generated' | 'custom'
 }
 
 interface FFmpegJobSnapshot {
   jobId: string
+  commandSource?: 'generated' | 'custom'
   phase: 'created' | 'starting' | 'running' | 'cancelling' | 'completed' | 'failed' | 'cancelled'
   createdAt: number
   startedAt: number | null
@@ -179,6 +181,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('hardware-monitor:stop') as Promise<HardwareMonitorState>,
   getHardwareSnapshot: () =>
     ipcRenderer.invoke('hardware-monitor:getSnapshot') as Promise<HardwareSnapshot | null>,
+  installPawnIo: () =>
+    ipcRenderer.invoke('hardware-monitor:installPawnIo') as Promise<PawnIoInstallResult>,
   requestHardwareSnapshot: () => ipcRenderer.invoke('hardware-monitor:requestSnapshot') as Promise<void>,
   setHardwareMonitorInterval: (intervalMs: number) =>
     ipcRenderer.invoke('hardware-monitor:setInterval', intervalMs) as Promise<HardwareMonitorState>,
@@ -195,10 +199,42 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Shell helpers
   revealInFolder: (targetPath: string) =>
-    ipcRenderer.invoke('shell:openPath', targetPath) as Promise<string>,
+    ipcRenderer.invoke('shell:revealInFolder', targetPath) as Promise<void>,
 
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:openExternal', url) as Promise<void>,
+
+  // User preference storage (INI-backed, sync reads + async writes)
+  storageGetItem: (key: string): string | null =>
+    ipcRenderer.sendSync('storage:getItem', key) as string | null,
+
+  storageKeys: (): string[] =>
+    ipcRenderer.sendSync('storage:keys') as string[],
+
+  storageSetItem: (key: string, value: string): Promise<void> =>
+    ipcRenderer.invoke('storage:setItem', key, value) as Promise<void>,
+
+  storageRemoveItem: (key: string): Promise<void> =>
+    ipcRenderer.invoke('storage:removeItem', key) as Promise<void>,
+
+  storageGetMode: () =>
+    ipcRenderer.invoke('storage:getMode') as Promise<{ mode: 'portable' | 'user'; path: string }>,
+
+  storageSetMode: (mode: string) =>
+    ipcRenderer.invoke('storage:setMode', mode) as Promise<{ ok: boolean; error?: string }>,
+
+  storageImport: (entries: [string, string][]) =>
+    ipcRenderer.invoke('storage:import', entries) as Promise<void>,
+
+  onStorageModeChanged: (callback: (result: { mode: 'portable' | 'user'; path: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, result: { mode: 'portable' | 'user'; path: string }) => {
+      callback(result)
+    }
+    ipcRenderer.on('storage:mode-changed', handler)
+    return () => {
+      ipcRenderer.removeListener('storage:mode-changed', handler)
+    }
+  },
 })
 
 // Type declaration for the renderer — keep in sync with apps/desktop/renderer/vite-env.d.ts
@@ -252,13 +288,24 @@ declare global {
       startHardwareMonitor: (intervalMs?: number) => Promise<HardwareMonitorStartResult>
       stopHardwareMonitor: () => Promise<HardwareMonitorState>
       getHardwareSnapshot: () => Promise<HardwareSnapshot | null>
+      installPawnIo: () => Promise<PawnIoInstallResult>
       requestHardwareSnapshot: () => Promise<void>
       setHardwareMonitorInterval: (intervalMs: number) => Promise<HardwareMonitorState>
       onHardwareSnapshot: (callback: (snapshot: HardwareSnapshot) => void) => () => void
       onHardwareMonitorStateChanged: (callback: (state: HardwareMonitorState) => void) => () => void
 
-      revealInFolder: (path: string) => Promise<string>
+      revealInFolder: (path: string) => Promise<void>
       openExternal: (url: string) => Promise<void>
+
+      // User preference storage (INI-backed)
+      storageGetItem: (key: string) => string | null
+      storageKeys: () => string[]
+      storageSetItem: (key: string, value: string) => Promise<void>
+      storageRemoveItem: (key: string) => Promise<void>
+      storageGetMode: () => Promise<{ mode: 'portable' | 'user'; path: string }>
+      storageSetMode: (mode: string) => Promise<{ ok: boolean; error?: string }>
+      storageImport: (entries: [string, string][]) => Promise<void>
+      onStorageModeChanged: (callback: (result: { mode: 'portable' | 'user'; path: string }) => void) => () => void
     }
   }
 }

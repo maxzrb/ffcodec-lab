@@ -3,8 +3,9 @@
 // 显示 FFmpeg 环境信息与当前编码任务的实时摘要。
 // ============================================================
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEncodingJob } from './useEncodingJob'
+import { localizeJobError } from './encoding-job'
 import { EncodingLogDialog } from './EncodingLogDialog'
 import { useDesktopLocale } from '../useDesktopLocale'
 
@@ -27,16 +28,35 @@ export function FFmpegStatusBar() {
   const [status, setStatus] = useState<StatusState>({ kind: 'detecting' })
   const [history, setHistory] = useState<EncodingHistoryItem[]>([])
   const [logsOpen, setLogsOpen] = useState(false)
+  const [unreadLogs, setUnreadLogs] = useState(0)
+  const [hasUnreadFailure, setHasUnreadFailure] = useState(false)
+  const knownHistoryStates = useRef<Map<string, EncodingHistoryItem['status']> | null>(null)
   const { jobState } = useEncodingJob()
 
   const refreshHistory = useCallback(async () => {
     const items = await window.electronAPI?.listEncodingHistory()
-    if (items) setHistory(items)
+    if (!items) return
+    if (knownHistoryStates.current) {
+      const added = items.filter((item) => !knownHistoryStates.current?.has(item.historyId))
+      if (added.length > 0) {
+        setUnreadLogs((count) => count + added.length)
+      }
+      const hasNewFailure = items.some((item) => item.status === 'failed' && knownHistoryStates.current?.get(item.historyId) !== 'failed')
+      if (hasNewFailure) setHasUnreadFailure(true)
+    }
+    knownHistoryStates.current = new Map(items.map((item) => [item.historyId, item.status]))
+    setHistory(items)
   }, [])
+
+  const openLogs = () => {
+    setUnreadLogs(0)
+    setHasUnreadFailure(false)
+    setLogsOpen(true)
+  }
 
   const detect = () => {
     setStatus({ kind: 'detecting' })
-    const customPath = localStorage.getItem(STORAGE_KEY)?.trim() || undefined
+    const customPath = (localStorage.getItem(STORAGE_KEY) ?? window.electronAPI?.storageGetItem(STORAGE_KEY))?.trim() || undefined
     window.electronAPI?.detectFFmpeg(customPath).then((info) => {
       setStatus(info.found ? { kind: 'found', info } : { kind: 'not-found' })
     }).catch(() => {
@@ -123,12 +143,14 @@ export function FFmpegStatusBar() {
         <JobStatus isZh={isZh} jobState={jobState} />
         <button
           type="button"
-          className={`desktop-log-button${history[0]?.status === 'failed' ? ' desktop-log-button--error' : ''}`}
-          onClick={() => setLogsOpen(true)}
-          title={isZh ? '打开编码历史与日志' : 'Open encoding history and logs'}
+          className={`desktop-log-button${hasUnreadFailure ? ' desktop-log-button--error' : ''}`}
+          onClick={openLogs}
+          title={unreadLogs > 0
+            ? (isZh ? `${unreadLogs} 条未读记录` : `${unreadLogs} unread ${unreadLogs === 1 ? 'entry' : 'entries'}`)
+            : (isZh ? '打开编码历史与日志' : 'Open encoding history and logs')}
         >
           {isZh ? '日志' : 'Logs'}
-          {history.length > 0 && <span>{history.length}</span>}
+          {unreadLogs > 0 && <span>{unreadLogs > 99 ? '99+' : unreadLogs}</span>}
         </button>
       </div>
       {logsOpen && (
@@ -147,7 +169,7 @@ function JobStatus({ isZh, jobState }: {
   isZh: boolean
   jobState: ReturnType<typeof useEncodingJob>['jobState']
 }) {
-  const { phase, snapshot } = jobState
+  const { phase, snapshot, error } = jobState
   const active = phase === 'preparing' || phase === 'running' || phase === 'cancelling'
   const percent = snapshot?.percent
 
@@ -158,9 +180,18 @@ function JobStatus({ isZh, jobState }: {
   if (phase === 'completed') label = isZh ? '编码完成' : 'Completed'
   if (phase === 'failed') label = isZh ? '编码失败' : 'Failed'
   if (phase === 'cancelled') label = isZh ? '已取消' : 'Cancelled'
+  if (snapshot?.commandSource === 'custom' && active) label = isZh ? '自定义命令' : 'Custom command'
 
   if (!snapshot) {
-    return <div className={`desktop-job-status desktop-job-status--${phase}`}><span>{label}</span></div>
+    if (error) label = isZh ? '任务未启动' : 'Not started'
+    return (
+      <div
+        className={`desktop-job-status desktop-job-status--${error ? 'failed' : phase}`}
+        title={error ? localizeJobError(error, isZh) : undefined}
+      >
+        <span className="desktop-job-status__phase">{label}</span>
+      </div>
+    )
   }
 
   const frameText = `${snapshot.frame ?? 0}/${snapshot.totalFrames ?? '—'}`

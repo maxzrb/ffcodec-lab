@@ -29,9 +29,12 @@ interface DropdownProps {
 }
 
 interface PanelRect {
-  top: number
+  top?: number
+  bottom?: number
   left: number
   width: number
+  maxHeight: number
+  placement: 'top' | 'bottom'
 }
 
 export function Dropdown({
@@ -46,7 +49,7 @@ export function Dropdown({
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [focusIndex, setFocusIndex] = useState(-1)
-  const [panelRect, setPanelRect] = useState<PanelRect>({ top: 0, left: 0, width: 0 })
+  const [panelRect, setPanelRect] = useState<PanelRect>({ top: 0, left: 0, width: 0, maxHeight: 260, placement: 'bottom' })
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const optionRefs = useRef<Map<number, HTMLButtonElement>>(new Map())
@@ -58,17 +61,37 @@ export function Dropdown({
   const updatePanelRect = useCallback(() => {
     if (!triggerRef.current) return
     const rect = triggerRef.current.getBoundingClientRect()
-    setPanelRect({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+    const viewportPadding = 8
+    const gap = 4
+    const availableBelow = Math.max(0, window.innerHeight - rect.bottom - viewportPadding - gap)
+    const availableAbove = Math.max(0, rect.top - viewportPadding - gap)
+    const placement = availableBelow >= Math.min(180, availableAbove) || availableBelow >= availableAbove ? 'bottom' : 'top'
+    const available = placement === 'bottom' ? availableBelow : availableAbove
+    const width = Math.min(rect.width, window.innerWidth - viewportPadding * 2)
+    const left = Math.max(viewportPadding, Math.min(rect.left, window.innerWidth - viewportPadding - width))
+    setPanelRect({
+      top: placement === 'bottom' ? rect.bottom + gap : undefined,
+      bottom: placement === 'top' ? window.innerHeight - rect.top + gap : undefined,
+      left,
+      width,
+      maxHeight: Math.max(96, Math.min(260, available)),
+      placement,
+    })
   }, [])
 
   // Update position on scroll / resize
   useEffect(() => {
     if (!open) return
     updatePanelRect()
-    window.addEventListener('scroll', updatePanelRect, { passive: true })
+    const handleAncestorScroll = (event: Event) => {
+      const target = event.target
+      if (target instanceof Node && panelRef.current?.contains(target)) return
+      updatePanelRect()
+    }
+    window.addEventListener('scroll', handleAncestorScroll, { passive: true, capture: true })
     window.addEventListener('resize', updatePanelRect)
     return () => {
-      window.removeEventListener('scroll', updatePanelRect)
+      window.removeEventListener('scroll', handleAncestorScroll, true)
       window.removeEventListener('resize', updatePanelRect)
     }
   }, [open, updatePanelRect])
@@ -102,9 +125,12 @@ export function Dropdown({
   useEffect(() => {
     if (!open || focusIndex < 0) return
     const el = optionRefs.current.get(focusIndex)
-    if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ block: 'nearest' })
-    }
+    const panel = panelRef.current
+    if (!el || !panel) return
+    const optionRect = el.getBoundingClientRect()
+    const panelRect = panel.getBoundingClientRect()
+    if (optionRect.top < panelRect.top) panel.scrollTop -= panelRect.top - optionRect.top
+    else if (optionRect.bottom > panelRect.bottom) panel.scrollTop += optionRect.bottom - panelRect.bottom
   }, [open, focusIndex])
 
   const selectOption = useCallback(
@@ -179,14 +205,16 @@ export function Dropdown({
   const panelElement = open && (
     <div
       ref={panelRef}
-      className="custom-select-panel"
+      className={`custom-select-panel custom-select-panel--${panelRect.placement}`}
       role="listbox"
       aria-label={ariaLabel}
       style={{
         position: 'fixed',
         top: panelRect.top,
+        bottom: panelRect.bottom,
         left: panelRect.left,
         width: panelRect.width,
+        maxHeight: panelRect.maxHeight,
         zIndex: 200,
       }}
     >
@@ -216,8 +244,8 @@ export function Dropdown({
                 onClick={() => selectOption(String(opt.value))}
                 onMouseEnter={() => setFocusIndex(optIndex)}
               >
-                <span className="custom-select-panel__label">
-                  {opt.label}
+                <span className="custom-select-panel__label" title={opt.label}>
+                  <span className="custom-select-panel__label-text">{opt.label}</span>
                   {opt.badge && <span className="custom-select__badge">{opt.badge}</span>}
                 </span>
                 {opt.description && (

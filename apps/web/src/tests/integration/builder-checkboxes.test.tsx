@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { WorkbenchApp } from '@ffcodec/workbench'
+import { AppDialogProvider, WorkbenchApp } from '@ffcodec/workbench'
 import { useBuilderStore } from '../../store'
 import { PlatformProvider } from '@ffcodec/platform-api'
 import type { PlatformAdapter, StorageAdapter } from '@ffcodec/platform-api'
@@ -29,7 +29,9 @@ let testPlatform: PlatformAdapter
 function TestWrapper() {
   return (
     <PlatformProvider adapter={testPlatform}>
-      <WorkbenchApp />
+      <AppDialogProvider>
+        <WorkbenchApp />
+      </AppDialogProvider>
     </PlatformProvider>
   )
 }
@@ -616,21 +618,37 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect((editor as HTMLTextAreaElement).value).toContain('input.mkv')
   })
 
+  it('命令预览多行模式显示续行符并复制当前多行文本', async () => {
+    const originalClipboard = navigator.clipboard
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+
+    render(<TestWrapper />)
+    await userEvent.click(screen.getByRole('button', { name: '单行' }))
+
+    const previewLines = document.querySelectorAll('.command-multiline__line')
+    expect(previewLines.length).toBeGreaterThan(2)
+    expect(previewLines[0]).toHaveTextContent('ffmpeg `')
+    expect(previewLines[1]).toHaveTextContent('-i input.mkv `')
+    await userEvent.click(screen.getByRole('button', { name: '复制' }))
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^ffmpeg `\n\x20{2}-i input\.mkv `/))
+
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: originalClipboard })
+  })
+
   it('命令预览可清空全部命令、重置参数，并在参数变化后恢复生成', async () => {
     const config = createDefaultProjectConfig()
     config.input.path = 'movie.mkv'
     config.video.rateControl = { mode: 'crf', qualityValue: 18, additionalValues: {} }
     config.customArgs.globalArgs = ['-benchmark']
     presetStore(config)
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
-
     render(<TestWrapper />)
     const editor = screen.getByLabelText('可自由编辑的 FFmpeg 命令')
     await userEvent.clear(editor)
     await userEvent.type(editor, 'ffmpeg -i manual.mkv -c copy manual.mp4')
     await userEvent.click(screen.getByRole('button', { name: '清空全部' }))
+    await userEvent.click(screen.getByRole('button', { name: '清空并重置' }))
 
-    expect(confirm).toHaveBeenCalledTimes(1)
     expect(useBuilderStore.getState().commandPreviewCleared).toBe(true)
     expect(useBuilderStore.getState().config).toEqual(createDefaultProjectConfig())
     expect(screen.getByLabelText('命令预览').querySelector('pre')).toBeNull()
@@ -646,7 +664,6 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       expect(screen.getByLabelText('命令预览').querySelector('pre')?.textContent).toContain('next.mkv')
       expect((editor as HTMLTextAreaElement).value).toContain('next.mkv')
     })
-    confirm.mockRestore()
   })
 
   it('音频码率使用数值输入和后置单位选择', async () => {
@@ -806,6 +823,9 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
   it('参数说明不显示内部数据来源，并提供有决策价值的编码器介绍', async () => {
     render(<TestWrapper />)
+    expect(screen.getByRole('link', { name: '在 GitHub 打开 FFCodec Lab 项目' }))
+      .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
+    expect(screen.getByText('FFCodec Lab v1.0')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))

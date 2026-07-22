@@ -3,6 +3,7 @@ import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
 import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
 import { renderPowerShell } from '@ffcodec/domain/shell/powershell-renderer'
 import { renderCmd } from '@ffcodec/domain/shell/cmd-renderer'
+import { formatMultilineCommand } from '@ffcodec/workbench/components/multiline-command'
 import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
@@ -236,6 +237,32 @@ describe('Command AST — Invariants', () => {
 
     expect(rendered.text).toContain('ffmpeg')
     expect(rendered.text).toContain('libx264')
+  })
+
+  it('多行预览按 Shell 生成可复制的续行命令且不会粘连 token', () => {
+    const plan = buildCommandPlan(makeConfig(), catalog, [])
+    const bash = formatMultilineCommand(renderBash(plan), 'bash').text
+    const powerShell = formatMultilineCommand(renderPowerShell(plan), 'powershell').text
+    const cmd = formatMultilineCommand(renderCmd(plan), 'cmd').text
+
+    expect(bash).toMatch(/^ffmpeg \\\n\x20{2}-i input\.mkv \\/)
+    expect(powerShell).toMatch(/^ffmpeg `\n\x20{2}-i input\.mkv `/)
+    expect(cmd).toMatch(/^ffmpeg \^\n\x20{2}-i input\.mkv \^/)
+    expect(bash).not.toContain('ffmpeg-i')
+    expect(powerShell).not.toContain('ffmpeg-i')
+    expect(cmd).not.toContain('ffmpeg-i')
+  })
+
+  it('双遍多行预览保留三种 Shell 的成功后执行语义', () => {
+    const config = makeConfig()
+    config.video.rateControl = { mode: 'twoPass', bitrate: '5000k', additionalValues: {} }
+    const plan = buildCommandPlan(config, catalog, [])
+
+    expect(formatMultilineCommand(renderBash(plan), 'bash').text).toContain(' &&\nffmpeg \\')
+    expect(formatMultilineCommand(renderCmd(plan), 'cmd').text).toContain(' && ^\nffmpeg ^')
+    const powerShell = formatMultilineCommand(renderPowerShell(plan), 'powershell').text
+    expect(powerShell).toContain('\nif ($LASTEXITCODE -eq 0) {\n  ffmpeg `')
+    expect(powerShell.endsWith('\n}')).toBe(true)
   })
 
   it('双遍第一遍只分析视频并写入 null，第二遍才写真实输出', () => {

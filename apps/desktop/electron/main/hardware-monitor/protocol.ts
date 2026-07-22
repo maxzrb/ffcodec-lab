@@ -36,7 +36,9 @@ function sanitizeSnapshot(value: unknown): HardwareSnapshot | null {
     })) : [],
     gpu: Array.isArray(source.gpu) ? source.gpu.slice(0, 16).map((gpu) => ({
       id: String(gpu.id).slice(0, 256), name: String(gpu.name).slice(0, 256), kind: String(gpu.kind).slice(0, 64),
-      load: finiteOrNull(gpu.load), memoryLoad: finiteOrNull(gpu.memoryLoad),
+      load: finiteOrNull(gpu.load), threeDLoad: finiteOrNull(gpu.threeDLoad), copyLoad: finiteOrNull(gpu.copyLoad),
+      videoDecodeLoad: finiteOrNull(gpu.videoDecodeLoad), videoEncodeLoad: finiteOrNull(gpu.videoEncodeLoad),
+      memoryLoad: finiteOrNull(gpu.memoryLoad),
       memoryUsedGb: finiteOrNull(gpu.memoryUsedGb), memoryTotalGb: finiteOrNull(gpu.memoryTotalGb),
       temperatureC: finiteOrNull(gpu.temperatureC), powerW: finiteOrNull(gpu.powerW),
       coreClockMhz: finiteOrNull(gpu.coreClockMhz), memoryClockMhz: finiteOrNull(gpu.memoryClockMhz),

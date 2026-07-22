@@ -1,8 +1,7 @@
 // ============================================================
 // Desktop Platform Adapter — Electron implementation.
-// Phase 4: localStorage-based storage (same as web for now).
+// Phase 4: localStorage-backed storage with INI mirror.
 // Phase 5: extensions for desktop-specific UI (path fields, etc.).
-// Later phases: electron-store for persistent settings.
 // ============================================================
 
 import type { PlatformAdapter, StorageAdapter, WorkbenchExtensions } from '@ffcodec/platform-api'
@@ -10,12 +9,15 @@ import { DesktopPathField } from './components/DesktopPathField'
 import { desktopCommandActions } from './components/DesktopCommandActions'
 import { desktopSettingsSections } from './components/DesktopSettingsSection'
 import { AudioCapabilityUnlockButton } from './components/AudioCapabilityUnlockButton'
+import { CustomCommandActions } from './components/CustomCommandActions'
+import { ConfigFilePanel } from './components/ConfigFilePanel'
 import {
   getAudioCapabilityOverride,
   onAudioCapabilityOverrideChange,
 } from './audio-capability-override'
 
-/** localStorage-backed storage for Electron renderer (temporary). */
+/** localStorage-backed storage for Electron renderer.
+ *  INI persistence happens in parallel via electronAPI.storageSetItem. */
 class ElectronStorageAdapter implements StorageAdapter {
   getItem(key: string): string | null {
     try {
@@ -31,6 +33,8 @@ class ElectronStorageAdapter implements StorageAdapter {
     } catch (e) {
       console.warn('Failed to write to localStorage:', e)
     }
+    // Mirror to INI store (fire-and-forget)
+    void window.electronAPI?.storageSetItem(key, value)
   }
 
   removeItem(key: string): void {
@@ -39,6 +43,7 @@ class ElectronStorageAdapter implements StorageAdapter {
     } catch {
       // Silently ignore
     }
+    void window.electronAPI?.storageRemoveItem(key)
   }
 
   keys(): string[] {
@@ -59,9 +64,11 @@ const desktopExtensions: WorkbenchExtensions = {
   headerItems: [<AudioCapabilityUnlockButton key="audio-capability-unlock" />],
   pathFieldRenderer: DesktopPathField,
   commandActions: desktopCommandActions,
+  renderCommandEditorActions: ({ command, dirty }) => <CustomCommandActions command={command} dirty={dirty} />,
   settingsSections: desktopSettingsSections,
+  panels: [{ id: 'config-file', label: '配置文件', render: () => <ConfigFilePanel /> }],
   getAudioEncoderCapabilities: () => {
-    const customPath = localStorage.getItem('ffcodec-desktop-ffmpeg-path')?.trim() || undefined
+    const customPath = (localStorage.getItem('ffcodec-desktop-ffmpeg-path') ?? window.electronAPI?.storageGetItem('ffcodec-desktop-ffmpeg-path'))?.trim() || undefined
     return window.electronAPI?.getAudioEncoderCapabilities(customPath) ?? Promise.resolve(null)
   },
   getAudioCapabilityOverride,

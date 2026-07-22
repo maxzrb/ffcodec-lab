@@ -24,6 +24,8 @@ export function createMainWindow(): BrowserWindow {
     titleBarStyle: 'hidden',
     show: false, // ready-to-show 后再显示，避免白屏闪烁
     title: 'FFCodec Lab',
+    // 显式指定窗口图标，避免便携运行时依赖 Windows 对 EXE 图标的缓存结果。
+    icon: join(__dirname, '../renderer/assets/ffcodec-lab-avatar.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       nodeIntegration: false,

@@ -16,6 +16,8 @@ interface WorkbenchShellProps {
   pathFieldRenderer?: PathFieldRenderer
   /** Platform-provided settings sections rendered in the nav sidebar. */
   settingsSections?: SettingsSectionExtension[]
+  /** Additional nodes rendered at the top of the workbench content area. */
+  contentSections?: ReactNode[]
 }
 
 const SIDEBAR_COLLAPSED_KEY = 'ffcodec-workbench-sidebar-collapsed'
@@ -42,6 +44,7 @@ export function WorkbenchShell({
   footer,
   pathFieldRenderer: _pathFieldRenderer,
   settingsSections,
+  contentSections,
 }: WorkbenchShellProps) {
   const { text, locale } = useI18n()
   const platform = usePlatform()
@@ -117,7 +120,12 @@ export function WorkbenchShell({
         )}
       </nav>
 
-      <section className="workbench-content" key={activePanelId}>{content}</section>
+      <section className="workbench-content" key={activePanelId}>
+        {contentSections && contentSections.length > 0 && (
+          <div className="workbench-content__sections">{contentSections}</div>
+        )}
+        {content}
+      </section>
       <button
         type="button"
         className="workbench-mobile-inspector-toggle"

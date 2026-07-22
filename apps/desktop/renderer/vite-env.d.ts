@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { HardwareMonitorStartResult, HardwareMonitorState, HardwareSnapshot } from '../shared/hardware-monitor-types'
+import type { HardwareMonitorStartResult, HardwareMonitorState, HardwareSnapshot, PawnIoInstallResult } from '../shared/hardware-monitor-types'
 
 /**
  * Types shared between preload and renderer for the desktop platform.
@@ -21,10 +21,12 @@ declare global {
     }
     customFfmpegPath?: string
     overwriteMode: 'replace' | 'fail'
+    commandSource?: 'generated' | 'custom'
   }
 
   interface FFmpegJobSnapshot {
     jobId: string
+    commandSource?: 'generated' | 'custom'
     phase: 'created' | 'starting' | 'running' | 'cancelling' | 'completed' | 'failed' | 'cancelled'
     createdAt: number
     startedAt: number | null
@@ -87,7 +89,12 @@ declare global {
     error?: string
   }
 
-  interface Window {
+  interface StorageModeResult {
+  mode: 'portable' | 'user'
+  path: string
+}
+
+interface Window {
     electronAPI?: {
       platform: 'win32' | 'darwin' | 'linux'
       versions: {
@@ -129,13 +136,24 @@ declare global {
       startHardwareMonitor: (intervalMs?: number) => Promise<HardwareMonitorStartResult>
       stopHardwareMonitor: () => Promise<HardwareMonitorState>
       getHardwareSnapshot: () => Promise<HardwareSnapshot | null>
+      installPawnIo: () => Promise<PawnIoInstallResult>
       requestHardwareSnapshot: () => Promise<void>
       setHardwareMonitorInterval: (intervalMs: number) => Promise<HardwareMonitorState>
       onHardwareSnapshot: (callback: (snapshot: HardwareSnapshot) => void) => () => void
       onHardwareMonitorStateChanged: (callback: (state: HardwareMonitorState) => void) => () => void
 
-      revealInFolder: (path: string) => Promise<string>
+      revealInFolder: (path: string) => Promise<void>
       openExternal: (url: string) => Promise<void>
+
+      // User preference storage (INI-backed)
+      storageGetItem: (key: string) => string | null
+      storageKeys: () => string[]
+      storageSetItem: (key: string, value: string) => Promise<void>
+      storageRemoveItem: (key: string) => Promise<void>
+      storageGetMode: () => Promise<StorageModeResult>
+      storageSetMode: (mode: string) => Promise<{ ok: boolean; error?: string }>
+      storageImport: (entries: [string, string][]) => Promise<void>
+      onStorageModeChanged: (callback: (result: StorageModeResult) => void) => () => void
     }
   }
 }

@@ -13,6 +13,7 @@ import { PresetEditorDialog } from './PresetEditorDialog'
 import { PresetImportDialog } from './PresetImportDialog'
 import type { NormalizationNotice } from '@ffcodec/domain/rules/rule-types'
 import { useI18n } from '../i18n/i18n'
+import { useAppDialog } from '../dialog/AppDialogProvider'
 
 interface PresetManagerProps {
   /** Called when user applies a preset — receives the config to set */
@@ -29,6 +30,7 @@ const presetService = getPresetService()
 
 export function PresetManager({ onApply, onReset, currentConfig, onClose }: PresetManagerProps) {
   const { locale } = useI18n()
+  const dialog = useAppDialog()
   const isZh = locale === 'zh-CN'
   const [userPresets, setUserPresets] = useState<UserPreset[]>(() => presetService.list())
   const [showEditor, setShowEditor] = useState(false)
@@ -119,8 +121,14 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
   )
 
   const handleDelete = useCallback(
-    (id: string) => {
-      if (!window.confirm(isZh ? '确定要删除此预设吗？此操作不可撤销。' : 'Delete this preset? This cannot be undone.')) return
+    async (id: string) => {
+      if (!await dialog.confirm({
+        title: isZh ? '删除此预设？' : 'Delete this preset?',
+        message: isZh ? '此操作不可撤销。' : 'This action cannot be undone.',
+        confirmLabel: isZh ? '删除预设' : 'Delete preset',
+        cancelLabel: isZh ? '取消' : 'Cancel',
+        tone: 'danger',
+      })) return
       try {
         presetService.delete(id)
         refreshList()
@@ -129,12 +137,18 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
         setNotices([isZh ? `删除失败: ${String(e)}` : `Delete failed: ${String(e)}`])
       }
     },
-    [refreshList, isZh],
+    [dialog, refreshList, isZh],
   )
 
   const handleOverwrite = useCallback(
-    (id: string) => {
-      if (!window.confirm(isZh ? '确定要用当前配置覆盖此预设吗？' : 'Overwrite this preset with the current configuration?')) return
+    async (id: string) => {
+      if (!await dialog.confirm({
+        title: isZh ? '覆盖此预设？' : 'Overwrite this preset?',
+        message: isZh ? '保存的配置将替换为当前参数工作台内容。' : 'The saved configuration will be replaced by the current workbench settings.',
+        confirmLabel: isZh ? '确认覆盖' : 'Overwrite',
+        cancelLabel: isZh ? '取消' : 'Cancel',
+        tone: 'warning',
+      })) return
       try {
         const existing = presetService.load(id)
         if (existing) {
@@ -151,7 +165,7 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
         setNotices([isZh ? `覆盖失败: ${String(e)}` : `Overwrite failed: ${String(e)}`])
       }
     },
-    [currentConfig, refreshList, isZh],
+    [currentConfig, dialog, refreshList, isZh],
   )
 
   const handleRename = useCallback(
@@ -202,11 +216,17 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
     [refreshList, isZh],
   )
 
-  const handleReset = useCallback(() => {
-    if (!window.confirm(isZh ? '确定要恢复为默认配置吗？当前未保存的更改将丢失。' : 'Restore defaults? Unsaved changes will be lost.')) return
+  const handleReset = useCallback(async () => {
+    if (!await dialog.confirm({
+      title: isZh ? '恢复默认配置？' : 'Restore defaults?',
+      message: isZh ? '当前未保存的更改将丢失。' : 'Current unsaved changes will be lost.',
+      confirmLabel: isZh ? '恢复默认' : 'Restore defaults',
+      cancelLabel: isZh ? '取消' : 'Cancel',
+      tone: 'warning',
+    })) return
     onReset()
     onClose()
-  }, [onReset, onClose, isZh])
+  }, [dialog, onReset, onClose, isZh])
 
   return (
     <div className="modal-layer" role="dialog" aria-modal="true" aria-label={isZh ? '预设管理' : 'Preset manager'}>

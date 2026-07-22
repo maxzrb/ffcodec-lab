@@ -52,12 +52,13 @@ export function subscribeToJob(fn: () => void): () => void {
  */
 export async function startEncoding(
   request: FFmpegJobStartRequest,
-): Promise<void> {
+): Promise<JobStartResult> {
   const api = window.electronAPI
   if (!api) {
-    state = { phase: 'idle', snapshot: null, error: 'electronAPI not available' }
+    const result: JobStartResult = { ok: false, error: 'electronAPI not available' }
+    state = { phase: 'idle', snapshot: null, error: result.error }
     notify()
-    return
+    return result
   }
 
   // Transition to preparing
@@ -65,12 +66,20 @@ export async function startEncoding(
   notify()
 
   // Start the job
-  const result = await api.startFFmpegJob(request)
+  let result: JobStartResult
+  try {
+    result = await api.startFFmpegJob(request)
+  } catch (error) {
+    result = {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
 
   if (!result.ok) {
     state = { phase: 'idle', snapshot: null, error: result.error }
     notify()
-    return
+    return result
   }
 
   // Transition to running
@@ -96,6 +105,36 @@ export async function startEncoding(
     }
     notify()
   })
+
+  return result
+}
+
+/** 将主进程返回的常见启动错误转换为当前界面语言。 */
+export function localizeJobError(error: string, isZh: boolean): string {
+  if (!isZh) return error
+
+  return error.split('\n').map((line) => {
+    const inputMatch = line.match(/^Input file not found or not readable:\s*(.+)$/)
+    if (inputMatch) return `找不到或无法读取输入文件：${inputMatch[1]}`
+
+    const outputMatch = line.match(/^Output file already exists and overwrite is disabled:\s*(.+?)(?:\. Enable overwrite or choose a different output path\.)?$/)
+    if (outputMatch) return `输出文件已存在且禁止覆盖：${outputMatch[1]}`
+
+    const collisionMatch = line.match(/^Input and output are the same file:\s*(.+)$/)
+    if (collisionMatch) return `输入与输出不能是同一个文件：${collisionMatch[1]}`
+
+    const directoryMatch = line.match(/^Cannot create output directory\s+(.+?):\s*(.+)$/)
+    if (directoryMatch) return `无法创建输出目录 ${directoryMatch[1]}：${directoryMatch[2]}`
+
+    if (line === 'Another encoding job is already running. Cancel it before starting a new one.') {
+      return '已有编码任务正在运行，请先取消当前任务。'
+    }
+    if (line.startsWith('FFmpeg not found.')) return '未找到 FFmpeg，请先安装或在设置中指定可执行文件路径。'
+    if (line.startsWith('Custom FFmpeg path is not valid:')) {
+      return `设置的 FFmpeg 路径无效：${line.slice('Custom FFmpeg path is not valid:'.length).trim()}`
+    }
+    return line
+  }).join('\n')
 }
 
 /**

@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useI18n } from '../features/i18n/i18n'
 
 export function CommandEditor({
   generatedCommand,
   cleared,
+  renderActions,
 }: {
   generatedCommand: string
   cleared: boolean
+  renderActions?: (context: { command: string; dirty: boolean }) => ReactNode
 }) {
   const { locale } = useI18n()
   const isZh = locale === 'zh-CN'
@@ -61,6 +63,7 @@ export function CommandEditor({
         >
           {copied ? (isZh ? '已复制' : 'Copied') : (isZh ? '复制编辑内容' : 'Copy edited command')}
         </button>
+        {renderActions?.({ command: value, dirty })}
       </div>
       <p className="command-editor__hint">
         {isZh

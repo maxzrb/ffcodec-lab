@@ -3,6 +3,7 @@ import type { CommandArg, CommandPlan } from '@ffcodec/domain/command/command-as
 import type { ShellKind } from '@ffcodec/domain/config/project-config'
 import type { RenderedCommand } from '@ffcodec/domain/shell/shell-types'
 import { ShellSelector } from './ShellSelector'
+import { formatMultilineCommand } from './multiline-command'
 import { useI18n } from '../features/i18n/i18n'
 
 interface CommandPreviewProps {
@@ -32,14 +33,16 @@ export function CommandPreview({
   const { locale } = useI18n()
   const [multiline, setMultiline] = useState(false)
   const [copied, setCopied] = useState(false)
+  const multilineCommand = formatMultilineCommand(renderedCommand, shell)
+  const visibleCommandText = multiline ? multilineCommand.text : renderedCommand.text
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(renderedCommand.text)
+      await navigator.clipboard.writeText(visibleCommandText)
     } catch {
       // 兼容未开放 Clipboard API 的旧浏览器。
       const textarea = document.createElement('textarea')
-      textarea.value = renderedCommand.text
+      textarea.value = visibleCommandText
       document.body.appendChild(textarea)
       textarea.select()
       document.execCommand('copy')
@@ -47,7 +50,7 @@ export function CommandPreview({
     }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }, [renderedCommand.text])
+  }, [visibleCommandText])
 
   const allTokens = collectAllTokens(commandPlan)
 
@@ -107,15 +110,27 @@ export function CommandPreview({
               : 'All commands are cleared. Change any parameter to generate them again.'}
           </p>
         ) : multiline ? (
-          <div>
-            {renderedCommand.segments.map((segment, index) => (
-              <CommandToken
-                key={`${segment.originId}-${index}`}
-                segment={segment}
-                tokens={allTokens}
-                onClick={onTokenClick}
-                locale={locale}
-              />
+          <div className="command-multiline">
+            {multilineCommand.lines.map((line, lineIndex) => (
+              <div className="command-multiline__line" key={`command-line-${lineIndex}`}>
+                {line.systemText ?? (
+                  <>
+                    {line.prefix}
+                    {line.segments.map((segment, segmentIndex) => (
+                      <span key={`${segment.argumentId}-${segmentIndex}`}>
+                        {segmentIndex > 0 && ' '}
+                        <CommandToken
+                          segment={segment}
+                          tokens={allTokens}
+                          onClick={onTokenClick}
+                          locale={locale}
+                        />
+                      </span>
+                    ))}
+                    {line.suffix}
+                  </>
+                )}
+              </div>
             ))}
           </div>
         ) : (

@@ -28,6 +28,10 @@ export interface GpuSnapshot {
   name: string
   kind: string
   load: number | null
+  threeDLoad: number | null
+  copyLoad: number | null
+  videoDecodeLoad: number | null
+  videoEncodeLoad: number | null
   memoryLoad: number | null
   memoryUsedGb: number | null
   memoryTotalGb: number | null
@@ -79,5 +83,10 @@ export interface HardwareMonitorState {
 export interface HardwareMonitorStartResult {
   ok: boolean
   state: HardwareMonitorState
+  error?: string
+}
+
+export interface PawnIoInstallResult {
+  ok: boolean
   error?: string
 }

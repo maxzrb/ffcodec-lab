@@ -18,16 +18,21 @@ type DetectResult =
 function FFmpegPathSetting() {
   const { locale } = useI18n()
   const isZh = locale === 'zh-CN'
-  const [pathValue, setPathValue] = useState(() => localStorage.getItem(STORAGE_KEY) ?? '')
+  const [pathValue, setPathValue] = useState(() =>
+    (localStorage.getItem(STORAGE_KEY) ?? window.electronAPI?.storageGetItem(STORAGE_KEY)) ?? '',
+  )
   const [detectResult, setDetectResult] = useState<DetectResult>({ kind: 'idle' })
 
   const handlePathChange = useCallback((value: string) => {
     setPathValue(value)
     const trimmed = value.trim()
+    const api = window.electronAPI
     if (trimmed) {
-      localStorage.setItem(STORAGE_KEY, trimmed)
+      if (api) void api.storageSetItem(STORAGE_KEY, trimmed)
+      try { localStorage.setItem(STORAGE_KEY, trimmed) } catch { /* ignore */ }
     } else {
-      localStorage.removeItem(STORAGE_KEY)
+      if (api) void api.storageRemoveItem(STORAGE_KEY)
+      try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
     }
     // Notify other components by dispatching a storage event (same-tab workaround)
     window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY, newValue: trimmed || null }))

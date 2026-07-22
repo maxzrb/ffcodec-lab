@@ -1,14 +1,16 @@
 import { app, BrowserWindow } from 'electron'
 import { spawn, type ChildProcess, type ChildProcessWithoutNullStreams } from 'child_process'
-import { randomBytes } from 'crypto'
+import { createHash, randomBytes } from 'crypto'
 import { existsSync } from 'fs'
+import { readFile } from 'fs/promises'
 import { createServer, type Server, type Socket } from 'net'
 import { join } from 'path'
 import { createInterface } from 'readline'
-import type { HardwareMonitorStartResult, HardwareMonitorState, HardwareSnapshot } from '../../../shared/hardware-monitor-types'
+import type { HardwareMonitorStartResult, HardwareMonitorState, HardwareSnapshot, PawnIoInstallResult } from '../../../shared/hardware-monitor-types'
 import { MAX_MONITOR_MESSAGE_BYTES, parseHelperMessage } from './protocol'
 
 const DEFAULT_INTERVAL_MS = 1_000
+const PAWN_IO_SHA256 = '1f519a22e47187f70a1379a48ca604981c4fcf694f4e65b734aaa74a9fba3032'
 const initialState: HardwareMonitorState = { status: 'idle', message: null, intervalMs: DEFAULT_INTERVAL_MS, elevated: false }
 
 interface HelperTransport {
@@ -26,6 +28,7 @@ let desiredIntervalMs = DEFAULT_INTERVAL_MS
 let restartAttempts = 0
 let restartTimer: ReturnType<typeof setTimeout> | null = null
 let stableTimer: ReturnType<typeof setTimeout> | null = null
+let pawnIoInstallPromise: Promise<PawnIoInstallResult> | null = null
 
 export function hardwareMonitorRestartDelay(attempt: number): number {
   return Math.min(8_000, 1_000 * 2 ** Math.max(0, attempt - 1))
@@ -35,6 +38,12 @@ function helperPath(): string {
   return app.isPackaged
     ? join(process.resourcesPath, 'hardware-monitor', 'FFCodec.HardwareMonitor.exe')
     : join(app.getAppPath(), 'native', 'FFCodec.HardwareMonitor', 'bin', 'Release', 'net8.0', 'FFCodec.HardwareMonitor.exe')
+}
+
+function pawnIoInstallerPath(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'hardware-monitor', 'pawnio', 'PawnIO_setup.exe')
+    : join(app.getAppPath(), 'native', 'third-party', 'PawnIO', 'PawnIO_setup.exe')
 }
 
 function broadcast(channel: string, payload: unknown): void {
@@ -286,6 +295,44 @@ export async function stopHardwareMonitor(): Promise<void> {
   latestSnapshot = null
   updateState(initialState)
   await current?.close()
+}
+
+export function installPawnIo(): Promise<PawnIoInstallResult> {
+  if (pawnIoInstallPromise) return pawnIoInstallPromise
+  pawnIoInstallPromise = installPawnIoInternal().finally(() => { pawnIoInstallPromise = null })
+  return pawnIoInstallPromise
+}
+
+async function installPawnIoInternal(): Promise<PawnIoInstallResult> {
+  if (process.platform !== 'win32') return { ok: false, error: 'PawnIO 仅支持 Windows。' }
+  const installer = pawnIoInstallerPath()
+  if (!existsSync(installer)) return { ok: false, error: 'PawnIO 官方安装器不存在。' }
+  const digest = createHash('sha256').update(await readFile(installer)).digest('hex')
+  if (digest !== PAWN_IO_SHA256) return { ok: false, error: 'PawnIO 安装器完整性校验失败。' }
+
+  await stopHardwareMonitor()
+  updateState({ status: 'starting', message: '正在安装 PawnIO 硬件访问驱动…', intervalMs: desiredIntervalMs, elevated: false })
+  const escapedInstaller = installer.replace(/'/g, "''")
+  const script = `$p = Start-Process -FilePath '${escapedInstaller}' -ArgumentList '-install','-silent' -Verb RunAs -WindowStyle Hidden -PassThru -Wait; exit $p.ExitCode`
+  const result = await new Promise<PawnIoInstallResult>((resolve) => {
+    const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+      windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'], shell: false,
+    })
+    let stderr = ''
+    child.stderr?.on('data', (chunk: Buffer) => { stderr = `${stderr}${chunk.toString('utf8')}`.slice(-2_048) })
+    child.once('error', (error) => resolve({ ok: false, error: error.message }))
+    child.once('exit', (code) => resolve(code === 0
+      ? { ok: true }
+      : { ok: false, error: stderr.trim() || 'PawnIO 安装被取消或安装失败。' }))
+  })
+  if (!result.ok) {
+    updateState({ status: 'limited', message: result.error ?? 'PawnIO 安装失败。', intervalMs: desiredIntervalMs, elevated: false })
+    return result
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  const restarted = await startHardwareMonitor(desiredIntervalMs)
+  return restarted.ok ? result : { ok: false, error: restarted.error ?? 'PawnIO 已安装，但监控 helper 重启失败。' }
 }
 
 export function requestHardwareSnapshot(): void {

@@ -4,6 +4,7 @@
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react'
+import { useAppDialog } from '@ffcodec/workbench'
 
 interface EncodingLogDialogProps {
   isZh: boolean
@@ -23,6 +24,7 @@ const STATUS_LABELS: Record<EncodingHistoryItem['status'], { zh: string; en: str
 }
 
 export function EncodingLogDialog({ isZh, items, onClose, onRefresh }: EncodingLogDialogProps) {
+  const dialog = useAppDialog()
   const [selectedId, setSelectedId] = useState(items[0]?.historyId ?? null)
   const [rawLog, setRawLog] = useState<string | null>(null)
   const [logError, setLogError] = useState<string | null>(null)
@@ -58,7 +60,13 @@ export function EncodingLogDialog({ isZh, items, onClose, onRefresh }: EncodingL
 
   const deleteSelected = async () => {
     if (!selected) return
-    const confirmed = window.confirm(isZh ? '删除这条历史及其日志文件？' : 'Delete this history item and its log file?')
+    const confirmed = await dialog.confirm({
+      title: isZh ? '删除这条历史？' : 'Delete this history item?',
+      message: isZh ? '对应的完整日志文件也会删除，此操作无法撤销。' : 'Its full log file will also be deleted. This cannot be undone.',
+      confirmLabel: isZh ? '删除历史和日志' : 'Delete history and log',
+      cancelLabel: isZh ? '取消' : 'Cancel',
+      tone: 'danger',
+    })
     if (!confirmed) return
     const result = await window.electronAPI?.deleteEncodingHistory(selected.historyId)
     if (result && !result.ok) {
@@ -71,7 +79,13 @@ export function EncodingLogDialog({ isZh, items, onClose, onRefresh }: EncodingL
 
   const clearAll = async () => {
     if (!items.length) return
-    const confirmed = window.confirm(isZh ? '清空全部编码历史和日志文件？此操作无法撤销。' : 'Clear all history and log files? This cannot be undone.')
+    const confirmed = await dialog.confirm({
+      title: isZh ? '清空全部历史和日志？' : 'Clear all history and logs?',
+      message: isZh ? '全部编码历史和日志文件都会删除，此操作无法撤销。' : 'All encoding history and log files will be deleted. This cannot be undone.',
+      confirmLabel: isZh ? '全部清空' : 'Clear everything',
+      cancelLabel: isZh ? '取消' : 'Cancel',
+      tone: 'danger',
+    })
     if (!confirmed) return
     await window.electronAPI?.clearEncodingHistory()
     setRawLog(null)
@@ -121,6 +135,7 @@ export function EncodingLogDialog({ isZh, items, onClose, onRefresh }: EncodingL
                 <span className={`encoding-history-item__status encoding-history-item__status--${item.status}`}>
                   {STATUS_LABELS[item.status][isZh ? 'zh' : 'en']}
                 </span>
+                {item.snapshot.commandSource === 'custom' && <span className="encoding-history-item__source">{isZh ? '自定义' : 'Custom'}</span>}
                 <strong>{fileName(item.outputPaths[0] ?? item.inputPaths[0] ?? item.jobId)}</strong>
                 <time>{new Date(item.createdAt).toLocaleString(isZh ? 'zh-CN' : 'en-US')}</time>
               </button>
@@ -178,6 +193,8 @@ export function EncodingLogDialog({ isZh, items, onClose, onRefresh }: EncodingL
 
 function translateEvent(entry: EncodingLogEvent, isZh: boolean): string {
   if (isZh) return entry.message
+  if (entry.message === '用户开始自定义命令') return 'User started a custom command'
+  if (entry.message === '自定义 FFmpeg 进程已启动') return 'Custom FFmpeg process started'
   const labels: Record<EncodingLogEvent['kind'], string> = {
     'user-start': 'User started encoding',
     'ffmpeg-start': 'FFmpeg process started',

@@ -107,8 +107,8 @@ export function createEncodingHistory(snapshot: FFmpegJobSnapshot): EncodingHist
     logPath: snapshot.logPath,
     errorSummary: null,
     events: [
-      event('user-start', 'action', '用户开始编码'),
-      event('ffmpeg-start', 'info', 'FFmpeg 进程已启动', snapshot.logPath),
+      event('user-start', 'action', snapshot.commandSource === 'custom' ? '用户开始自定义命令' : '用户开始编码'),
+      event('ffmpeg-start', 'info', snapshot.commandSource === 'custom' ? '自定义 FFmpeg 进程已启动' : 'FFmpeg 进程已启动', snapshot.logPath),
     ],
     snapshot: { ...snapshot },
   }

@@ -36,6 +36,10 @@ internal sealed record GpuSnapshot(
     string Name,
     string Kind,
     float? Load,
+    float? ThreeDLoad,
+    float? CopyLoad,
+    float? VideoDecodeLoad,
+    float? VideoEncodeLoad,
     float? MemoryLoad,
     float? MemoryUsedGb,
     float? MemoryTotalGb,
@@ -64,6 +68,14 @@ internal sealed record StorageSnapshot(
     float? TemperatureC);
 
 internal sealed record MonitorDiagnostic(string Level, string Code, string Message);
+
+internal sealed record SensorDiagnostic(
+    string Hardware,
+    string HardwareType,
+    string Name,
+    string SensorType,
+    string Identifier,
+    float? Value);
 
 internal sealed class MonitorCommand
 {
