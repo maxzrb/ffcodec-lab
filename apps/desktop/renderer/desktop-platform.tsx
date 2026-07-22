@@ -7,7 +7,6 @@
 
 import type { PlatformAdapter, StorageAdapter, WorkbenchExtensions } from '@ffcodec/platform-api'
 import { DesktopPathField } from './components/DesktopPathField'
-import { DesktopHeaderItems } from './components/DesktopHeaderItems'
 import { desktopCommandActions } from './components/DesktopCommandActions'
 import { desktopSettingsSections } from './components/DesktopSettingsSection'
 
@@ -52,7 +51,6 @@ class ElectronStorageAdapter implements StorageAdapter {
 }
 
 const desktopExtensions: WorkbenchExtensions = {
-  headerItems: [<DesktopHeaderItems key="ffmpeg-status" />],
   pathFieldRenderer: DesktopPathField,
   commandActions: desktopCommandActions,
   settingsSections: desktopSettingsSections,
@@ -62,10 +60,11 @@ const desktopExtensions: WorkbenchExtensions = {
 export const desktopPlatform: PlatformAdapter = {
   capabilities: {
     desktop: true,
-    nativeFileDialog: false, // Phase 7
-    localFFmpegExecution: false, // Phase 9
-    revealInFolder: false, // Phase 7
-    persistentEncodingHistory: false, // Phase 11
+    nativeFileDialog: true,          // Phase 6 ✅
+    ffmpegDetect: true,              // Phase 6 ✅
+    localFFmpegExecution: true,      // Phase 9 ✅
+    revealInFolder: true,            // Phase 6 ✅
+    persistentEncodingHistory: true,  // Phase 11 ✅
   },
   storage: new ElectronStorageAdapter(),
   extensions: desktopExtensions,

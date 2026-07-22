@@ -57,6 +57,17 @@ describe('Command AST — Invariants', () => {
     expect(rendered.text).toContain('-b:a')
   })
 
+  it('AAC 自动编码配置不发射无效的 aac_coder auto，显式算法仍正常发射', () => {
+    const config = makeConfig()
+    let rendered = renderBash(buildCommandPlan(config, catalog, []))
+
+    expect(rendered.text).not.toContain('-aac_coder')
+
+    config.audio.qualityValues.profile = 'twoloop'
+    rendered = renderBash(buildCommandPlan(config, catalog, []))
+    expect(rendered.text).toContain('-aac_coder twoloop')
+  })
+
   it('video copy does NOT generate video quality or filter params', () => {
     const config = makeConfig({
       video: { ...createDefaultProjectConfig().video, mode: 'copy' },

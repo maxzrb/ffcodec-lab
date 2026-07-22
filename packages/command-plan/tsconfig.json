@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "dist",
+    "paths": {
+      "@ffcodec/domain/*": ["../domain/src/*"]
+    }
+  },
+  "include": ["src"]
+}

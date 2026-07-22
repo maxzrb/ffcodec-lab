@@ -466,6 +466,9 @@ function buildOutput(
         const storedValue = config.audio.qualityValues[configKey]
         const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
         if (val === undefined || val === null || val === '') continue
+        // `auto` 是界面层的“交由 FFmpeg 自动选择”哨兵值，不是编码器参数值。
+        // 例如原生 AAC 的 -aac_coder 只接受 twoloop/fast/anmr，传入 auto 会直接失败。
+        if (val === 'auto') continue
         const tokens = buildSpecialParameterTokens(sp, val)
         if (!tokens) continue
         output.audioArgs.push({

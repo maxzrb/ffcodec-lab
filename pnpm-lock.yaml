@@ -10,6 +10,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@ffcodec/command-plan':
+        specifier: workspace:*
+        version: link:../../packages/command-plan
       '@ffcodec/platform-api':
         specifier: workspace:*
         version: link:../../packages/platform-api
@@ -128,6 +131,16 @@ importers:
         version: 1.6.1(@types/node@26.1.1)(jsdom@24.1.3(supports-color@7.2.0))(supports-color@7.2.0)
 
   packages/catalog: {}
+
+  packages/command-plan:
+    dependencies:
+      '@ffcodec/domain':
+        specifier: workspace:*
+        version: link:../domain
+    devDependencies:
+      typescript:
+        specifier: ^5.5.3
+        version: 5.9.3
 
   packages/domain:
     dependencies:

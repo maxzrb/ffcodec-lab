@@ -1,0 +1,21 @@
+{
+  "name": "@ffcodec/command-plan",
+  "private": true,
+  "version": "0.1.0",
+  "description": "FFCodec Lab — Structured execution plan builder from Command AST",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@ffcodec/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
+}

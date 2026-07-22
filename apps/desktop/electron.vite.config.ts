@@ -44,6 +44,7 @@ export default defineConfig({
         '@ffcodec/platform-api': resolve(__dirname, '../../packages/platform-api/src'),
         '@ffcodec/domain': resolve(__dirname, '../../packages/domain/src'),
         '@ffcodec/catalog': resolve(__dirname, '../../packages/catalog/src'),
+        '@ffcodec/command-plan': resolve(__dirname, '../../packages/command-plan/src'),
       },
     },
   },

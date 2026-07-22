@@ -23,7 +23,9 @@
       "@ffcodec/workbench": ["../../packages/workbench/src/index.ts"],
       "@ffcodec/workbench/*": ["../../packages/workbench/src/*"],
       "@ffcodec/platform-api": ["../../packages/platform-api/src/index.ts"],
-      "@ffcodec/platform-api/*": ["../../packages/platform-api/src/*"]
+      "@ffcodec/platform-api/*": ["../../packages/platform-api/src/*"],
+      "@ffcodec/command-plan": ["../../packages/command-plan/src/index.ts"],
+      "@ffcodec/command-plan/*": ["../../packages/command-plan/src/*"]
     }
   },
   "include": ["electron/**/*.ts", "renderer/**/*.ts", "renderer/**/*.tsx", "renderer/vite-env.d.ts"]

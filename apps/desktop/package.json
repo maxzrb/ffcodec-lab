@@ -12,6 +12,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@ffcodec/command-plan": "workspace:*",
     "@ffcodec/platform-api": "workspace:*",
     "@ffcodec/workbench": "workspace:*"
   },

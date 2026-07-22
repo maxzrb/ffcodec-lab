@@ -50,6 +50,7 @@ export const webPlatform: PlatformAdapter = {
   capabilities: {
     desktop: false,
     nativeFileDialog: false,
+    ffmpegDetect: false,
     localFFmpegExecution: false,
     revealInFolder: false,
     persistentEncodingHistory: false,

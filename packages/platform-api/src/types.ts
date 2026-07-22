@@ -12,6 +12,8 @@ export interface PlatformCapabilities {
   desktop: boolean
   /** Native OS file/folder dialogs (Electron only). */
   nativeFileDialog: boolean
+  /** Can detect local FFmpeg binary (version, path, source). */
+  ffmpegDetect: boolean
   /** Can locally spawn FFmpeg child processes. */
   localFFmpegExecution: boolean
   /** Can reveal a file in the OS file manager. */
