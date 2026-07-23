@@ -20,3 +20,4 @@ version/
 # .NET native helper build artifacts
 **/bin/
 **/obj/
+apps/desktop/native/ffmpeg/

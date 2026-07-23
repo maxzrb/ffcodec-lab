@@ -1,7 +1,7 @@
 {
   "name": "@ffcodec/desktop",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "FFCodec Lab — Electron desktop application",
   "author": "maxzrb",
   "homepage": "https://github.com/maxzrb/ffcodec-lab",
@@ -36,6 +36,11 @@
       "package.json"
     ],
     "extraResources": [
+      {
+        "from": "native/ffmpeg",
+        "to": "ffmpeg",
+        "filter": ["**/*"]
+      },
       {
         "from": "../../out/hardware-monitor/win-x64",
         "to": "hardware-monitor",
