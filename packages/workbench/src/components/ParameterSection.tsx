@@ -22,6 +22,7 @@ interface ParameterSectionProps {
   actions?: ReactNode
   /** Platform-specific path field renderer, passed through to ParameterField. */
   pathFieldRenderer?: PathFieldRenderer
+  renderFieldAction?: (fieldId: string) => ReactNode
 }
 
 interface FieldGroup {
@@ -91,6 +92,7 @@ export function ParameterSection({
   highlightedFieldId,
   actions,
   pathFieldRenderer,
+  renderFieldAction,
 }: ParameterSectionProps) {
   const { text } = useI18n()
 
@@ -102,6 +104,7 @@ export function ParameterSection({
       onExplain={onExplain}
       highlighted={field.id === highlightedFieldId}
       pathFieldRenderer={pathFieldRenderer}
+      action={renderFieldAction?.(field.id)}
     />
   )
 

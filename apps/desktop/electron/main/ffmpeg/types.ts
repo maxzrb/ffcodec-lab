@@ -79,6 +79,8 @@ export interface FFmpegJobSnapshot {
 export interface FFmpegJobStartRequest {
   /** Structured args — ready for spawn(). */
   executionPlan: ExecutionPlan
+  /** Optional ordered plans for a single logical task, such as two-pass encoding. */
+  executionPlans?: ExecutionPlan[]
   /** User-configured FFmpeg path (validated by main process before use). */
   customFfmpegPath?: string
   /** Overwrite policy. */

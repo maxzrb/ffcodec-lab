@@ -46,9 +46,11 @@ describe('目标文件大小工具', () => {
     expect(calculation.videoBitrateKbps).toBe(862)
     expect(plan.invocations).toHaveLength(2)
     expect(rendered.text).toContain('-b:v 862k')
+    expect(rendered.text.indexOf('-pass 1')).toBeGreaterThan(rendered.text.indexOf('-i '))
     expect(rendered.text).not.toContain('-crf 23')
     expect(rendered.text).toContain('-f null -')
     expect(rendered.text).toContain(' && ')
+    expect(rendered.text).not.toContain('-map 0:s:0')
   })
 
   it('关闭工具后恢复之前保存的质量控制设置', () => {

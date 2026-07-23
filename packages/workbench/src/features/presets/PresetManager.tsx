@@ -235,7 +235,7 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
         className="modal-backdrop"
       />
 
-      <div className="modal-card">
+      <div className="modal-card modal-card--preset-manager">
         <div className="modal-card__header">
           <div>
             <p className="eyebrow">Workspace presets</p>

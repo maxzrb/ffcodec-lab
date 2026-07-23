@@ -130,6 +130,8 @@ export function recordUserCancel(jobId: string): void {
 export function finishEncodingHistory(snapshot: FFmpegJobSnapshot): void {
   updateItem(snapshot.jobId, (item) => {
     item.status = snapshot.phase
+    item.inputPaths = [...snapshot.inputPaths]
+    item.outputPaths = [...snapshot.outputPaths]
     item.startedAt = snapshot.startedAt
     item.endedAt = snapshot.endedAt
     item.durationMs = snapshot.startedAt && snapshot.endedAt

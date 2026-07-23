@@ -1,7 +1,7 @@
 {
   "name": "@ffcodec/desktop",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "FFCodec Lab — Electron desktop application",
   "author": "maxzrb",
   "homepage": "https://github.com/maxzrb/ffcodec-lab",
@@ -12,11 +12,18 @@
     "build:native": "dotnet build native/FFCodec.HardwareMonitor/FFCodec.HardwareMonitor.csproj -c Release",
     "publish:native": "dotnet publish native/FFCodec.HardwareMonitor/FFCodec.HardwareMonitor.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o ../../out/hardware-monitor/win-x64",
     "build": "pnpm build:native && set ELECTRON_RUN_AS_NODE=&& electron-vite build",
-    "build:win": "pnpm publish:native && set ELECTRON_RUN_AS_NODE=&& electron-vite build && node --use-system-ca node_modules/electron-builder/cli.js --win nsis zip",
+    "build:win:prepare": "pnpm publish:native && set ELECTRON_RUN_AS_NODE=&& electron-vite build",
+    "package:win:full": "node --use-system-ca scripts/build-windows.mjs full",
+    "package:win:base": "node --use-system-ca scripts/build-windows.mjs base",
+    "package:win:onedir": "node --use-system-ca scripts/build-windows.mjs onedir",
+    "build:win": "pnpm build:win:prepare && pnpm package:win:full && pnpm package:win:base && pnpm package:win:onedir",
+    "build:win:full": "pnpm build:win:prepare && pnpm package:win:full",
+    "build:win:base": "pnpm build:win:prepare && pnpm package:win:base",
+    "build:win:onedir": "pnpm build:win:prepare && pnpm package:win:onedir",
     "preview": "set ELECTRON_RUN_AS_NODE=&& electron-vite preview",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "test": "pnpm build:native && vitest run electron/main/hardware-monitor"
+    "test": "pnpm build:native && vitest run"
   },
   "dependencies": {
     "@ffcodec/command-plan": "workspace:*",
@@ -36,11 +43,6 @@
       "package.json"
     ],
     "extraResources": [
-      {
-        "from": "native/ffmpeg",
-        "to": "ffmpeg",
-        "filter": ["**/*"]
-      },
       {
         "from": "../../out/hardware-monitor/win-x64",
         "to": "hardware-monitor",
@@ -67,8 +69,7 @@
     "win": {
       "icon": "build/icon.ico",
       "target": [
-        "nsis",
-        "zip"
+        "nsis"
       ]
     },
     "nsis": {

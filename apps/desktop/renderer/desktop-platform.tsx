@@ -12,10 +12,12 @@ import { AudioCapabilityUnlockButton } from './components/AudioCapabilityUnlockB
 import { CustomCommandActions } from './components/CustomCommandActions'
 import { ConfigFilePanel } from './components/ConfigFilePanel'
 import { MediaProbePanel } from './components/MediaProbePanel'
+import { TargetDurationProbeAction } from './components/TargetDurationProbeAction'
 import {
   getAudioCapabilityOverride,
   onAudioCapabilityOverrideChange,
 } from './audio-capability-override'
+import { getPreferredFFmpegPath } from './ffmpeg-path-selection'
 
 /** localStorage-backed storage for Electron renderer.
  *  INI persistence happens in parallel via electronAPI.storageSetItem. */
@@ -66,11 +68,14 @@ const desktopExtensions: WorkbenchExtensions = {
   pathFieldRenderer: DesktopPathField,
   commandActions: desktopCommandActions,
   renderCommandEditorActions: ({ command, dirty }) => <CustomCommandActions command={command} dirty={dirty} />,
+  renderFieldAction: (fieldId, { openInspectorTab }) => fieldId === 'tools.targetSize.durationMinutes'
+    ? <TargetDurationProbeAction onOpenMediaProbe={() => openInspectorTab('diagnostics')} />
+    : null,
   settingsSections: desktopSettingsSections,
   panels: [{ id: 'config-file', label: '配置文件', render: () => <ConfigFilePanel /> }],
-  inputSectionPrefix: <MediaProbePanel />,
+  diagnosticsPanelPrefix: <MediaProbePanel />,
   getAudioEncoderCapabilities: () => {
-    const customPath = (localStorage.getItem('ffcodec-desktop-ffmpeg-path') ?? window.electronAPI?.storageGetItem('ffcodec-desktop-ffmpeg-path'))?.trim() || undefined
+    const customPath = getPreferredFFmpegPath()
     return window.electronAPI?.getAudioEncoderCapabilities(customPath) ?? Promise.resolve(null)
   },
   getAudioCapabilityOverride,

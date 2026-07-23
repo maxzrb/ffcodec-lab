@@ -3,6 +3,7 @@ import { useAppDialog, useI18n } from '@ffcodec/workbench'
 import { useEncodingJob } from './useEncodingJob'
 import { localizeJobError } from './encoding-job'
 import { parseCustomFfmpegCommand } from './custom-command'
+import { getPreferredFFmpegPath } from '../ffmpeg-path-selection'
 
 export function CustomCommandActions({ command, dirty }: { command: string; dirty: boolean }) {
   const { locale } = useI18n()
@@ -43,7 +44,7 @@ export function CustomCommandActions({ command, dirty }: { command: string; dirt
       tone: 'warning',
     })
     if (!accepted) return
-    const customFfmpegPath = (localStorage.getItem('ffcodec-desktop-ffmpeg-path') ?? window.electronAPI?.storageGetItem('ffcodec-desktop-ffmpeg-path'))?.trim() || undefined
+    const customFfmpegPath = getPreferredFFmpegPath()
     const result = await start({ executionPlan: parsed.plan, customFfmpegPath, overwriteMode: 'fail', commandSource: 'custom' })
     if (!result.ok) {
       await dialog.alert({

@@ -308,6 +308,38 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.queryByRole('tab', { name: '诊断 0' })).not.toBeInTheDocument()
   })
 
+  it('宿主注入媒体探测时合并诊断标签并将媒体信息显示在诊断上方', async () => {
+    testPlatform.extensions = {
+      diagnosticsPanelPrefix: <section aria-label="媒体信息探测">媒体信息探测内容</section>,
+    }
+    render(<TestWrapper />)
+
+    await userEvent.click(screen.getByRole('tab', { name: '媒体信息和诊断' }))
+
+    const mediaPanel = screen.getByLabelText('媒体信息探测')
+    const diagnosticPanel = screen.getByLabelText('诊断与建议')
+    expect(mediaPanel.compareDocumentPosition(diagnosticPanel) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+  })
+
+  it('目标时长字段动作可以跳转到媒体信息和诊断', async () => {
+    const config = createDefaultProjectConfig()
+    config.tools.targetSize.enabled = true
+    presetStore(config)
+    testPlatform.extensions = {
+      diagnosticsPanelPrefix: <section aria-label="媒体信息探测">媒体信息探测内容</section>,
+      renderFieldAction: (fieldId, { openInspectorTab }) => fieldId === 'tools.targetSize.durationMinutes'
+        ? <button type="button" onClick={() => openInspectorTab('diagnostics')}>前往媒体探测</button>
+        : null,
+    }
+    render(<TestWrapper />)
+
+    await openPanel('实用工具')
+    await userEvent.click(screen.getByRole('button', { name: '前往媒体探测' }))
+
+    expect(screen.getByRole('tab', { name: '媒体信息和诊断' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('媒体信息探测')).toBeInTheDocument()
+  })
+
   // -- 用例 1：NVENC 空间 AQ 可选开关 --
   it('NVENC spatial AQ optional switch persists explicit values in ProjectConfig', async () => {
     presetStore(makeConfig('h264_nvenc'))
@@ -825,7 +857,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<TestWrapper />)
     expect(screen.getByRole('link', { name: '在 GitHub 打开 FFCodec Lab 项目' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
-    expect(screen.getByText('FFCodec Lab v1.0')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab v1.2.0')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))

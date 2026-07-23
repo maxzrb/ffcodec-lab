@@ -1,7 +1,7 @@
 // ============================================================
 // FFmpeg Detection — priority search for ffmpeg executable.
 // Phase 6: custom path > bundled > system PATH > not found.
-// v1.1.1: two-level subdir search + multi-version detection.
+// 支持两级子目录搜索和多版本检测。
 // ============================================================
 
 import { execFile } from 'child_process'

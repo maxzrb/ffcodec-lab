@@ -3,11 +3,13 @@
 // Phase 6: persisted via localStorage + detect button.
 // ============================================================
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SettingsSectionExtension } from '@ffcodec/platform-api'
 import { useI18n } from '@ffcodec/workbench'
 
 const STORAGE_KEY = 'ffcodec-desktop-ffmpeg-path'
+const SELECTED_PATH_STORAGE_KEY = 'ffcodec-desktop-selected-ffmpeg-path'
+const SOURCE_STORAGE_KEY = 'ffcodec-desktop-ffmpeg-source'
 
 type DetectResult =
   | { kind: 'idle' }
@@ -23,10 +25,22 @@ function FFmpegPathSetting() {
   )
   const [detectResult, setDetectResult] = useState<DetectResult>({ kind: 'idle' })
 
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY) setPathValue(event.newValue ?? '')
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
   const handlePathChange = useCallback((value: string) => {
     setPathValue(value)
     const trimmed = value.trim()
     const api = window.electronAPI
+    if (api) void api.storageRemoveItem(SOURCE_STORAGE_KEY)
+    if (api) void api.storageRemoveItem(SELECTED_PATH_STORAGE_KEY)
+    try { localStorage.removeItem(SOURCE_STORAGE_KEY) } catch { /* ignore */ }
+    try { localStorage.removeItem(SELECTED_PATH_STORAGE_KEY) } catch { /* ignore */ }
     if (trimmed) {
       if (api) void api.storageSetItem(STORAGE_KEY, trimmed)
       try { localStorage.setItem(STORAGE_KEY, trimmed) } catch { /* ignore */ }

@@ -5,6 +5,7 @@ release/
 .vite/
 *.local
 .DS_Store
+ffmpeg-full.7z
 
 # pnpm
 .pnpm-store/

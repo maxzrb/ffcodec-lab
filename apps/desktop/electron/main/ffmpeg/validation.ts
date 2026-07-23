@@ -49,11 +49,12 @@ export function validateCustomExecutionPlan(plan: ExecutionPlan): string[] {
 export function validateBeforeExecution(
   plan: ExecutionPlan,
   overwriteMode: 'replace' | 'fail',
+  options: { allowNullOutput?: boolean } = {},
 ): ValidationResult {
   const errors: string[] = []
 
   // 1. Pure-structure validation (inlined from @ffcodec/command-plan)
-  const structErrors = validatePlanStructure(plan)
+  const structErrors = validatePlanStructure(plan, options.allowNullOutput === true)
   for (const e of structErrors) {
     errors.push(e)
   }
@@ -122,7 +123,7 @@ export function validateBeforeExecution(
 
 // ---- Inlined pure-structure validations (mirrors @ffcodec/command-plan) ----
 
-function validatePlanStructure(plan: ExecutionPlan): string[] {
+function validatePlanStructure(plan: ExecutionPlan, allowNullOutput: boolean): string[] {
   const errors: string[] = []
 
   if (plan.args.length === 0) {
@@ -135,7 +136,7 @@ function validatePlanStructure(plan: ExecutionPlan): string[] {
     }
   }
 
-  if (plan.outputPaths.length === 0) {
+  if (plan.outputPaths.length === 0 && !allowNullOutput) {
     errors.push(
       'Execution plan has no output path. For pass-1 null output this is expected; ' +
       'for single-pass it is an error.',

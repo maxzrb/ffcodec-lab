@@ -10,6 +10,8 @@ import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { buildExecutionPlans } from '@ffcodec/command-plan'
 import { useEncodingJob } from './useEncodingJob'
 import { localizeJobError } from './encoding-job'
+import { getPreferredFFmpegPath } from '../ffmpeg-path-selection'
+import { canRunExecutionPlans } from './execution-plan-guards'
 
 const catalog = loadCatalog()
 
@@ -28,11 +30,8 @@ function RunButton() {
   // Check validity: we need a valid command with at least one input and one output
   const canRun = useMemo(() => {
     const plan = pipeline.commandPlan
-    if (plan.invocations.length === 0) return false
-    const inv = plan.invocations[0]
-    if (!inv.inputs.length || !inv.output.path || inv.output.path === '-') return false
-    if (pipeline.hasErrors) return false
-    return true
+    const plans = buildExecutionPlans(plan)
+    return canRunExecutionPlans(plans, pipeline.hasErrors)
   }, [pipeline])
 
   const isRunning = jobState.phase === 'preparing' || jobState.phase === 'running' || jobState.phase === 'cancelling'
@@ -43,15 +42,12 @@ function RunButton() {
     const plans = buildExecutionPlans(pipeline.commandPlan)
     if (plans.length === 0) return
 
-    // For two-pass, execute the first plan (pass-1). Phase 12+ will handle
-    // sequential execution of both passes automatically.
-    const plan = plans[0]
-
-    // Resolve FFmpeg custom path from INI store (fallback to localStorage)
-    const customFfmpegPath = (localStorage.getItem('ffcodec-desktop-ffmpeg-path') ?? window.electronAPI?.storageGetItem('ffcodec-desktop-ffmpeg-path'))?.trim() || undefined
+    // 菜单选中版本优先，其次使用左栏自定义路径。
+    const customFfmpegPath = getPreferredFFmpegPath()
 
     const result = await start({
-      executionPlan: plan,
+      executionPlan: plans[0],
+      executionPlans: plans.length > 1 ? plans : undefined,
       customFfmpegPath,
       overwriteMode: 'replace',
     })
@@ -109,8 +105,8 @@ function RunButton() {
       title={
         !canRun
           ? (isZh
-            ? '请先完成编码器、输入和输出文件的配置'
-            : 'Configure an encoder, input and output files first')
+            ? (pipeline.hasErrors ? '当前配置存在错误，请先查看诊断与建议' : '请先完成编码器、输入和输出文件的配置')
+            : (pipeline.hasErrors ? 'Resolve the configuration errors before running' : 'Configure an encoder, input and output files first'))
           : (isZh ? '本地运行 FFmpeg 编码' : 'Run FFmpeg encoding locally')
       }
     >

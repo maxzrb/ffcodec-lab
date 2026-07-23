@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { PresetService } from '@ffcodec/workbench/features/presets/preset-service'
 import { getBuiltinPresets } from '@ffcodec/workbench/features/presets/preset-service'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { projectConfigSchema } from '@ffcodec/domain/config/config-schema'
+import { calculateTargetSize } from '@ffcodec/domain/tools/target-size'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 
 // In-memory storage adapter for testing
@@ -62,6 +65,14 @@ describe('PresetService', () => {
     const list = service.list()
     expect(list.length).toBe(2)
     expect(list[0].name).toBe('Second') // Most recent first
+  })
+
+  it('lists a large preset collection without truncation', () => {
+    for (let index = 0; index < 120; index++) {
+      service.save({ name: `Preset ${index}`, config: createDefaultProjectConfig() })
+    }
+
+    expect(service.list()).toHaveLength(120)
   })
 
   it('updates an existing preset', () => {
@@ -221,5 +232,26 @@ describe('Built-in presets', () => {
     for (const preset of getBuiltinPresets()) {
       expect(preset.config.output.containerId, preset.name).not.toBe('webm')
     }
+  })
+
+  it('上传材料预设使用兼容配置和 1900 MiB 目标大小', () => {
+    const preset = getBuiltinPresets().find((item) => item.name === '上传材料专用')
+    expect(preset).toBeDefined()
+    if (!preset) return
+
+    expect(projectConfigSchema.safeParse(preset.config).success).toBe(true)
+    expect(preset.config.output.containerId).toBe('mp4')
+    expect(preset.config.video).toMatchObject({
+      encoderId: 'libx264',
+      profile: 'main',
+      pixelFormat: 'yuv420p',
+    })
+    expect(preset.config.audio).toMatchObject({ encoderId: 'aac', bitrate: '128k' })
+    expect(preset.config.tools.targetSize).toMatchObject({ enabled: true, targetMiB: 1900 })
+    expect(preset.config.customArgs.preOutputArgs).toEqual(['-movflags', '+faststart'])
+
+    const result = calculateTargetSize(preset.config, loadCatalog())
+    expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([])
+    expect(result.videoBitrateKbps).toBeGreaterThan(0)
   })
 })

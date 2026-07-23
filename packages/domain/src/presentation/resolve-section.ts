@@ -1624,7 +1624,7 @@ export function resolveUtilityToolsSection(
         ...common,
         id: 'tools.targetSize.durationMinutes',
         label: '完整视频时长（分钟）',
-        description: '请填写完整输入时长；网页不会读取或上传媒体文件。',
+        description: '请填写完整输入时长；Desktop 可从媒体信息探测结果自动填入，网页不会读取或上传媒体文件。',
         controlType: 'number',
         value: tool.durationMinutes,
         min: 0.01,

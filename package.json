@@ -1,6 +1,6 @@
 {
   "name": "ffcodec-lab",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
   "packageManager": "pnpm@11.15.1",
   "scripts": {
@@ -10,6 +10,9 @@
     "build:web": "pnpm --filter @ffcodec/web build",
     "build:desktop": "pnpm --filter @ffcodec/desktop build",
     "build:desktop:win": "pnpm --filter @ffcodec/desktop build:win",
+    "build:desktop:win:full": "pnpm --filter @ffcodec/desktop build:win:full",
+    "build:desktop:win:base": "pnpm --filter @ffcodec/desktop build:win:base",
+    "build:desktop:win:onedir": "pnpm --filter @ffcodec/desktop build:win:onedir",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "lint": "pnpm -r --if-present lint",

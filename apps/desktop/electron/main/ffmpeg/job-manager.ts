@@ -5,6 +5,7 @@
 
 import { app } from 'electron'
 import type { BrowserWindow } from 'electron'
+import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { detectFFmpeg, tryFFmpegPath } from '../ffmpeg-detect'
@@ -22,12 +23,21 @@ import type {
   FFmpegJobStartRequest,
   FFmpegJobPhase,
   FFmpegJobState,
+  ExecutionPlan,
 } from './types'
 
 // ---- Internal state type ----
 
 interface InternalJobState extends FFmpegJobState {
   _cancelFn?: () => void
+  _plans: ExecutionPlan[]
+  _currentPlanIndex: number
+  _ffmpegPath: string
+  _logDir: string
+  _createdAt: number
+  _startedAt: number | null
+  _overwriteMode: FFmpegJobStartRequest['overwriteMode']
+  _commandSource?: FFmpegJobStartRequest['commandSource']
 }
 
 // ---- Singleton state ----
@@ -84,55 +94,58 @@ export async function launchJob(
   }
 
   // ---- Pre-execution validation ----
-  const { executionPlan: plan, overwriteMode } = request
+  const plans = request.executionPlans?.length
+    ? request.executionPlans
+    : [request.executionPlan]
+  const { overwriteMode } = request
 
   if (request.commandSource === 'custom') {
-    const customErrors = validateCustomExecutionPlan(plan)
-    if (customErrors.length > 0) return { ok: false, error: customErrors.join('\n') }
-  }
-
-  const validation = validateBeforeExecution(plan, overwriteMode)
-  if (!validation.ok) {
-    return {
-      ok: false,
-      error: validation.errors.join('\n'),
+    for (const plan of plans) {
+      const customErrors = validateCustomExecutionPlan(plan)
+      if (customErrors.length > 0) return { ok: false, error: customErrors.join('\n') }
     }
   }
 
-  // 总帧优先由 ffprobe 提供，无法探测时不阻止编码。
-  const progressBasis = await probeMediaProgress(ffmpegPath, plan.inputPaths[0])
-  const enrichedRequest: FFmpegJobStartRequest = {
-    ...request,
-    executionPlan: {
-      ...plan,
-      expectedDurationMs: plan.expectedDurationMs ?? progressBasis.durationMs ?? undefined,
-      expectedTotalFrames: progressBasis.totalFrames ?? undefined,
-    },
+  for (const [index, plan] of plans.entries()) {
+    const validation = validateBeforeExecution(plan, overwriteMode, {
+      allowNullOutput: plans.length > 1 && index === 0,
+    })
+    if (!validation.ok) {
+      return {
+        ok: false,
+        error: validation.errors.join('\n'),
+      }
+    }
   }
 
   // ---- Create job ----
   const jobId = crypto.randomUUID()
   const createdAt = Date.now()
   const logDir = path.join(app.getPath('userData'), 'logs')
+  const passLogPrefix = path.join(logDir, `ffcodec-pass-${jobId}`)
+
+  // 总帧优先由 ffprobe 提供，无法探测时不阻止编码。
+  const progressBasis = await probeMediaProgress(ffmpegPath, plans[0].inputPaths[0])
+  const enrichedPlans = plans.map((plan) => ({
+    ...plan,
+    args: replacePassLogPath(plan.args, passLogPrefix),
+    expectedDurationMs: plan.expectedDurationMs ?? progressBasis.durationMs ?? undefined,
+    expectedTotalFrames: plan.expectedTotalFrames ?? progressBasis.totalFrames ?? undefined,
+  }))
 
   const { snapshot, cancel } = startJob(
-    enrichedRequest,
+    {
+      ...request,
+      executionPlan: enrichedPlans[0],
+      executionPlans: undefined,
+    },
     ffmpegPath,
     logDir,
     jobId,
     createdAt,
     {
-      onProgress: (snap) => {
-        activeJob!.snapshot = snap
-        emitProgress(snap)
-      },
-      onFinish: (snap) => {
-        activeJob!.snapshot = snap
-        finishEncodingHistory(snap)
-        emitProgress(snap)
-        emitHistoryChanged()
-        activeJob = null
-      },
+      onProgress: handleExecutorProgress,
+      onFinish: handleExecutorFinish,
     },
   )
 
@@ -142,6 +155,14 @@ export async function launchJob(
     process: null, // executor manages the process internally
     cancelRequested: false,
     cancelTimeoutId: null,
+    _plans: enrichedPlans,
+    _currentPlanIndex: 0,
+    _ffmpegPath: ffmpegPath,
+    _logDir: logDir,
+    _createdAt: createdAt,
+    _startedAt: snapshot.startedAt,
+    _overwriteMode: overwriteMode,
+    _commandSource: request.commandSource,
   }
 
   // Attach cancel to the stored state
@@ -238,6 +259,87 @@ export async function shutdownActiveJob(): Promise<void> {
 }
 
 // ---- Internal helpers ----
+
+function handleExecutorProgress(snapshot: FFmpegJobSnapshot): void {
+  if (!activeJob || activeJob.snapshot.jobId !== snapshot.jobId) return
+  const sequenceSnapshot = {
+    ...snapshot,
+    startedAt: activeJob._startedAt ?? snapshot.startedAt,
+  }
+  activeJob.snapshot = sequenceSnapshot
+  emitProgress(sequenceSnapshot)
+}
+
+function handleExecutorFinish(snapshot: FFmpegJobSnapshot): void {
+  const job = activeJob
+  if (!job || job.snapshot.jobId !== snapshot.jobId) return
+
+  const sequenceSnapshot = {
+    ...snapshot,
+    startedAt: job._startedAt ?? snapshot.startedAt,
+  }
+  job.snapshot = sequenceSnapshot
+  const hasNextPlan = job._currentPlanIndex < job._plans.length - 1
+  if (sequenceSnapshot.phase === 'completed' && hasNextPlan) {
+    job._currentPlanIndex += 1
+    startActivePlan(job)
+    return
+  }
+
+  finishEncodingHistory(sequenceSnapshot)
+  cleanupPassLogFiles(job)
+  emitProgress(sequenceSnapshot)
+  emitHistoryChanged()
+  activeJob = null
+}
+
+function startActivePlan(job: InternalJobState): void {
+  const plan = job._plans[job._currentPlanIndex]
+  const { snapshot, cancel } = startJob(
+    {
+      executionPlan: plan,
+      overwriteMode: job._overwriteMode,
+      commandSource: job._commandSource,
+    },
+    job._ffmpegPath,
+    job._logDir,
+    job.snapshot.jobId,
+    job._createdAt,
+    {
+      onProgress: handleExecutorProgress,
+      onFinish: handleExecutorFinish,
+    },
+  )
+
+  job.snapshot = {
+    ...snapshot,
+    startedAt: job._startedAt ?? snapshot.startedAt,
+  }
+  job._cancelFn = cancel
+  emitProgress(job.snapshot)
+}
+
+/** 将相对双遍统计前缀替换为应用数据目录中的任务专用路径。 */
+function replacePassLogPath(args: string[], passLogPrefix: string): string[] {
+  const result = [...args]
+  for (let index = 0; index < result.length - 1; index++) {
+    if (result[index] === '-passlogfile') result[index + 1] = passLogPrefix
+  }
+  return result
+}
+
+/** 任务结束后清理 x264/x265 等编码器生成的双遍统计临时文件。 */
+function cleanupPassLogFiles(job: InternalJobState): void {
+  const prefix = `ffcodec-pass-${job.snapshot.jobId}`
+  try {
+    for (const name of fs.readdirSync(job._logDir)) {
+      if (!name.startsWith(prefix)) continue
+      fs.unlinkSync(path.join(job._logDir, name))
+    }
+  } catch {
+    // 临时文件可能不存在或仍被系统占用，不影响任务最终状态。
+  }
+}
 
 function emitProgress(snapshot: FFmpegJobSnapshot): void {
   if (mainWindow && !mainWindow.isDestroyed()) {

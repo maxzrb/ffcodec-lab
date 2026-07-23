@@ -31,7 +31,7 @@ export function buildCommandPlan(
 
   const invocation: CommandInvocation = {
     executable: 'ffmpeg',
-    globalArgs: buildGlobalArgs(config, isTwoPass),
+    globalArgs: buildGlobalArgs(config),
     inputs: buildInputs(config),
     output: buildOutput(config, catalog, targetSize),
     purpose: isTwoPass ? 'pass-1' : 'single-pass',
@@ -47,12 +47,9 @@ export function buildCommandPlan(
   if (isTwoPass) {
     const pass2 = structuredClone(invocation)
     pass2.purpose = 'pass-2'
-    pass2.globalArgs = buildGlobalArgs(config, true).map((a) =>
-      a.id === 'global.pass'
-        ? { ...a, tokens: ['-pass', '2'], id: 'global.pass2' }
-        : a
-    )
+    pass2.output.qualityArgs = [...buildPassArgs(2), ...pass2.output.qualityArgs]
 
+    invocation.output.qualityArgs = [...buildPassArgs(1), ...invocation.output.qualityArgs]
     invocation.output = buildFirstPassOutput(invocation.output)
     plan.invocations.push(pass2)
   }
@@ -69,6 +66,8 @@ function migrateLegacyStreams(
   mode: string | undefined,
 ): { index: number; codecMode: 'encode' | 'copy' }[] {
   if (mode === 'disabled') return []
+  // 新配置的空数组表示明确不选择任何流；只有旧字段实际存在时才执行回退迁移。
+  if (indexes === undefined && singleIndex === undefined && _preserveAll === undefined) return []
   // preserveAll 无法用固定 index 表达"全部流"，返回空数组交由调用方处理。
   if (_preserveAll) return []
   const list = (indexes && indexes.length > 0) ? indexes : [singleIndex ?? 0]
@@ -119,7 +118,7 @@ function buildFirstPassOutput(output: OutputSpec): OutputSpec {
   }
 }
 
-function buildGlobalArgs(config: ProjectConfig, isTwoPass: boolean): CommandArg[] {
+function buildGlobalArgs(config: ProjectConfig): CommandArg[] {
   const args: CommandArg[] = []
 
   if (config.output.overwrite) {
@@ -129,21 +128,6 @@ function buildGlobalArgs(config: ProjectConfig, isTwoPass: boolean): CommandArg[
       phase: 'GLOBAL',
       tokens: ['-y'],
       explanationId: 'expl.param.overwrite',
-    })
-  }
-
-  if (isTwoPass) {
-    args.push({
-      id: 'global.pass',
-      originId: 'rule.twopass',
-      phase: 'GLOBAL',
-      tokens: ['-pass', '1'],
-    })
-    args.push({
-      id: 'global.passlogfile',
-      originId: 'rule.twopass',
-      phase: 'GLOBAL',
-      tokens: ['-passlogfile', 'ffmpeg2pass'],
     })
   }
 
@@ -159,6 +143,24 @@ function buildGlobalArgs(config: ProjectConfig, isTwoPass: boolean): CommandArg[
   }
 
   return args
+}
+
+/** 双遍控制参数属于输出编码选项，必须位于输入文件之后。 */
+function buildPassArgs(pass: 1 | 2): CommandArg[] {
+  return [
+    {
+      id: `quality.pass.${pass}`,
+      originId: 'rule.twopass',
+      phase: 'VIDEO_RATE_CONTROL',
+      tokens: ['-pass', String(pass)],
+    },
+    {
+      id: `quality.passlogfile.${pass}`,
+      originId: 'rule.twopass',
+      phase: 'VIDEO_RATE_CONTROL',
+      tokens: ['-passlogfile', 'ffmpeg2pass'],
+    },
+  ]
 }
 
 function buildInputs(config: ProjectConfig): InputSpec[] {

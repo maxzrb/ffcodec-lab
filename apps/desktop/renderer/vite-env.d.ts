@@ -19,6 +19,13 @@ declare global {
       expectedDurationMs?: number
       expectedTotalFrames?: number
     }
+    executionPlans?: Array<{
+      args: string[]
+      inputPaths: string[]
+      outputPaths: string[]
+      expectedDurationMs?: number
+      expectedTotalFrames?: number
+    }>
     customFfmpegPath?: string
     overwriteMode: 'replace' | 'fail'
     commandSource?: 'generated' | 'custom'

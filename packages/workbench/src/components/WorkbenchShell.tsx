@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { ResolvedWorkspacePanel } from '@ffcodec/domain/presentation/resolved-field'
 import type { PathFieldRenderer, SettingsSectionExtension } from '@ffcodec/platform-api'
 import { useI18n } from '../features/i18n/i18n'
@@ -52,6 +52,12 @@ export function WorkbenchShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => platform.storage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true',
   )
+
+  useEffect(() => {
+    const openInspector = () => setMobileInspectorOpen(true)
+    window.addEventListener('ffcodec:open-inspector', openInspector)
+    return () => window.removeEventListener('ffcodec:open-inspector', openInspector)
+  }, [])
 
   const toggleSidebar = () => {
     setSidebarCollapsed((collapsed) => {

@@ -15,6 +15,17 @@ function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
 }
 
 describe('Command AST — Invariants', () => {
+  it('新配置明确不选择字幕时不会回退映射不存在的字幕流 0', () => {
+    const config = makeConfig()
+    config.streams.preserveAllSubtitleStreams = false
+    config.streams.subtitleStreams = []
+
+    const rendered = renderBash(buildCommandPlan(config, catalog, []))
+
+    expect(rendered.text).not.toContain('-map 0:s:0')
+    expect(rendered.text).not.toContain('-map 0:s?')
+  })
+
   it('高级质量和色彩参数默认不发射，显式设置后才进入命令', () => {
     const config = makeConfig()
     let rendered = renderBash(buildCommandPlan(config, catalog, []))
@@ -281,12 +292,14 @@ describe('Command AST — Invariants', () => {
     const pass1 = renderBash({ invocations: [plan.invocations[0]], messages: [] }).text
     const pass2 = renderBash({ invocations: [plan.invocations[1]], messages: [] }).text
     expect(pass1).toContain('-pass 1')
+    expect(pass1.indexOf('-pass 1')).toBeGreaterThan(pass1.indexOf('-i '))
     expect(pass1).toContain('-an')
     expect(pass1).toContain('-sn')
     expect(pass1).toContain('-f null -')
     expect(pass1).not.toContain('-c:a')
     expect(pass1).not.toContain(config.output.path)
     expect(pass2).toContain('-pass 2')
+    expect(pass2.indexOf('-pass 2')).toBeGreaterThan(pass2.indexOf('-i '))
     expect(pass2).toContain('-c:a aac')
     expect(pass2).toContain(config.output.path)
   })

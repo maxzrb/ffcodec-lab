@@ -3,42 +3,19 @@
 // 使用与其他折叠卡片一致的 parameter-section 样式。
 // ============================================================
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useBuilderStore, useI18n } from '@ffcodec/workbench'
-
-// -- 探针结果类型（与主进程 probe-media.ts 保持同步） --
-
-interface ProbeStreamInfo {
-  index: number
-  codecType: 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown'
-  codecName?: string
-  codecLongName?: string
-  width?: number
-  height?: number
-  pixFmt?: string
-  rFrameRate?: string
-  avgFrameRate?: string
-  sampleRate?: number
-  channels?: number
-  channelLayout?: string
-  sampleFmt?: string
-  duration?: number
-  tags?: Record<string, string>
-  profile?: string
-}
-
-interface ProbeResult {
-  streams: ProbeStreamInfo[]
-  format?: {
-    filename?: string
-    formatName?: string
-    formatLongName?: string
-    duration?: number
-    bitRate?: number
-    size?: number
-    tags?: Record<string, string>
-  }
-}
+import { getPreferredFFmpegPath } from '../ffmpeg-path-selection'
+import {
+  applyProbeStreamsToConfig,
+  type ProbeResult,
+  type ProbeStreamInfo,
+} from './media-probe-model'
+import {
+  clearMediaProbeResult,
+  setMediaProbeResult,
+  useMediaProbeSnapshot,
+} from './media-probe-store'
 
 // -- helpers --
 
@@ -94,11 +71,10 @@ function codecLabel(info: ProbeStreamInfo): string {
 // -- persistent state (survives panel switching, cleared on app exit) --
 
 let _tools: { ffmpeg: boolean; ffprobe: boolean; ffplay: boolean } | null = null
-let _probeResult: ProbeResult | null = null
 let _error: string | null = null
 const _listeners = new Set<() => void>()
 
-function usePersistentState<T>(key: 'tools' | 'probeResult' | 'error'): [T | null, (v: T | null) => void] {
+function usePersistentState<T>(key: 'tools' | 'error'): [T | null, (v: T | null) => void] {
   const [, forceUpdate] = useState(0)
   useEffect(() => {
     const listener = () => forceUpdate((n) => n + 1)
@@ -106,13 +82,12 @@ function usePersistentState<T>(key: 'tools' | 'probeResult' | 'error'): [T | nul
     return () => { _listeners.delete(listener) }
   }, [])
 
-  const value = (key === 'tools' ? _tools : key === 'probeResult' ? _probeResult : _error) as T | null
-  const setValue = (v: T | null) => {
-    if (key === 'tools') _tools = v as any
-    else if (key === 'probeResult') _probeResult = v as any
-    else _error = v as any
+  const value = (key === 'tools' ? _tools : _error) as T | null
+  const setValue = useCallback((v: T | null) => {
+    if (key === 'tools') _tools = v as typeof _tools
+    else _error = v as typeof _error
     _listeners.forEach((fn) => fn())
-  }
+  }, [key])
   return [value, setValue]
 }
 
@@ -123,41 +98,65 @@ export function MediaProbePanel() {
   const config = useBuilderStore((s) => s.config)
   const setConfig = useBuilderStore((s) => s.setConfig)
   const inputPath = config.input.path
+  const panelRef = useRef<HTMLElement>(null)
+  const handledFocusRequest = useRef(0)
 
   const [tools, setTools] = usePersistentState<{ ffmpeg: boolean; ffprobe: boolean; ffplay: boolean }>('tools')
-  const [probeResult, setProbeResult] = usePersistentState<ProbeResult>('probeResult')
   const [error, setError] = usePersistentState<string>('error')
+  const probeSnapshot = useMediaProbeSnapshot()
+  const probeResult = probeSnapshot.inputPath === inputPath ? probeSnapshot.result : null
   const [probing, setProbing] = useState(false)
   const [expanded, setExpanded] = useState(true)
-  const [syncEnabled, setSyncEnabled] = useState(false)
+  const [syncStreamsEnabled, setSyncStreamsEnabled] = useState(true)
+
+  useEffect(() => {
+    if (probeSnapshot.inputPath === null || probeSnapshot.inputPath === inputPath) return
+    clearMediaProbeResult()
+    setError(null)
+  }, [inputPath, probeSnapshot.inputPath, setError])
+
+  useEffect(() => {
+    if (probeSnapshot.focusRequest <= handledFocusRequest.current) return
+    handledFocusRequest.current = probeSnapshot.focusRequest
+    setExpanded(true)
+    window.requestAnimationFrame(() => {
+      const inspector = panelRef.current?.closest<HTMLElement>('.workbench-inspector')
+      inspector?.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+  }, [probeSnapshot.focusRequest])
 
   useEffect(() => {
     let cancelled = false
     void (async () => {
       try {
-        const customPath = localStorage.getItem('ffcodec-desktop-ffmpeg-path')?.trim() || undefined
+        const customPath = getPreferredFFmpegPath()
         const info = await window.electronAPI?.getFFmpegToolsInfo(customPath)
         if (!cancelled && info) setTools({ ffmpeg: info.ffmpeg, ffprobe: info.ffprobe, ffplay: info.ffplay })
       } catch { /* ignore */ }
     })()
     return () => { cancelled = true }
-  }, [])
+  }, [setTools])
 
   const checkTools = useCallback(async (customPath?: string) => {
     try {
       const info = await window.electronAPI?.getFFmpegToolsInfo(customPath)
       if (info) setTools({ ffmpeg: info.ffmpeg, ffprobe: info.ffprobe, ffplay: info.ffplay })
     } catch { /* ignore */ }
-  }, [])
+  }, [setTools])
+
+  const syncProbeStreams = useCallback((result: ProbeResult) => {
+    const currentConfig = useBuilderStore.getState().config
+    setConfig(applyProbeStreamsToConfig(currentConfig, result))
+  }, [setConfig])
 
   const handleProbe = useCallback(async () => {
     if (!inputPath || !inputPath.trim()) return
     setError(null)
     setProbing(true)
-    setProbeResult(null)
+    clearMediaProbeResult()
 
     try {
-      const customPath = localStorage.getItem('ffcodec-desktop-ffmpeg-path')?.trim()
+      const customPath = getPreferredFFmpegPath()
       const ffmpegInfo = await window.electronAPI?.detectFFmpeg(customPath || undefined)
       if (!ffmpegInfo?.found || !ffmpegInfo.path) {
         setError(locale === 'zh-CN' ? '未检测到 FFmpeg，无法使用 ffprobe。' : 'FFmpeg not detected, cannot run ffprobe.')
@@ -169,41 +168,28 @@ export function MediaProbePanel() {
         setError(locale === 'zh-CN' ? 'ffprobe 探测失败，请确认输入文件路径正确且可访问。' : 'ffprobe probe failed. Verify the input file path is correct and accessible.')
         return
       }
-      setProbeResult(result as unknown as ProbeResult)
+      const data = result as unknown as ProbeResult
+      setMediaProbeResult(inputPath, data)
       setExpanded(true)
-
-      // 联动：将探测到的流写入配置
-      if (syncEnabled) {
-        const data = result as unknown as ProbeResult
-        const currentConfig = useBuilderStore.getState().config
-        const vStreams = data.streams
-          .filter((s) => s.codecType === 'video')
-          .map((s) => ({ index: s.index, codecMode: 'encode' as const }))
-        const aStreams = data.streams
-          .filter((s) => s.codecType === 'audio')
-          .map((s) => ({ index: s.index, codecMode: 'encode' as const }))
-        const sStreams = data.streams
-          .filter((s) => s.codecType === 'subtitle')
-          .map((s) => ({ index: s.index, codecMode: 'encode' as const }))
-        setConfig({
-          ...currentConfig,
-          streams: {
-            ...currentConfig.streams,
-            preserveAllVideoStreams: false,
-            preserveAllAudioStreams: false,
-            preserveAllSubtitleStreams: false,
-            videoStreams: vStreams.length > 0 ? vStreams : currentConfig.streams.videoStreams,
-            audioStreams: aStreams.length > 0 ? aStreams : currentConfig.streams.audioStreams,
-            subtitleStreams: sStreams,
-          },
-        })
-      }
+      if (syncStreamsEnabled) syncProbeStreams(data)
     } catch (err: unknown) {
       setError(String(err instanceof Error ? err.message : err))
     } finally {
       setProbing(false)
     }
-  }, [inputPath, locale, checkTools, syncEnabled])
+  }, [
+    inputPath,
+    locale,
+    checkTools,
+    setError,
+    syncProbeStreams,
+    syncStreamsEnabled,
+  ])
+
+  const handleStreamsSyncChange = useCallback((enabled: boolean) => {
+    setSyncStreamsEnabled(enabled)
+    if (enabled && probeResult) syncProbeStreams(probeResult)
+  }, [probeResult, syncProbeStreams])
 
   const ffprobeAvailable = tools?.ffprobe === true
   const hasInput = inputPath && inputPath.trim().length > 0
@@ -224,7 +210,7 @@ export function MediaProbePanel() {
   const idle = !probed && !probing
 
   return (
-    <section className="parameter-section">
+    <section ref={panelRef} className="parameter-section media-probe-panel">
       <div className="parameter-section__header">
         <button
           type="button"
@@ -240,22 +226,25 @@ export function MediaProbePanel() {
           </span>
         </button>
 
-        <div className="parameter-section__actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="parameter-section__actions media-probe-panel__actions">
           <button
             type="button"
-            className="button"
+            className="button-ghost media-probe-panel__action media-probe-panel__action--probe"
             disabled={!ffprobeAvailable || !hasInput || probing}
             onClick={handleProbe}
-            style={{ fontSize: '12px', padding: '2px 10px' }}
+            title={zh ? '使用 ffprobe 分析当前输入文件' : 'Analyze the current input with ffprobe'}
           >
             {probing ? (zh ? '探测中...' : 'Probing...') : (zh ? '探测' : 'Probe')}
           </button>
           {probed && (
             <button
               type="button"
-              className="button"
-              onClick={() => { setProbeResult(null); setError(null) }}
-              style={{ fontSize: '12px', padding: '2px 10px', marginLeft: 6 }}
+              className="button-ghost media-probe-panel__action media-probe-panel__action--clear"
+              onClick={() => {
+                clearMediaProbeResult()
+                setError(null)
+              }}
+              title={zh ? '清除当前媒体探测结果' : 'Clear the current media probe result'}
             >
               {zh ? '清空' : 'Clear'}
             </button>
@@ -286,11 +275,11 @@ export function MediaProbePanel() {
               <label className="switch-control">
                 <input
                   type="checkbox"
-                  checked={syncEnabled}
-                  onChange={(e) => setSyncEnabled(e.target.checked)}
+                  checked={syncStreamsEnabled}
+                  onChange={(event) => handleStreamsSyncChange(event.target.checked)}
                 />
                 <span className="switch-control__track" />
-                <span>{zh ? '联动流选择' : 'Sync'}</span>
+                <span>{zh ? '联动流选择' : 'Sync streams'}</span>
               </label>
             </span>
           </div>

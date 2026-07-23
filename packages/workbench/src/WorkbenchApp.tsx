@@ -37,7 +37,7 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = 'v1.1.1'
+const APP_VERSION = 'v1.2.0'
 
 export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {
   const { storage, extensions } = usePlatform()
@@ -95,6 +95,15 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
   const [showPresetManager, setShowPresetManager] = useState(false)
   const [shareNotice, setShareNotice] = useState<string | null>(null)
   const [inspectorTab, setInspectorTab] = useState<string>('command')
+
+  const handleOpenInspectorTab = useCallback((tabId: string) => {
+    setInspectorTab(tabId)
+    window.dispatchEvent(new CustomEvent('ffcodec:open-inspector'))
+  }, [])
+
+  const renderFieldAction = useCallback((fieldId: string) => (
+    extensions?.renderFieldAction?.(fieldId, { openInspectorTab: handleOpenInspectorTab })
+  ), [extensions?.renderFieldAction, handleOpenInspectorTab])
 
   useEffect(() => {
     if (!window.location.hash) return
@@ -366,7 +375,6 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
           <>
             {activePanel.sections.map((section) => (
               <Fragment key={section.id}>
-                {section.id === 'section.input.streams-container' && extensions?.inputSectionPrefix}
                 <ParameterSection
                   section={section}
                   expanded={expandedSections[section.id] ?? true}
@@ -375,6 +383,7 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                   onExplain={handleExplain}
                   highlightedFieldId={highlightedFieldId}
                   pathFieldRenderer={extensions?.pathFieldRenderer}
+                  renderFieldAction={renderFieldAction}
                   actions={section.id === 'section.subtitle' ? (
                     <SubtitleSectionActions
                       tracks={config.subtitle.tracks}
@@ -397,7 +406,9 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                 {isZh ? '命令' : 'Command'}
               </button>
               <button type="button" role="tab" aria-selected={inspectorTab === 'diagnostics'} onClick={() => setInspectorTab('diagnostics')}>
-                {isZh ? '诊断' : 'Diagnostics'}
+                {extensions?.diagnosticsPanelPrefix
+                  ? (isZh ? '媒体信息和诊断' : 'Media & Diagnostics')
+                  : (isZh ? '诊断' : 'Diagnostics')}
                 {view.messages.length > 0 && (
                   <span className="inspector-tab__badge">{view.messages.length}</span>
                 )}
@@ -438,7 +449,8 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                 {commandInspectorFooter}
               </div>
             ) : inspectorTab === 'diagnostics' ? (
-              <div className="inspector-panel" key="diagnostics">
+              <div className="inspector-panel diagnostics-workspace" key="diagnostics">
+                {extensions?.diagnosticsPanelPrefix}
                 <DiagnosticPanel
                   diagnostics={view.messages}
                   catalog={catalog}

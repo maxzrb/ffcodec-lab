@@ -229,6 +229,55 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
       config: createDefaultProjectConfig(),
     },
     {
+      name: '上传材料专用',
+      description: 'MP4 + H.264 Main/yuv420p + AAC 128k，目标 1900 MiB；应用后请填写素材实际时长',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        output: {
+          ...createDefaultProjectConfig().output,
+          path: 'output.mp4',
+          containerId: 'mp4',
+        },
+        streams: {
+          ...createDefaultProjectConfig().streams,
+          videoStreams: [{ index: 0, codecMode: 'encode' }],
+          audioStreams: [{ index: 0, codecMode: 'encode' }],
+          subtitleStreams: [],
+          preserveAllVideoStreams: false,
+          preserveAllAudioStreams: false,
+          preserveAllSubtitleStreams: false,
+        },
+        video: {
+          ...createDefaultProjectConfig().video,
+          encoderId: 'libx264',
+          preset: 'medium',
+          profile: 'main',
+          tune: 'auto',
+          pixelFormat: 'yuv420p',
+        },
+        audio: {
+          ...createDefaultProjectConfig().audio,
+          encoderId: 'aac',
+          bitrate: '128k',
+          channelLayout: 'stereo',
+          sampleRate: 48000,
+        },
+        tools: {
+          targetSize: {
+            enabled: true,
+            targetMiB: 1900,
+            durationMinutes: 60,
+            overheadPercent: 5,
+          },
+        },
+        customArgs: {
+          ...createDefaultProjectConfig().customArgs,
+          preOutputArgs: ['-movflags', '+faststart'],
+        },
+      },
+    },
+    {
       name: 'H.265 高质量',
       description: 'libx265 CRF 24 + Opus 128k，HEVC 高效率编码',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,

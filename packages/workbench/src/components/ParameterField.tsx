@@ -8,6 +8,7 @@ import type { ResolvedField } from '@ffcodec/domain/presentation/resolved-field'
 import { useI18n } from '../features/i18n/i18n'
 import { Dropdown } from './Dropdown'
 import type { PathFieldRenderer } from '@ffcodec/platform-api'
+import type { ReactNode } from 'react'
 import { AacCoderPicker, AudioEncoderPicker } from './AudioEncoderPicker'
 
 interface ParameterFieldProps {
@@ -17,9 +18,10 @@ interface ParameterFieldProps {
   highlighted?: boolean
   /** Platform-specific path field renderer (e.g. Browse button on desktop). */
   pathFieldRenderer?: PathFieldRenderer
+  action?: ReactNode
 }
 
-export function ParameterField({ field, onChange, onExplain, highlighted, pathFieldRenderer }: ParameterFieldProps) {
+export function ParameterField({ field, onChange, onExplain, highlighted, pathFieldRenderer, action }: ParameterFieldProps) {
   const { locale, text } = useI18n()
   if (!field.visible) return null
 
@@ -59,7 +61,12 @@ export function ParameterField({ field, onChange, onExplain, highlighted, pathFi
         </div>
       )}
 
-      {renderControl(field, onChange, field.disabled, controlId, text, pathFieldRenderer)}
+      {action ? (
+        <div className="param-field__control-row">
+          {renderControl(field, onChange, field.disabled, controlId, text, pathFieldRenderer)}
+          <div className="param-field__action">{action}</div>
+        </div>
+      ) : renderControl(field, onChange, field.disabled, controlId, text, pathFieldRenderer)}
 
       {field.disabled && field.disabledReason && (
         <DisabledReason reason={text(field.disabledReason)} locale={locale} />
