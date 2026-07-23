@@ -787,6 +787,7 @@ code {
   color: var(--text-soft);
   text-align: left;
   cursor: pointer;
+  font-size: 15px;
 }
 
 .workbench-nav__item:hover {
@@ -802,7 +803,7 @@ code {
 
 .workbench-nav__short {
   display: none;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
