@@ -39,7 +39,7 @@ type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
 const APP_VERSION = 'v1.2.2'
-const RELEASE_URL = `${PROJECT_URL}/releases/tag/${APP_VERSION}`
+const RELEASE_URL = `${PROJECT_URL}/releases`
 
 export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {
   const { storage, extensions } = usePlatform()
@@ -377,8 +377,8 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={isZh
-                  ? `打开 FFCodec Lab desktop ${APP_VERSION} Release 页面`
-                  : `Open the FFCodec Lab desktop ${APP_VERSION} release`}
+                  ? '打开 FFCodec Lab Releases 页面'
+                  : 'Open FFCodec Lab releases'}
                 title={RELEASE_URL}
               >
                 FFCodec Lab desktop {APP_VERSION}

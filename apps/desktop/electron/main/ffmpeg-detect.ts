@@ -44,11 +44,11 @@ const BUNDLED_SUBDIRS = ['', 'ffmpeg', 'bin', 'tools', 'resources/ffmpeg']
 
 // ---- Version parsing ----
 
-function parseVersion(stdout: string): { version: string; fullVersion: string } {
-  const firstLine = stdout.split('\n')[0] ?? ''
+function parseVersion(stdout: string): { version?: string; fullVersion: string } {
+  const firstLine = stdout.trimStart().split(/\r?\n/)[0] ?? ''
   const fullVersion = firstLine.trim()
-  const match = firstLine.match(/ffmpeg\s+version\s+(\S+)/i)
-  const version = match?.[1] ?? 'unknown'
+  const match = fullVersion.match(/^ffmpeg\s+version\s+(\S+)/i)
+  const version = match?.[1]
   return { version, fullVersion }
 }
 
@@ -64,6 +64,14 @@ export async function tryFFmpegPath(ffmpegPath: string, source: FFmpegInfo['sour
   try {
     const { stdout } = await runExecFile(ffmpegPath, ['-version'])
     const { version, fullVersion } = parseVersion(stdout)
+    if (!version) {
+      return {
+        found: false,
+        path: ffmpegPath,
+        source,
+        error: 'Executable did not identify itself as FFmpeg',
+      }
+    }
     return { found: true, version, fullVersion, path: ffmpegPath, source }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
@@ -86,7 +94,7 @@ function runExecFile(file: string, args: string[]): Promise<{ stdout: string; st
 // ---- Bundled search paths (two-level) ----
 
 /**
- * 获取 baseDir 下两级子目录内所有可能的 ffmpeg/ffprobe 路径。
+ * 获取 baseDir 下两级子目录内所有可能的 ffmpeg 路径。
  * 第一级：自身 + 已知 BUNDLED_SUBDIRS
  * 第二级：第一级每个目录的子目录（如 resources/ffmpeg-7.1/ 等）
  */
@@ -105,7 +113,7 @@ async function getBundledSearchDirsDeep(): Promise<string[]> {
   for (const dir of level1Dirs) {
     if (seen.has(dir)) continue
     seen.add(dir)
-    paths.push(path.join(dir, `ffmpeg${ext}`), path.join(dir, `ffprobe${ext}`))
+    paths.push(path.join(dir, `ffmpeg${ext}`))
 
     // Level 2: subdirectories of this dir
     try {
@@ -115,7 +123,7 @@ async function getBundledSearchDirsDeep(): Promise<string[]> {
         const sub = path.join(dir, entry.name)
         if (seen.has(sub)) continue
         seen.add(sub)
-        paths.push(path.join(sub, `ffmpeg${ext}`), path.join(sub, `ffprobe${ext}`))
+        paths.push(path.join(sub, `ffmpeg${ext}`))
       }
     } catch {
       // dir doesn't exist — skip
