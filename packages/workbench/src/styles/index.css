@@ -1495,27 +1495,6 @@ code {
   padding: 3px;
 }
 
-.mode-selector {
-  display: flex;
-  gap: 3px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--segmented-surface);
-  padding: 3px;
-}
-
-.mode-selector .segmented-button {
-  flex: 1;
-  font-size: 12px;
-  padding: 6px 10px;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.mode-selector .segmented-button:hover:not(:disabled):not(.segmented-button--active) {
-  background: var(--bg-hover);
-}
-
 .segmented-button {
   border: 0;
   border-radius: 6px;
