@@ -1925,6 +1925,16 @@ code {
   max-width: 360px;
   font-size: 12px;
 }
+
+.desktop-settings-section__actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.desktop-settings-section__actions .button-ghost {
+  flex: 1;
+}
+
 .desktop-settings-section__row .button-ghost {
   flex-shrink: 0;
   padding: 0 8px;
@@ -2124,6 +2134,7 @@ html:has(.desktop-shell) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   width: 100%;
   padding: 6px 10px;
   border: none;
@@ -2146,6 +2157,7 @@ html:has(.desktop-shell) {
 .ffmpeg-version-menu__item small {
   opacity: 0.6;
   font-size: 10px;
+  flex-shrink: 0;
 }
 
 .desktop-job-status {

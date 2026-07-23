@@ -31,6 +31,20 @@ export function FFmpegStatusBar() {
   const [unreadLogs, setUnreadLogs] = useState(0)
   const [hasUnreadFailure, setHasUnreadFailure] = useState(false)
   const [showVersionMenu, setShowVersionMenu] = useState(false)
+  const versionMenuRef = useRef<HTMLDivElement>(null)
+
+  // Click outside to close version menu
+  useEffect(() => {
+    if (!showVersionMenu) return
+    const onDocClick = (e: MouseEvent) => {
+      if (versionMenuRef.current && !versionMenuRef.current.contains(e.target as Node)) {
+        setShowVersionMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [showVersionMenu])
+
   const knownHistoryStates = useRef<Map<string, EncodingHistoryItem['status']> | null>(null)
   const { jobState } = useEncodingJob()
 
@@ -122,7 +136,7 @@ export function FFmpegStatusBar() {
     const sourceLabel = SOURCE_LABELS[status.info.source]?.[isZh ? 'zh' : 'en'] ?? status.info.source
     const hasMultiple = status.allVersions.length > 1
     ffmpegItem = (
-      <span className="ffmpeg-status-wrapper">
+      <span className="ffmpeg-status-wrapper" ref={versionMenuRef}>
         <span
           className={`ffmpeg-status ffmpeg-status--found${hasMultiple ? ' ffmpeg-status--switchable' : ''}`}
           onClick={handleLeftClick}

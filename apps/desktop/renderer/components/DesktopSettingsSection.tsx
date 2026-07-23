@@ -87,7 +87,7 @@ function FFmpegPathSetting() {
           onChange={(e) => handlePathChange(e.target.value)}
         />
       </div>
-      <div className="desktop-settings-section__row">
+      <div className="desktop-settings-section__actions">
         <button
           type="button"
           className="button-ghost"
