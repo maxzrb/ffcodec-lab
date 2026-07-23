@@ -149,7 +149,7 @@ function renderControl(
   const isModeField = field.id === 'param.video.mode' || field.id === 'param.audio.mode'
   if (isModeField && field.controlType === 'select' && field.options) {
     return (
-      <div className="shell-selector" role="group" aria-label={text(field.label)}>
+      <div className="mode-selector" role="group" aria-label={text(field.label)}>
         {field.options.map((opt) => (
           <button
             key={String(opt.value)}
