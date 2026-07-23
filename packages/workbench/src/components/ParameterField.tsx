@@ -8,7 +8,7 @@ import type { ResolvedField } from '@ffcodec/domain/presentation/resolved-field'
 import { useI18n } from '../features/i18n/i18n'
 import { Dropdown } from './Dropdown'
 import type { PathFieldRenderer } from '@ffcodec/platform-api'
-import { AacCoderPicker, AudioEncoderPicker, AudioModePicker } from './AudioEncoderPicker'
+import { AacCoderPicker, AudioEncoderPicker } from './AudioEncoderPicker'
 
 interface ParameterFieldProps {
   field: ResolvedField
@@ -90,16 +90,6 @@ function renderControl(
   text: (value: string) => string,
   pathFieldRenderer?: PathFieldRenderer,
 ) {
-  if (field.id === 'param.audio.mode') {
-    return (
-      <AudioModePicker
-        options={field.options ?? []}
-        value={field.value}
-        disabled={disabled}
-        onChange={onChange}
-      />
-    )
-  }
   if (field.id === 'param.audio.encoder') {
     return (
       <AudioEncoderPicker
