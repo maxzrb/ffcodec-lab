@@ -233,7 +233,7 @@ export function MediaProbePanel() {
           aria-expanded={expanded}
         >
           <span className={`parameter-section__chevron ${expanded ? 'parameter-section__chevron--open' : ''}`} aria-hidden="true">
-            {'>'}
+            ▶
           </span>
           <span className="parameter-section__title">
             {zh ? '媒体信息探测' : 'Media Probe'}
