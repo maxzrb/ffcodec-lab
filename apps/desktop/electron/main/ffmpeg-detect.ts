@@ -20,6 +20,14 @@ export interface FFmpegInfo {
   error?: string
 }
 
+export interface FFmpegToolsInfo {
+  ffmpeg: boolean
+  ffprobe: boolean
+  ffplay: boolean
+  /** 三个 exe 所在的目录路径。 */
+  baseDir: string
+}
+
 export interface AudioEncoderCapabilities {
   encoders: string[]
   aacOptions: string[]
@@ -114,6 +122,40 @@ async function findInSystemPath(): Promise<FFmpegInfo> {
   } catch {
     return { found: false, path: '', source: 'none', error: 'ffmpeg not found in system PATH' }
   }
+}
+
+// ---- FFmpeg tools availability ----
+
+/**
+ * 检测 ffmpeg 所在目录中三个必备 exe 的存在性。
+ * ffmpegPath 必须是已验证可执行的 ffmpeg 路径。
+ */
+export async function checkFFmpegTools(ffmpegPath: string): Promise<FFmpegToolsInfo> {
+  const ext = process.platform === 'win32' ? '.exe' : ''
+  const baseDir = path.isAbsolute(ffmpegPath) ? path.dirname(ffmpegPath) : ''
+  const siblings = baseDir
+    ? [
+        { key: 'ffprobe' as const, file: path.join(baseDir, `ffprobe${ext}`) },
+        { key: 'ffplay' as const, file: path.join(baseDir, `ffplay${ext}`) },
+      ]
+    : []
+  const result: FFmpegToolsInfo = { ffmpeg: true, ffprobe: false, ffplay: false, baseDir }
+  for (const { key, file } of siblings) {
+    try {
+      await access(file, constants.X_OK)
+      result[key] = true
+    } catch {
+      // Tool not available — leave as false
+    }
+  }
+  return result
+}
+
+/** 获取当前 ffmpeg 所在目录的工具可用性（便捷包装，自动 detectFFmpeg）。 */
+export async function detectFFmpegTools(customPath?: string): Promise<FFmpegToolsInfo | null> {
+  const info = await detectFFmpeg(customPath)
+  if (!info.found || !info.path) return null
+  return checkFFmpegTools(info.path)
 }
 
 // ---- Main detection entry ----

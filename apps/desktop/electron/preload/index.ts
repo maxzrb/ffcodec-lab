@@ -105,6 +105,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   detectFFmpeg: (customPath?: string) =>
     ipcRenderer.invoke('ffmpeg:detect', customPath),
 
+  /** 检测 ffmpeg 目录中 ffprobe / ffplay 的存在性。 */
+  getFFmpegToolsInfo: (customPath?: string) =>
+    ipcRenderer.invoke('ffmpeg:toolsInfo', customPath) as Promise<{
+      ffmpeg: boolean
+      ffprobe: boolean
+      ffplay: boolean
+      baseDir: string
+    } | null>,
+
+  /** 使用 ffprobe 完整探测媒体文件（返回所有流和格式信息）。 */
+  probeMedia: (ffmpegPath: string, inputPath: string) =>
+    ipcRenderer.invoke('ffmpeg:probe', ffmpegPath, inputPath),
+
   getAudioEncoderCapabilities: (customPath?: string) =>
     ipcRenderer.invoke('ffmpeg:audioCapabilities', customPath) as Promise<{
       encoders: string[]
@@ -264,6 +277,8 @@ declare global {
       showOpenDialog: (opts: { kind: 'file' | 'files' | 'save' | 'directory'; defaultPath?: string }) =>
         Promise<{ canceled: boolean; filePath?: string; filePaths?: string[] }>
       detectFFmpeg: (customPath?: string) => Promise<FFmpegInfo>
+      getFFmpegToolsInfo: (customPath?: string) => Promise<{ ffmpeg: boolean; ffprobe: boolean; ffplay: boolean; baseDir: string } | null>
+      probeMedia: (ffmpegPath: string, inputPath: string) => Promise<Record<string, unknown> | null>
       getAudioEncoderCapabilities: (customPath?: string) => Promise<{ encoders: string[]; aacOptions: string[] } | null>
 
       // Phase 9: FFmpeg job execution

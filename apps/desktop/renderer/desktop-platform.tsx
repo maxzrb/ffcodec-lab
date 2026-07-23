@@ -11,6 +11,7 @@ import { desktopSettingsSections } from './components/DesktopSettingsSection'
 import { AudioCapabilityUnlockButton } from './components/AudioCapabilityUnlockButton'
 import { CustomCommandActions } from './components/CustomCommandActions'
 import { ConfigFilePanel } from './components/ConfigFilePanel'
+import { MediaProbePanel } from './components/MediaProbePanel'
 import {
   getAudioCapabilityOverride,
   onAudioCapabilityOverrideChange,
@@ -67,6 +68,7 @@ const desktopExtensions: WorkbenchExtensions = {
   renderCommandEditorActions: ({ command, dirty }) => <CustomCommandActions command={command} dirty={dirty} />,
   settingsSections: desktopSettingsSections,
   panels: [{ id: 'config-file', label: '配置文件', render: () => <ConfigFilePanel /> }],
+  inputSectionPrefix: <MediaProbePanel />,
   getAudioEncoderCapabilities: () => {
     const customPath = (localStorage.getItem('ffcodec-desktop-ffmpeg-path') ?? window.electronAPI?.storageGetItem('ffcodec-desktop-ffmpeg-path'))?.trim() || undefined
     return window.electronAPI?.getAudioEncoderCapabilities(customPath) ?? Promise.resolve(null)

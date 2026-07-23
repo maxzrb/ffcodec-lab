@@ -7,7 +7,7 @@
 import { ipcMain, dialog, shell, BrowserWindow, net, app } from 'electron'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { detectAudioEncoderCapabilities, detectFFmpeg } from './ffmpeg-detect'
+import { detectAudioEncoderCapabilities, detectFFmpeg, detectFFmpegTools } from './ffmpeg-detect'
 import {
   initStore,
   getItem as storageGetItem,
@@ -26,6 +26,7 @@ import {
   getJobSnapshot,
   emitHistoryChanged,
 } from './ffmpeg/job-manager'
+import { probeMedia } from './ffmpeg/probe-media'
 import type { FFmpegJobStartRequest } from './ffmpeg/types'
 import {
   clearEncodingHistory,
@@ -132,6 +133,19 @@ function registerDialogHandlers(): void {
 function registerFFmpegHandlers(): void {
   ipcMain.handle('ffmpeg:detect', async (_event, customPath?: string) => {
     return detectFFmpeg(customPath)
+  })
+
+  /** 返回 ffmpeg 目录中三个必备工具的存在性。 */
+  ipcMain.handle('ffmpeg:toolsInfo', async (_event, customPath?: string) => {
+    return detectFFmpegTools(customPath)
+  })
+
+  /** ffprobe 完整探测媒体文件，返回所有流和格式信息。 */
+  ipcMain.handle('ffmpeg:probe', async (_event, ffmpegPath: string, inputPath: string) => {
+    if (typeof ffmpegPath !== 'string' || typeof inputPath !== 'string' || !ffmpegPath || !inputPath) {
+      return null
+    }
+    return probeMedia(ffmpegPath, inputPath)
   })
 }
 

@@ -368,23 +368,29 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
               <WorkbenchStateNotice notice={activePanel.stateNotice} onPanelChange={handlePanelChange} />
             )}
             {activePanel.sections.map((section) => (
-              <ParameterSection
-                key={section.id}
-                section={section}
-                expanded={expandedSections[section.id] ?? true}
-                onToggle={() => toggleSection(section.id)}
-                onFieldChange={handleFieldChange}
-                onExplain={handleExplain}
-                highlightedFieldId={highlightedFieldId}
-                pathFieldRenderer={extensions?.pathFieldRenderer}
-                actions={section.id === 'section.subtitle' ? (
-                  <SubtitleSectionActions
-                    tracks={config.subtitle.tracks}
-                    onAdd={handleAddSubtitleTrack}
-                    onRemove={handleRemoveSubtitleTrack}
-                  />
-                ) : undefined}
-              />
+              <Fragment key={section.id}>
+                {section.id === 'section.input' && extensions?.inputSectionPrefix && (
+                  <div className="input-section-prefix">
+                    {extensions.inputSectionPrefix}
+                  </div>
+                )}
+                <ParameterSection
+                  section={section}
+                  expanded={expandedSections[section.id] ?? true}
+                  onToggle={() => toggleSection(section.id)}
+                  onFieldChange={handleFieldChange}
+                  onExplain={handleExplain}
+                  highlightedFieldId={highlightedFieldId}
+                  pathFieldRenderer={extensions?.pathFieldRenderer}
+                  actions={section.id === 'section.subtitle' ? (
+                    <SubtitleSectionActions
+                      tracks={config.subtitle.tracks}
+                      onAdd={handleAddSubtitleTrack}
+                      onRemove={handleRemoveSubtitleTrack}
+                    />
+                  ) : undefined}
+                />
+              </Fragment>
             ))}
           </>
         )}

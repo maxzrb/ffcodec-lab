@@ -85,6 +85,8 @@ export interface WorkbenchExtensions {
   contentSections?: ReactNode[]
   /** Custom panels appended to the workbench navigation tabs. */
   panels?: CustomPanelExtension[]
+  /** React node rendered inside the 输入与输出 panel, above the stream selection card. */
+  inputSectionPrefix?: ReactNode
   getAudioEncoderCapabilities?: () => Promise<{
     encoders: string[]
     aacOptions: string[]

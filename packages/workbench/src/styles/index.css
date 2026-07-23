@@ -3330,3 +3330,188 @@ html.performance-page-open .performance-page {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   Media Probe Panel — ffprobe 媒体探测面板（desktop only）
+   位于"输入与输出"折叠卡片上方，仅在该面板显示。
+   ============================================================ */
+
+.input-section-prefix {
+  margin-bottom: var(--space-md, 12px);
+}
+
+.media-probe-panel {
+  margin-bottom: var(--space-lg, 16px);
+  padding: var(--space-md, 12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface);
+}
+
+.media-probe-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm, 8px);
+}
+
+.media-probe-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.media-probe-panel__status {
+  font-size: 11px;
+}
+
+.media-probe-panel__status-checking {
+  color: var(--color-text-muted);
+}
+
+.media-probe-panel__status-ok {
+  color: color-mix(in srgb, var(--color-success, #16a34a) 80%, var(--color-text));
+}
+
+.media-probe-panel__status-missing {
+  color: color-mix(in srgb, var(--color-error, #dc2626) 80%, var(--color-text));
+}
+
+.media-probe-panel__notice {
+  margin-bottom: var(--space-sm, 8px);
+  padding: 6px 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-warning, #d97706) 15%, transparent);
+  border-radius: var(--radius-sm, 4px);
+  border-left: 3px solid var(--color-warning, #d97706);
+}
+
+.media-probe-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  margin-bottom: var(--space-sm, 8px);
+}
+
+.media-probe-panel__probe-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+.media-probe-panel__probe-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.media-probe-panel__hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.media-probe-panel__error {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--color-error, #dc2626);
+  background: color-mix(in srgb, var(--color-error, #dc2626) 10%, transparent);
+  border-radius: var(--radius-sm, 4px);
+  margin-bottom: var(--space-sm, 8px);
+}
+
+.media-probe-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-top: 1px solid var(--color-border);
+}
+
+.media-probe-panel__toggle:hover {
+  opacity: 0.8;
+}
+
+.media-probe-panel__summary {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.media-probe-panel__streams {
+  margin-top: var(--space-sm, 8px);
+}
+
+.media-probe-panel__format-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  padding: 8px;
+  margin-bottom: var(--space-sm, 8px);
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 11px;
+}
+
+.media-probe-panel__format-row {
+  display: flex;
+  gap: 4px;
+}
+
+.media-probe-panel__format-key {
+  color: var(--color-text-muted);
+  min-width: 36px;
+}
+
+.media-probe-panel__stream-group {
+  margin-bottom: var(--space-sm, 8px);
+}
+
+.media-probe-panel__stream-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--color-text);
+}
+
+.media-probe-panel__stream-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0 2px 12px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.media-probe-panel__stream-index {
+  flex-shrink: 0;
+  width: 24px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.media-probe-panel__stream-detail {
+  flex: 1;
+  color: var(--color-text);
+}
+
+.media-probe-panel__stream-tag {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-hover);
+  border-radius: 3px;
+}
+
+.media-probe-panel__empty {
+  padding: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
