@@ -268,27 +268,31 @@ export function MediaProbePanel() {
 
           {/* 状态行 — ffprobe 可用性与探测摘要 */}
           <div className="media-probe-panel__status-line">
-            <span className={`media-probe-panel__status-badge ${tools !== null && !ffprobeAvailable ? 'media-probe-panel__status-badge--missing' : ''}`}>
-              {statusText}
+            <span className="media-probe-panel__status-meta">
+              <span className={`media-probe-panel__status-badge ${tools !== null && !ffprobeAvailable ? 'media-probe-panel__status-badge--missing' : ''}`}>
+                {statusText}
+              </span>
+              {probeResult?.format?.duration && (
+                <span>{formatDuration(probeResult.format.duration)}</span>
+              )}
+              {probeResult && (
+                <span>{videoStreams.length}V {audioStreams.length}A {subtitleStreams.length}S</span>
+              )}
+              {probeResult?.format?.bitRate && (
+                <span>{formatBitRate(probeResult.format.bitRate)}</span>
+              )}
             </span>
-            {probeResult?.format?.duration && (
-              <span>{formatDuration(probeResult.format.duration)}</span>
-            )}
-            {probeResult && (
-              <span>{videoStreams.length}V {audioStreams.length}A {subtitleStreams.length}S</span>
-            )}
-            {probeResult?.format?.bitRate && (
-              <span>{formatBitRate(probeResult.format.bitRate)}</span>
-            )}
-            <label className="switch-control" style={{ marginLeft: 'auto' }}>
-              <input
-                type="checkbox"
-                checked={syncEnabled}
-                onChange={(e) => setSyncEnabled(e.target.checked)}
-              />
-              <span className="switch-control__track" />
-              <span>{zh ? '联动流选择' : 'Sync selection'}</span>
-            </label>
+            <span className="media-probe-panel__status-toggle">
+              <label className="switch-control">
+                <input
+                  type="checkbox"
+                  checked={syncEnabled}
+                  onChange={(e) => setSyncEnabled(e.target.checked)}
+                />
+                <span className="switch-control__track" />
+                <span>{zh ? '联动流选择' : 'Sync'}</span>
+              </label>
+            </span>
           </div>
 
           {/* 未探测 — 人机交互引导 */}

@@ -3340,10 +3340,27 @@ html.performance-page-open .performance-page {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
   font-size: 12px;
   color: var(--color-text-muted);
   margin-bottom: 8px;
+}
+
+.media-probe-panel__status-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.media-probe-panel__status-meta > * {
+  flex-shrink: 0;
+}
+
+.media-probe-panel__status-toggle {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .media-probe-panel__status-badge {
