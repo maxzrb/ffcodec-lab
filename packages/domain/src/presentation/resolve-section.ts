@@ -245,7 +245,7 @@ export function resolveVideoSection(
       label: '编解码标准',
       controlType: 'select',
       value: selectedCategoryId,
-      visible: true,
+      visible: config.video.mode === 'encode',
       disabled: false,
       options: CODEC_CATEGORIES.map((cat) => ({
         value: cat.id,
@@ -284,6 +284,7 @@ export function resolveVideoSection(
       badge: implementationLabels[enc.implementation] ?? enc.implementation,
       description: enc.availabilityNote?.slice(0, 80),
     }))
+    encField.visible = config.video.mode === 'encode'
     encField.disabled = filteredEncoders.length === 0
     encField.disabledReason = filteredEncoders.length === 0
       ? (selectedCategory?.placeholderNote ?? '截至 FFmpeg 8.1.2 发行版，此编解码标准暂无编码器实现')
