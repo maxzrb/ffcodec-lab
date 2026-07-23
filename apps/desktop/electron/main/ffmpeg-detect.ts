@@ -39,7 +39,7 @@ export interface AudioEncoderCapabilities {
 const VERSION_TIMEOUT = 10_000
 
 /** Common subdirectories relative to the app directory to search. */
-const BUNDLED_SUBDIRS = ['', 'ffmpeg', 'bin', 'tools']
+const BUNDLED_SUBDIRS = ['', 'ffmpeg', 'bin', 'tools', 'resources/ffmpeg']
 
 // ---- Version parsing ----
 
