@@ -6,7 +6,7 @@
 
 import { execFile } from 'child_process'
 import { app } from 'electron'
-import { access, readdir } from 'fs/promises'
+import { access, readdir, stat } from 'fs/promises'
 import { constants } from 'fs'
 import path from 'path'
 
@@ -171,11 +171,29 @@ export async function detectFFmpegTools(customPath?: string): Promise<FFmpegTool
   return checkFFmpegTools(info.path)
 }
 
+// ---- Directory-based custom path helper ----
+
+async function resolveCustomFFmpegPath(customPath: string): Promise<string | null> {
+  const ext = process.platform === 'win32' ? '.exe' : ''
+  // If already a file path, use directly (backward compat)
+  try {
+    const info = await stat(customPath)
+    if (info.isFile()) return customPath
+  } catch { /* stat failed */ }
+  // If it's a directory, look for ffmpeg.exe inside
+  const candidate = path.join(customPath, `ffmpeg${ext}`)
+  try {
+    await access(candidate, constants.X_OK)
+    return candidate
+  } catch { /* not found */ }
+  return null
+}
+
 // ---- Main detection entry ----
 
 /**
  * Detect FFmpeg with priority:
- *   1. User-configured custom path
+ *   1. User-configured custom path (file or directory containing ffmpeg)
  *   2. Bundled with app (same dir, subdirs, two levels deep)
  *   3. System PATH
  *   4. Not found — guidance fallback
@@ -183,8 +201,11 @@ export async function detectFFmpegTools(customPath?: string): Promise<FFmpegTool
 export async function detectFFmpeg(customPath?: string): Promise<FFmpegInfo> {
   // Priority 1: User custom path
   if (customPath) {
-    const result = await tryFFmpegPath(customPath, 'custom')
-    if (result.found) return result
+    const resolved = await resolveCustomFFmpegPath(customPath)
+    if (resolved) {
+      const result = await tryFFmpegPath(resolved, 'custom')
+      if (result.found) return result
+    }
   }
 
   // Priority 2: Bundled with app (two-level deep)
@@ -225,7 +246,8 @@ export async function detectAllFFmpegVersions(customPath?: string): Promise<FFmp
 
   // Custom path first
   if (customPath) {
-    add(await tryFFmpegPath(customPath, 'custom'))
+    const resolved = await resolveCustomFFmpegPath(customPath)
+    if (resolved) add(await tryFFmpegPath(resolved, 'custom'))
   }
 
   // All bundled

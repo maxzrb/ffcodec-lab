@@ -61,24 +61,38 @@ function FFmpegPathSetting() {
     window.electronAPI?.openExternal('https://ffmpeg.org/download.html')
   }
 
+  const handleBrowse = async () => {
+    const result = await window.electronAPI?.showOpenDialog({ kind: 'directory' })
+    if (result && !result.canceled && result.filePath) {
+      handlePathChange(result.filePath)
+    }
+  }
+
   return (
     <div className="desktop-settings-section">
       <label className="desktop-settings-section__label">
-        {isZh ? 'FFmpeg 可执行文件路径' : 'FFmpeg executable path'}
+        {isZh ? 'FFmpeg 所在文件夹' : 'FFmpeg folder'}
       </label>
       <p className="desktop-settings-section__hint">
         {isZh
-          ? '设置本地 ffmpeg 可执行文件的完整路径。留空则使用系统 PATH 中的 ffmpeg。'
-          : 'Set the full path to the local ffmpeg executable. Leave blank to use ffmpeg from the system PATH.'}
+          ? '选择包含 ffmpeg.exe 的文件夹。留空则自动搜索同目录和系统 PATH。'
+          : 'Select the folder containing ffmpeg.exe. Leave blank to search bundled dirs and system PATH.'}
       </p>
       <div className="desktop-settings-section__row">
         <input
           type="text"
           className="desktop-settings-section__input"
-          placeholder={isZh ? '例如: C:\\ffmpeg\\bin\\ffmpeg.exe' : 'e.g. /usr/local/bin/ffmpeg'}
+          placeholder={isZh ? '例如: C:\\ffmpeg\\bin' : 'e.g. /usr/local/bin'}
           value={pathValue}
           onChange={(e) => handlePathChange(e.target.value)}
         />
+        <button
+          type="button"
+          className="button-ghost"
+          onClick={handleBrowse}
+        >
+          {isZh ? '浏览…' : 'Browse…'}
+        </button>
         <button
           type="button"
           className="button-ghost"
