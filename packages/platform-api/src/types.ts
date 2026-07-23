@@ -96,6 +96,8 @@ export interface WorkbenchExtensions {
     encoders: string[]
     aacOptions: string[]
   } | null>
+  /** 订阅 Desktop 当前 FFmpeg 选择变化。 */
+  onFFmpegSelectionChange?: (listener: () => void) => () => void
   getAudioCapabilityOverride?: () => boolean
   onAudioCapabilityOverrideChange?: (listener: (enabled: boolean) => void) => () => void
 }

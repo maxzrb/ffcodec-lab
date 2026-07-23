@@ -624,6 +624,10 @@ code {
   background: linear-gradient(135deg, #43ddc0, #3fa9d0);
 }
 
+.preset-kitchen__name {
+  color: #fff;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--text-dim) 42%, transparent) transparent;
@@ -2766,9 +2770,14 @@ html:has(.desktop-shell) {
   background: var(--border);
 }
 
-.builder-footer__version {
+.builder-footer a.builder-footer__version {
   color: var(--text-dim, inherit);
   font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.builder-footer a.builder-footer__version:hover {
+  color: var(--accent);
 }
 
 .builder-footer__stats {

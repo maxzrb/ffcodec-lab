@@ -17,7 +17,10 @@ import {
   getAudioCapabilityOverride,
   onAudioCapabilityOverrideChange,
 } from './audio-capability-override'
-import { getPreferredFFmpegPath } from './ffmpeg-path-selection'
+import {
+  getPreferredFFmpegPath,
+  onPreferredFFmpegPathChange,
+} from './ffmpeg-path-selection'
 
 /** localStorage-backed storage for Electron renderer.
  *  INI persistence happens in parallel via electronAPI.storageSetItem. */
@@ -78,6 +81,7 @@ const desktopExtensions: WorkbenchExtensions = {
     const customPath = getPreferredFFmpegPath()
     return window.electronAPI?.getAudioEncoderCapabilities(customPath) ?? Promise.resolve(null)
   },
+  onFFmpegSelectionChange: onPreferredFFmpegPathChange,
   getAudioCapabilityOverride,
   onAudioCapabilityOverrideChange,
 }

@@ -8,6 +8,7 @@ import { useEncodingJob } from './useEncodingJob'
 import { localizeJobError } from './encoding-job'
 import { EncodingLogDialog } from './EncodingLogDialog'
 import { useDesktopLocale } from '../useDesktopLocale'
+import { notifyPreferredFFmpegPathChange } from '../ffmpeg-path-selection'
 
 const CUSTOM_PATH_STORAGE_KEY = 'ffcodec-desktop-ffmpeg-path'
 const SELECTED_PATH_STORAGE_KEY = 'ffcodec-desktop-selected-ffmpeg-path'
@@ -197,6 +198,7 @@ export function FFmpegStatusBar() {
             allVersions,
           }
         })
+        notifyPreferredFFmpegPathChange()
       }
     } finally {
       switchingRef.current = false

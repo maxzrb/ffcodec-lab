@@ -38,6 +38,7 @@ type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
 const APP_VERSION = 'v1.2.1'
+const RELEASE_URL = `${PROJECT_URL}/releases/tag/${APP_VERSION}`
 
 export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {
   const { storage, extensions } = usePlatform()
@@ -328,8 +329,11 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
             type="button"
             onClick={() => setShowPresetManager(true)}
             className="button button--primary"
+            aria-label={isZh ? '预制菜🍜' : undefined}
           >
-            {isZh ? '预制菜🍜' : 'Preset Kitchen 🍜'}
+            {isZh
+              ? <><span className="preset-kitchen__name">预制菜</span><span>🍜</span></>
+              : 'Preset Kitchen 🍜'}
           </button>
           {shareNotice && <span className="share-notice" role="status">{shareNotice}</span>}
         </div>
@@ -366,7 +370,18 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                 <span>maxzrb/ffcodec-lab</span>
               </a>
               <span className="builder-footer__separator" aria-hidden="true" />
-              <span className="builder-footer__version">FFCodec Lab {APP_VERSION}</span>
+              <a
+                className="builder-footer__version"
+                href={RELEASE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={isZh
+                  ? `打开 FFCodec Lab desktop ${APP_VERSION} Release 页面`
+                  : `Open the FFCodec Lab desktop ${APP_VERSION} release`}
+                title={RELEASE_URL}
+              >
+                FFCodec Lab desktop {APP_VERSION}
+              </a>
             </div>
             {footerItems && <div className="builder-footer__stats">{footerItems}</div>}
           </footer>

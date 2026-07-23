@@ -596,6 +596,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     expect(screen.getByRole('heading', { name: 'FFmpeg 命令生成器' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '预制菜🍜' })).toBeInTheDocument()
+    expect(screen.getByText('预制菜')).toHaveClass('preset-kitchen__name')
     await userEvent.click(screen.getByRole('button', { name: 'Switch to English' }))
     await userEvent.click(screen.getByRole('button', { name: /^Video encoding/ }))
 
@@ -810,6 +811,41 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(lame).toHaveTextContent('当前 FFmpeg 不可用')
   })
 
+  it('Desktop 切换 FFmpeg 后重新核验当前版本的编码器与 AAC 能力', async () => {
+    const capabilityListeners = new Set<() => void>()
+    let currentCapabilities = {
+      encoders: ['aac', 'flac'],
+      aacOptions: ['twoloop', 'fast'],
+    }
+    const loadCapabilities = vi.fn(async () => currentCapabilities)
+    presetStore(makeAudioConfig('aac'))
+    testPlatform = {
+      ...testPlatform,
+      capabilities: { ...testPlatform.capabilities, desktop: true, ffmpegDetect: true },
+      extensions: {
+        getAudioEncoderCapabilities: loadCapabilities,
+        onFFmpegSelectionChange: (listener) => {
+          capabilityListeners.add(listener)
+          return () => { capabilityListeners.delete(listener) }
+        },
+      },
+    }
+    render(<TestWrapper />)
+    await openPanel('音频')
+
+    expect(await screen.findByText('当前 FFmpeg 未提供 NMR；已隐藏该选项。')).toBeInTheDocument()
+    currentCapabilities = {
+      encoders: ['aac', 'flac', 'libmp3lame'],
+      aacOptions: ['twoloop', 'fast', 'nmr'],
+    }
+    act(() => { for (const listener of capabilityListeners) listener() })
+
+    await waitFor(() => {
+      expect(screen.queryByText('当前 FFmpeg 未提供 NMR；已隐藏该选项。')).not.toBeInTheDocument()
+    })
+    expect(loadCapabilities.mock.calls.length).toBeGreaterThanOrEqual(4)
+  })
+
   it('Desktop 解锁开关会恢复所有受 FFmpeg 能力检测限制的音频选项', async () => {
     const overrideListeners = new Set<(enabled: boolean) => void>()
     presetStore(makeAudioConfig('aac'))
@@ -859,7 +895,9 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<TestWrapper />)
     expect(screen.getByRole('link', { name: '在 GitHub 打开 FFCodec Lab 项目' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
-    expect(screen.getByText('FFCodec Lab v1.2.1')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '打开 FFCodec Lab desktop v1.2.1 Release 页面' }))
+      .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases/tag/v1.2.1')
+    expect(screen.getByText('FFCodec Lab desktop v1.2.1')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))

@@ -5,7 +5,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useBuilderStore, useI18n } from '@ffcodec/workbench'
-import { getPreferredFFmpegPath } from '../ffmpeg-path-selection'
+import {
+  getPreferredFFmpegPath,
+  onPreferredFFmpegPathChange,
+} from '../ffmpeg-path-selection'
 import {
   applyProbeStreamsToConfig,
   type ProbeResult,
@@ -143,6 +146,10 @@ export function MediaProbePanel() {
       if (info) setTools({ ffmpeg: info.ffmpeg, ffprobe: info.ffprobe, ffplay: info.ffplay })
     } catch { /* ignore */ }
   }, [setTools])
+
+  useEffect(() => onPreferredFFmpegPathChange(() => {
+    void checkTools(getPreferredFFmpegPath())
+  }), [checkTools])
 
   const syncProbeStreams = useCallback((result: ProbeResult) => {
     const currentConfig = useBuilderStore.getState().config

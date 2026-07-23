@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { SettingsSectionExtension } from '@ffcodec/platform-api'
 import { useI18n } from '@ffcodec/workbench'
+import { notifyPreferredFFmpegPathChange } from '../ffmpeg-path-selection'
 
 const STORAGE_KEY = 'ffcodec-desktop-ffmpeg-path'
 const SELECTED_PATH_STORAGE_KEY = 'ffcodec-desktop-selected-ffmpeg-path'
@@ -50,6 +51,7 @@ function FFmpegPathSetting() {
     }
     // Notify other components by dispatching a storage event (same-tab workaround)
     window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY, newValue: trimmed || null }))
+    notifyPreferredFFmpegPathChange()
   }, [])
 
   const handleDetect = useCallback(async () => {
