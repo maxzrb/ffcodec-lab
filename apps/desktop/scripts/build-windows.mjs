@@ -91,31 +91,25 @@ function extractFfmpeg() {
 const outputDirectory = resolve(repositoryDir, 'release', 'desktop', profile.outputDirectory)
 resetDirectory(outputDirectory)
 
-const extraResources = [...(packageJson.build.extraResources ?? [])]
-if (profile.includeFfmpeg) {
-  extraResources.unshift({
-    from: extractFfmpeg(),
-    to: 'ffmpeg',
-    filter: ['**/*'],
-  })
-}
-
 const config = {
-  ...packageJson.build,
   directories: {
-    ...packageJson.build.directories,
     output: outputDirectory,
   },
-  extraResources,
   win: {
-    ...packageJson.build.win,
     target: [profile.target],
   },
 }
 
+if (profile.includeFfmpeg) {
+  config.extraResources = [{
+    from: extractFfmpeg(),
+    to: 'ffmpeg',
+    filter: ['**/*'],
+  }]
+}
+
 if (profile.artifactName) {
   config.nsis = {
-    ...packageJson.build.nsis,
     artifactName: profile.artifactName,
   }
 }
