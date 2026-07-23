@@ -1501,13 +1501,14 @@ code {
   border-radius: 9px;
   background: var(--segmented-surface);
   padding: 3px;
-  width: fit-content;
 }
 
 .mode-selector .segmented-button {
+  flex: 1;
   font-size: 12px;
-  padding: 4px 14px;
+  padding: 6px 10px;
   white-space: nowrap;
+  text-align: center;
 }
 
 .segmented-button {

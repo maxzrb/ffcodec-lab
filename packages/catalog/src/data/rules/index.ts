@@ -5,7 +5,7 @@ import type { RuleDefinition } from '@ffcodec/domain/rules/rule-types'
  * Each rule has a source reference tracing back to the FFmpegFreeUI document.
  */
 export const builtinRules: RuleDefinition[] = [
-  // R01: video copy → disable quality, preset, profile, tune, pix_fmt, resolution, framerate, burn
+  // R01: video copy → disable quality, preset, profile, tune, pix_fmt, frame, color, burn
   {
     id: 'R01.video.copy.disable',
     priority: 100,
@@ -17,6 +17,7 @@ export const builtinRules: RuleDefinition[] = [
       { type: 'hide', target: 'section.video.tune', reasonId: 'reason.video.copy' },
       { type: 'hide', target: 'section.video.pixfmt', reasonId: 'reason.video.copy' },
       { type: 'hide', target: 'section.frame', reasonId: 'reason.video.copy' },
+      { type: 'hide', target: 'section.color', reasonId: 'reason.video.copy' },
       { type: 'hide', target: 'section.subtitle.burn', reasonId: 'reason.video.copy' },
     ],
     sourceRefs: [
@@ -30,13 +31,15 @@ export const builtinRules: RuleDefinition[] = [
     ],
   },
 
-  // R02: video disabled → hide all video params and burn
+  // R02: video disabled → hide all video params, frame, color, burn
   {
     id: 'R02.video.disabled.hide',
     priority: 100,
     when: { op: 'eq', path: 'video.mode', value: 'disabled' },
     effects: [
       { type: 'hide', target: 'section.video', reasonId: 'reason.video.disabled' },
+      { type: 'hide', target: 'section.frame', reasonId: 'reason.video.disabled' },
+      { type: 'hide', target: 'section.color', reasonId: 'reason.video.disabled' },
       { type: 'hide', target: 'section.subtitle.burn', reasonId: 'reason.video.disabled' },
     ],
     sourceRefs: [
