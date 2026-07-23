@@ -13,7 +13,7 @@ const STORAGE_KEY = 'ffcodec-desktop-ffmpeg-path'
 
 type StatusState =
   | { kind: 'detecting' }
-  | { kind: 'found'; info: FFmpegInfo }
+  | { kind: 'found'; info: FFmpegInfo; allVersions: FFmpegInfo[] }
   | { kind: 'not-found' }
 
 const SOURCE_LABELS: Record<string, { zh: string; en: string }> = {
@@ -30,6 +30,7 @@ export function FFmpegStatusBar() {
   const [logsOpen, setLogsOpen] = useState(false)
   const [unreadLogs, setUnreadLogs] = useState(0)
   const [hasUnreadFailure, setHasUnreadFailure] = useState(false)
+  const [showVersionMenu, setShowVersionMenu] = useState(false)
   const knownHistoryStates = useRef<Map<string, EncodingHistoryItem['status']> | null>(null)
   const { jobState } = useEncodingJob()
 
@@ -57,11 +58,23 @@ export function FFmpegStatusBar() {
   const detect = () => {
     setStatus({ kind: 'detecting' })
     const customPath = (localStorage.getItem(STORAGE_KEY) ?? window.electronAPI?.storageGetItem(STORAGE_KEY))?.trim() || undefined
-    window.electronAPI?.detectFFmpeg(customPath).then((info) => {
-      setStatus(info.found ? { kind: 'found', info } : { kind: 'not-found' })
+    window.electronAPI?.detectFFmpeg(customPath).then(async (info) => {
+      const all = (await window.electronAPI?.listFFmpegVersions(customPath)) ?? []
+      setStatus(info.found ? { kind: 'found', info, allVersions: all } : { kind: 'not-found' })
     }).catch(() => {
       setStatus({ kind: 'not-found' })
     })
+  }
+
+  const switchToVersion = async (ffmpegPath: string) => {
+    setShowVersionMenu(false)
+    const result = await window.electronAPI?.detectFFmpeg(ffmpegPath)
+    if (result?.found) {
+      localStorage.setItem(STORAGE_KEY, result.path)
+      void window.electronAPI?.storageSetItem(STORAGE_KEY, result.path)
+      const all = (await window.electronAPI?.listFFmpegVersions(result.path)) ?? []
+      setStatus({ kind: 'found', info: result, allVersions: all })
+    }
   }
 
   // Auto-detect on mount
@@ -84,11 +97,11 @@ export function FFmpegStatusBar() {
   }, [])
 
   const handleClick = () => {
-    if (status.kind === 'found') {
-      // Reveal in file manager
+    if (status.kind === 'found' && status.allVersions.length > 1) {
+      setShowVersionMenu((v) => !v)
+    } else if (status.kind === 'found') {
       window.electronAPI?.revealInFolder(status.info.path)
     } else if (status.kind === 'not-found') {
-      // Open FFmpeg download page
       window.electronAPI?.openExternal('https://ffmpeg.org/download.html')
     }
   }
@@ -102,18 +115,37 @@ export function FFmpegStatusBar() {
     )
   } else if (status.kind === 'found') {
     const sourceLabel = SOURCE_LABELS[status.info.source]?.[isZh ? 'zh' : 'en'] ?? status.info.source
+    const hasMultiple = status.allVersions.length > 1
     ffmpegItem = (
-      <span
-        className="ffmpeg-status ffmpeg-status--found"
-        onClick={handleClick}
-        title={isZh
-          ? `路径: ${status.info.path}\n来源: ${sourceLabel}\n点击在资源管理器中定位`
-          : `Path: ${status.info.path}\nSource: ${sourceLabel}\nClick to reveal in folder`}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleClick() }}
-      >
-        FFmpeg {status.info.version} <span className="ffmpeg-status__source">({sourceLabel})</span>
+      <span className="ffmpeg-status-wrapper">
+        <span
+          className={`ffmpeg-status ffmpeg-status--found${hasMultiple ? ' ffmpeg-status--switchable' : ''}`}
+          onClick={handleClick}
+          title={isZh
+            ? `路径: ${status.info.path}\n来源: ${sourceLabel}${hasMultiple ? '\n点击切换版本' : '\n点击在资源管理器中定位'}`
+            : `Path: ${status.info.path}\nSource: ${sourceLabel}${hasMultiple ? '\nClick to switch version' : '\nClick to reveal in folder'}`}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleClick() }}
+        >
+          FFmpeg {status.info.version} <span className="ffmpeg-status__source">({sourceLabel})</span>
+          {hasMultiple && <span className="ffmpeg-status__arrow">▾</span>}
+        </span>
+        {showVersionMenu && hasMultiple && (
+          <div className="ffmpeg-version-menu">
+            {status.allVersions.map((v) => (
+              <button
+                key={v.path}
+                type="button"
+                className={`ffmpeg-version-menu__item${v.path === status.info.path ? ' ffmpeg-version-menu__item--active' : ''}`}
+                onClick={() => switchToVersion(v.path)}
+              >
+                <span>FFmpeg {v.version}</span>
+                <small>{SOURCE_LABELS[v.source]?.[isZh ? 'zh' : 'en'] ?? v.source}</small>
+              </button>
+            ))}
+          </div>
+        )}
       </span>
     )
   } else {

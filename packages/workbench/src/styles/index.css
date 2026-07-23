@@ -2091,6 +2091,68 @@ html:has(.desktop-shell) {
   font-size: 10px;
 }
 
+.ffmpeg-status__arrow {
+  margin-left: 2px;
+  font-size: 8px;
+}
+
+.ffmpeg-status--switchable {
+  cursor: pointer;
+}
+
+.ffmpeg-status-wrapper {
+  position: relative;
+}
+
+.ffmpeg-version-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
+  min-width: 200px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  z-index: 100;
+}
+
+.ffmpeg-version-menu__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ffmpeg-version-menu__item:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.ffmpeg-version-menu__item:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.ffmpeg-version-menu__item:hover {
+  background: var(--bg-hover);
+}
+
+.ffmpeg-version-menu__item--active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ffmpeg-version-menu__item small {
+  opacity: 0.6;
+  font-size: 10px;
+}
+
 .desktop-job-status {
   flex: 0 1 auto;
   justify-content: flex-end;

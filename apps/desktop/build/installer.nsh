@@ -1,5 +1,6 @@
+ShowInstDetails show
+
 !macro customInit
-  ShowInstDetails show
 !macroend
 
 !macro customInstall

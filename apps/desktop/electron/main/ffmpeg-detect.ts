@@ -1,11 +1,12 @@
 // ============================================================
 // FFmpeg Detection — priority search for ffmpeg executable.
 // Phase 6: custom path > bundled > system PATH > not found.
+// v1.1.1: two-level subdir search + multi-version detection.
 // ============================================================
 
 import { execFile } from 'child_process'
 import { app } from 'electron'
-import { access } from 'fs/promises'
+import { access, readdir } from 'fs/promises'
 import { constants } from 'fs'
 import path from 'path'
 
@@ -38,7 +39,7 @@ export interface AudioEncoderCapabilities {
 /** Timeout for ffmpeg -version (ms). */
 const VERSION_TIMEOUT = 10_000
 
-/** Common subdirectories relative to the app directory to search. */
+/** Base-level subdirectories to search directly. */
 const BUNDLED_SUBDIRS = ['', 'ffmpeg', 'bin', 'tools', 'resources/ffmpeg']
 
 // ---- Version parsing ----
@@ -46,11 +47,8 @@ const BUNDLED_SUBDIRS = ['', 'ffmpeg', 'bin', 'tools', 'resources/ffmpeg']
 function parseVersion(stdout: string): { version: string; fullVersion: string } {
   const firstLine = stdout.split('\n')[0] ?? ''
   const fullVersion = firstLine.trim()
-
-  // Match "ffmpeg version X.Y.Z" or "ffmpeg version N"
   const match = firstLine.match(/ffmpeg\s+version\s+(\S+)/i)
   const version = match?.[1] ?? 'unknown'
-
   return { version, fullVersion }
 }
 
@@ -58,7 +56,6 @@ function parseVersion(stdout: string): { version: string; fullVersion: string } 
 
 export async function tryFFmpegPath(ffmpegPath: string, source: FFmpegInfo['source']): Promise<FFmpegInfo> {
   try {
-    // Check file exists and is executable (X_OK on Unix; no-op on Windows)
     await access(ffmpegPath, constants.X_OK)
   } catch {
     return { found: false, path: ffmpegPath, source, error: 'File not found or not executable' }
@@ -80,29 +77,52 @@ function runExecFile(file: string, args: string[]): Promise<{ stdout: string; st
   return new Promise((resolve, reject) => {
     execFile(file, args, { timeout: VERSION_TIMEOUT, windowsHide: true }, (error, stdout, stderr) => {
       if (error) return reject(error)
-      // ffmpeg writes version info to stderr, not stdout
       const output = stdout + stderr
       resolve({ stdout: output, stderr })
     })
   })
 }
 
-// ---- Bundled search paths ----
+// ---- Bundled search paths (two-level) ----
 
-function getBundledSearchDirs(): string[] {
+/**
+ * 获取 baseDir 下两级子目录内所有可能的 ffmpeg/ffprobe 路径。
+ * 第一级：自身 + 已知 BUNDLED_SUBDIRS
+ * 第二级：第一级每个目录的子目录（如 resources/ffmpeg-7.1/ 等）
+ */
+async function getBundledSearchDirsDeep(): Promise<string[]> {
+  const ext = process.platform === 'win32' ? '.exe' : ''
   const baseDir = app.isPackaged
     ? path.dirname(app.getPath('exe'))
     : process.cwd()
 
-  const ext = process.platform === 'win32' ? '.exe' : ''
+  const paths: string[] = []
 
-  return BUNDLED_SUBDIRS.flatMap((subdir) => {
-    const dir = subdir ? path.join(baseDir, subdir) : baseDir
-    return [
-      path.join(dir, `ffmpeg${ext}`),
-      path.join(dir, `ffprobe${ext}`),  // also detect ffprobe for future use
-    ]
-  })
+  // Level 1: base dir and known subdirs
+  const level1Dirs = BUNDLED_SUBDIRS.map((s) => s ? path.join(baseDir, s) : baseDir)
+  // 去重
+  const seen = new Set<string>()
+  for (const dir of level1Dirs) {
+    if (seen.has(dir)) continue
+    seen.add(dir)
+    paths.push(path.join(dir, `ffmpeg${ext}`), path.join(dir, `ffprobe${ext}`))
+
+    // Level 2: subdirectories of this dir
+    try {
+      const entries = await readdir(dir, { withFileTypes: true })
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue
+        const sub = path.join(dir, entry.name)
+        if (seen.has(sub)) continue
+        seen.add(sub)
+        paths.push(path.join(sub, `ffmpeg${ext}`), path.join(sub, `ffprobe${ext}`))
+      }
+    } catch {
+      // dir doesn't exist — skip
+    }
+  }
+
+  return paths
 }
 
 // ---- System PATH search ----
@@ -126,10 +146,6 @@ async function findInSystemPath(): Promise<FFmpegInfo> {
 
 // ---- FFmpeg tools availability ----
 
-/**
- * 检测 ffmpeg 所在目录中三个必备 exe 的存在性。
- * ffmpegPath 必须是已验证可执行的 ffmpeg 路径。
- */
 export async function checkFFmpegTools(ffmpegPath: string): Promise<FFmpegToolsInfo> {
   const ext = process.platform === 'win32' ? '.exe' : ''
   const baseDir = path.isAbsolute(ffmpegPath) ? path.dirname(ffmpegPath) : ''
@@ -144,14 +160,11 @@ export async function checkFFmpegTools(ffmpegPath: string): Promise<FFmpegToolsI
     try {
       await access(file, constants.X_OK)
       result[key] = true
-    } catch {
-      // Tool not available — leave as false
-    }
+    } catch { /* not available */ }
   }
   return result
 }
 
-/** 获取当前 ffmpeg 所在目录的工具可用性（便捷包装，自动 detectFFmpeg）。 */
 export async function detectFFmpegTools(customPath?: string): Promise<FFmpegToolsInfo | null> {
   const info = await detectFFmpeg(customPath)
   if (!info.found || !info.path) return null
@@ -163,7 +176,7 @@ export async function detectFFmpegTools(customPath?: string): Promise<FFmpegTool
 /**
  * Detect FFmpeg with priority:
  *   1. User-configured custom path
- *   2. Bundled with app (same directory / subdirectories)
+ *   2. Bundled with app (same dir, subdirs, two levels deep)
  *   3. System PATH
  *   4. Not found — guidance fallback
  */
@@ -172,11 +185,10 @@ export async function detectFFmpeg(customPath?: string): Promise<FFmpegInfo> {
   if (customPath) {
     const result = await tryFFmpegPath(customPath, 'custom')
     if (result.found) return result
-    // Continue searching — custom path may be stale
   }
 
-  // Priority 2: Bundled with app
-  const bundledPaths = getBundledSearchDirs()
+  // Priority 2: Bundled with app (two-level deep)
+  const bundledPaths = await getBundledSearchDirsDeep()
   for (const bundledPath of bundledPaths) {
     const result = await tryFFmpegPath(bundledPath, 'bundled')
     if (result.found) return result
@@ -193,6 +205,52 @@ export async function detectFFmpeg(customPath?: string): Promise<FFmpegInfo> {
     source: 'none',
     error: 'FFmpeg not found. Please install FFmpeg or configure the path in settings.',
   }
+}
+
+// ---- Multi-version detection ----
+
+/**
+ * 扫描 bundled 目录中所有可用的 ffmpeg 版本。
+ * 返回按版本号降序排列的列表，自定义路径排在最前。
+ */
+export async function detectAllFFmpegVersions(customPath?: string): Promise<FFmpegInfo[]> {
+  const results: FFmpegInfo[] = []
+  const seen = new Set<string>()
+
+  const add = (info: FFmpegInfo) => {
+    if (!info.found || seen.has(info.path)) return
+    seen.add(info.path)
+    results.push(info)
+  }
+
+  // Custom path first
+  if (customPath) {
+    add(await tryFFmpegPath(customPath, 'custom'))
+  }
+
+  // All bundled
+  const bundledPaths = await getBundledSearchDirsDeep()
+  for (const bp of bundledPaths) {
+    add(await tryFFmpegPath(bp, 'bundled'))
+  }
+
+  // System PATH
+  const command = process.platform === 'win32' ? 'where' : 'which'
+  const target = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
+  try {
+    const { stdout } = await runExecFile(command, [target])
+    for (const line of stdout.split('\n')) {
+      const p = line.trim()
+      if (!p) continue
+      add(await tryFFmpegPath(p, 'path'))
+    }
+  } catch { /* ignore */ }
+
+  // Sort by version descending (custom stays first)
+  const custom = results.find((r) => r.source === 'custom')
+  const rest = results.filter((r) => r.source !== 'custom')
+  rest.sort((a, b) => (b.version ?? '').localeCompare(a.version ?? '', undefined, { numeric: true }))
+  return custom ? [custom, ...rest] : rest
 }
 
 /** 读取当前 FFmpeg 实际提供的音频 encoder，并单独探测 AAC 新旧算法选项。 */

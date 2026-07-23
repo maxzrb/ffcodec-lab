@@ -7,7 +7,7 @@
 import { ipcMain, dialog, shell, BrowserWindow, net, app } from 'electron'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { detectAudioEncoderCapabilities, detectFFmpeg, detectFFmpegTools } from './ffmpeg-detect'
+import { detectAllFFmpegVersions, detectAudioEncoderCapabilities, detectFFmpeg, detectFFmpegTools } from './ffmpeg-detect'
 import {
   initStore,
   getItem as storageGetItem,
@@ -146,6 +146,11 @@ function registerFFmpegHandlers(): void {
       return null
     }
     return probeMedia(ffmpegPath, inputPath)
+  })
+
+  /** 列出所有检测到的 ffmpeg 版本（bundled + PATH，自定义排最前）。 */
+  ipcMain.handle('ffmpeg:listVersions', async (_event, customPath?: string) => {
+    return detectAllFFmpegVersions(customPath)
   })
 }
 

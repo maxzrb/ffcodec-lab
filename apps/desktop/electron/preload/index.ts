@@ -118,6 +118,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   probeMedia: (ffmpegPath: string, inputPath: string) =>
     ipcRenderer.invoke('ffmpeg:probe', ffmpegPath, inputPath),
 
+  /** 列出所有检测到的 ffmpeg 版本。 */
+  listFFmpegVersions: (customPath?: string) =>
+    ipcRenderer.invoke('ffmpeg:listVersions', customPath) as Promise<FFmpegInfo[]>,
+
   getAudioEncoderCapabilities: (customPath?: string) =>
     ipcRenderer.invoke('ffmpeg:audioCapabilities', customPath) as Promise<{
       encoders: string[]
@@ -279,6 +283,7 @@ declare global {
       detectFFmpeg: (customPath?: string) => Promise<FFmpegInfo>
       getFFmpegToolsInfo: (customPath?: string) => Promise<{ ffmpeg: boolean; ffprobe: boolean; ffplay: boolean; baseDir: string } | null>
       probeMedia: (ffmpegPath: string, inputPath: string) => Promise<Record<string, unknown> | null>
+      listFFmpegVersions: (customPath?: string) => Promise<FFmpegInfo[]>
       getAudioEncoderCapabilities: (customPath?: string) => Promise<{ encoders: string[]; aacOptions: string[] } | null>
 
       // Phase 9: FFmpeg job execution
