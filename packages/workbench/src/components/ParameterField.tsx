@@ -215,7 +215,9 @@ function renderControl(
             disabled={disabled}
           />
           <span className="switch-control__track" aria-hidden="true" />
-          <span>{field.value ? text('开启') : text('关闭')}</span>
+          <span>{field.id.includes('codecMode')
+            ? (field.value ? text('编码') : text('复制'))
+            : (field.value ? text('开启') : text('关闭'))}</span>
         </label>
       )
 

@@ -60,6 +60,34 @@ export function buildCommandPlan(
   return plan
 }
 
+/** 从旧 config 字段迁移为 StreamMapEntry[]（兼容旧预设/分享链接）。 */
+function migrateLegacyStreams(
+  indexes: number[] | undefined,
+  singleIndex: number | undefined,
+  preserveAll: boolean | undefined,
+  mode: string | undefined,
+): { index: number; codecMode: 'encode' | 'copy' }[] {
+  if (mode === 'disabled') return []
+  if (preserveAll) {
+    // 旧"保留全部"→逐流 copy（保守处理：旧行为本身不区分 encode/copy）
+    return [{ index: 0, codecMode: 'copy' }]
+  }
+  const list = (indexes && indexes.length > 0) ? indexes : [singleIndex ?? 0]
+  return list.map((idx) => ({ index: idx, codecMode: 'encode' as const }))
+}
+
+/** 收集指定 codecMode 的输出流索引。 */
+function collectStreamIndices(
+  entries: { codecMode: 'encode' | 'copy' }[],
+  mode: 'encode' | 'copy',
+): number[] {
+  const indices: number[] = []
+  entries.forEach((entry, i) => {
+    if (entry.codecMode === mode) indices.push(i)
+  })
+  return indices
+}
+
 /** 为双遍编码第一遍构造不产生真实媒体文件的视频分析输出。 */
 function buildFirstPassOutput(output: OutputSpec): OutputSpec {
   return {
@@ -198,70 +226,59 @@ function buildOutput(
     path: config.output.path,
   }
 
-  const explicitStreamMapping =
-    config.streams.videoStreamIndexes.length > 0
-    || config.streams.audioStreamIndexes.length > 0
-    || config.streams.videoStreamIndex !== undefined
-    || config.streams.audioStreamIndex !== undefined
-    || config.streams.subtitleStreamIndexes.length > 0
-    || config.streams.subtitleStreamIndex !== undefined
-    || config.streams.preserveOtherVideoStreams
-    || config.streams.preserveOtherAudioStreams
-    || config.streams.preserveOtherSubtitleStreams
+  // ---- 逐流 -map（新模型：每项带 codecMode）----
 
-  if (explicitStreamMapping) {
-    if (config.video.mode !== 'disabled') {
-      const videoIndexes = config.streams.videoStreamIndexes.length > 0
-        ? config.streams.videoStreamIndexes
-        : [config.streams.videoStreamIndex ?? 0]
-      const selectors = config.streams.preserveOtherVideoStreams
-        ? ['0:v?']
-        : videoIndexes.map((index) => `0:v:${index}?`)
-      selectors.forEach((selector, index) => output.maps.push({
-        id: `map.video.${index}`,
-        originId: config.streams.preserveOtherVideoStreams
-          ? 'streams.preserveOtherVideoStreams'
-          : 'streams.videoStreamIndexes',
+  const videoEntries = config.streams.videoStreams.length > 0
+    ? config.streams.videoStreams
+    : migrateLegacyStreams(config.streams.videoStreamIndexes, config.streams.videoStreamIndex, config.streams.preserveOtherVideoStreams, config.video.mode)
+  const audioEntries = config.streams.audioStreams.length > 0
+    ? config.streams.audioStreams
+    : migrateLegacyStreams(config.streams.audioStreamIndexes, config.streams.audioStreamIndex, config.streams.preserveOtherAudioStreams, config.audio.mode)
+  const subtitleEntries = config.streams.subtitleStreams.length > 0
+    ? config.streams.subtitleStreams
+    : migrateLegacyStreams(config.streams.subtitleStreamIndexes, config.streams.subtitleStreamIndex, config.streams.preserveOtherSubtitleStreams, undefined)
+
+  // 为每条 entry 生成 -map，记录输出流索引
+  const videoOutputIndices: number[] = []
+  if (config.video.mode !== 'disabled') {
+    videoEntries.forEach((entry, i) => {
+      videoOutputIndices.push(i)
+      output.maps.push({
+        id: `map.video.${i}`,
+        originId: `streams.videoStreams.${i}`,
         phase: 'MAP',
-        tokens: ['-map', selector],
-      }))
-    }
-    if (config.audio.mode !== 'disabled') {
-      const audioIndexes = config.streams.audioStreamIndexes.length > 0
-        ? config.streams.audioStreamIndexes
-        : [config.streams.audioStreamIndex ?? 0]
-      const selectors = config.streams.preserveOtherAudioStreams
-        ? ['0:a?']
-        : audioIndexes.map((index) => `0:a:${index}?`)
-      selectors.forEach((selector, index) => output.maps.push({
-        id: `map.audio.${index}`,
-        originId: config.streams.preserveOtherAudioStreams
-          ? 'streams.preserveOtherAudioStreams'
-          : 'streams.audioStreamIndexes',
-        phase: 'MAP',
-        tokens: ['-map', selector],
-      }))
-    }
-    if (config.streams.preserveOtherSubtitleStreams || config.streams.subtitleStreamIndexes.length > 0 || config.streams.subtitleStreamIndex !== undefined) {
-      const subtitleIndexes = config.streams.subtitleStreamIndexes.length > 0
-        ? config.streams.subtitleStreamIndexes
-        : [config.streams.subtitleStreamIndex ?? 0]
-      const selectors = config.streams.preserveOtherSubtitleStreams
-        ? ['0:s?']
-        : subtitleIndexes.map((index) => `0:s:${index}?`)
-      selectors.forEach((selector, index) => output.maps.push({
-        id: `map.subtitle.${index}`,
-        originId: config.streams.preserveOtherSubtitleStreams
-          ? 'streams.preserveOtherSubtitleStreams'
-          : 'streams.subtitleStreamIndexes',
-        phase: 'MAP',
-        tokens: ['-map', selector],
-      }))
-    }
+        tokens: ['-map', `0:v:${entry.index}`],
+      })
+    })
   }
+  const audioOutputIndices: number[] = []
+  if (config.audio.mode !== 'disabled') {
+    audioEntries.forEach((entry, i) => {
+      audioOutputIndices.push(i)
+      output.maps.push({
+        id: `map.audio.${i}`,
+        originId: `streams.audioStreams.${i}`,
+        phase: 'MAP',
+        tokens: ['-map', `0:a:${entry.index}`],
+      })
+    })
+  }
+  const subtitleOutputIndices: number[] = []
+  subtitleEntries.forEach((entry, i) => {
+    subtitleOutputIndices.push(i)
+    output.maps.push({
+      id: `map.subtitle.${i}`,
+      originId: `streams.subtitleStreams.${i}`,
+      phase: 'MAP',
+      tokens: ['-map', `0:s:${entry.index}`],
+    })
+  })
 
   // -- video --------------------------------------------------
-  if (config.video.mode === 'disabled') {
+  const videoEncodeIndices = collectStreamIndices(videoEntries, 'encode')
+  const videoCopyIndices = collectStreamIndices(videoEntries, 'copy')
+
+  if (config.video.mode === 'disabled' || videoEntries.length === 0) {
     output.codecArgs.push({
       id: 'codec.vn',
       originId: 'video.mode',
@@ -269,67 +286,74 @@ function buildOutput(
       tokens: ['-vn'],
     })
   } else if (config.video.mode === 'copy') {
-    output.codecArgs.push({
-      id: 'codec.v.copy',
-      originId: 'video.mode',
-      phase: 'VIDEO_CODEC',
-      tokens: ['-c:v', 'copy'],
-    })
-  } else if (config.video.mode === 'encode' && config.video.encoderId) {
-    const encoder = catalog.encoders.video[config.video.encoderId]
-    if (encoder) {
-      // Video codec
+    // All video streams copy (overrides per-stream codecMode)
+    videoEntries.forEach((_entry, outIdx) => {
       output.codecArgs.push({
-        id: 'codec.v.encoder',
-        originId: 'param.video.encoder',
+        id: `codec.v.copy.${outIdx}`,
+        originId: 'video.mode',
         phase: 'VIDEO_CODEC',
-        tokens: ['-c:v', encoder.ffmpegName],
-        explanationId: encoder.explanationId,
+        tokens: [`-c:v:${outIdx}`, 'copy'],
       })
-
-      // Preset
-      if (config.video.preset && config.video.preset !== 'auto' && encoder.preset) {
-        output.codecArgs.push({
-          id: 'codec.preset',
-          originId: 'video.preset',
-          phase: 'VIDEO_CODEC',
-          tokens: ['-preset', String(config.video.preset)],
-          explanationId: encoder.preset.explanationId,
+    })
+  } else {
+    // Copy streams (per-stream codecMode)
+    videoCopyIndices.forEach((outIdx) => {
+      output.codecArgs.push({
+        id: `codec.v.copy.${outIdx}`,
+        originId: `streams.videoStreams.${outIdx}`,
+        phase: 'VIDEO_CODEC',
+        tokens: [`-c:v:${outIdx}`, 'copy'],
+      })
+    })
+    // Encode streams
+    if (videoEncodeIndices.length > 0 && config.video.encoderId) {
+      const encoder = catalog.encoders.video[config.video.encoderId]
+      if (encoder) {
+        videoEncodeIndices.forEach((outIdx) => {
+          output.codecArgs.push({
+            id: `codec.v.encoder.${outIdx}`,
+            originId: 'param.video.encoder',
+            phase: 'VIDEO_CODEC',
+            tokens: [`-c:v:${outIdx}`, encoder.ffmpegName],
+            explanationId: encoder.explanationId,
+          })
+          if (config.video.preset && config.video.preset !== 'auto' && encoder.preset) {
+            output.codecArgs.push({
+              id: `codec.preset.${outIdx}`,
+              originId: 'video.preset',
+              phase: 'VIDEO_CODEC',
+              tokens: [`-preset:v:${outIdx}`, String(config.video.preset)],
+              explanationId: encoder.preset.explanationId,
+            })
+          }
+          if (config.video.profile && config.video.profile !== 'auto' && encoder.profile) {
+            output.codecArgs.push({
+              id: `codec.profile.${outIdx}`,
+              originId: 'video.profile',
+              phase: 'VIDEO_PROFILE',
+              tokens: [`-profile:v:${outIdx}`, String(config.video.profile)],
+              explanationId: encoder.profile.explanationId,
+            })
+          }
+          if (config.video.tune && config.video.tune !== 'auto' && encoder.tune) {
+            output.codecArgs.push({
+              id: `codec.tune.${outIdx}`,
+              originId: 'video.tune',
+              phase: 'VIDEO_CODEC',
+              tokens: [`-tune:v:${outIdx}`, String(config.video.tune)],
+              explanationId: encoder.tune.explanationId,
+            })
+          }
+          if (config.video.pixelFormat && config.video.pixelFormat !== 'auto' && encoder.pixelFormat) {
+            output.codecArgs.push({
+              id: `codec.pixfmt.${outIdx}`,
+              originId: 'video.pixelFormat',
+              phase: 'VIDEO_CODEC',
+              tokens: [`-pix_fmt:${outIdx}`, String(config.video.pixelFormat)],
+              explanationId: encoder.pixelFormat.explanationId,
+            })
+          }
         })
-      }
-
-      // Profile
-      if (config.video.profile && config.video.profile !== 'auto' && encoder.profile) {
-        output.codecArgs.push({
-          id: 'codec.profile',
-          originId: 'video.profile',
-          phase: 'VIDEO_PROFILE',
-          tokens: ['-profile:v', String(config.video.profile)],
-          explanationId: encoder.profile.explanationId,
-        })
-      }
-
-      // Tune
-      if (config.video.tune && config.video.tune !== 'auto' && encoder.tune) {
-        output.codecArgs.push({
-          id: 'codec.tune',
-          originId: 'video.tune',
-          phase: 'VIDEO_CODEC',
-          tokens: ['-tune', String(config.video.tune)],
-          explanationId: encoder.tune.explanationId,
-        })
-      }
-
-      // Pixel format
-      if (config.video.pixelFormat && config.video.pixelFormat !== 'auto' && encoder.pixelFormat) {
-        output.codecArgs.push({
-          id: 'codec.pixfmt',
-          originId: 'video.pixelFormat',
-          phase: 'VIDEO_CODEC',
-          tokens: ['-pix_fmt', String(config.video.pixelFormat)],
-          explanationId: encoder.pixelFormat.explanationId,
-        })
-      }
 
       const colorArguments: Array<[keyof NonNullable<ProjectConfig['video']['color']>, string]> = [
         ['space', '-colorspace'],
@@ -353,17 +377,19 @@ function buildOutput(
       // 目标大小工具接管平均视频码率，但不改写原质量控制配置；关闭后可原样恢复。
       if (targetSize.enabled) {
         if (targetSize.videoBitrateKbps !== undefined) {
-          output.qualityArgs.push({
-            id: 'quality.targetSize.bitrate',
-            originId: 'tools.targetSize.targetMiB',
-            phase: 'VIDEO_RATE_CONTROL',
-            tokens: ['-b:v', `${targetSize.videoBitrateKbps}k`],
+          videoEncodeIndices.forEach((outIdx) => {
+            output.qualityArgs.push({
+              id: `quality.targetSize.bitrate.${outIdx}`,
+              originId: 'tools.targetSize.targetMiB',
+              phase: 'VIDEO_RATE_CONTROL',
+              tokens: [`-b:v:${outIdx}`, `${targetSize.videoBitrateKbps}k`],
+            })
           })
         }
       } else if (config.video.rateControl) {
         const qMode = encoder.qualityModes.find((m) => m.id === config.video.rateControl!.mode)
         if (qMode) {
-          // Emit mode-level arguments first (e.g. -rc vbr for NVENC CQ)
+          // Emit mode-level arguments once (encoder-level, not per-stream)
           for (const tpl of qMode.modeArguments ?? []) {
             output.qualityArgs.push({
               id: `quality.mode.${tpl.argName}`,
@@ -372,23 +398,26 @@ function buildOutput(
               tokens: tpl.value !== undefined ? [tpl.argName, String(tpl.value)] : [tpl.argName],
             })
           }
-          // Then emit per-control arguments
-          for (const ctrl of qMode.controls) {
-            if (ctrl.commandBinding) {
-              const val = getControlValue(config, ctrl) ?? ctrl.defaultValue
-              if (val !== undefined && val !== null) {
-                output.qualityArgs.push({
-                  id: `quality.${ctrl.id}`,
-                  originId: `video.rateControl.controls.${ctrl.id}`,
-                  phase: ctrl.commandBinding.phase,
-                  tokens: ctrl.commandBinding.compact
-                    ? [ctrl.commandBinding.prefix!]
-                    : [ctrl.commandBinding.prefix!, String(val)],
-                  explanationId: ctrl.explanationId,
-                })
+          // Emit per-control arguments for each encode stream
+          videoEncodeIndices.forEach((outIdx) => {
+            for (const ctrl of qMode.controls) {
+              if (ctrl.commandBinding) {
+                const val = getControlValue(config, ctrl) ?? ctrl.defaultValue
+                if (val !== undefined && val !== null) {
+                  const streamPrefix = `${ctrl.commandBinding.prefix!}:${outIdx}`
+                  output.qualityArgs.push({
+                    id: `quality.${ctrl.id}.${outIdx}`,
+                    originId: `video.rateControl.controls.${ctrl.id}`,
+                    phase: ctrl.commandBinding.phase,
+                    tokens: ctrl.commandBinding.compact
+                      ? [streamPrefix]
+                      : [streamPrefix, String(val)],
+                    explanationId: ctrl.explanationId,
+                  })
+                }
               }
             }
-          }
+          })
         }
       }
 
@@ -396,6 +425,7 @@ function buildOutput(
       // 仅用于说明编码器自身默认行为，不能让默认命令变得冗长。
       output.codecArgs.push(...buildVideoSpecialParameterArgs(config, encoder))
     }
+  }
   }
 
   // -- video filters ------------------------------------------
@@ -406,7 +436,10 @@ function buildOutput(
   }
 
   // -- audio --------------------------------------------------
-  if (config.audio.mode === 'disabled') {
+  const audioEncodeIndices = collectStreamIndices(audioEntries, 'encode')
+  const audioCopyIndices = collectStreamIndices(audioEntries, 'copy')
+
+  if (config.audio.mode === 'disabled' || audioEntries.length === 0) {
     output.audioArgs.push({
       id: 'codec.an',
       originId: 'audio.mode',
@@ -414,49 +447,62 @@ function buildOutput(
       tokens: ['-an'],
     })
   } else if (config.audio.mode === 'copy') {
-    output.audioArgs.push({
-      id: 'codec.a.copy',
-      originId: 'audio.mode',
-      phase: 'AUDIO_CODEC',
-      tokens: ['-c:a', 'copy'],
-    })
-  } else if (config.audio.mode === 'encode' && config.audio.encoderId) {
-    const aEncoder = catalog.encoders.audio[config.audio.encoderId]
-    if (aEncoder) {
+    // All audio streams copy (overrides per-stream codecMode)
+    audioEntries.forEach((_entry, outIdx) => {
       output.audioArgs.push({
-        id: 'codec.a.encoder',
-        originId: 'param.audio.encoder',
+        id: `codec.a.copy.${outIdx}`,
+        originId: 'audio.mode',
         phase: 'AUDIO_CODEC',
-        tokens: ['-c:a', aEncoder.ffmpegName],
-        explanationId: aEncoder.explanationId,
+        tokens: [`-c:a:${outIdx}`, 'copy'],
       })
-
-      if (config.audio.bitrate && aEncoder.qualityModes.length > 0) {
-        output.audioArgs.push({
-          id: 'quality.a.bitrate',
-          originId: 'audio.bitrate',
-          phase: 'AUDIO_QUALITY',
-          tokens: ['-b:a', config.audio.bitrate],
+    })
+  } else {
+    // Copy streams (per-stream codecMode)
+    audioCopyIndices.forEach((outIdx) => {
+      output.audioArgs.push({
+        id: `codec.a.copy.${outIdx}`,
+        originId: `streams.audioStreams.${outIdx}`,
+        phase: 'AUDIO_CODEC',
+        tokens: [`-c:a:${outIdx}`, 'copy'],
+      })
+    })
+    // Encode streams
+    if (audioEncodeIndices.length > 0 && config.audio.encoderId) {
+      const aEncoder = catalog.encoders.audio[config.audio.encoderId]
+      if (aEncoder) {
+        audioEncodeIndices.forEach((outIdx) => {
+          output.audioArgs.push({
+            id: `codec.a.encoder.${outIdx}`,
+            originId: 'param.audio.encoder',
+            phase: 'AUDIO_CODEC',
+            tokens: [`-c:a:${outIdx}`, aEncoder.ffmpegName],
+            explanationId: aEncoder.explanationId,
+          })
+          if (config.audio.bitrate && aEncoder.qualityModes.length > 0) {
+            output.audioArgs.push({
+              id: `quality.a.bitrate.${outIdx}`,
+              originId: 'audio.bitrate',
+              phase: 'AUDIO_QUALITY',
+              tokens: [`-b:a:${outIdx}`, config.audio.bitrate],
+            })
+          }
+          if (config.audio.channelLayout && config.audio.channelLayout !== 'source') {
+            output.audioArgs.push({
+              id: `quality.a.ch.${outIdx}`,
+              originId: 'audio.channelLayout',
+              phase: 'AUDIO_QUALITY',
+              tokens: [`-channel_layout:a:${outIdx}`, config.audio.channelLayout],
+            })
+          }
+          if (config.audio.sampleRate) {
+            output.audioArgs.push({
+              id: `quality.a.sr.${outIdx}`,
+              originId: 'audio.sampleRate',
+              phase: 'AUDIO_QUALITY',
+              tokens: [`-ar:${outIdx}`, String(config.audio.sampleRate)],
+            })
+          }
         })
-      }
-
-      if (config.audio.channelLayout && config.audio.channelLayout !== 'source') {
-        output.audioArgs.push({
-          id: 'quality.a.ch',
-          originId: 'audio.channelLayout',
-          phase: 'AUDIO_QUALITY',
-          tokens: ['-channel_layout:a', config.audio.channelLayout],
-        })
-      }
-
-      if (config.audio.sampleRate) {
-        output.audioArgs.push({
-          id: 'quality.a.sr',
-          originId: 'audio.sampleRate',
-          phase: 'AUDIO_QUALITY',
-          tokens: ['-ar', String(config.audio.sampleRate)],
-        })
-      }
 
       const loudness = config.audio.loudnessNormalization
       const loudnessTargets = [
@@ -470,16 +516,18 @@ function buildOutput(
           'linear=false',
           `dual_mono=${loudness.dualMono ? 'true' : 'false'}`,
         ].join(':')
-        output.audioArgs.push({
-          id: 'filter.audio.loudnorm',
-          originId: loudness.integratedLoudnessEnabled
-            ? 'audio.loudnessNormalization.integratedLoudness'
-            : loudness.loudnessRangeEnabled
-              ? 'audio.loudnessNormalization.loudnessRange'
-              : 'audio.loudnessNormalization.truePeak',
-          phase: 'AUDIO_QUALITY',
-          tokens: ['-filter:a', `loudnorm=${filter}`],
-          explanationId: 'expl.audio.loudnorm',
+        audioEncodeIndices.forEach((outIdx) => {
+          output.audioArgs.push({
+            id: `filter.audio.loudnorm.${outIdx}`,
+            originId: loudness.integratedLoudnessEnabled
+              ? 'audio.loudnessNormalization.integratedLoudness'
+              : loudness.loudnessRangeEnabled
+                ? 'audio.loudnessNormalization.loudnessRange'
+                : 'audio.loudnessNormalization.truePeak',
+            phase: 'AUDIO_QUALITY',
+            tokens: [`-filter:a:${outIdx}`, `loudnorm=${filter}`],
+            explanationId: 'expl.audio.loudnorm',
+          })
         })
       }
 
@@ -507,6 +555,7 @@ function buildOutput(
         })
       }
     }
+  }
   }
 
   // -- subtitle tracks -------------------------------------------

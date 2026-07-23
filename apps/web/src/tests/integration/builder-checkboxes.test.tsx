@@ -178,14 +178,14 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(useBuilderStore.getState().config.video.rateControl?.mode).toBe('crf')
     let command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
     expect(command).toContain('-pass 1')
-    expect(command).toContain('-b:v 862k')
-    expect(command).not.toContain('-crf 23')
+    expect(command).toContain('-b:v:0 862k')
+    expect(command).not.toContain('-crf:0 23')
 
     await userEvent.click(screen.getByLabelText('启用目标文件大小'))
     await waitFor(() => {
       expect(useBuilderStore.getState().config.tools.targetSize.enabled).toBe(false)
       command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
-      expect(command).toContain('-crf 23')
+      expect(command).toContain('-crf:0 23')
       expect(command).not.toContain('-pass 1')
     })
   })
@@ -906,15 +906,12 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
         'section.customArgs': false,
       },
     })
-    // 关闭"保留全部字幕流"以启用字幕多选复选框
-    const store = useBuilderStore.getState()
-    store.setConfigValue('streams.preserveOtherSubtitleStreams', false)
     render(<TestWrapper />)
     await openPanel('流与封装')
 
-    const videoField = document.querySelector('[data-field-id="streams.videoStreamIndexes"]')!
-    const audioField = document.querySelector('[data-field-id="streams.audioStreamIndexes"]')!
-    const subtitleField = document.querySelector('[data-field-id="streams.subtitleStreamIndexes"]')!
+    const videoField = document.querySelector('[data-field-id="streams.videoStreams"]')!
+    const audioField = document.querySelector('[data-field-id="streams.audioStreams"]')!
+    const subtitleField = document.querySelector('[data-field-id="streams.subtitleStreams"]')!
     const videoOptions = videoField.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
     const audioOptions = audioField.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
     const subtitleOptions = subtitleField.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
@@ -923,8 +920,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await userEvent.click(audioOptions[1])
     await userEvent.click(subtitleOptions[3])
 
-    expect(useBuilderStore.getState().config.streams.videoStreamIndexes).toEqual([0, 2])
-    expect(useBuilderStore.getState().config.streams.audioStreamIndexes).toEqual([0, 1])
-    expect(useBuilderStore.getState().config.streams.subtitleStreamIndexes).toEqual([0, 3])
+    expect(useBuilderStore.getState().config.streams.videoStreams.map(function(e){return e.index})).toEqual([0, 2])
+    expect(useBuilderStore.getState().config.streams.audioStreams.map(function(e){return e.index})).toEqual([0, 1])
+    expect(useBuilderStore.getState().config.streams.subtitleStreams.map(function(e){return e.index})).toEqual([3])
   })
 })

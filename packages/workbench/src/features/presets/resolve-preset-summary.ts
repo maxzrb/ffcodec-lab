@@ -75,16 +75,12 @@ function resolveContainerSummary(config: ProjectConfig, catalog: Catalog): strin
 function resolveSubtitleSummary(config: ProjectConfig, locale: Locale): string {
   const trackCount = config.subtitle.tracks.length
   const hasBurn = config.subtitle.burn.enabled
-  const hasPreserve = config.streams.preserveOtherSubtitleStreams
-  const hasStreamSelection = config.streams.subtitleStreamIndexes.length > 0
+  const hasStreamSelection = config.streams.subtitleStreams.length > 0
 
   const parts: string[] = []
 
-  // Describe stream preservation / selection
-  if (hasPreserve) {
-    parts.push(locale === 'zh-CN' ? '保留全部字幕流' : 'All subtitle streams')
-  } else if (hasStreamSelection) {
-    const count = config.streams.subtitleStreamIndexes.length
+  if (hasStreamSelection) {
+    const count = config.streams.subtitleStreams.length
     parts.push(locale === 'zh-CN' ? `保留 ${count} 条字幕流` : `${count} subtitle stream(s)`)
   }
 

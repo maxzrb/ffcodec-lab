@@ -22,6 +22,8 @@ const ENGLISH_TEXT: Record<string, string> = {
   '输入与输出': 'Input & output',
   '配置文件': 'Configuration',
   '偏好存储位置': 'Preference storage',
+  '编码': 'Encode',
+  '复制': 'Copy',
   '视频编码': 'Video encoding',
   '编解码标准': 'Codec standard',
   '编码器私有参数': 'Encoder private parameters',

@@ -50,11 +50,8 @@ export function calculateTargetSize(
     ))
   }
 
-  const videoStreamCount = getExplicitStreamCount(
-    config.streams.videoStreamIndexes,
-    config.streams.videoStreamIndex,
-  )
-  if (config.streams.preserveOtherVideoStreams || videoStreamCount !== 1) {
+  const videoStreamCount = config.streams.videoStreams.length
+  if (videoStreamCount !== 1) {
     diagnostics.push(makeError(
       'error.targetSize.video.singleStream',
       'Target-size encoding requires exactly one explicitly selected video stream.',
@@ -208,16 +205,8 @@ function resolveAudioBudget(config: ProjectConfig, catalog: Catalog): AudioBudge
     }
   }
 
-  const streamCount = getExplicitStreamCount(
-    config.streams.audioStreamIndexes,
-    config.streams.audioStreamIndex,
-  )
+  const streamCount = config.streams.audioStreams.length
   return { totalKbps: bitrateKbps * streamCount, streamCount }
-}
-
-function getExplicitStreamCount(indexes: number[], legacyIndex?: number): number {
-  const values = indexes.length > 0 ? indexes : [legacyIndex ?? 0]
-  return new Set(values).size
 }
 
 /** 解析 FFmpeg 常用 bps/k/M 码率写法并统一为十进制 kbps。 */

@@ -212,15 +212,28 @@ export const projectConfigSchema = z.object({
     metadata: metadataConfigSchema.default({ globalRaw: '', streamRaw: '' }),
   }),
   streams: z.object({
-    videoStreamIndexes: z.array(z.number().int().nonnegative()).default([]),
-    audioStreamIndexes: z.array(z.number().int().nonnegative()).default([]),
+    videoStreams: z.array(z.object({
+      index: z.number().int().nonnegative(),
+      codecMode: z.enum(['encode', 'copy']),
+    })).default([{ index: 0, codecMode: 'encode' as const }]),
+    audioStreams: z.array(z.object({
+      index: z.number().int().nonnegative(),
+      codecMode: z.enum(['encode', 'copy']),
+    })).default([{ index: 0, codecMode: 'encode' as const }]),
+    subtitleStreams: z.array(z.object({
+      index: z.number().int().nonnegative(),
+      codecMode: z.enum(['encode', 'copy']),
+    })).default([]),
+    // ---- 旧字段，仅迁移兼容 ----
+    videoStreamIndexes: z.array(z.number().int().nonnegative()).optional(),
+    audioStreamIndexes: z.array(z.number().int().nonnegative()).optional(),
     videoStreamIndex: z.number().int().nonnegative().optional(),
     audioStreamIndex: z.number().int().nonnegative().optional(),
-    subtitleStreamIndexes: z.array(z.number().int().nonnegative()).default([]),
+    subtitleStreamIndexes: z.array(z.number().int().nonnegative()).optional(),
     subtitleStreamIndex: z.number().int().nonnegative().optional(),
-    preserveOtherVideoStreams: z.boolean(),
-    preserveOtherAudioStreams: z.boolean(),
-    preserveOtherSubtitleStreams: z.boolean(),
+    preserveOtherVideoStreams: z.boolean().optional(),
+    preserveOtherAudioStreams: z.boolean().optional(),
+    preserveOtherSubtitleStreams: z.boolean().optional(),
   }),
   video: videoConfigSchema,
   frame: z.object({

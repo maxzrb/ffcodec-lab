@@ -71,7 +71,7 @@ describe('NVENC encoder catalog', () => {
 })
 
 describe('NVENC command generation', () => {
-  it('h264_nvenc CQ mode generates -rc vbr -cq N', () => {
+  it('h264_nvenc CQ mode generates -rc:0 vbr -cq N', () => {
     const plan = buildCommandPlan(nvencCqConfig(), catalog, [])
     const text = renderBash(plan).text
 
@@ -96,7 +96,7 @@ describe('NVENC command generation', () => {
     expect(disabledText).toContain('-temporal_aq 1')
   })
 
-  it('h264_nvenc CQP mode generates -rc constqp -qp N', () => {
+  it('h264_nvenc CQP mode generates -rc:0 constqp -qp:0 N', () => {
     const config = makeConfig({
       video: {
         encoderId: 'h264_nvenc',
@@ -123,7 +123,7 @@ describe('NVENC command generation', () => {
     expect(text).toContain('-bufsize')
   })
 
-  it('NVENC CBR mode generates -rc cbr -b:v N', () => {
+  it('NVENC CBR mode generates -rc:0 cbr -b:v:0 N', () => {
     const config = makeConfig({
       video: {
         encoderId: 'h264_nvenc',

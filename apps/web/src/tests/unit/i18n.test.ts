@@ -89,7 +89,6 @@ describe('全局中英文切换', () => {
     )
 
     const subtitleConfig = createDefaultProjectConfig()
-    subtitleConfig.streams.preserveOtherSubtitleStreams = false
     subtitleConfig.subtitle.tracks = [{
       id: 'track-1', source: 'external', path: 'subtitle.srt', externalStreamIndex: 0,
       codecMode: 'transcode', codec: 'srt', sourceCodecKnown: true, language: 'eng', title: 'English',

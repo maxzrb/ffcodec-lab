@@ -32,12 +32,9 @@ export function createDefaultProjectConfig(): ProjectConfig {
       metadata: { globalRaw: '', streamRaw: '' },
     },
     streams: {
-      videoStreamIndexes: [0],
-      audioStreamIndexes: [0],
-      subtitleStreamIndexes: [0],
-      preserveOtherVideoStreams: false,
-      preserveOtherAudioStreams: false,
-      preserveOtherSubtitleStreams: true,
+      videoStreams: [{ index: 0, codecMode: 'encode' as const }],
+      audioStreams: [{ index: 0, codecMode: 'encode' as const }],
+      subtitleStreams: [],
     },
     video: {
       mode: 'encode',

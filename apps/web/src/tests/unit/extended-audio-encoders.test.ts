@@ -21,7 +21,7 @@ describe('平台、语音、旧格式与实验音频编码器', () => {
     'libtwolame', 'libopencore_amrnb', 'libvo_amrwbenc',
   ])('%s 已进入共享目录并生成正确 encoder', (encoderId) => {
     expect(catalog.encoders.audio[encoderId]).toBeDefined()
-    expect(commandFor(encoderId)).toContain(`-c:a ${encoderId}`)
+    expect(commandFor(encoderId)).toContain(`-c:a:0 ${encoderId}`)
   })
 
   it('实验 encoder 自动附加 strict experimental', () => {

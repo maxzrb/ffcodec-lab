@@ -76,15 +76,13 @@ export const CONFIG_PATHS = {
   },
 
   streams: {
+    videoStreams: configPath(['streams', 'videoStreams']),
+    audioStreams: configPath(['streams', 'audioStreams']),
+    subtitleStreams: configPath(['streams', 'subtitleStreams']),
+    // 旧字段（迁移兼容）
     videoStreamIndexes: configPath(['streams', 'videoStreamIndexes']),
     audioStreamIndexes: configPath(['streams', 'audioStreamIndexes']),
-    videoStreamIndex: configPath(['streams', 'videoStreamIndex']),
-    audioStreamIndex: configPath(['streams', 'audioStreamIndex']),
     subtitleStreamIndexes: configPath(['streams', 'subtitleStreamIndexes']),
-    subtitleStreamIndex: configPath(['streams', 'subtitleStreamIndex']),
-    preserveOtherVideoStreams: configPath(['streams', 'preserveOtherVideoStreams']),
-    preserveOtherAudioStreams: configPath(['streams', 'preserveOtherAudioStreams']),
-    preserveOtherSubtitleStreams: configPath(['streams', 'preserveOtherSubtitleStreams']),
   },
 
   video: {

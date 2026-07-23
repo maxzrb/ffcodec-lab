@@ -66,22 +66,40 @@ export interface MetadataConfig {
   streamRaw: string
 }
 
+export interface StreamMapEntry {
+  /** 类型内相对流索引（0=v:0, 1=v:1）。 */
+  index: number
+  /** 编码模式：encode（参与编码）或 copy（原样复制）。默认 encode。 */
+  codecMode: 'encode' | 'copy'
+}
+
 export interface StreamSelectionConfig {
-  /** 要保留的相对视频流索引，例如 [0, 2] 对应 0:v:0 与 0:v:2。 */
-  videoStreamIndexes: number[]
-  /** 要保留的相对音频流索引，例如 [0, 1] 对应 0:a:0 与 0:a:1。 */
-  audioStreamIndexes: number[]
-  /** 旧配置兼容字段；新界面使用 videoStreamIndexes。 */
+  /** 逐流映射：视频流列表，每项含 index + codecMode。默认 [{index:0, codecMode:'encode'}]。 */
+  videoStreams: StreamMapEntry[]
+  /** 逐流映射：音频流列表。 */
+  audioStreams: StreamMapEntry[]
+  /** 逐流映射：字幕流列表。 */
+  subtitleStreams: StreamMapEntry[]
+
+  // ---- 旧字段（仅用于迁移兼容，新代码不应直接读写） ----
+  /** @deprecated 迁移至 videoStreams */
+  videoStreamIndexes?: number[]
+  /** @deprecated 迁移至 audioStreams */
+  audioStreamIndexes?: number[]
+  /** @deprecated 迁移至 videoStreams */
   videoStreamIndex?: number
-  /** 旧配置兼容字段；新界面使用 audioStreamIndexes。 */
+  /** @deprecated 迁移至 audioStreams */
   audioStreamIndex?: number
-  /** 要保留的相对字幕流索引，例如 [0, 2] 对应 0:s:0 与 0:s:2。 */
-  subtitleStreamIndexes: number[]
-  /** 旧配置兼容字段；新界面使用 subtitleStreamIndexes。 */
+  /** @deprecated 迁移至 subtitleStreams */
+  subtitleStreamIndexes?: number[]
+  /** @deprecated 迁移至 subtitleStreams */
   subtitleStreamIndex?: number
-  preserveOtherVideoStreams: boolean
-  preserveOtherAudioStreams: boolean
-  preserveOtherSubtitleStreams: boolean
+  /** @deprecated 被逐流 codecMode 替代 */
+  preserveOtherVideoStreams?: boolean
+  /** @deprecated 被逐流 codecMode 替代 */
+  preserveOtherAudioStreams?: boolean
+  /** @deprecated 被逐流 codecMode 替代 */
+  preserveOtherSubtitleStreams?: boolean
 }
 
 export interface VideoConfig {

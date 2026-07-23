@@ -406,6 +406,7 @@ input[type="number"]:hover {
 
 .multiselect-option input {
   margin: 0;
+  accent-color: var(--accent);
 }
 
 .section-divider {
@@ -1257,6 +1258,22 @@ code {
   gap: 7px;
 }
 
+/* codecMode switches: use flex so switches flow inline */
+.parameter-section__body-inner:has([data-field-id*="codecMode"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+/* non-codecMode fields: full width to force line breaks */
+.parameter-section__body-inner:has([data-field-id*="codecMode"]) > :not([data-field-id*="codecMode"]) {
+  width: 100%;
+}
+
+[data-field-id*="codecMode"] {
+  width: auto;
+}
+
 .param-field {
   position: relative;
   border: 1px solid transparent;
@@ -1369,7 +1386,7 @@ code {
 
 .switch-control input:checked + .switch-control__track {
   border-color: var(--accent);
-  background: rgba(49, 210, 180, 0.2);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .switch-control input:checked + .switch-control__track::after {

@@ -87,8 +87,9 @@ export function applyFieldChange(
   // (for dynamic subtitle track fields and other non-binding paths)
   if (isValidDynamicPath(fieldId)) {
     // 动态字段同样必须经过类型转换；自定义参数 textarea 需要由文本变为 token 数组。
-    const coerced = coerceValue(nextValue, field)
+    let coerced = coerceValue(nextValue, field)
     if (coerced.notice) notices.push(coerced.notice)
+
     return {
       path: fieldId as ConfigPath,
       value: coerced.value,
@@ -126,7 +127,52 @@ export function applyFieldChangeToConfig(
   const change = applyFieldChange(fieldId, nextValue, fieldIndex)
   if (!change.accepted || !change.path) return { config: previous, change }
 
-  let next = setByPath(previous, change.path, change.value)
+  // 逐流 codecMode 切换：streams.<type>Streams.<N>.codecMode
+  const codecModeMatch = fieldId.match(/^streams\.(video|audio|subtitle)Streams\.(\d+)\.codecMode$/)
+  if (codecModeMatch) {
+    const [, type, idxStr] = codecModeMatch
+    const idx = Number(idxStr)
+    const key = `${type}Streams` as 'videoStreams' | 'audioStreams' | 'subtitleStreams'
+    const entries = [...previous.streams[key]]
+    if (idx < entries.length) {
+      entries[idx] = { ...entries[idx], codecMode: change.value ? 'encode' : 'copy' }
+    }
+    return { config: { ...previous, streams: { ...previous.streams, [key]: entries } }, change }
+  }
+
+  let effectiveValue = change.value
+  // 流多选字段：number[] → StreamMapEntry[]（保留已有 codecMode，新项默认 encode）
+  if (fieldId === 'streams.videoStreams' || fieldId === 'streams.audioStreams' || fieldId === 'streams.subtitleStreams') {
+    if (Array.isArray(effectiveValue) && effectiveValue.every((v: unknown) => typeof v === 'number')) {
+      const oldEntries = fieldId === 'streams.videoStreams' ? previous.streams.videoStreams
+        : fieldId === 'streams.audioStreams' ? previous.streams.audioStreams
+        : previous.streams.subtitleStreams
+      effectiveValue = (effectiveValue as number[]).map((idx) => {
+        const existing = oldEntries.find((e) => e.index === idx)
+        return existing ?? { index: idx, codecMode: 'encode' as const }
+      })
+    }
+  }
+
+  // 视频/音频模式联动：禁用时清空流，重新启用时恢复默认
+  if (fieldId === 'video.mode' && change.value === 'disabled' && previous.streams.videoStreams.length > 0) {
+    effectiveValue = []
+    change.path = 'streams.videoStreams' as unknown as ConfigPath
+  }
+  if (fieldId === 'video.mode' && change.value !== 'disabled' && change.value !== previous.video.mode && previous.streams.videoStreams.length === 0) {
+    effectiveValue = [{ index: 0, codecMode: 'encode' as const }]
+    change.path = 'streams.videoStreams' as unknown as ConfigPath
+  }
+  if (fieldId === 'audio.mode' && change.value === 'disabled' && previous.streams.audioStreams.length > 0) {
+    effectiveValue = []
+    change.path = 'streams.audioStreams' as unknown as ConfigPath
+  }
+  if (fieldId === 'audio.mode' && change.value !== 'disabled' && change.value !== previous.audio.mode && previous.streams.audioStreams.length === 0) {
+    effectiveValue = [{ index: 0, codecMode: 'encode' as const }]
+    change.path = 'streams.audioStreams' as unknown as ConfigPath
+  }
+
+  let next = setByPath(previous, change.path, effectiveValue)
   const currentAudioEncoder = previous.audio.encoderId
     ? catalog.encoders.audio[previous.audio.encoderId]
     : undefined

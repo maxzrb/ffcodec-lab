@@ -39,10 +39,10 @@ describe('AMF 与 VideoToolbox 编码器', () => {
 
   it('AMF VBR 生成官方 rc 模式与码率约束', () => {
     const command = renderEncoder('h264_amf', 'vbr', { vbaq: true, asyncDepth: 8 })
-    expect(command).toContain('-c:v h264_amf')
+    expect(command).toContain('-c:v:0 h264_amf')
     expect(command).toContain('-rc vbr_peak')
-    expect(command).toContain('-b:v 6000k')
-    expect(command).toContain('-maxrate 9000k')
+    expect(command).toContain('-b:v:0 6000k')
+    expect(command).toContain('-maxrate:0 9000k')
     expect(command).toContain('-vbaq 1')
     expect(command).toContain('-async_depth 8')
   })
@@ -50,9 +50,9 @@ describe('AMF 与 VideoToolbox 编码器', () => {
   it('AMF CQP 分别生成 I/P/B 帧量化参数', () => {
     const command = renderEncoder('hevc_amf', 'cqp')
     expect(command).toContain('-rc cqp')
-    expect(command).toContain('-qp_i 20')
-    expect(command).toContain('-qp_p 22')
-    expect(command).toContain('-qp_b 24')
+    expect(command).toContain('-qp_i:0 20')
+    expect(command).toContain('-qp_p:0 22')
+    expect(command).toContain('-qp_b:0 24')
   })
 
   it('VideoToolbox CBR 生成 macOS 13+ 恒定码率开关', () => {
@@ -60,7 +60,7 @@ describe('AMF 与 VideoToolbox 编码器', () => {
       realtime: true,
       powerEfficient: true,
     })
-    expect(command).toContain('-c:v hevc_videotoolbox')
+    expect(command).toContain('-c:v:0 hevc_videotoolbox')
     expect(command).toContain('-constant_bit_rate 1')
     expect(command).toContain('-realtime 1')
     expect(command).toContain('-power_efficient 1')
@@ -73,7 +73,7 @@ describe('AMF 与 VideoToolbox 编码器', () => {
     const normalized = normalizeConfig(previous, next, catalog).config
     const command = renderBash(buildCommandPlan(normalized, catalog, [])).text
     expect(command).toContain('-rc vbr_peak')
-    expect(command).toContain('-b:v 6000k')
+    expect(command).toContain('-b:v:0 6000k')
   })
 
   it('四个编码器在 MP4/MKV/MOV 中具有显式兼容性记录', () => {

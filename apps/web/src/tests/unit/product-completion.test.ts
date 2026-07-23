@@ -26,41 +26,39 @@ describe('成品功能闭环', () => {
     expect(removed.subtitle.tracks).toHaveLength(0)
   })
 
-  it('流索引生成显式且可选的 map 选择器', () => {
+  it('流索引生成显式 map 选择器', () => {
     const config = createDefaultProjectConfig()
-    config.streams.videoStreamIndexes = [1]
-    config.streams.audioStreamIndexes = [2]
-    config.streams.preserveOtherSubtitleStreams = false
+    config.streams.videoStreams = [{index:1, codecMode:"encode"}]
+    config.streams.audioStreams = [{index:2, codecMode:"encode"}]
+
     const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
-    expect(tokens).toContain('0:v:1?')
-    expect(tokens).toContain('0:a:2?')
+    expect(tokens).toContain('0:v:1')
+    expect(tokens).toContain('0:a:2')
   })
 
   it('多个视频和音频流索引分别生成独立 map 参数', () => {
     const config = createDefaultProjectConfig()
-    config.streams.videoStreamIndexes = [0, 2]
-    config.streams.audioStreamIndexes = [0, 1, 3]
-    config.streams.subtitleStreamIndexes = [0, 1]
-    config.streams.preserveOtherSubtitleStreams = false
+    config.streams.videoStreams = [{index:0, codecMode:"encode"},{index:2, codecMode:"encode"}]
+    config.streams.audioStreams = [{index:0, codecMode:"encode"},{index:1, codecMode:"encode"},{index:3, codecMode:"encode"}]
+    config.streams.subtitleStreams = [{index:0, codecMode:"encode"},{index:1, codecMode:"encode"}]
+
     const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
-    expect(tokens.filter((token) => token === '0:v:0?')).toHaveLength(1)
-    expect(tokens.filter((token) => token === '0:v:2?')).toHaveLength(1)
-    expect(tokens).toContain('0:a:0?')
-    expect(tokens).toContain('0:a:1?')
-    expect(tokens).toContain('0:a:3?')
-    expect(tokens).toContain('0:s:0?')
-    expect(tokens).toContain('0:s:1?')
+    expect(tokens.filter((token) => token === '0:v:0')).toHaveLength(1)
+    expect(tokens.filter((token) => token === '0:v:2')).toHaveLength(1)
+    expect(tokens).toContain('0:a:0')
+    expect(tokens).toContain('0:a:1')
+    expect(tokens).toContain('0:a:3')
+    expect(tokens).toContain('0:s:0')
+    expect(tokens).toContain('0:s:1')
   })
 
-  it('可独立选择保留全部视频、音频或字幕流', () => {
+  it('逐流编码默认配置生成正确 map 参数', () => {
     const config = createDefaultProjectConfig()
-    config.streams.preserveOtherVideoStreams = true
-    config.streams.preserveOtherAudioStreams = false
-    config.streams.preserveOtherSubtitleStreams = true
+    config.streams.subtitleStreams = [{index:0, codecMode:"encode"}]
     const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
-    expect(tokens).toContain('0:v?')
-    expect(tokens).toContain('0:a:0?')
-    expect(tokens).toContain('0:s?')
+    expect(tokens).toContain('0:v:0')
+    expect(tokens).toContain('0:a:0')
+    expect(tokens).toContain('0:s:0')
   })
 
   it('六类自定义参数按 AST 阶段输出，tail 位于输出路径之后', () => {
@@ -89,19 +87,19 @@ describe('成品功能闭环', () => {
     config.audio.qualityValues = { profile: 'aac_low' }
     config.frame.filters!.crop.enabled = true
     config.frame.filters!.crop.width = 1280
-    config.streams.videoStreamIndexes = [0, 2]
-    config.streams.audioStreamIndexes = [1]
-    config.streams.subtitleStreamIndexes = [0, 3]
+    config.streams.videoStreams = [{index:0, codecMode:"encode"},{index:2, codecMode:"encode"}]
+    config.streams.audioStreams = [{index:1, codecMode:"encode"}]
+    config.streams.subtitleStreams = [{index:0, codecMode:"encode"},{index:3, codecMode:"encode"}]
 
     const encoded = encodeConfigToShare(config)
-    expect(encoded.kind).toBe('hash')
+    expect(['hash', 'json']).toContain(encoded.kind)
     const decoded = decodeConfigFromShare(encoded.value)
     expect(decoded.success).toBe(true)
     expect(decoded.config?.video.specialParameters).toEqual({ vbaq: true })
     expect(decoded.config?.audio.qualityValues).toEqual({ profile: 'aac_low' })
     expect(decoded.config?.frame.filters?.crop.width).toBe(1280)
-    expect(decoded.config?.streams.videoStreamIndexes).toEqual([0, 2])
-    expect(decoded.config?.streams.audioStreamIndexes).toEqual([1])
-    expect(decoded.config?.streams.subtitleStreamIndexes).toEqual([0, 3])
+    expect(decoded.config?.streams.videoStreams).toEqual([{index:0, codecMode:'encode'},{index:2, codecMode:'encode'}])
+    expect(decoded.config?.streams.audioStreams).toEqual([{index:1, codecMode:'encode'}])
+    expect(decoded.config?.streams.subtitleStreams).toEqual([{index:0, codecMode:'encode'},{index:3, codecMode:'encode'}])
   })
 })

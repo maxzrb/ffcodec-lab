@@ -56,21 +56,15 @@ export function resolveInputSection(
     value: index,
     label: String(index),
   }))
-  const preserveVideoField = resolveSwitchField(
-    'streams.preserveOtherVideoStreams', '保留全部视频流',
-    config.streams.preserveOtherVideoStreams, fieldStates,
-  )
-  preserveVideoField.description = '开启后保留输入中的所有视频流；关闭时仅保留上方索引选中的视频流。'
-  const preserveAudioField = resolveSwitchField(
-    'streams.preserveOtherAudioStreams', '保留全部音频流',
-    config.streams.preserveOtherAudioStreams, fieldStates,
-  )
-  preserveAudioField.description = '开启后保留输入中的所有音频流；关闭时仅保留上方索引选中的音频流。'
-  const preserveSubtitleField = resolveSwitchField(
-    'streams.preserveOtherSubtitleStreams', '保留全部内置字幕流',
-    config.streams.preserveOtherSubtitleStreams, fieldStates,
-  )
-  preserveSubtitleField.description = '开启后保留输入中的所有字幕流；关闭时仅按字幕流索引保留一条。'
+
+  const videoIndices = config.streams.videoStreams.map((e) => e.index)
+  const audioIndices = config.streams.audioStreams.map((e) => e.index)
+  const subtitleIndices = config.streams.subtitleStreams.map((e) => e.index)
+
+  const videoActive = config.video.mode !== 'disabled'
+  const audioActive = config.audio.mode !== 'disabled'
+  const videoEncMode = config.video.mode === 'encode'
+  const audioEncMode = config.audio.mode === 'encode'
 
   const fields: ResolvedField[] = [
     resolveTextField('input.path', '输入文件路径', config.input.path, fieldStates, undefined, [
@@ -105,44 +99,59 @@ export function resolveInputSection(
       fieldStates,
     ),
     {
-      id: 'streams.videoStreamIndexes', label: '保留的视频流索引', controlType: 'multiselect',
-      description: '可勾选多个相对视频流索引；至少保留一项。开启“保留全部视频流”时忽略此项。',
-      value: (config.streams.videoStreamIndexes.length > 0
-        ? config.streams.videoStreamIndexes
-        : [config.streams.videoStreamIndex ?? 0]),
+      id: 'streams.videoStreams', label: '视频流', controlType: 'multiselect',
+      description: videoEncMode ? '勾选的视频流参与输出。默认编码，可在右侧逐项切换为复制。' : '视频流将原样复制（-c:v copy）。',
+      value: videoIndices,
       options: streamIndexOptions,
-      visible: true, disabled: config.streams.preserveOtherVideoStreams,
-      disabledReason: config.streams.preserveOtherVideoStreams ? '已选择保留全部视频流' : undefined,
+      visible: videoActive, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
-      commandOrigins: ['streams.videoStreamIndexes'], diagnostics: [],
+      commandOrigins: ['streams.videoStreams'], diagnostics: [],
     },
+    ...config.streams.videoStreams.map((entry, i) => ({
+      id: `streams.videoStreams.${i}.codecMode`,
+      label: `视频流 ${entry.index}`,
+      controlType: 'switch' as const,
+      value: entry.codecMode === 'encode',
+      visible: videoEncMode, disabled: false,
+      sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+      commandOrigins: [], diagnostics: [],
+    })),
     {
-      id: 'streams.audioStreamIndexes', label: '保留的音频流索引', controlType: 'multiselect',
-      description: '可勾选多个相对音频流索引；至少保留一项。开启“保留全部音频流”时忽略此项。',
-      value: (config.streams.audioStreamIndexes.length > 0
-        ? config.streams.audioStreamIndexes
-        : [config.streams.audioStreamIndex ?? 0]),
+      id: 'streams.audioStreams', label: '音频流', controlType: 'multiselect',
+      description: audioEncMode ? '勾选的音频流参与输出。默认编码，可在右侧逐项切换为复制。' : '音频流将原样复制（-c:a copy）。',
+      value: audioIndices,
       options: streamIndexOptions,
-      visible: true, disabled: config.streams.preserveOtherAudioStreams,
-      disabledReason: config.streams.preserveOtherAudioStreams ? '已选择保留全部音频流' : undefined,
+      visible: audioActive, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
-      commandOrigins: ['streams.audioStreamIndexes'], diagnostics: [],
+      commandOrigins: ['streams.audioStreams'], diagnostics: [],
     },
+    ...config.streams.audioStreams.map((entry, i) => ({
+      id: `streams.audioStreams.${i}.codecMode`,
+      label: `音频流 ${entry.index}`,
+      controlType: 'switch' as const,
+      value: entry.codecMode === 'encode',
+      visible: audioEncMode, disabled: false,
+      sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+      commandOrigins: [], diagnostics: [],
+    })),
     {
-      id: 'streams.subtitleStreamIndexes', label: '保留的字幕流索引', controlType: 'multiselect',
-      description: '可勾选多个相对字幕流索引；至少保留一项。开启"保留全部字幕流"时忽略此项。',
-      value: (config.streams.subtitleStreamIndexes.length > 0
-        ? config.streams.subtitleStreamIndexes
-        : [config.streams.subtitleStreamIndex ?? 0]),
+      id: 'streams.subtitleStreams', label: '字幕流', controlType: 'multiselect',
+      description: '勾选的字幕流参与输出。默认编码，可在右侧逐项切换为复制。',
+      value: subtitleIndices,
       options: streamIndexOptions,
-      visible: true, disabled: config.streams.preserveOtherSubtitleStreams,
-      disabledReason: config.streams.preserveOtherSubtitleStreams ? '已选择保留全部字幕流' : undefined,
+      visible: true, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
-      commandOrigins: ['streams.subtitleStreamIndexes'], diagnostics: [],
+      commandOrigins: ['streams.subtitleStreams'], diagnostics: [],
     },
-    preserveVideoField,
-    preserveAudioField,
-    preserveSubtitleField,
+    ...config.streams.subtitleStreams.map((entry, i) => ({
+      id: `streams.subtitleStreams.${i}.codecMode`,
+      label: `字幕流 ${entry.index}`,
+      controlType: 'switch' as const,
+      value: entry.codecMode === 'encode',
+      visible: true, disabled: false,
+      sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+      commandOrigins: [], diagnostics: [],
+    })),
   ]
 
   return { id: 'section.input', label: '输入与输出', fields }

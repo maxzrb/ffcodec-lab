@@ -93,12 +93,12 @@ function FFmpegPathSetting() {
 
       {detectResult.kind === 'found' && (
         <p className="desktop-settings-section__result desktop-settings-section__result--ok">
-          ✅ FFmpeg {detectResult.info.version} — {detectResult.info.path}
+          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span> FFmpeg {detectResult.info.version} — {detectResult.info.path}
         </p>
       )}
       {detectResult.kind === 'error' && (
         <p className="desktop-settings-section__result desktop-settings-section__result--error">
-          ❌ {detectResult.message}
+          <span style={{ color: 'var(--text-dim)', fontWeight: 700 }}>✗</span> {detectResult.message}
           {' '}
           <button type="button" className="button-ghost" onClick={handleGetFFmpeg}>
             {isZh ? '获取 FFmpeg →' : 'Get FFmpeg →'}

@@ -101,11 +101,11 @@ describe('QSV Encoder Catalog', () => {
 describe('h264_qsv Commands', () => {
   it('generates CQP command with -qp', () => {
     const cmd = buildCommand(h264QsvCqp())
-    expect(cmd).toContain('-c:v h264_qsv')
-    expect(cmd).toContain('-qp 23')
+    expect(cmd).toContain('-c:v:0 h264_qsv')
+    expect(cmd).toContain('-qp:0 23')
   })
 
-  it('generates ICQ command with -global_quality and -look_ahead', () => {
+  it('generates ICQ command with -global_quality:0 and -look_ahead', () => {
     const config = makeConfig({
       video: {
         encoderId: 'h264_qsv',
@@ -113,8 +113,8 @@ describe('h264_qsv Commands', () => {
       },
     })
     const cmd = buildCommand(config)
-    expect(cmd).toContain('-c:v h264_qsv')
-    expect(cmd).toContain('-global_quality 23')
+    expect(cmd).toContain('-c:v:0 h264_qsv')
+    expect(cmd).toContain('-global_quality:0 23')
     expect(cmd).toContain('-look_ahead 1')
   })
 
@@ -126,12 +126,12 @@ describe('h264_qsv Commands', () => {
       },
     })
     const cmd = buildCommand(config)
-    expect(cmd).toContain('-global_quality 20')
+    expect(cmd).toContain('-global_quality:0 20')
     // look_ahead_depth is emitted from modeArguments with default value 40
     expect(cmd).toContain('-look_ahead_depth')
   })
 
-  it('generates VBR command without -qp or -global_quality', () => {
+  it('generates VBR command without -qp:0 or -global_quality', () => {
     const config = makeConfig({
       video: {
         encoderId: 'h264_qsv',
@@ -139,9 +139,9 @@ describe('h264_qsv Commands', () => {
       },
     })
     const cmd = buildCommand(config)
-    expect(cmd).toContain('-b:v 6000k')
-    expect(cmd).toContain('-maxrate 8000k')
-    expect(cmd).toContain('-bufsize 16000k')
+    expect(cmd).toContain('-b:v:0 6000k')
+    expect(cmd).toContain('-maxrate:0 8000k')
+    expect(cmd).toContain('-bufsize:0 16000k')
     expect(cmd).not.toContain('-qp')
     expect(cmd).not.toContain('-global_quality')
   })
@@ -154,7 +154,7 @@ describe('h264_qsv Commands', () => {
       },
     })
     const cmd = buildCommand(config)
-    expect(cmd).toContain('-b:v 4000k')
+    expect(cmd).toContain('-b:v:0 4000k')
     expect(cmd).not.toContain('-qp')
   })
 
@@ -168,8 +168,8 @@ describe('h264_qsv Commands', () => {
       },
     })
     const cmd = buildCommand(config)
-    expect(cmd).toContain('-preset slow')
-    expect(cmd).toContain('-profile:v high')
+    expect(cmd).toContain('-preset:v:0 slow')
+    expect(cmd).toContain('-profile:v:0 high')
   })
 
   it('special parameters appear in command', () => {
@@ -185,8 +185,8 @@ describe('h264_qsv Commands', () => {
 describe('hevc_qsv Commands', () => {
   it('generates CQP command', () => {
     const cmd = buildCommand(hevcQsvCqp())
-    expect(cmd).toContain('-c:v hevc_qsv')
-    expect(cmd).toContain('-qp 28')
+    expect(cmd).toContain('-c:v:0 hevc_qsv')
+    expect(cmd).toContain('-qp:0 28')
   })
 
   it('generates ICQ command', () => {
@@ -197,8 +197,8 @@ describe('hevc_qsv Commands', () => {
       },
     })
     const cmd = buildCommand(config)
-    expect(cmd).toContain('-c:v hevc_qsv')
-    expect(cmd).toContain('-global_quality 28')
+    expect(cmd).toContain('-c:v:0 hevc_qsv')
+    expect(cmd).toContain('-global_quality:0 28')
   })
 
   it('generates VBR with all rate control args', () => {
@@ -209,9 +209,9 @@ describe('hevc_qsv Commands', () => {
       },
     })
     const cmd = buildCommand(config)
-    expect(cmd).toContain('-b:v 8000k')
-    expect(cmd).toContain('-maxrate 12000k')
-    expect(cmd).toContain('-bufsize 24000k')
+    expect(cmd).toContain('-b:v:0 8000k')
+    expect(cmd).toContain('-maxrate:0 12000k')
+    expect(cmd).toContain('-bufsize:0 24000k')
   })
 
   it('generates Look-ahead VBR command', () => {
@@ -222,7 +222,7 @@ describe('hevc_qsv Commands', () => {
       },
     })
     const cmd = buildCommand(config)
-    expect(cmd).toContain('-b:v 6000k')
+    expect(cmd).toContain('-b:v:0 6000k')
     expect(cmd).toContain('-look_ahead 1')
   })
 })
@@ -302,9 +302,9 @@ describe('QSV Three Shell Rendering', () => {
     const { config: normalized } = normalizeConfig(h264QsvCqp(), h264QsvCqp(), catalog)
     const plan = buildCommandPlan(normalized, catalog, [])
 
-    expect(renderBash(plan).text).toContain('-c:v h264_qsv')
-    expect(renderPowerShell(plan).text).toContain('-c:v h264_qsv')
-    expect(renderCmd(plan).text).toContain('-c:v h264_qsv')
+    expect(renderBash(plan).text).toContain('-c:v:0 h264_qsv')
+    expect(renderPowerShell(plan).text).toContain('-c:v:0 h264_qsv')
+    expect(renderCmd(plan).text).toContain('-c:v:0 h264_qsv')
   })
 })
 
@@ -316,7 +316,7 @@ describe('QSV Parameter Ranges', () => {
     expect(cqp!.controls[0].range?.max).toBe(51)
   })
 
-  it('ICQ uses -global_quality not -qp', () => {
+  it('ICQ uses -global_quality:0 not -qp', () => {
     const h264 = videoEncoders['h264_qsv']
     const icq = h264.qualityModes.find((m) => m.id === 'qsv-icq')
     expect(icq!.controls[0].commandBinding?.argName).toBe('-global_quality')

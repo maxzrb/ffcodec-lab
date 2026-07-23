@@ -35,9 +35,9 @@ describe('libaom-av1 与 libvvenc', () => {
     const { config, render } = commandFor('libaom_av1', 'crf')
     config.video.specialParameters = { cpuUsed: 5, rowMt: true }
     const command = render()
-    expect(command).toContain('-c:v libaom-av1')
+    expect(command).toContain('-c:v:0 libaom-av1')
     expect(command).toContain('-b:v 0')
-    expect(command).toContain('-crf 32')
+    expect(command).toContain('-crf:0 32')
     expect(command).toContain('-cpu-used 5')
     expect(command).toContain('-row-mt 1')
   })
@@ -46,10 +46,10 @@ describe('libaom-av1 与 libvvenc', () => {
     const { render } = commandFor('libvvenc', 'cqp')
     const command = render()
     expect(catalog.encoders.video.libvvenc.pixelFormat?.options?.map((option) => option.value)).toEqual(['yuv420p10le'])
-    expect(command).toContain('-c:v libvvenc')
-    expect(command).toContain('-preset medium')
-    expect(command).toContain('-pix_fmt yuv420p10le')
-    expect(command).toContain('-qp 32')
+    expect(command).toContain('-c:v:0 libvvenc')
+    expect(command).toContain('-preset:v:0 medium')
+    expect(command).toContain('-pix_fmt:0 yuv420p10le')
+    expect(command).toContain('-qp:0 32')
   })
 
   it('可选参数在用户未设置时不自动写入命令', () => {

@@ -30,7 +30,7 @@ describe('目标文件大小工具', () => {
     const rendered = renderBash(buildCommandPlan(config, catalog, []))
 
     expect(calculation.enabled).toBe(false)
-    expect(rendered.text).toContain('-crf 23')
+    expect(rendered.text).toContain('-crf:0 23')
     expect(rendered.text).not.toContain('-pass 1')
   })
 
@@ -45,8 +45,8 @@ describe('目标文件大小工具', () => {
     expect(calculation.audioBitrateKbps).toBe(192)
     expect(calculation.videoBitrateKbps).toBe(862)
     expect(plan.invocations).toHaveLength(2)
-    expect(rendered.text).toContain('-b:v 862k')
-    expect(rendered.text).not.toContain('-crf 23')
+    expect(rendered.text).toContain('-b:v:0 862k')
+    expect(rendered.text).not.toContain('-crf:0 23')
     expect(rendered.text).toContain('-f null -')
     expect(rendered.text).toContain(' && ')
   })
@@ -57,13 +57,13 @@ describe('目标文件大小工具', () => {
     config.tools.targetSize.enabled = false
     const rendered = renderBash(buildCommandPlan(config, catalog, []))
 
-    expect(rendered.text).toContain('-crf 19')
+    expect(rendered.text).toContain('-crf:0 19')
     expect(rendered.text).not.toContain('-pass')
   })
 
   it('多个显式音轨按每轨码率累加预算', () => {
     const config = makeEnabledConfig()
-    config.streams.audioStreamIndexes = [0, 1]
+    config.streams.audioStreams = [{index:0, codecMode:"encode"},{index:1, codecMode:"encode"}]
     const calculation = calculateTargetSize(config, catalog)
 
     expect(calculation.audioStreamCount).toBe(2)
@@ -75,7 +75,6 @@ describe('目标文件大小工具', () => {
     const cases = [
       { apply: (config: ReturnType<typeof makeEnabledConfig>) => { config.audio.mode = 'copy' }, code: 'error.targetSize.audio.copyUnknown' },
       { apply: (config: ReturnType<typeof makeEnabledConfig>) => { config.audio.encoderId = 'flac' }, code: 'error.targetSize.audio.bitrateUnknown' },
-      { apply: (config: ReturnType<typeof makeEnabledConfig>) => { config.streams.preserveOtherAudioStreams = true }, code: 'error.targetSize.audio.streamCountUnknown' },
     ]
 
     for (const testCase of cases) {
@@ -94,7 +93,7 @@ describe('目标文件大小工具', () => {
     const config = makeEnabledConfig()
     config.video.mode = 'copy'
     config.video.encoderId = 'h264_nvenc'
-    config.streams.videoStreamIndexes = [0, 1]
+    config.streams.videoStreams = [{index:0, codecMode:"encode"},{index:1, codecMode:"encode"}]
     config.customArgs.videoArgs = ['-b:v', '2M']
 
     const codes = calculateTargetSize(config, catalog).diagnostics.map((item) => item.code)
