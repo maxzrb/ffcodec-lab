@@ -1,6 +1,6 @@
 // ============================================================
 // MediaProbePanel — ffprobe 媒体探针面板。
-// 位于流选择卡片上方；无 ffprobe 时禁用并显示提示。
+// 使用与其他折叠卡片一致的 parameter-section 样式。
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react'
@@ -100,9 +100,8 @@ export function MediaProbePanel() {
   const [probeResult, setProbeResult] = useState<ProbeResult | null>(null)
   const [probing, setProbing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
 
-  // 启动时检测 ffprobe 是否可用
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -110,14 +109,11 @@ export function MediaProbePanel() {
         const customPath = localStorage.getItem('ffcodec-desktop-ffmpeg-path')?.trim() || undefined
         const info = await window.electronAPI?.getFFmpegToolsInfo(customPath)
         if (!cancelled && info) setTools({ ffmpeg: info.ffmpeg, ffprobe: info.ffprobe, ffplay: info.ffplay })
-      } catch {
-        // 忽略——工具检测失败不影响主功能。
-      }
+      } catch { /* ignore */ }
     })()
     return () => { cancelled = true }
   }, [])
 
-  // 在当前 ffmpeg 路径变动时重新检测
   const checkTools = useCallback(async (customPath?: string) => {
     try {
       const info = await window.electronAPI?.getFFmpegToolsInfo(customPath)
@@ -138,9 +134,7 @@ export function MediaProbePanel() {
         setError(locale === 'zh-CN' ? '未检测到 FFmpeg，无法使用 ffprobe。' : 'FFmpeg not detected, cannot run ffprobe.')
         return
       }
-
       await checkTools(customPath || undefined)
-
       const result = await window.electronAPI?.probeMedia(ffmpegInfo.path, inputPath)
       if (!result) {
         setError(locale === 'zh-CN' ? 'ffprobe 探测失败，请确认输入文件路径正确且可访问。' : 'ffprobe probe failed. Verify the input file path is correct and accessible.')
@@ -157,7 +151,6 @@ export function MediaProbePanel() {
 
   const ffprobeAvailable = tools?.ffprobe === true
   const hasInput = inputPath && inputPath.trim().length > 0
-
   const zh = locale === 'zh-CN'
 
   const videoStreams = probeResult?.streams.filter((s) => s.codecType === 'video') ?? []
@@ -165,85 +158,73 @@ export function MediaProbePanel() {
   const subtitleStreams = probeResult?.streams.filter((s) => s.codecType === 'subtitle') ?? []
   const otherStreams = probeResult?.streams.filter((s) => !['video', 'audio', 'subtitle'].includes(s.codecType)) ?? []
 
+  const statusText = tools === null
+    ? (zh ? '检测中...' : 'Checking...')
+    : ffprobeAvailable
+      ? 'ffprobe OK'
+      : (zh ? '未检测到 ffprobe' : 'ffprobe not found')
+
   return (
-    <div className="media-probe-panel">
-      <div className="media-probe-panel__header">
-        <span className="media-probe-panel__title">
-          {zh ? '媒体信息探测' : 'Media Probe'}
-        </span>
-        <span className="media-probe-panel__status">
-          {tools === null ? (
-            <span className="media-probe-panel__status-checking">
-              {zh ? '检测中...' : 'Checking...'}
-            </span>
-          ) : ffprobeAvailable ? (
-            <span className="media-probe-panel__status-ok" title={zh ? 'ffprobe 可用' : 'ffprobe available'}>
-              ffprobe OK
-            </span>
-          ) : (
-            <span className="media-probe-panel__status-missing" title={zh ? 'ffprobe 不可用，请将 ffprobe 放在 ffmpeg 同目录下。' : 'ffprobe not found. Place ffprobe in the same directory as ffmpeg.'}>
-              {zh ? '未检测到 ffprobe' : 'ffprobe not found'}
-            </span>
-          )}
-        </span>
-      </div>
-
-      {!ffprobeAvailable && tools !== null && (
-        <div className="media-probe-panel__notice">
-          {zh
-            ? 'ffprobe 未在 ffmpeg 同目录中找到。请将 ffprobe.exe 放在 ffmpeg.exe 所在目录下以启用媒体信息探测。'
-            : 'ffprobe was not found alongside ffmpeg. Place ffprobe.exe in the same directory as ffmpeg.exe to enable media probing.'}
-        </div>
-      )}
-
-      <div className="media-probe-panel__actions">
+    <section className="parameter-section">
+      <div className="parameter-section__header">
         <button
           type="button"
-          className="button media-probe-panel__probe-btn"
-          disabled={!ffprobeAvailable || !hasInput || probing}
-          onClick={handleProbe}
+          onClick={() => setExpanded(!expanded)}
+          className="parameter-section__toggle"
+          aria-expanded={expanded}
         >
-          {probing
-            ? (zh ? '探测中...' : 'Probing...')
-            : (zh ? '探测当前输入文件' : 'Probe Input File')}
-        </button>
-        {!hasInput && (
-          <span className="media-probe-panel__hint">
-            {zh ? '请先填写输入文件路径' : 'Enter an input file path first'}
+          <span className={`parameter-section__chevron ${expanded ? 'parameter-section__chevron--open' : ''}`} aria-hidden="true">
+            {'>'}
           </span>
-        )}
-      </div>
+          <span className="parameter-section__title">
+            {zh ? '媒体信息探测' : 'Media Probe'}
+          </span>
+          <span className="parameter-section__description">
+            {' - '}
+            <span className={tools !== null && !ffprobeAvailable ? 'media-probe-panel__status-missing' : ''}>
+              {statusText}
+            </span>
+            {probeResult?.format?.duration && ` - ${formatDuration(probeResult.format.duration)}`}
+            {probeResult && ` - ${videoStreams.length}V ${audioStreams.length}A ${subtitleStreams.length}S`}
+          </span>
+        </button>
 
-      {error && (
-        <div className="media-probe-panel__error">
-          {error}
-        </div>
-      )}
-
-      {probeResult && (
-        <div className="media-probe-panel__result">
+        <div className="parameter-section__actions">
           <button
             type="button"
-            className="media-probe-panel__toggle"
-            onClick={() => setExpanded(!expanded)}
+            className="button"
+            disabled={!ffprobeAvailable || !hasInput || probing}
+            onClick={handleProbe}
+            style={{ fontSize: '12px', padding: '2px 10px' }}
           >
-            {expanded ? '▾' : '▸'} {zh ? '探测结果' : 'Probe Results'}
-            <span className="media-probe-panel__summary">
-              {probeResult.format?.formatName
-                ? ` | ${probeResult.format.formatName}`
-                : ''}
-              {probeResult.format?.duration
-                ? ` | ${formatDuration(probeResult.format.duration)}`
-                : ''}
-              {` | ${videoStreams.length}V / ${audioStreams.length}A / ${subtitleStreams.length}S`}
-              {probeResult.format?.bitRate
-                ? ` | ${formatBitRate(probeResult.format.bitRate)}`
-                : ''}
-            </span>
+            {probing ? (zh ? '探测中...' : 'Probing...') : (zh ? '探测' : 'Probe')}
           </button>
+        </div>
+      </div>
 
-          {expanded && (
-            <div className="media-probe-panel__streams">
+      <div className={`parameter-section__body ${expanded ? 'parameter-section__body--expanded' : 'parameter-section__body--collapsed'}`}>
+        <div className="parameter-section__body-inner">
+          {!ffprobeAvailable && tools !== null && (
+            <div className="media-probe-panel__notice">
+              {zh
+                ? 'ffprobe 未在 ffmpeg 同目录中找到。请将 ffprobe.exe 放在 ffmpeg.exe 所在目录下以启用媒体信息探测。'
+                : 'ffprobe was not found alongside ffmpeg. Place ffprobe.exe in the same directory as ffmpeg.exe to enable media probing.'}
+            </div>
+          )}
+
+          {!hasInput && (
+            <div className="media-probe-panel__hint" style={{ marginBottom: 8 }}>
+              {zh ? '请先填写输入文件路径，然后点击"探测"按钮。' : 'Enter an input file path, then click Probe.'}
+            </div>
+          )}
+
+          {error && (
+            <div className="media-probe-panel__error">{error}</div>
+          )}
+
+          {probeResult && (
+            <div className="media-probe-panel__result">
+              {/* 文件信息 */}
               {probeResult.format && (
                 <div className="media-probe-panel__format-info">
                   <div className="media-probe-panel__format-row">
@@ -267,20 +248,14 @@ export function MediaProbePanel() {
 
               {videoStreams.length > 0 && (
                 <div className="media-probe-panel__stream-group">
-                  <div className="media-probe-panel__stream-group-title">
-                    {zh ? '视频流' : 'Video Streams'} ({videoStreams.length})
-                  </div>
+                  <div className="media-probe-panel__stream-group-title">{zh ? '视频流' : 'Video Streams'} ({videoStreams.length})</div>
                   {videoStreams.map((s) => (
                     <div key={`v-${s.index}`} className="media-probe-panel__stream-item">
                       <span className="media-probe-panel__stream-index">#{s.index}</span>
                       <span className="media-probe-panel__stream-detail">
-                        {codecLabel(s)}
-                        {s.pixFmt ? ` | ${s.pixFmt}` : ''}
-                        {s.profile ? ` | ${s.profile}` : ''}
+                        {codecLabel(s)}{s.pixFmt ? ` | ${s.pixFmt}` : ''}{s.profile ? ` | ${s.profile}` : ''}
                       </span>
-                      {s.tags?.language && (
-                        <span className="media-probe-panel__stream-tag">{s.tags.language}</span>
-                      )}
+                      {s.tags?.language && <span className="media-probe-panel__stream-tag">{s.tags.language}</span>}
                     </div>
                   ))}
                 </div>
@@ -288,19 +263,14 @@ export function MediaProbePanel() {
 
               {audioStreams.length > 0 && (
                 <div className="media-probe-panel__stream-group">
-                  <div className="media-probe-panel__stream-group-title">
-                    {zh ? '音频流' : 'Audio Streams'} ({audioStreams.length})
-                  </div>
+                  <div className="media-probe-panel__stream-group-title">{zh ? '音频流' : 'Audio Streams'} ({audioStreams.length})</div>
                   {audioStreams.map((s) => (
                     <div key={`a-${s.index}`} className="media-probe-panel__stream-item">
                       <span className="media-probe-panel__stream-index">#{s.index}</span>
                       <span className="media-probe-panel__stream-detail">
-                        {codecLabel(s)}
-                        {s.sampleFmt ? ` | ${s.sampleFmt}` : ''}
+                        {codecLabel(s)}{s.sampleFmt ? ` | ${s.sampleFmt}` : ''}
                       </span>
-                      {s.tags?.language && (
-                        <span className="media-probe-panel__stream-tag">{s.tags.language}</span>
-                      )}
+                      {s.tags?.language && <span className="media-probe-panel__stream-tag">{s.tags.language}</span>}
                     </div>
                   ))}
                 </div>
@@ -308,19 +278,13 @@ export function MediaProbePanel() {
 
               {subtitleStreams.length > 0 && (
                 <div className="media-probe-panel__stream-group">
-                  <div className="media-probe-panel__stream-group-title">
-                    {zh ? '字幕流' : 'Subtitle Streams'} ({subtitleStreams.length})
-                  </div>
+                  <div className="media-probe-panel__stream-group-title">{zh ? '字幕流' : 'Subtitle Streams'} ({subtitleStreams.length})</div>
                   {subtitleStreams.map((s) => (
                     <div key={`s-${s.index}`} className="media-probe-panel__stream-item">
                       <span className="media-probe-panel__stream-index">#{s.index}</span>
                       <span className="media-probe-panel__stream-detail">{codecLabel(s)}</span>
-                      {s.tags?.language && (
-                        <span className="media-probe-panel__stream-tag">{s.tags.language}</span>
-                      )}
-                      {s.tags?.title && (
-                        <span className="media-probe-panel__stream-tag">{s.tags.title}</span>
-                      )}
+                      {s.tags?.language && <span className="media-probe-panel__stream-tag">{s.tags.language}</span>}
+                      {s.tags?.title && <span className="media-probe-panel__stream-tag">{s.tags.title}</span>}
                     </div>
                   ))}
                 </div>
@@ -328,29 +292,23 @@ export function MediaProbePanel() {
 
               {otherStreams.length > 0 && (
                 <div className="media-probe-panel__stream-group">
-                  <div className="media-probe-panel__stream-group-title">
-                    {zh ? '其他流' : 'Other Streams'} ({otherStreams.length})
-                  </div>
+                  <div className="media-probe-panel__stream-group-title">{zh ? '其他流' : 'Other Streams'} ({otherStreams.length})</div>
                   {otherStreams.map((s) => (
                     <div key={`o-${s.index}`} className="media-probe-panel__stream-item">
                       <span className="media-probe-panel__stream-index">#{s.index}</span>
-                      <span className="media-probe-panel__stream-detail">
-                        {s.codecType} | {s.codecName ?? '?'}
-                      </span>
+                      <span className="media-probe-panel__stream-detail">{s.codecType} | {s.codecName ?? '?'}</span>
                     </div>
                   ))}
                 </div>
               )}
 
               {probeResult.streams.length === 0 && (
-                <div className="media-probe-panel__empty">
-                  {zh ? '文件中未检测到任何流。' : 'No streams detected in the file.'}
-                </div>
+                <div className="media-probe-panel__empty">{zh ? '文件中未检测到任何流。' : 'No streams detected in the file.'}</div>
               )}
             </div>
           )}
         </div>
-      )}
-    </div>
+      </div>
+    </section>
   )
 }
