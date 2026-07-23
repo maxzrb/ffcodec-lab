@@ -898,7 +898,7 @@ code {
 
 .inspector-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 6px;
   margin-bottom: 10px;
   padding: 5px;
@@ -951,6 +951,67 @@ code {
   font-weight: 700;
   line-height: 1;
   vertical-align: middle;
+}
+
+.encoding-overview {
+  display: grid;
+  gap: 10px;
+}
+
+.encoding-overview__intro {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 6px;
+  color: var(--text-dim);
+  font-size: 0.74rem;
+}
+
+.encoding-overview__intro strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.encoding-overview__section {
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+
+.encoding-overview__section h3 {
+  margin: 0 0 8px;
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.encoding-overview__section dl {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.encoding-overview__row {
+  display: grid;
+  grid-template-columns: minmax(70px, 0.34fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  font-size: 0.76rem;
+}
+
+.encoding-overview__row dt {
+  color: var(--text-dim);
+}
+
+.encoding-overview__row dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 600;
+  text-align: right;
 }
 
 .explanation-drawer {
@@ -2690,32 +2751,19 @@ html:has(.desktop-shell) {
   .workbench-state-notice { grid-template-columns: auto minmax(0, 1fr); }
   .workbench-state-notice .button-ghost { grid-column: 1 / -1; width: 100%; }
   .workbench-mobile-inspector-toggle {
-    display: block;
-    position: sticky;
-    z-index: 20;
-    bottom: 10px;
-    width: 100%;
-    min-height: 44px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--surface-strong);
-    color: var(--text);
+    display: none;
   }
-  .workbench-inspector { display: none; }
+  .workbench-inspector,
   .workbench-inspector--mobile-open {
     display: block;
-    position: fixed;
-    z-index: 25;
-    right: 8px;
-    bottom: 62px;
-    left: 8px;
-    max-height: 68vh;
-    overflow: auto;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    background: var(--background, var(--surface));
-    box-shadow: var(--shadow);
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 }
 
@@ -3093,6 +3141,42 @@ html.performance-page-open .performance-page {
 .audio-encoder-picker {
   display: grid;
   gap: 10px;
+}
+
+.audio-encoder-picker__selected {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-card));
+}
+
+.audio-encoder-picker__selected-label {
+  flex-basis: 100%;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.audio-encoder-picker__selected strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.audio-encoder-picker__selected code {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+}
+
+.audio-encoder-picker__selected-warning {
+  color: var(--warning);
+  font-size: 0.7rem;
 }
 
 .audio-encoder-picker__heading {

@@ -10,23 +10,23 @@
 
 FFCodec Lab 将视频编码、音频编码、画面处理、字幕、流映射、封装和自定义参数组织成可检查的工作流。Web 版专注于生成 Bash、PowerShell 或 CMD 命令；Desktop 版在同一套参数工作台之上增加 FFmpeg/ffprobe 检测、本地任务执行、进度、取消、历史记录和硬件监控。
 
-当前版本：`v1.2.1`
+当前版本：`v1.2.2`
 
 ## 下载
 
-Windows 10/11 x64 用户可从 [v1.2.1 Release](https://github.com/maxzrb/ffcodec-lab/releases/tag/v1.2.1) 下载：
+Windows 10/11 x64 用户可从 [v1.2.2 Release](https://github.com/maxzrb/ffcodec-lab/releases/tag/v1.2.2) 下载：
 
 | 版本 | 适用场景 | FFmpeg |
 | --- | --- | --- |
-| [全量安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.1/FFCodec-Lab-Setup-Full-1.2.1.exe) | 希望安装后直接使用 | 已内置 |
-| [基础安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.1/FFCodec-Lab-Setup-Base-1.2.1.exe) | 已有 FFmpeg，或希望自行管理版本 | 不包含 |
-| [onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.1/FFCodec-Lab-Onedir-1.2.1.zip) | 不安装，解压后直接运行 | 不包含 |
+| [全量安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.2/FFCodec-Lab-Setup-Full-1.2.2.exe) | 希望安装后直接使用 | 已内置 |
+| [基础安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.2/FFCodec-Lab-Setup-Base-1.2.2.exe) | 已有 FFmpeg，或希望自行管理版本 | 不包含 |
+| [onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.2/FFCodec-Lab-Onedir-1.2.2.zip) | 不安装，解压后直接运行 | 不包含 |
 
-基础安装版和 onedir 会自动搜索可用 FFmpeg，也可在设置中选择 FFmpeg 所在文件夹。发布文件校验值见 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.1/SHA256SUMS.txt)。
+基础安装版和 onedir 会自动搜索可用 FFmpeg，也可在设置中选择 FFmpeg 所在文件夹。发布文件校验值见 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.2/SHA256SUMS.txt)。
 
 > 当前 Windows 发布包未配置代码签名证书，首次下载或运行时可能出现 SmartScreen 提示。
 
-## v1.2.1 重点功能
+## v1.2.2 重点功能
 
 - 支持 libx264、libx265、SVT-AV1、libaom-AV1、VVenC、NVENC、QSV、AMF、VideoToolbox 等视频编码路径，以及 29 个音频 encoder 选项。
 - 按视频、音频和字幕逐流选择 encode/copy，支持“保留全部流”和精确的 FFmpeg `-map` 生成。
@@ -37,6 +37,8 @@ Windows 10/11 x64 用户可从 [v1.2.1 Release](https://github.com/maxzrb/ffcode
 - 支持画面缩放、帧率、裁剪、旋转、镜像、去隔行、锐化、降噪、去色带、色彩转换和字幕处理。
 - 提供配置诊断、参数来源解释、三种 Shell 命令预览、自由命令编辑和 JSON 预设导入导出。
 - Desktop 支持 FFmpeg 多版本候选切换、编码历史、日志查看、输出定位和 LibreHardwareMonitor 性能监控。
+- 切换 FFmpeg 后会重新核验当前构建的音频编码能力，避免沿用上一版本的 encoder 与 AAC 选项状态。
+- 检查器新增“编码总览”；移动竖屏恢复页面纵向滚动，音频编码器顶部持续显示当前选择。
 
 ## Web 与 Desktop
 
@@ -127,7 +129,7 @@ release/desktop/onedir/win-unpacked/
 pnpm check
 ```
 
-该命令执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`v1.2.1` 发布门禁覆盖 Web 550 项测试和 Desktop 26 项测试；双端生产构建及 Windows 三种包型均已验证。
+该命令执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`v1.2.2` 发布门禁覆盖 Web 554 项测试和 Desktop 26 项测试；双端生产构建及 Windows 三种包型均已验证。
 
 ## 项目结构
 

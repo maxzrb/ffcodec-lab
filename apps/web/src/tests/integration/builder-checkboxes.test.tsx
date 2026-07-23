@@ -308,6 +308,27 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.queryByRole('tab', { name: '诊断 0' })).not.toBeInTheDocument()
   })
 
+  it('编码总览位于命令和诊断之间并展示当前有效参数', async () => {
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'size', width: 1280, height: 720, keepAspect: true }
+    config.frame.frameRate = { mode: 'value', value: 30 }
+    config.tools.targetSize.enabled = true
+    config.tools.targetSize.targetMiB = 1900
+    presetStore(config)
+    render(<TestWrapper />)
+
+    const tabs = screen.getAllByRole('tab')
+    expect(tabs.slice(0, 3).map((tab) => tab.textContent)).toEqual(['命令', '编码总览', '诊断'])
+    await userEvent.click(screen.getByRole('tab', { name: '编码总览' }))
+
+    const overview = screen.getByLabelText('编码总览')
+    expect(overview).toHaveTextContent('libx264')
+    expect(overview).toHaveTextContent('AAC')
+    expect(overview).toHaveTextContent('1280 x 720（保持比例）')
+    expect(overview).toHaveTextContent('30 fps')
+    expect(overview).toHaveTextContent('1900 MiB / 90 min')
+  })
+
   it('宿主注入媒体探测时合并诊断标签并将媒体信息显示在诊断上方', async () => {
     testPlatform.extensions = {
       diagnosticsPanelPrefix: <section aria-label="媒体信息探测">媒体信息探测内容</section>,
@@ -725,6 +746,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<TestWrapper />)
     await openPanel('音频')
 
+    expect(screen.getByText('已选音频编码器').parentElement).toHaveTextContent('FFmpeg 原生 AAC')
+    expect(screen.getByText('已选音频编码器').parentElement).toHaveTextContent('aac')
     expect(screen.getByText('当前容器推荐')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /FFmpeg 原生 AAC/ })).toHaveAttribute('aria-pressed', 'true')
 
@@ -737,6 +760,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await userEvent.click(pcmFloat)
     expect(useBuilderStore.getState().config.audio.encoderId).toBe('pcm_f64le')
     expect(useBuilderStore.getState().config.audio.bitrate).toBeUndefined()
+    expect(screen.getByText('已选音频编码器').parentElement).toHaveTextContent('WAV PCM 64-bit float')
+    expect(screen.getByText('已选音频编码器').parentElement).toHaveTextContent('pcm_f64le')
   })
 
   it('音频编码器私有选项放在独立的高级参数折叠栏', async () => {
@@ -895,9 +920,9 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<TestWrapper />)
     expect(screen.getByRole('link', { name: '在 GitHub 打开 FFCodec Lab 项目' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
-    expect(screen.getByRole('link', { name: '打开 FFCodec Lab desktop v1.2.1 Release 页面' }))
-      .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases/tag/v1.2.1')
-    expect(screen.getByText('FFCodec Lab desktop v1.2.1')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '打开 FFCodec Lab desktop v1.2.2 Release 页面' }))
+      .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases/tag/v1.2.2')
+    expect(screen.getByText('FFCodec Lab desktop v1.2.2')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))

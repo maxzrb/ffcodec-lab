@@ -53,6 +53,9 @@ export function Dropdown({
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const optionRefs = useRef<Map<number, HTMLButtonElement>>(new Map())
+  const shouldScrollFocusRef = useRef(false)
+  const wasOpenRef = useRef(false)
+  const lastValueRef = useRef(value)
 
   const selectedOption = options.find((opt) => String(opt.value) === value)
   const displayText = selectedOption?.label ?? placeholder ?? ''
@@ -113,20 +116,31 @@ export function Dropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
 
-  // Focus selected option when opening
+  // 打开时定位到当前选项；列表滚动或鼠标悬停时保持用户当前滚动位置。
   useEffect(() => {
-    if (open) {
-      const idx = options.findIndex((opt) => String(opt.value) === value)
-      setFocusIndex(idx >= 0 ? idx : 0)
+    if (!open) {
+      wasOpenRef.current = false
+      return
     }
-  }, [open, options, value])
+
+    const idx = options.findIndex((opt) => String(opt.value) === value)
+    const opening = !wasOpenRef.current
+    const valueChanged = lastValueRef.current !== value
+    if (opening || valueChanged || focusIndex < 0 || focusIndex >= options.length) {
+      setFocusIndex(idx >= 0 ? idx : 0)
+      shouldScrollFocusRef.current = true
+    }
+    wasOpenRef.current = true
+    lastValueRef.current = value
+  }, [open, options.length, value, focusIndex])
 
   // Scroll focused option into view
   useEffect(() => {
-    if (!open || focusIndex < 0) return
+    if (!open || focusIndex < 0 || !shouldScrollFocusRef.current) return
     const el = optionRefs.current.get(focusIndex)
     const panel = panelRef.current
     if (!el || !panel) return
+    shouldScrollFocusRef.current = false
     const optionRect = el.getBoundingClientRect()
     const panelRect = panel.getBoundingClientRect()
     if (optionRect.top < panelRect.top) panel.scrollTop -= panelRect.top - optionRect.top
@@ -162,6 +176,7 @@ export function Dropdown({
             updatePanelRect()
             setOpen(true)
           } else {
+            shouldScrollFocusRef.current = true
             setFocusIndex((prev) => {
               const next = prev + 1
               return next >= options.length ? 0 : next
@@ -171,6 +186,7 @@ export function Dropdown({
         case 'ArrowUp':
           event.preventDefault()
           if (open) {
+            shouldScrollFocusRef.current = true
             setFocusIndex((prev) => {
               const next = prev - 1
               return next < 0 ? options.length - 1 : next

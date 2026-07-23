@@ -56,9 +56,23 @@ export function AudioEncoderPicker({ options, value, disabled, onChange }: Audio
     }
     return result
   }, [filtered, locale])
+  const selectedOption = options.find((option) => String(option.value) === selected)
+  const selectedUnavailable = selectedOption ? isRuntimeUnavailable(selectedOption, runtimeCapabilities) : false
 
   return (
     <div className="audio-encoder-picker">
+      <div className="audio-encoder-picker__selected" aria-live="polite">
+        <span className="audio-encoder-picker__selected-label">
+          {locale === 'zh-CN' ? '已选音频编码器' : 'Selected audio encoder'}
+        </span>
+        <strong>{selectedOption ? text(selectedOption.label) : selected || (locale === 'zh-CN' ? '未选择' : 'Not selected')}</strong>
+        {selectedOption?.badge && <code>{selectedOption.badge}</code>}
+        {selectedUnavailable && (
+          <span className="audio-encoder-picker__selected-warning">
+            {locale === 'zh-CN' ? '当前 FFmpeg 不可用' : 'Unavailable in current FFmpeg'}
+          </span>
+        )}
+      </div>
       <div className="audio-encoder-picker__heading">
         {locale === 'zh-CN' ? '当前容器推荐' : 'Recommended for this container'}
       </div>

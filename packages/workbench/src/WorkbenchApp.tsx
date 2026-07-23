@@ -31,13 +31,14 @@ import { WorkbenchStateNotice } from './components/WorkbenchStateNotice'
 import { Dropdown } from './components/Dropdown'
 import { usePlatform } from '@ffcodec/platform-api'
 import { useAppDialog } from './features/dialog/AppDialogProvider'
+import { EncodingOverview } from './components/EncodingOverview'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = 'v1.2.1'
+const APP_VERSION = 'v1.2.2'
 const RELEASE_URL = `${PROJECT_URL}/releases/tag/${APP_VERSION}`
 
 export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {
@@ -422,6 +423,9 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
               <button type="button" role="tab" aria-selected={inspectorTab === 'command'} onClick={() => setInspectorTab('command')}>
                 {isZh ? '命令' : 'Command'}
               </button>
+              <button type="button" role="tab" aria-selected={inspectorTab === 'overview'} onClick={() => setInspectorTab('overview')}>
+                {isZh ? '编码总览' : 'Encoding overview'}
+              </button>
               <button type="button" role="tab" aria-selected={inspectorTab === 'diagnostics'} onClick={() => setInspectorTab('diagnostics')}>
                 {extensions?.diagnosticsPanelPrefix
                   ? (isZh ? '媒体信息和诊断' : 'Media & Diagnostics')
@@ -464,6 +468,15 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                   renderActions={extensions?.renderCommandEditorActions}
                 />
                 {commandInspectorFooter}
+              </div>
+            ) : inspectorTab === 'overview' ? (
+              <div className="inspector-panel" key="overview">
+                <EncodingOverview
+                  config={pipeline.normalizedConfig}
+                  catalog={catalog}
+                  locale={locale}
+                  invocationCount={pipeline.commandPlan.invocations.length}
+                />
               </div>
             ) : inspectorTab === 'diagnostics' ? (
               <div className="inspector-panel diagnostics-workspace" key="diagnostics">
