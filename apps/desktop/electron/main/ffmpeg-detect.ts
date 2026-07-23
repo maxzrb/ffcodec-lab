@@ -231,8 +231,11 @@ export async function detectFFmpeg(customPath?: string): Promise<FFmpegInfo> {
 // ---- Multi-version detection ----
 
 /**
- * 扫描 bundled 目录中所有可用的 ffmpeg 版本。
- * 返回按版本号降序排列的列表，自定义路径排在最前。
+ * 按优先级扫描所有可用的 ffmpeg 版本：
+ *   1. 自定义路径
+ *   2. 同目录及子目录（两级深）
+ *   3. 系统 PATH
+ * 返回自定义排最前、其余按版本降序的列表。
  */
 export async function detectAllFFmpegVersions(customPath?: string): Promise<FFmpegInfo[]> {
   const results: FFmpegInfo[] = []
@@ -244,19 +247,19 @@ export async function detectAllFFmpegVersions(customPath?: string): Promise<FFmp
     results.push(info)
   }
 
-  // Custom path first
+  // Priority 1: Custom path
   if (customPath) {
     const resolved = await resolveCustomFFmpegPath(customPath)
     if (resolved) add(await tryFFmpegPath(resolved, 'custom'))
   }
 
-  // All bundled
+  // Priority 2: Bundled (two-level deep from app dir)
   const bundledPaths = await getBundledSearchDirsDeep()
   for (const bp of bundledPaths) {
     add(await tryFFmpegPath(bp, 'bundled'))
   }
 
-  // System PATH
+  // Priority 3: System PATH
   const command = process.platform === 'win32' ? 'where' : 'which'
   const target = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
   try {
@@ -268,7 +271,7 @@ export async function detectAllFFmpegVersions(customPath?: string): Promise<FFmp
     }
   } catch { /* ignore */ }
 
-  // Sort by version descending (custom stays first)
+  // Custom stays first; rest sorted by version descending
   const custom = results.find((r) => r.source === 'custom')
   const rest = results.filter((r) => r.source !== 'custom')
   rest.sort((a, b) => (b.version ?? '').localeCompare(a.version ?? '', undefined, { numeric: true }))

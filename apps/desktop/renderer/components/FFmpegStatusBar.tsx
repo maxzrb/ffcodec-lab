@@ -30,6 +30,7 @@ export function FFmpegStatusBar() {
   const [logsOpen, setLogsOpen] = useState(false)
   const [unreadLogs, setUnreadLogs] = useState(0)
   const [hasUnreadFailure, setHasUnreadFailure] = useState(false)
+  const [showVersionMenu, setShowVersionMenu] = useState(false)
   const knownHistoryStates = useRef<Map<string, EncodingHistoryItem['status']> | null>(null)
   const { jobState } = useEncodingJob()
 
@@ -65,16 +66,6 @@ export function FFmpegStatusBar() {
     })
   }
 
-  const switchToVersion = async (ffmpegPath: string) => {
-    const result = await window.electronAPI?.detectFFmpeg(ffmpegPath)
-    if (result?.found) {
-      localStorage.setItem(STORAGE_KEY, result.path)
-      void window.electronAPI?.storageSetItem(STORAGE_KEY, result.path)
-      const all = (await window.electronAPI?.listFFmpegVersions(result.path)) ?? []
-      setStatus({ kind: 'found', info: result, allVersions: all })
-    }
-  }
-
   // Auto-detect on mount
   useEffect(() => {
     detect()
@@ -96,10 +87,7 @@ export function FFmpegStatusBar() {
 
   const handleLeftClick = () => {
     if (status.kind === 'found' && status.allVersions.length > 1) {
-      // 左键：切换到下一个版本
-      const idx = status.allVersions.findIndex((v) => v.path === status.info.path)
-      const next = status.allVersions[(idx + 1) % status.allVersions.length]
-      void switchToVersion(next.path)
+      setShowVersionMenu((v) => !v)
     } else if (status.kind === 'not-found') {
       window.electronAPI?.openExternal('https://ffmpeg.org/download.html')
     }
@@ -109,6 +97,17 @@ export function FFmpegStatusBar() {
     e.preventDefault()
     if (status.kind === 'found') {
       window.electronAPI?.revealInFolder(status.info.path)
+    }
+  }
+
+  const selectVersion = async (ffmpegPath: string) => {
+    setShowVersionMenu(false)
+    const result = await window.electronAPI?.detectFFmpeg(ffmpegPath)
+    if (result?.found) {
+      localStorage.setItem(STORAGE_KEY, result.path)
+      void window.electronAPI?.storageSetItem(STORAGE_KEY, result.path)
+      const all = (await window.electronAPI?.listFFmpegVersions(result.path)) ?? []
+      setStatus({ kind: 'found', info: result, allVersions: all })
     }
   }
 
@@ -122,23 +121,37 @@ export function FFmpegStatusBar() {
   } else if (status.kind === 'found') {
     const sourceLabel = SOURCE_LABELS[status.info.source]?.[isZh ? 'zh' : 'en'] ?? status.info.source
     const hasMultiple = status.allVersions.length > 1
-    const versionIndex = hasMultiple
-      ? status.allVersions.findIndex((v) => v.path === status.info.path) + 1
-      : null
     ffmpegItem = (
-      <span
-        className={`ffmpeg-status ffmpeg-status--found${hasMultiple ? ' ffmpeg-status--switchable' : ''}`}
-        onClick={handleLeftClick}
-        onContextMenu={handleRightClick}
-        title={isZh
-          ? `路径: ${status.info.path}\n来源: ${sourceLabel}${hasMultiple ? `\n左键切换版本 (${versionIndex}/${status.allVersions.length})\n右键在资源管理器中定位` : '\n右键在资源管理器中定位'}`
-          : `Path: ${status.info.path}\nSource: ${sourceLabel}${hasMultiple ? `\nLeft-click to switch (${versionIndex}/${status.allVersions.length})\nRight-click to open in Explorer` : '\nRight-click to open in Explorer'}`}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleLeftClick() }}
-      >
-        FFmpeg {status.info.version} <span className="ffmpeg-status__source">({sourceLabel})</span>
-        {hasMultiple && <span className="ffmpeg-status__badge">{versionIndex}/{status.allVersions.length}</span>}
+      <span className="ffmpeg-status-wrapper">
+        <span
+          className={`ffmpeg-status ffmpeg-status--found${hasMultiple ? ' ffmpeg-status--switchable' : ''}`}
+          onClick={handleLeftClick}
+          onContextMenu={handleRightClick}
+          title={isZh
+            ? `路径: ${status.info.path}\n来源: ${sourceLabel}${hasMultiple ? '\n左键选择版本\n右键在资源管理器中定位' : '\n右键在资源管理器中定位'}`
+            : `Path: ${status.info.path}\nSource: ${sourceLabel}${hasMultiple ? '\nLeft-click to select version\nRight-click to open in Explorer' : '\nRight-click to open in Explorer'}`}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleLeftClick() }}
+        >
+          FFmpeg {status.info.version} <span className="ffmpeg-status__source">({sourceLabel})</span>
+          {hasMultiple && <span className="ffmpeg-status__arrow">▾</span>}
+        </span>
+        {showVersionMenu && hasMultiple && (
+          <div className="ffmpeg-version-menu">
+            {status.allVersions.map((v) => (
+              <button
+                key={v.path}
+                type="button"
+                className={`ffmpeg-version-menu__item${v.path === status.info.path ? ' ffmpeg-version-menu__item--active' : ''}`}
+                onClick={() => selectVersion(v.path)}
+              >
+                <span>FFmpeg {v.version}</span>
+                <small>{SOURCE_LABELS[v.source]?.[isZh ? 'zh' : 'en'] ?? v.source}</small>
+              </button>
+            ))}
+          </div>
+        )}
       </span>
     )
   } else {
