@@ -32,6 +32,7 @@ export function FFmpegStatusBar() {
   const [hasUnreadFailure, setHasUnreadFailure] = useState(false)
   const [showVersionMenu, setShowVersionMenu] = useState(false)
   const versionMenuRef = useRef<HTMLDivElement>(null)
+  const switchingRef = useRef(false)
 
   // Click outside to close version menu
   useEffect(() => {
@@ -93,7 +94,7 @@ export function FFmpegStatusBar() {
   // Listen for custom path changes from settings section via storage event
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) detect()
+      if (e.key === STORAGE_KEY && !switchingRef.current) detect()
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
@@ -116,6 +117,7 @@ export function FFmpegStatusBar() {
 
   const selectVersion = async (ffmpegPath: string) => {
     setShowVersionMenu(false)
+    switchingRef.current = true
     const result = await window.electronAPI?.detectFFmpeg(ffmpegPath)
     if (result?.found) {
       localStorage.setItem(STORAGE_KEY, result.path)
@@ -123,6 +125,7 @@ export function FFmpegStatusBar() {
       const all = (await window.electronAPI?.listFFmpegVersions(result.path)) ?? []
       setStatus({ kind: 'found', info: result, allVersions: all })
     }
+    switchingRef.current = false
   }
 
   let ffmpegItem
