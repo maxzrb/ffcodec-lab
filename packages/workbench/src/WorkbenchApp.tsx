@@ -364,9 +364,6 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
           ? activeCustomPanel.render()
           : (
           <>
-            {activePanel.stateNotice && (
-              <WorkbenchStateNotice notice={activePanel.stateNotice} onPanelChange={handlePanelChange} />
-            )}
             {activePanel.sections.map((section) => (
               <Fragment key={section.id}>
                 {section.id === 'section.input.streams-container' && extensions?.inputSectionPrefix}
@@ -388,6 +385,9 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
                 />
               </Fragment>
             ))}
+            {activePanel.stateNotice && (
+              <WorkbenchStateNotice notice={activePanel.stateNotice} onPanelChange={handlePanelChange} />
+            )}
           </>
         )}
         inspector={(
