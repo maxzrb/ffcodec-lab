@@ -121,6 +121,7 @@ function usePersistentState<T>(key: 'tools' | 'probeResult' | 'error'): [T | nul
 export function MediaProbePanel() {
   const { locale } = useI18n()
   const config = useBuilderStore((s) => s.config)
+  const setConfig = useBuilderStore((s) => s.setConfig)
   const inputPath = config.input.path
 
   const [tools, setTools] = usePersistentState<{ ffmpeg: boolean; ffprobe: boolean; ffplay: boolean }>('tools')
@@ -128,6 +129,7 @@ export function MediaProbePanel() {
   const [error, setError] = usePersistentState<string>('error')
   const [probing, setProbing] = useState(false)
   const [expanded, setExpanded] = useState(true)
+  const [syncEnabled, setSyncEnabled] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -169,12 +171,39 @@ export function MediaProbePanel() {
       }
       setProbeResult(result as unknown as ProbeResult)
       setExpanded(true)
+
+      // 联动：将探测到的流写入配置
+      if (syncEnabled) {
+        const data = result as unknown as ProbeResult
+        const currentConfig = useBuilderStore.getState().config
+        const vStreams = data.streams
+          .filter((s) => s.codecType === 'video')
+          .map((s) => ({ index: s.index, codecMode: 'encode' as const }))
+        const aStreams = data.streams
+          .filter((s) => s.codecType === 'audio')
+          .map((s) => ({ index: s.index, codecMode: 'encode' as const }))
+        const sStreams = data.streams
+          .filter((s) => s.codecType === 'subtitle')
+          .map((s) => ({ index: s.index, codecMode: 'encode' as const }))
+        setConfig({
+          ...currentConfig,
+          streams: {
+            ...currentConfig.streams,
+            preserveAllVideoStreams: false,
+            preserveAllAudioStreams: false,
+            preserveAllSubtitleStreams: false,
+            videoStreams: vStreams.length > 0 ? vStreams : currentConfig.streams.videoStreams,
+            audioStreams: aStreams.length > 0 ? aStreams : currentConfig.streams.audioStreams,
+            subtitleStreams: sStreams,
+          },
+        })
+      }
     } catch (err: unknown) {
       setError(String(err instanceof Error ? err.message : err))
     } finally {
       setProbing(false)
     }
-  }, [inputPath, locale, checkTools])
+  }, [inputPath, locale, checkTools, syncEnabled])
 
   const ffprobeAvailable = tools?.ffprobe === true
   const hasInput = inputPath && inputPath.trim().length > 0
@@ -211,7 +240,15 @@ export function MediaProbePanel() {
           </span>
         </button>
 
-        <div className="parameter-section__actions">
+        <div className="parameter-section__actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <label className="switch-control" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <input
+              type="checkbox"
+              checked={syncEnabled}
+              onChange={(e) => setSyncEnabled(e.target.checked)}
+            />
+            <span>{zh ? '联动流选择' : 'Sync'}</span>
+          </label>
           <button
             type="button"
             className="button"
