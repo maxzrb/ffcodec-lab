@@ -227,7 +227,7 @@ export const projectConfigSchema = z.object({
     // 保留全部流开关（默认开启，覆盖逐流选择）
     preserveAllVideoStreams: z.boolean().default(true),
     preserveAllAudioStreams: z.boolean().default(true),
-    preserveAllSubtitleStreams: z.boolean().default(true),
+    preserveAllSubtitleStreams: z.boolean().default(false),
     // ---- 旧字段，仅迁移兼容 ----
     videoStreamIndexes: z.array(z.number().int().nonnegative()).optional(),
     audioStreamIndexes: z.array(z.number().int().nonnegative()).optional(),

@@ -112,7 +112,7 @@ export function fromShareable(
       subtitleStreams: shareable.m?.subtitleStreams ?? [],
       preserveAllVideoStreams: shareable.m?.pav ?? true,
       preserveAllAudioStreams: shareable.m?.paa ?? true,
-      preserveAllSubtitleStreams: shareable.m?.pas ?? true,
+      preserveAllSubtitleStreams: shareable.m?.pas ?? false,
     },
     video: {
       mode: shareable.v.mode,

@@ -63,7 +63,7 @@ describe('成品功能闭环', () => {
     const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
     expect(tokens).toContain('0:v?')
     expect(tokens).toContain('0:a?')
-    expect(tokens).toContain('0:s?')
+    expect(tokens).toContain('0:s:0')
   })
 
   it('六类自定义参数按 AST 阶段输出，tail 位于输出路径之后', () => {
