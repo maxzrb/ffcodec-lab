@@ -3336,8 +3336,40 @@ html.performance-page-open .performance-page {
    外层折叠卡片复用共享 parameter-section 样式。
    ============================================================ */
 
-.media-probe-panel__status-missing {
+.media-probe-panel__status-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.media-probe-panel__status-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-success, #16a34a) 18%, transparent);
+  color: color-mix(in srgb, var(--color-success, #16a34a) 80%, var(--color-text));
+}
+
+.media-probe-panel__status-badge--missing {
+  background: color-mix(in srgb, var(--color-error, #dc2626) 15%, transparent);
   color: color-mix(in srgb, var(--color-error, #dc2626) 80%, var(--color-text));
+}
+
+.media-probe-panel__idle {
+  padding: 16px 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm, 4px);
+  margin-bottom: 8px;
 }
 
 .media-probe-panel__notice {

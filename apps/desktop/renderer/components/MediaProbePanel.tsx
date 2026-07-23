@@ -164,6 +164,9 @@ export function MediaProbePanel() {
       ? 'ffprobe OK'
       : (zh ? '未检测到 ffprobe' : 'ffprobe not found')
 
+  const probed = probeResult !== null
+  const idle = !probed && !probing
+
   return (
     <section className="parameter-section">
       <div className="parameter-section__header">
@@ -178,14 +181,6 @@ export function MediaProbePanel() {
           </span>
           <span className="parameter-section__title">
             {zh ? '媒体信息探测' : 'Media Probe'}
-          </span>
-          <span className="parameter-section__description">
-            {' - '}
-            <span className={tools !== null && !ffprobeAvailable ? 'media-probe-panel__status-missing' : ''}>
-              {statusText}
-            </span>
-            {probeResult?.format?.duration && ` - ${formatDuration(probeResult.format.duration)}`}
-            {probeResult && ` - ${videoStreams.length}V ${audioStreams.length}A ${subtitleStreams.length}S`}
           </span>
         </button>
 
@@ -204,6 +199,33 @@ export function MediaProbePanel() {
 
       <div className={`parameter-section__body ${expanded ? 'parameter-section__body--expanded' : 'parameter-section__body--collapsed'}`}>
         <div className="parameter-section__body-inner">
+
+          {/* 状态行 — ffprobe 可用性与探测摘要 */}
+          <div className="media-probe-panel__status-line">
+            <span className={`media-probe-panel__status-badge ${tools !== null && !ffprobeAvailable ? 'media-probe-panel__status-badge--missing' : ''}`}>
+              {statusText}
+            </span>
+            {probeResult?.format?.duration && (
+              <span>{formatDuration(probeResult.format.duration)}</span>
+            )}
+            {probeResult && (
+              <span>{videoStreams.length}V {audioStreams.length}A {subtitleStreams.length}S</span>
+            )}
+            {probeResult?.format?.bitRate && (
+              <span>{formatBitRate(probeResult.format.bitRate)}</span>
+            )}
+          </div>
+
+          {/* 未探测 — 人机交互引导 */}
+          {idle && ffprobeAvailable && hasInput && (
+            <div className="media-probe-panel__idle">
+              {zh
+                ? '点击右上角"探测"按钮，使用 ffprobe 分析当前输入文件的媒体信息。'
+                : 'Click the Probe button to analyze the current input file with ffprobe.'}
+            </div>
+          )}
+
+          {/* 无 ffprobe */}
           {!ffprobeAvailable && tools !== null && (
             <div className="media-probe-panel__notice">
               {zh
@@ -212,16 +234,19 @@ export function MediaProbePanel() {
             </div>
           )}
 
+          {/* 无输入路径 */}
           {!hasInput && (
             <div className="media-probe-panel__hint" style={{ marginBottom: 8 }}>
-              {zh ? '请先填写输入文件路径，然后点击"探测"按钮。' : 'Enter an input file path, then click Probe.'}
+              {zh ? '请先在"输入文件路径"填写媒体文件路径。' : 'Enter an input file path first.'}
             </div>
           )}
 
+          {/* 探测错误 */}
           {error && (
             <div className="media-probe-panel__error">{error}</div>
           )}
 
+          {/* 探测结果 */}
           {probeResult && (
             <div className="media-probe-panel__result">
               {/* 文件信息 */}
