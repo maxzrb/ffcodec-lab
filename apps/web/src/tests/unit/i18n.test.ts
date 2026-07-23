@@ -17,6 +17,24 @@ const catalog = loadCatalog()
 const containsChinese = (value: string) => /[一-龥]/.test(value)
 
 describe('全局中英文切换', () => {
+  it('运行时共享与预设导入消息不会在英文界面透出中文', () => {
+    const messages = [
+      '配置来自未来版本 (v999)，部分设置可能不可用',
+      '旧版单字幕配置已迁移为多轨道格式 (v1→v2)，请检查字幕设置',
+      '预设 schema 版本 999 高于当前版本 1，部分设置可能丢失',
+      '无效的 JSON 格式',
+    ]
+
+    const translated = messages.map((message) => translateText(message, 'en'))
+    expect(translated.every((message) => !containsChinese(message))).toBe(true)
+    expect(translated).toEqual([
+      'Configuration comes from a future version (v999); some settings may be unavailable.',
+      'The legacy single-subtitle configuration was migrated to the multi-track format (v1→v2); review the subtitle settings.',
+      'Preset schema version 999 is newer than the current version 1; some settings may be lost.',
+      'Invalid JSON format',
+    ])
+  })
+
   it('全部目录控件标签和选项都能切换为英文', () => {
     const labels = new Set<string>()
 

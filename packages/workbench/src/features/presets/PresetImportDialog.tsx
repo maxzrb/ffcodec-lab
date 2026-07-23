@@ -11,7 +11,7 @@ interface PresetImportDialogProps {
 }
 
 export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProps) {
-  const { locale } = useI18n()
+  const { locale, text } = useI18n()
   const isZh = locale === 'zh-CN'
   const [json, setJson] = useState('')
   const [error, setError] = useState('')
@@ -26,7 +26,8 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
       onImport(trimmed)
       setError('')
     } catch (e) {
-      setError(`${isZh ? '导入失败' : 'Import failed'}: ${e instanceof Error ? e.message : String(e)}`)
+      const message = e instanceof Error ? e.message : String(e)
+      setError(`${isZh ? '导入失败' : 'Import failed'}: ${text(message)}`)
     }
   }
 

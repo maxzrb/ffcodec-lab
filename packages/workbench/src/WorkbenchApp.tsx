@@ -110,11 +110,13 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
     const decoded = decodeConfigFromShare(window.location.hash)
     if (decoded.success && decoded.config) {
       setConfig(decoded.config)
-      setShareNotice(decoded.warnings[0] ?? (isZh ? '已载入链接中的共享配置' : 'Loaded configuration from the shared link'))
+      setShareNotice(decoded.warnings[0]
+        ? text(decoded.warnings[0])
+        : (isZh ? '已载入链接中的共享配置' : 'Loaded configuration from the shared link'))
     } else if (decoded.error) {
       setShareNotice(isZh ? '共享链接无法解析，已保留当前配置' : 'The shared link could not be decoded; the current configuration was kept')
     }
-  }, [isZh, setConfig])
+  }, [isZh, setConfig, text])
 
   useEffect(() => {
     const requested = new URL(window.location.href).searchParams.get('panel')
@@ -327,7 +329,7 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
             onClick={() => setShowPresetManager(true)}
             className="button button--primary"
           >
-            {isZh ? '管理预设' : 'Presets'}
+            {isZh ? '预制菜🍜' : 'Preset Kitchen 🍜'}
           </button>
           {shareNotice && <span className="share-notice" role="status">{shareNotice}</span>}
         </div>

@@ -29,7 +29,7 @@ const catalog = loadCatalog()
 const presetService = getPresetService()
 
 export function PresetManager({ onApply, onReset, currentConfig, onClose }: PresetManagerProps) {
-  const { locale } = useI18n()
+  const { locale, text } = useI18n()
   const dialog = useAppDialog()
   const isZh = locale === 'zh-CN'
   const [userPresets, setUserPresets] = useState<UserPreset[]>(() => presetService.list())
@@ -209,11 +209,11 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
       refreshList()
       setNotices([
         isZh ? `已导入预设 "${preset.name}"` : `Imported preset "${preset.name}"`,
-        ...warnings,
+        ...warnings.map(text),
       ])
       setShowImport(false)
     },
-    [refreshList, isZh],
+    [refreshList, isZh, text],
   )
 
   const handleReset = useCallback(async () => {

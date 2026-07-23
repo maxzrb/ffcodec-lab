@@ -114,6 +114,8 @@ const ENGLISH_TEXT: Record<string, string> = {
   '音频复制、无损音频或保留全部音轨时必填；这是所有输出音轨的总和。': 'Required for copied, lossless, or keep-all audio; enter the sum of all output audio tracks.',
   '计算结果': 'Calculation result',
   '目标文件大小工具正在接管视频码率和双遍编码。': 'The target file size tool is controlling video bitrate and two-pass encoding.',
+  '旧版单字幕配置已迁移为多轨道格式 (v1→v2)，请检查字幕设置': 'The legacy single-subtitle configuration was migrated to the multi-track format (v1→v2); review the subtitle settings.',
+  '无效的 JSON 格式': 'Invalid JSON format',
   '流选择': 'Stream selection',
   '音频参数': 'Audio',
   '字幕参数': 'Subtitles',
@@ -745,6 +747,15 @@ export function translateText(value: string, locale: Locale): string {
   if (locale === 'zh-CN') return value
   const exact = ENGLISH_TEXT[value]
   if (exact) return exact
+
+  const futureShareVersion = value.match(/^配置来自未来版本 \(v(\d+)\)，部分设置可能不可用$/)
+  if (futureShareVersion) {
+    return `Configuration comes from a future version (v${futureShareVersion[1]}); some settings may be unavailable.`
+  }
+  const futurePresetVersion = value.match(/^预设 schema 版本 (\d+) 高于当前版本 (\d+)，部分设置可能丢失$/)
+  if (futurePresetVersion) {
+    return `Preset schema version ${futurePresetVersion[1]} is newer than the current version ${futurePresetVersion[2]}; some settings may be lost.`
+  }
 
   const subtitleCount = value.match(/^字幕轨道 \((\d+) 条\)$/)
   if (subtitleCount) return `Subtitle tracks (${subtitleCount[1]})`

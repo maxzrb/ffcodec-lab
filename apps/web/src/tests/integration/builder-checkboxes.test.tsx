@@ -595,10 +595,12 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     render(<TestWrapper />)
 
     expect(screen.getByRole('heading', { name: 'FFmpeg 命令生成器' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '预制菜🍜' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Switch to English' }))
     await userEvent.click(screen.getByRole('button', { name: /^Video encoding/ }))
 
     expect(screen.getByRole('heading', { name: 'FFmpeg Command Builder' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Preset Kitchen 🍜' })).toBeInTheDocument()
     expect(screen.getByLabelText('Video encoder')).toBeInTheDocument()
     expect(screen.getByLabelText('Command preview')).toBeInTheDocument()
     expect(testStorage.getItem('ffcodec-locale')).toBe('en')
