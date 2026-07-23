@@ -91,15 +91,42 @@ function codecLabel(info: ProbeStreamInfo): string {
 
 // -- component --
 
+// -- persistent state (survives panel switching, cleared on app exit) --
+
+let _tools: { ffmpeg: boolean; ffprobe: boolean; ffplay: boolean } | null = null
+let _probeResult: ProbeResult | null = null
+let _error: string | null = null
+const _listeners = new Set<() => void>()
+
+function usePersistentState<T>(key: 'tools' | 'probeResult' | 'error'): [T | null, (v: T | null) => void] {
+  const [, forceUpdate] = useState(0)
+  useEffect(() => {
+    const listener = () => forceUpdate((n) => n + 1)
+    _listeners.add(listener)
+    return () => { _listeners.delete(listener) }
+  }, [])
+
+  const value = (key === 'tools' ? _tools : key === 'probeResult' ? _probeResult : _error) as T | null
+  const setValue = (v: T | null) => {
+    if (key === 'tools') _tools = v as any
+    else if (key === 'probeResult') _probeResult = v as any
+    else _error = v as any
+    _listeners.forEach((fn) => fn())
+  }
+  return [value, setValue]
+}
+
+// -- component --
+
 export function MediaProbePanel() {
   const { locale } = useI18n()
   const config = useBuilderStore((s) => s.config)
   const inputPath = config.input.path
 
-  const [tools, setTools] = useState<{ ffmpeg: boolean; ffprobe: boolean; ffplay: boolean } | null>(null)
-  const [probeResult, setProbeResult] = useState<ProbeResult | null>(null)
+  const [tools, setTools] = usePersistentState<{ ffmpeg: boolean; ffprobe: boolean; ffplay: boolean }>('tools')
+  const [probeResult, setProbeResult] = usePersistentState<ProbeResult>('probeResult')
+  const [error, setError] = usePersistentState<string>('error')
   const [probing, setProbing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(true)
 
   useEffect(() => {
