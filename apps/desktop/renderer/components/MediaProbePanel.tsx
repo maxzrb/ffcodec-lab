@@ -194,6 +194,16 @@ export function MediaProbePanel() {
           >
             {probing ? (zh ? '探测中...' : 'Probing...') : (zh ? '探测' : 'Probe')}
           </button>
+          {probed && (
+            <button
+              type="button"
+              className="button"
+              onClick={() => { setProbeResult(null); setError(null) }}
+              style={{ fontSize: '12px', padding: '2px 10px', marginLeft: 6 }}
+            >
+              {zh ? '清空' : 'Clear'}
+            </button>
+          )}
         </div>
       </div>
 
