@@ -369,7 +369,7 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
             )}
             {activePanel.sections.map((section) => (
               <Fragment key={section.id}>
-                {section.id === 'section.input' && activePanel.id === 'streams-container' && extensions?.inputSectionPrefix && (
+                {section.id === 'section.input.streams-container' && extensions?.inputSectionPrefix && (
                   <div className="input-section-prefix">
                     {extensions.inputSectionPrefix}
                   </div>
