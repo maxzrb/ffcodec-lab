@@ -35,6 +35,9 @@ export function createDefaultProjectConfig(): ProjectConfig {
       videoStreams: [{ index: 0, codecMode: 'encode' as const }],
       audioStreams: [{ index: 0, codecMode: 'encode' as const }],
       subtitleStreams: [],
+      preserveAllVideoStreams: true,
+      preserveAllAudioStreams: true,
+      preserveAllSubtitleStreams: true,
     },
     video: {
       mode: 'encode',

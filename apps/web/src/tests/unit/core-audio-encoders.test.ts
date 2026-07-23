@@ -27,7 +27,7 @@ describe('核心音频编码器目录', () => {
     ['pcm_s64le', 'pcm_s64le'],
     ['pcm_f64le', 'pcm_f64le'],
   ])('%s 生成正确 encoder 名', (encoderId, ffmpegName) => {
-    expect(commandFor(encoderId)).toContain(`-c:a:0 ${ffmpegName}`)
+    expect(commandFor(encoderId)).toContain(`-c:a ${ffmpegName}`)
   })
 
   it('FDK profiles 复用同一 encoder，并仅在 LC 下发射 VBR', () => {

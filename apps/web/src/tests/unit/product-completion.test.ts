@@ -28,6 +28,8 @@ describe('成品功能闭环', () => {
 
   it('流索引生成显式 map 选择器', () => {
     const config = createDefaultProjectConfig()
+    config.streams.preserveAllVideoStreams = false
+    config.streams.preserveAllAudioStreams = false
     config.streams.videoStreams = [{index:1, codecMode:"encode"}]
     config.streams.audioStreams = [{index:2, codecMode:"encode"}]
 
@@ -38,6 +40,9 @@ describe('成品功能闭环', () => {
 
   it('多个视频和音频流索引分别生成独立 map 参数', () => {
     const config = createDefaultProjectConfig()
+    config.streams.preserveAllVideoStreams = false
+    config.streams.preserveAllAudioStreams = false
+    config.streams.preserveAllSubtitleStreams = false
     config.streams.videoStreams = [{index:0, codecMode:"encode"},{index:2, codecMode:"encode"}]
     config.streams.audioStreams = [{index:0, codecMode:"encode"},{index:1, codecMode:"encode"},{index:3, codecMode:"encode"}]
     config.streams.subtitleStreams = [{index:0, codecMode:"encode"},{index:1, codecMode:"encode"}]
@@ -56,9 +61,9 @@ describe('成品功能闭环', () => {
     const config = createDefaultProjectConfig()
     config.streams.subtitleStreams = [{index:0, codecMode:"encode"}]
     const tokens = flattenInvocation(buildCommandPlan(config, catalog, []).invocations[0]).map((item) => item.text)
-    expect(tokens).toContain('0:v:0')
-    expect(tokens).toContain('0:a:0')
-    expect(tokens).toContain('0:s:0')
+    expect(tokens).toContain('0:v?')
+    expect(tokens).toContain('0:a?')
+    expect(tokens).toContain('0:s?')
   })
 
   it('六类自定义参数按 AST 阶段输出，tail 位于输出路径之后', () => {

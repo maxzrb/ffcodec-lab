@@ -30,7 +30,7 @@ describe('目标文件大小工具', () => {
     const rendered = renderBash(buildCommandPlan(config, catalog, []))
 
     expect(calculation.enabled).toBe(false)
-    expect(rendered.text).toContain('-crf:0 23')
+    expect(rendered.text).toContain('-crf 23')
     expect(rendered.text).not.toContain('-pass 1')
   })
 
@@ -45,8 +45,8 @@ describe('目标文件大小工具', () => {
     expect(calculation.audioBitrateKbps).toBe(192)
     expect(calculation.videoBitrateKbps).toBe(862)
     expect(plan.invocations).toHaveLength(2)
-    expect(rendered.text).toContain('-b:v:0 862k')
-    expect(rendered.text).not.toContain('-crf:0 23')
+    expect(rendered.text).toContain('-b:v 862k')
+    expect(rendered.text).not.toContain('-crf 23')
     expect(rendered.text).toContain('-f null -')
     expect(rendered.text).toContain(' && ')
   })
@@ -57,7 +57,7 @@ describe('目标文件大小工具', () => {
     config.tools.targetSize.enabled = false
     const rendered = renderBash(buildCommandPlan(config, catalog, []))
 
-    expect(rendered.text).toContain('-crf:0 19')
+    expect(rendered.text).toContain('-crf 19')
     expect(rendered.text).not.toContain('-pass')
   })
 

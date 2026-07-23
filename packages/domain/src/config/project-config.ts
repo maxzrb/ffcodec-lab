@@ -81,10 +81,17 @@ export interface StreamSelectionConfig {
   /** 逐流映射：字幕流列表。 */
   subtitleStreams: StreamMapEntry[]
 
+  /** 保留全部视频流（默认 true）。开启时使用 -map 0:v? 覆盖逐流选择，编码参数不加流选择符。 */
+  preserveAllVideoStreams?: boolean
+  /** 保留全部音频流（默认 true）。开启时使用 -map 0:a? 覆盖逐流选择。 */
+  preserveAllAudioStreams?: boolean
+  /** 保留全部字幕流（默认 true）。开启时使用 -map 0:s? 覆盖逐流选择。 */
+  preserveAllSubtitleStreams?: boolean
+
   // ---- 旧字段（仅用于迁移兼容，新代码不应直接读写） ----
-  /** @deprecated 迁移至 videoStreams */
+  /** @deprecated 迁移至 preserveAllVideoStreams */
   videoStreamIndexes?: number[]
-  /** @deprecated 迁移至 audioStreams */
+  /** @deprecated 迁移至 preserveAllAudioStreams + audioStreams */
   audioStreamIndexes?: number[]
   /** @deprecated 迁移至 videoStreams */
   videoStreamIndex?: number
@@ -94,11 +101,11 @@ export interface StreamSelectionConfig {
   subtitleStreamIndexes?: number[]
   /** @deprecated 迁移至 subtitleStreams */
   subtitleStreamIndex?: number
-  /** @deprecated 被逐流 codecMode 替代 */
+  /** @deprecated 迁移至 preserveAllVideoStreams */
   preserveOtherVideoStreams?: boolean
-  /** @deprecated 被逐流 codecMode 替代 */
+  /** @deprecated 迁移至 preserveAllAudioStreams */
   preserveOtherAudioStreams?: boolean
-  /** @deprecated 被逐流 codecMode 替代 */
+  /** @deprecated 迁移至 preserveAllSubtitleStreams */
   preserveOtherSubtitleStreams?: boolean
 }
 

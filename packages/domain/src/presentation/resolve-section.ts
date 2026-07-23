@@ -66,6 +66,10 @@ export function resolveInputSection(
   const videoEncMode = config.video.mode === 'encode'
   const audioEncMode = config.audio.mode === 'encode'
 
+  const preserveAllVideo = config.streams.preserveAllVideoStreams !== false // default true
+  const preserveAllAudio = config.streams.preserveAllAudioStreams !== false
+  const preserveAllSubtitle = config.streams.preserveAllSubtitleStreams !== false
+
   const fields: ResolvedField[] = [
     resolveTextField('input.path', '输入文件路径', config.input.path, fieldStates, undefined, [
       {
@@ -98,16 +102,26 @@ export function resolveInputSection(
       config.output.overwrite,
       fieldStates,
     ),
+    // -- 保留全部视频流开关 ------------------------------------------------
+    resolveSwitchField(
+      'streams.preserveAllVideoStreams',
+      '保留全部视频流 (-map 0:v?)',
+      preserveAllVideo,
+      fieldStates,
+      undefined,
+      [],
+      { path: CONFIG_PATHS.streams.preserveAllVideoStreams },
+    ),
     {
       id: 'streams.videoStreams', label: '视频流', controlType: 'multiselect',
       description: videoEncMode ? '勾选的视频流参与输出。默认编码，可在右侧逐项切换为复制。' : '视频流将原样复制（-c:v copy）。',
       value: videoIndices,
       options: streamIndexOptions,
-      visible: videoActive, disabled: false,
+      visible: videoActive && !preserveAllVideo, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
       commandOrigins: ['streams.videoStreams'], diagnostics: [],
     },
-    ...config.streams.videoStreams.map((entry, i) => ({
+    ...(!preserveAllVideo ? config.streams.videoStreams.map((entry, i) => ({
       id: `streams.videoStreams.${i}.codecMode`,
       label: `视频流 ${entry.index}`,
       controlType: 'switch' as const,
@@ -115,17 +129,27 @@ export function resolveInputSection(
       visible: videoEncMode, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
       commandOrigins: [], diagnostics: [],
-    })),
+    })) : []),
+    // -- 保留全部音频流开关 ------------------------------------------------
+    resolveSwitchField(
+      'streams.preserveAllAudioStreams',
+      '保留全部音频流 (-map 0:a?)',
+      preserveAllAudio,
+      fieldStates,
+      undefined,
+      [],
+      { path: CONFIG_PATHS.streams.preserveAllAudioStreams },
+    ),
     {
       id: 'streams.audioStreams', label: '音频流', controlType: 'multiselect',
       description: audioEncMode ? '勾选的音频流参与输出。默认编码，可在右侧逐项切换为复制。' : '音频流将原样复制（-c:a copy）。',
       value: audioIndices,
       options: streamIndexOptions,
-      visible: audioActive, disabled: false,
+      visible: audioActive && !preserveAllAudio, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
       commandOrigins: ['streams.audioStreams'], diagnostics: [],
     },
-    ...config.streams.audioStreams.map((entry, i) => ({
+    ...(!preserveAllAudio ? config.streams.audioStreams.map((entry, i) => ({
       id: `streams.audioStreams.${i}.codecMode`,
       label: `音频流 ${entry.index}`,
       controlType: 'switch' as const,
@@ -133,17 +157,27 @@ export function resolveInputSection(
       visible: audioEncMode, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
       commandOrigins: [], diagnostics: [],
-    })),
+    })) : []),
+    // -- 保留全部字幕流开关 ------------------------------------------------
+    resolveSwitchField(
+      'streams.preserveAllSubtitleStreams',
+      '保留全部字幕流 (-map 0:s?)',
+      preserveAllSubtitle,
+      fieldStates,
+      undefined,
+      [],
+      { path: CONFIG_PATHS.streams.preserveAllSubtitleStreams },
+    ),
     {
       id: 'streams.subtitleStreams', label: '字幕流', controlType: 'multiselect',
       description: '勾选的字幕流参与输出。默认编码，可在右侧逐项切换为复制。',
       value: subtitleIndices,
       options: streamIndexOptions,
-      visible: true, disabled: false,
+      visible: !preserveAllSubtitle, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
       commandOrigins: ['streams.subtitleStreams'], diagnostics: [],
     },
-    ...config.streams.subtitleStreams.map((entry, i) => ({
+    ...(!preserveAllSubtitle ? config.streams.subtitleStreams.map((entry, i) => ({
       id: `streams.subtitleStreams.${i}.codecMode`,
       label: `字幕流 ${entry.index}`,
       controlType: 'switch' as const,
@@ -151,7 +185,7 @@ export function resolveInputSection(
       visible: true, disabled: false,
       sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
       commandOrigins: [], diagnostics: [],
-    })),
+    })) : []),
   ]
 
   return { id: 'section.input', label: '输入与输出', fields }

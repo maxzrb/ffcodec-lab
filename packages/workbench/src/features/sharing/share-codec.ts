@@ -83,6 +83,9 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       videoStreams: config.streams.videoStreams,
       audioStreams: config.streams.audioStreams,
       subtitleStreams: config.streams.subtitleStreams,
+      pav: config.streams.preserveAllVideoStreams,
+      paa: config.streams.preserveAllAudioStreams,
+      pas: config.streams.preserveAllSubtitleStreams,
     },
     u: config.tools,
   }
@@ -103,10 +106,13 @@ export function fromShareable(
       overwrite: shareable.o.overwrite,
       metadata: shareable.o.meta ?? { globalRaw: '', streamRaw: '' },
     },
-    streams: shareable.m ?? {
-      videoStreams: [{ index: 0, codecMode: 'encode' as const }],
-      audioStreams: [{ index: 0, codecMode: 'encode' as const }],
-      subtitleStreams: [],
+    streams: {
+      videoStreams: shareable.m?.videoStreams ?? [{ index: 0, codecMode: 'encode' as const }],
+      audioStreams: shareable.m?.audioStreams ?? [{ index: 0, codecMode: 'encode' as const }],
+      subtitleStreams: shareable.m?.subtitleStreams ?? [],
+      preserveAllVideoStreams: shareable.m?.pav ?? true,
+      preserveAllAudioStreams: shareable.m?.paa ?? true,
+      preserveAllSubtitleStreams: shareable.m?.pas ?? true,
     },
     video: {
       mode: shareable.v.mode,

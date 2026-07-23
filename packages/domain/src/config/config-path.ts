@@ -79,6 +79,9 @@ export const CONFIG_PATHS = {
     videoStreams: configPath(['streams', 'videoStreams']),
     audioStreams: configPath(['streams', 'audioStreams']),
     subtitleStreams: configPath(['streams', 'subtitleStreams']),
+    preserveAllVideoStreams: configPath(['streams', 'preserveAllVideoStreams']),
+    preserveAllAudioStreams: configPath(['streams', 'preserveAllAudioStreams']),
+    preserveAllSubtitleStreams: configPath(['streams', 'preserveAllSubtitleStreams']),
     // 旧字段（迁移兼容）
     videoStreamIndexes: configPath(['streams', 'videoStreamIndexes']),
     audioStreamIndexes: configPath(['streams', 'audioStreamIndexes']),

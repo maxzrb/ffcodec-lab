@@ -30,7 +30,7 @@ describe('FLAC encoder catalog', () => {
 })
 
 describe('FLAC command generation', () => {
-  it('FLAC basic encode generates -c:a:0 flac', () => {
+  it('FLAC basic encode generates -c:a flac', () => {
     const config = createDefaultProjectConfig()
     config.audio.encoderId = 'flac'
     config.audio.bitrate = undefined
@@ -45,7 +45,7 @@ describe('FLAC command generation', () => {
     config.audio.encoderId = 'flac'
     config.audio.bitrate = undefined
     const text = renderBash(buildCommandPlan(config, catalog, [])).text
-    // FLAC is lossless, -b:a:0 should be cleared or absent
+    // FLAC is lossless, -b:a should be cleared or absent
     expect(text).not.toContain('-b:a')
   })
 

@@ -127,15 +127,18 @@ export const shareableConfigSchema = z.object({
     videoStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
       codecMode: z.enum(['encode', 'copy']),
-    })),
+    })).optional(),
     audioStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
       codecMode: z.enum(['encode', 'copy']),
-    })),
+    })).optional(),
     subtitleStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
       codecMode: z.enum(['encode', 'copy']),
-    })),
+    })).optional(),
+    pav: z.boolean().optional(),
+    paa: z.boolean().optional(),
+    pas: z.boolean().optional(),
   }).optional(),
   u: z.object({
     targetSize: z.object({

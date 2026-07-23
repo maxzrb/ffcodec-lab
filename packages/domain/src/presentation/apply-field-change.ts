@@ -154,6 +154,28 @@ export function applyFieldChangeToConfig(
     }
   }
 
+  // 保留全部流开关联动：关闭时若逐流列表为空则种子默认值
+  if (fieldId === 'streams.preserveAllVideoStreams' && change.value === false && previous.streams.videoStreams.length === 0) {
+    // preserveAll 开关本身由 setByPath 写入；额外种子 videoStreams
+    let next = setByPath(previous, change.path, effectiveValue)
+    next = setByPath(next, 'streams.videoStreams' as ConfigPath, [{ index: 0, codecMode: 'encode' as const }])
+    const synced = normalizeAndSync(previous, next, catalog, fieldId)
+    return { config: synced.config, change: { ...change, notices: [...change.notices, ...synced.notices] } }
+  }
+  if (fieldId === 'streams.preserveAllAudioStreams' && change.value === false && previous.streams.audioStreams.length === 0) {
+    let next = setByPath(previous, change.path, effectiveValue)
+    next = setByPath(next, 'streams.audioStreams' as ConfigPath, [{ index: 0, codecMode: 'encode' as const }])
+    const synced = normalizeAndSync(previous, next, catalog, fieldId)
+    return { config: synced.config, change: { ...change, notices: [...change.notices, ...synced.notices] } }
+  }
+  if (fieldId === 'streams.preserveAllSubtitleStreams' && change.value === false && previous.streams.subtitleStreams.length === 0) {
+    // 字幕默认不选任何流
+    let next = setByPath(previous, change.path, effectiveValue)
+    next = setByPath(next, 'streams.subtitleStreams' as ConfigPath, [])
+    const synced = normalizeAndSync(previous, next, catalog, fieldId)
+    return { config: synced.config, change: { ...change, notices: [...change.notices, ...synced.notices] } }
+  }
+
   // 视频/音频模式联动：禁用时清空流，重新启用时恢复默认
   if (fieldId === 'video.mode' && change.value === 'disabled' && previous.streams.videoStreams.length > 0) {
     effectiveValue = []
@@ -208,6 +230,23 @@ export function applyFieldChangeToConfig(
       },
     }
   }
+  const synced = normalizeAndSync(previous, next, catalog, fieldId)
+  return {
+    config: synced.config,
+    change: {
+      ...change,
+      notices: [...change.notices, ...synced.notices],
+    },
+  }
+}
+
+/** 标准化 + 视频参数字典同步，返回最终 config 和额外 notices。 */
+function normalizeAndSync(
+  previous: ProjectConfig,
+  next: ProjectConfig,
+  catalog: Catalog,
+  fieldId: string,
+): { config: ProjectConfig; notices: Array<{ code: string; message: string; originIds: string[] }> } {
   const normalized = normalizeConfig(previous, next, catalog)
   const encoder = normalized.config.video.encoderId
     ? catalog.encoders.video[normalized.config.video.encoderId]
@@ -215,17 +254,11 @@ export function applyFieldChangeToConfig(
   const synchronized = synchronizeVideoParameterDictionary(normalized.config, encoder, fieldId)
   return {
     config: synchronized,
-    change: {
-      ...change,
-      notices: [
-        ...change.notices,
-        ...normalized.notices.map((notice) => ({
-          code: 'NORMALIZED',
-          message: notice.reason,
-          originIds: [notice.fieldId],
-        })),
-      ],
-    },
+    notices: normalized.notices.map((notice) => ({
+      code: 'NORMALIZED',
+      message: notice.reason,
+      originIds: [notice.fieldId],
+    })),
   }
 }
 

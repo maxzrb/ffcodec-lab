@@ -60,18 +60,17 @@ export function buildCommandPlan(
   return plan
 }
 
-/** 从旧 config 字段迁移为 StreamMapEntry[]（兼容旧预设/分享链接）。 */
+/** 从旧 config 字段迁移为 StreamMapEntry[]（兼容旧预设/分享链接）。
+ *  注意：preserveAll 时返回空数组，由调用方在 buildOutput 中生成 -map 0:v? 等全流选择器。 */
 function migrateLegacyStreams(
   indexes: number[] | undefined,
   singleIndex: number | undefined,
-  preserveAll: boolean | undefined,
+  _preserveAll: boolean | undefined,
   mode: string | undefined,
 ): { index: number; codecMode: 'encode' | 'copy' }[] {
   if (mode === 'disabled') return []
-  if (preserveAll) {
-    // 旧"保留全部"→逐流 copy（保守处理：旧行为本身不区分 encode/copy）
-    return [{ index: 0, codecMode: 'copy' }]
-  }
+  // preserveAll 无法用固定 index 表达"全部流"，返回空数组交由调用方处理。
+  if (_preserveAll) return []
   const list = (indexes && indexes.length > 0) ? indexes : [singleIndex ?? 0]
   return list.map((idx) => ({ index: idx, codecMode: 'encode' as const }))
 }
@@ -226,76 +225,226 @@ function buildOutput(
     path: config.output.path,
   }
 
-  // ---- 逐流 -map（新模型：每项带 codecMode）----
+  // ---- 逐流 -map（保留全部流开关优先于逐流选择）----
 
-  const videoEntries = config.streams.videoStreams.length > 0
+  // preserveAll 判断: 新字段 → 旧字段（迁移兼容）→ 默认 true
+  const preserveAllVideo = config.streams.preserveAllVideoStreams
+    ?? (config.streams.videoStreams.length === 0 && config.streams.preserveOtherVideoStreams)
+    ?? true
+  const preserveAllAudio = config.streams.preserveAllAudioStreams
+    ?? (config.streams.audioStreams.length === 0 && config.streams.preserveOtherAudioStreams)
+    ?? true
+  const preserveAllSubtitle = config.streams.preserveAllSubtitleStreams
+    ?? (config.streams.subtitleStreams.length === 0 && config.streams.preserveOtherSubtitleStreams)
+    ?? true
+
+  // 获取逐流 entries（仅在未保留全部时使用）
+  const videoEntries = preserveAllVideo ? [] : config.streams.videoStreams.length > 0
     ? config.streams.videoStreams
     : migrateLegacyStreams(config.streams.videoStreamIndexes, config.streams.videoStreamIndex, config.streams.preserveOtherVideoStreams, config.video.mode)
-  const audioEntries = config.streams.audioStreams.length > 0
+  const audioEntries = preserveAllAudio ? [] : config.streams.audioStreams.length > 0
     ? config.streams.audioStreams
     : migrateLegacyStreams(config.streams.audioStreamIndexes, config.streams.audioStreamIndex, config.streams.preserveOtherAudioStreams, config.audio.mode)
-  const subtitleEntries = config.streams.subtitleStreams.length > 0
+  const subtitleEntries = preserveAllSubtitle ? [] : config.streams.subtitleStreams.length > 0
     ? config.streams.subtitleStreams
     : migrateLegacyStreams(config.streams.subtitleStreamIndexes, config.streams.subtitleStreamIndex, config.streams.preserveOtherSubtitleStreams, undefined)
 
   // 为每条 entry 生成 -map，记录输出流索引
   const videoOutputIndices: number[] = []
   if (config.video.mode !== 'disabled') {
-    videoEntries.forEach((entry, i) => {
-      videoOutputIndices.push(i)
+    if (preserveAllVideo) {
+      // -map 0:v? 映射全部视频流（? 避免无视频流时报错）
       output.maps.push({
-        id: `map.video.${i}`,
-        originId: `streams.videoStreams.${i}`,
+        id: 'map.video.all',
+        originId: 'streams.preserveAllVideoStreams',
         phase: 'MAP',
-        tokens: ['-map', `0:v:${entry.index}`],
+        tokens: ['-map', '0:v?'],
       })
-    })
+    } else {
+      videoEntries.forEach((entry, i) => {
+        videoOutputIndices.push(i)
+        output.maps.push({
+          id: `map.video.${i}`,
+          originId: `streams.videoStreams.${i}`,
+          phase: 'MAP',
+          tokens: ['-map', `0:v:${entry.index}`],
+        })
+      })
+    }
   }
   const audioOutputIndices: number[] = []
   if (config.audio.mode !== 'disabled') {
-    audioEntries.forEach((entry, i) => {
-      audioOutputIndices.push(i)
+    if (preserveAllAudio) {
       output.maps.push({
-        id: `map.audio.${i}`,
-        originId: `streams.audioStreams.${i}`,
+        id: 'map.audio.all',
+        originId: 'streams.preserveAllAudioStreams',
         phase: 'MAP',
-        tokens: ['-map', `0:a:${entry.index}`],
+        tokens: ['-map', '0:a?'],
+      })
+    } else {
+      audioEntries.forEach((entry, i) => {
+        audioOutputIndices.push(i)
+        output.maps.push({
+          id: `map.audio.${i}`,
+          originId: `streams.audioStreams.${i}`,
+          phase: 'MAP',
+          tokens: ['-map', `0:a:${entry.index}`],
+        })
+      })
+    }
+  }
+  const subtitleOutputIndices: number[] = []
+  if (preserveAllSubtitle) {
+    output.maps.push({
+      id: 'map.subtitle.all',
+      originId: 'streams.preserveAllSubtitleStreams',
+      phase: 'MAP',
+      tokens: ['-map', '0:s?'],
+    })
+  } else {
+    subtitleEntries.forEach((entry, i) => {
+      subtitleOutputIndices.push(i)
+      output.maps.push({
+        id: `map.subtitle.${i}`,
+        originId: `streams.subtitleStreams.${i}`,
+        phase: 'MAP',
+        tokens: ['-map', `0:s:${entry.index}`],
       })
     })
   }
-  const subtitleOutputIndices: number[] = []
-  subtitleEntries.forEach((entry, i) => {
-    subtitleOutputIndices.push(i)
-    output.maps.push({
-      id: `map.subtitle.${i}`,
-      originId: `streams.subtitleStreams.${i}`,
-      phase: 'MAP',
-      tokens: ['-map', `0:s:${entry.index}`],
-    })
-  })
 
   // -- video --------------------------------------------------
   const videoEncodeIndices = collectStreamIndices(videoEntries, 'encode')
   const videoCopyIndices = collectStreamIndices(videoEntries, 'copy')
 
-  if (config.video.mode === 'disabled' || videoEntries.length === 0) {
+  if (config.video.mode === 'disabled' || (!preserveAllVideo && videoEntries.length === 0)) {
     output.codecArgs.push({
       id: 'codec.vn',
       originId: 'video.mode',
       phase: 'VIDEO_CODEC',
       tokens: ['-vn'],
     })
-  } else if (config.video.mode === 'copy') {
-    // All video streams copy (overrides per-stream codecMode)
-    videoEntries.forEach((_entry, outIdx) => {
+  } else if (preserveAllVideo) {
+    // 保留全部流：所有视频流统一编码/复制，不加流选择符
+    if (config.video.mode === 'copy') {
       output.codecArgs.push({
-        id: `codec.v.copy.${outIdx}`,
+        id: 'codec.v.copy',
         originId: 'video.mode',
         phase: 'VIDEO_CODEC',
-        tokens: [`-c:v:${outIdx}`, 'copy'],
+        tokens: ['-c:v', 'copy'],
       })
-    })
+    } else if (config.video.mode === 'encode' && config.video.encoderId) {
+      const encoder = catalog.encoders.video[config.video.encoderId]
+      if (encoder) {
+        // 全局流选择符 — 不加 :N
+        output.codecArgs.push({
+          id: 'codec.v.encoder',
+          originId: 'param.video.encoder',
+          phase: 'VIDEO_CODEC',
+          tokens: ['-c:v', encoder.ffmpegName],
+          explanationId: encoder.explanationId,
+        })
+        if (config.video.preset && config.video.preset !== 'auto' && encoder.preset) {
+          output.codecArgs.push({
+            id: 'codec.preset',
+            originId: 'video.preset',
+            phase: 'VIDEO_CODEC',
+            tokens: ['-preset:v', String(config.video.preset)],
+            explanationId: encoder.preset.explanationId,
+          })
+        }
+        if (config.video.profile && config.video.profile !== 'auto' && encoder.profile) {
+          output.codecArgs.push({
+            id: 'codec.profile',
+            originId: 'video.profile',
+            phase: 'VIDEO_PROFILE',
+            tokens: ['-profile:v', String(config.video.profile)],
+            explanationId: encoder.profile.explanationId,
+          })
+        }
+        if (config.video.tune && config.video.tune !== 'auto' && encoder.tune) {
+          output.codecArgs.push({
+            id: 'codec.tune',
+            originId: 'video.tune',
+            phase: 'VIDEO_CODEC',
+            tokens: ['-tune:v', String(config.video.tune)],
+            explanationId: encoder.tune.explanationId,
+          })
+        }
+        if (config.video.pixelFormat && config.video.pixelFormat !== 'auto' && encoder.pixelFormat) {
+          output.codecArgs.push({
+            id: 'codec.pixfmt',
+            originId: 'video.pixelFormat',
+            phase: 'VIDEO_CODEC',
+            tokens: ['-pix_fmt:v', String(config.video.pixelFormat)],
+            explanationId: encoder.pixelFormat.explanationId,
+          })
+        }
+      }
+
+      const colorArguments: Array<[keyof NonNullable<ProjectConfig['video']['color']>, string]> = [
+        ['space', '-colorspace'],
+        ['primaries', '-color_primaries'],
+        ['transfer', '-color_trc'],
+        ['range', '-color_range'],
+      ]
+      if ((config.video.color?.operation ?? 'metadata-only') !== 'convert-only') {
+        for (const [key, argName] of colorArguments) {
+          const value = config.video.color?.[key]
+          if (typeof value !== 'string' || !value) continue
+          output.codecArgs.push({
+            id: `color.${key}`,
+            originId: `video.color.${key}`,
+            phase: 'VIDEO_COLOR',
+            tokens: [argName, value],
+          })
+        }
+      }
+
+      // 质量控制参数 — 不加流选择符
+      if (targetSize.enabled && targetSize.videoBitrateKbps !== undefined) {
+        output.qualityArgs.push({
+          id: 'quality.targetSize.bitrate',
+          originId: 'tools.targetSize.targetMiB',
+          phase: 'VIDEO_RATE_CONTROL',
+          tokens: ['-b:v', `${targetSize.videoBitrateKbps}k`],
+        })
+      } else if (config.video.rateControl && encoder) {
+        const qMode = encoder.qualityModes.find((m) => m.id === config.video.rateControl!.mode)
+        if (qMode) {
+          for (const tpl of qMode.modeArguments ?? []) {
+            output.qualityArgs.push({
+              id: `quality.mode.${tpl.argName}`,
+              originId: `qualityMode.${qMode.id}.args.${tpl.argName}`,
+              phase: tpl.phase,
+              tokens: tpl.value !== undefined ? [tpl.argName, String(tpl.value)] : [tpl.argName],
+            })
+          }
+          for (const ctrl of qMode.controls) {
+            if (ctrl.commandBinding) {
+              const val = getControlValue(config, ctrl) ?? ctrl.defaultValue
+              if (val !== undefined && val !== null) {
+                output.qualityArgs.push({
+                  id: `quality.${ctrl.id}`,
+                  originId: `video.rateControl.controls.${ctrl.id}`,
+                  phase: ctrl.commandBinding.phase,
+                  tokens: ctrl.commandBinding.compact
+                    ? [ctrl.commandBinding.prefix!]
+                    : [ctrl.commandBinding.prefix!, String(val)],
+                  explanationId: ctrl.explanationId,
+                })
+              }
+            }
+          }
+        }
+      }
+
+      if (encoder) {
+        output.codecArgs.push(...buildVideoSpecialParameterArgs(config, encoder))
+      }
+    }
   } else {
+    // 逐流模式：每流独立的 -c:v:N 等流选择符
     // Copy streams (per-stream codecMode)
     videoCopyIndices.forEach((outIdx) => {
       output.codecArgs.push({
@@ -439,25 +588,108 @@ function buildOutput(
   const audioEncodeIndices = collectStreamIndices(audioEntries, 'encode')
   const audioCopyIndices = collectStreamIndices(audioEntries, 'copy')
 
-  if (config.audio.mode === 'disabled' || audioEntries.length === 0) {
+  if (config.audio.mode === 'disabled' || (!preserveAllAudio && audioEntries.length === 0)) {
     output.audioArgs.push({
       id: 'codec.an',
       originId: 'audio.mode',
       phase: 'AUDIO_CODEC',
       tokens: ['-an'],
     })
-  } else if (config.audio.mode === 'copy') {
-    // All audio streams copy (overrides per-stream codecMode)
-    audioEntries.forEach((_entry, outIdx) => {
+  } else if (preserveAllAudio) {
+    // 保留全部流：所有音频流统一编码/复制，不加流选择符
+    if (config.audio.mode === 'copy') {
       output.audioArgs.push({
-        id: `codec.a.copy.${outIdx}`,
+        id: 'codec.a.copy',
         originId: 'audio.mode',
         phase: 'AUDIO_CODEC',
-        tokens: [`-c:a:${outIdx}`, 'copy'],
+        tokens: ['-c:a', 'copy'],
       })
-    })
+    } else if (config.audio.mode === 'encode' && config.audio.encoderId) {
+      const aEncoder = catalog.encoders.audio[config.audio.encoderId]
+      if (aEncoder) {
+        // 全局流选择符 — 不加 :N
+        output.audioArgs.push({
+          id: 'codec.a.encoder',
+          originId: 'param.audio.encoder',
+          phase: 'AUDIO_CODEC',
+          tokens: ['-c:a', aEncoder.ffmpegName],
+          explanationId: aEncoder.explanationId,
+        })
+        if (config.audio.bitrate && aEncoder.qualityModes.length > 0) {
+          output.audioArgs.push({
+            id: 'quality.a.bitrate',
+            originId: 'audio.bitrate',
+            phase: 'AUDIO_QUALITY',
+            tokens: ['-b:a', config.audio.bitrate],
+          })
+        }
+        if (config.audio.channelLayout && config.audio.channelLayout !== 'source') {
+          output.audioArgs.push({
+            id: 'quality.a.ch',
+            originId: 'audio.channelLayout',
+            phase: 'AUDIO_QUALITY',
+            tokens: ['-channel_layout:a', config.audio.channelLayout],
+          })
+        }
+        if (config.audio.sampleRate) {
+          output.audioArgs.push({
+            id: 'quality.a.sr',
+            originId: 'audio.sampleRate',
+            phase: 'AUDIO_QUALITY',
+            tokens: ['-ar:a', String(config.audio.sampleRate)],
+          })
+        }
+
+        const loudness = config.audio.loudnessNormalization
+        const loudnessTargets = [
+          loudness.integratedLoudnessEnabled ? `I=${loudness.integratedLoudness}` : undefined,
+          loudness.loudnessRangeEnabled ? `LRA=${loudness.loudnessRange}` : undefined,
+          loudness.truePeakEnabled ? `TP=${loudness.truePeak}` : undefined,
+        ].filter((value): value is string => Boolean(value))
+        if (loudnessTargets.length > 0) {
+          const filter = [
+            ...loudnessTargets,
+            'linear=false',
+            `dual_mono=${loudness.dualMono ? 'true' : 'false'}`,
+          ].join(':')
+          output.audioArgs.push({
+            id: 'filter.audio.loudnorm',
+            originId: loudness.integratedLoudnessEnabled
+              ? 'audio.loudnessNormalization.integratedLoudness'
+              : loudness.loudnessRangeEnabled
+                ? 'audio.loudnessNormalization.loudnessRange'
+                : 'audio.loudnessNormalization.truePeak',
+            phase: 'AUDIO_QUALITY',
+            tokens: ['-filter:a', `loudnorm=${filter}`],
+            explanationId: 'expl.audio.loudnorm',
+          })
+        }
+
+        // 音频特殊参数同样通过目录定义生成，确保界面、配置和命令使用同一绑定。
+        for (const sp of aEncoder.specialParameters) {
+          if (!sp.commandBinding) continue
+          if (!isControlActive(sp, config)) continue
+          const configKey = sp.configBinding?.path
+            ? extractConfigKey(sp.configBinding.path)
+            : sp.id
+          const storedValue = config.audio.qualityValues[configKey]
+          const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
+          if (val === undefined || val === null || val === '') continue
+          if (val === 'auto') continue
+          const tokens = buildSpecialParameterTokens(sp, val)
+          if (!tokens) continue
+          output.audioArgs.push({
+            id: `audio.special.${configKey}`,
+            originId: sp.id,
+            phase: sp.commandBinding.phase,
+            tokens,
+            explanationId: sp.explanationId,
+          })
+        }
+      }
+    }
   } else {
-    // Copy streams (per-stream codecMode)
+    // 逐流模式
     audioCopyIndices.forEach((outIdx) => {
       output.audioArgs.push({
         id: `codec.a.copy.${outIdx}`,
@@ -466,7 +698,6 @@ function buildOutput(
         tokens: [`-c:a:${outIdx}`, 'copy'],
       })
     })
-    // Encode streams
     if (audioEncodeIndices.length > 0 && config.audio.encoderId) {
       const aEncoder = catalog.encoders.audio[config.audio.encoderId]
       if (aEncoder) {
@@ -504,58 +735,56 @@ function buildOutput(
           }
         })
 
-      const loudness = config.audio.loudnessNormalization
-      const loudnessTargets = [
-        loudness.integratedLoudnessEnabled ? `I=${loudness.integratedLoudness}` : undefined,
-        loudness.loudnessRangeEnabled ? `LRA=${loudness.loudnessRange}` : undefined,
-        loudness.truePeakEnabled ? `TP=${loudness.truePeak}` : undefined,
-      ].filter((value): value is string => Boolean(value))
-      if (loudnessTargets.length > 0) {
-        const filter = [
-          ...loudnessTargets,
-          'linear=false',
-          `dual_mono=${loudness.dualMono ? 'true' : 'false'}`,
-        ].join(':')
-        audioEncodeIndices.forEach((outIdx) => {
-          output.audioArgs.push({
-            id: `filter.audio.loudnorm.${outIdx}`,
-            originId: loudness.integratedLoudnessEnabled
-              ? 'audio.loudnessNormalization.integratedLoudness'
-              : loudness.loudnessRangeEnabled
-                ? 'audio.loudnessNormalization.loudnessRange'
-                : 'audio.loudnessNormalization.truePeak',
-            phase: 'AUDIO_QUALITY',
-            tokens: [`-filter:a:${outIdx}`, `loudnorm=${filter}`],
-            explanationId: 'expl.audio.loudnorm',
+        const loudness = config.audio.loudnessNormalization
+        const loudnessTargets = [
+          loudness.integratedLoudnessEnabled ? `I=${loudness.integratedLoudness}` : undefined,
+          loudness.loudnessRangeEnabled ? `LRA=${loudness.loudnessRange}` : undefined,
+          loudness.truePeakEnabled ? `TP=${loudness.truePeak}` : undefined,
+        ].filter((value): value is string => Boolean(value))
+        if (loudnessTargets.length > 0) {
+          const filter = [
+            ...loudnessTargets,
+            'linear=false',
+            `dual_mono=${loudness.dualMono ? 'true' : 'false'}`,
+          ].join(':')
+          audioEncodeIndices.forEach((outIdx) => {
+            output.audioArgs.push({
+              id: `filter.audio.loudnorm.${outIdx}`,
+              originId: loudness.integratedLoudnessEnabled
+                ? 'audio.loudnessNormalization.integratedLoudness'
+                : loudness.loudnessRangeEnabled
+                  ? 'audio.loudnessNormalization.loudnessRange'
+                  : 'audio.loudnessNormalization.truePeak',
+              phase: 'AUDIO_QUALITY',
+              tokens: [`-filter:a:${outIdx}`, `loudnorm=${filter}`],
+              explanationId: 'expl.audio.loudnorm',
+            })
           })
-        })
-      }
+        }
 
-      // 音频特殊参数同样通过目录定义生成，确保界面、配置和命令使用同一绑定。
-      for (const sp of aEncoder.specialParameters) {
-        if (!sp.commandBinding) continue
-        if (!isControlActive(sp, config)) continue
-        const configKey = sp.configBinding?.path
-          ? extractConfigKey(sp.configBinding.path)
-          : sp.id
-        const storedValue = config.audio.qualityValues[configKey]
-        const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
-        if (val === undefined || val === null || val === '') continue
-        // `auto` 是界面层的“交由 FFmpeg 自动选择”哨兵值，不是编码器参数值。
-        // 例如原生 AAC 的 -aac_coder 只接受具体算法名，传入 auto 会直接失败。
-        if (val === 'auto') continue
-        const tokens = buildSpecialParameterTokens(sp, val)
-        if (!tokens) continue
-        output.audioArgs.push({
-          id: `audio.special.${configKey}`,
-          originId: sp.id,
-          phase: sp.commandBinding.phase,
-          tokens,
-          explanationId: sp.explanationId,
-        })
+        // 音频特殊参数同样通过目录定义生成，确保界面、配置和命令使用同一绑定。
+        for (const sp of aEncoder.specialParameters) {
+          if (!sp.commandBinding) continue
+          if (!isControlActive(sp, config)) continue
+          const configKey = sp.configBinding?.path
+            ? extractConfigKey(sp.configBinding.path)
+            : sp.id
+          const storedValue = config.audio.qualityValues[configKey]
+          const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
+          if (val === undefined || val === null || val === '') continue
+          if (val === 'auto') continue
+          const tokens = buildSpecialParameterTokens(sp, val)
+          if (!tokens) continue
+          output.audioArgs.push({
+            id: `audio.special.${configKey}`,
+            originId: sp.id,
+            phase: sp.commandBinding.phase,
+            tokens,
+            explanationId: sp.explanationId,
+          })
+        }
       }
     }
-  }
   }
 
   // -- subtitle tracks -------------------------------------------

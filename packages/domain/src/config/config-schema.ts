@@ -224,6 +224,10 @@ export const projectConfigSchema = z.object({
       index: z.number().int().nonnegative(),
       codecMode: z.enum(['encode', 'copy']),
     })).default([]),
+    // 保留全部流开关（默认开启，覆盖逐流选择）
+    preserveAllVideoStreams: z.boolean().default(true),
+    preserveAllAudioStreams: z.boolean().default(true),
+    preserveAllSubtitleStreams: z.boolean().default(true),
     // ---- 旧字段，仅迁移兼容 ----
     videoStreamIndexes: z.array(z.number().int().nonnegative()).optional(),
     audioStreamIndexes: z.array(z.number().int().nonnegative()).optional(),

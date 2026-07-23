@@ -33,7 +33,7 @@ describe('Subtitle tracks — command generation', () => {
     const text = renderBash(buildCommandPlan(config, catalog, [])).text
 
     expect(text).toContain('-map')
-    expect(text).toContain('0:s:0')
+    expect(text).toContain('0:s?')
     expect(text).toContain('-c:s:0')
     expect(text).toContain('copy')
   })

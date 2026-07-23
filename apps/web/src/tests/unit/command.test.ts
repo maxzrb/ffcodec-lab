@@ -76,7 +76,7 @@ describe('Command AST — Invariants', () => {
     const plan = buildCommandPlan(config, catalog, [])
     const rendered = renderBash(plan)
 
-    expect(rendered.text).toContain('-c:v:0 copy')
+    expect(rendered.text).toContain('-c:v copy')
     expect(rendered.text).not.toContain('-crf')
     expect(rendered.text).not.toContain('-vf')
   })
@@ -111,7 +111,7 @@ describe('Command AST — Invariants', () => {
     const plan = buildCommandPlan(config, catalog, [])
     const rendered = renderBash(plan)
 
-    expect(rendered.text).toContain('-c:a:0 copy')
+    expect(rendered.text).toContain('-c:a copy')
     expect(rendered.text).not.toContain('-b:a')
   })
 
@@ -287,7 +287,7 @@ describe('Command AST — Invariants', () => {
     expect(pass1).not.toContain('-c:a')
     expect(pass1).not.toContain(config.output.path)
     expect(pass2).toContain('-pass 2')
-    expect(pass2).toContain('-c:a:0 aac')
+    expect(pass2).toContain('-c:a aac')
     expect(pass2).toContain(config.output.path)
   })
 

@@ -178,14 +178,14 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(useBuilderStore.getState().config.video.rateControl?.mode).toBe('crf')
     let command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
     expect(command).toContain('-pass 1')
-    expect(command).toContain('-b:v:0 862k')
-    expect(command).not.toContain('-crf:0 23')
+    expect(command).toContain('-b:v 862k')
+    expect(command).not.toContain('-crf 23')
 
     await userEvent.click(screen.getByLabelText('启用目标文件大小'))
     await waitFor(() => {
       expect(useBuilderStore.getState().config.tools.targetSize.enabled).toBe(false)
       command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
-      expect(command).toContain('-crf:0 23')
+      expect(command).toContain('-crf 23')
       expect(command).not.toContain('-pass 1')
     })
   })
@@ -908,6 +908,14 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     })
     render(<TestWrapper />)
     await openPanel('流与封装')
+
+    // 关闭保留全部流开关以显示逐流多选
+    const preserveVideo = document.querySelector('[data-field-id="streams.preserveAllVideoStreams"] input[type="checkbox"]') as HTMLInputElement
+    const preserveAudio = document.querySelector('[data-field-id="streams.preserveAllAudioStreams"] input[type="checkbox"]') as HTMLInputElement
+    const preserveSubtitle = document.querySelector('[data-field-id="streams.preserveAllSubtitleStreams"] input[type="checkbox"]') as HTMLInputElement
+    if (preserveVideo?.checked) await userEvent.click(preserveVideo)
+    if (preserveAudio?.checked) await userEvent.click(preserveAudio)
+    if (preserveSubtitle?.checked) await userEvent.click(preserveSubtitle)
 
     const videoField = document.querySelector('[data-field-id="streams.videoStreams"]')!
     const audioField = document.querySelector('[data-field-id="streams.audioStreams"]')!
