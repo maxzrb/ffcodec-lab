@@ -239,11 +239,15 @@ export async function detectFFmpeg(customPath?: string): Promise<FFmpegInfo> {
  */
 export async function detectAllFFmpegVersions(customPath?: string): Promise<FFmpegInfo[]> {
   const results: FFmpegInfo[] = []
-  const seen = new Set<string>()
 
   const add = (info: FFmpegInfo) => {
-    if (!info.found || seen.has(info.path)) return
-    seen.add(info.path)
+    if (!info.found) return
+    // 如果路径已存在但来源不同，保留最高优先级的来源（custom > bundled > path）
+    const existing = results.find((r) => r.path === info.path)
+    if (existing) {
+      if (info.source === 'custom') existing.source = 'custom'
+      return
+    }
     results.push(info)
   }
 

@@ -101,7 +101,7 @@ export function FFmpegStatusBar() {
   }, [])
 
   const handleLeftClick = () => {
-    if (status.kind === 'found' && status.allVersions.length > 1) {
+    if (status.kind === 'found' && status.allVersions.length > 0) {
       setShowVersionMenu((v) => !v)
     } else if (status.kind === 'not-found') {
       window.electronAPI?.openExternal('https://ffmpeg.org/download.html')
@@ -137,7 +137,7 @@ export function FFmpegStatusBar() {
     )
   } else if (status.kind === 'found') {
     const sourceLabel = SOURCE_LABELS[status.info.source]?.[isZh ? 'zh' : 'en'] ?? status.info.source
-    const hasMultiple = status.allVersions.length > 1
+    const hasMultiple = status.allVersions.length > 0
     ffmpegItem = (
       <span className="ffmpeg-status-wrapper" ref={versionMenuRef}>
         <span
