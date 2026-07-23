@@ -241,14 +241,6 @@ export function MediaProbePanel() {
         </button>
 
         <div className="parameter-section__actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label className="switch-control" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <input
-              type="checkbox"
-              checked={syncEnabled}
-              onChange={(e) => setSyncEnabled(e.target.checked)}
-            />
-            <span>{zh ? '联动流选择' : 'Sync'}</span>
-          </label>
           <button
             type="button"
             className="button"
@@ -288,6 +280,15 @@ export function MediaProbePanel() {
             {probeResult?.format?.bitRate && (
               <span>{formatBitRate(probeResult.format.bitRate)}</span>
             )}
+            <label className="switch-control" style={{ marginLeft: 'auto' }}>
+              <input
+                type="checkbox"
+                checked={syncEnabled}
+                onChange={(e) => setSyncEnabled(e.target.checked)}
+              />
+              <span className="switch-control__track" />
+              <span>{zh ? '联动流选择' : 'Sync selection'}</span>
+            </label>
           </div>
 
           {/* 未探测 — 人机交互引导 */}
