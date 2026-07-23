@@ -145,6 +145,27 @@ function renderControl(
     })
   }
 
+  // 处理方式三连分段按钮（视频/音频 mode）
+  const isModeField = field.id === 'param.video.mode' || field.id === 'param.audio.mode'
+  if (isModeField && field.controlType === 'select' && field.options) {
+    return (
+      <div className="shell-selector" role="group" aria-label={text(field.label)}>
+        {field.options.map((opt) => (
+          <button
+            key={String(opt.value)}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`segmented-button ${field.value === opt.value ? 'segmented-button--active' : ''}`}
+            aria-pressed={field.value === opt.value}
+            disabled={disabled}
+          >
+            {text(opt.label)}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   switch (field.controlType) {
     case 'section':
       return (

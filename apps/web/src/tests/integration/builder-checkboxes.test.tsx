@@ -227,14 +227,14 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
   it('复制或禁用媒体流时解释参数缺失原因，并允许从空质量页返回视频编码', async () => {
     render(<TestWrapper />)
     await openPanel('视频编码')
-    await chooseDropdown('视频处理方式', 'copy')
+    await userEvent.click(screen.getByRole('button', { name: '复制视频流 (copy)' }))
     expect(screen.getByText('正在复制视频流')).toBeInTheDocument()
 
     await openPanel('质量控制')
     expect(screen.getByText('复制模式不需要质量控制')).toBeInTheDocument()
     expect(screen.getByText(/视频数据会原样写入输出文件/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '前往视频编码' }))
-    expect(dropdownText('视频处理方式')).toContain('复制')
+    expect(screen.getByRole('button', { name: '复制视频流 (copy)' })).toHaveAttribute('aria-pressed', 'true')
 
     await openPanel('音频')
     await userEvent.click(screen.getByRole('button', { name: '复制音频流 (copy)' }))
