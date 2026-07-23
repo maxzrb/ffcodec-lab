@@ -1,7 +1,7 @@
 {
   "name": "@ffcodec/desktop",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "FFCodec Lab — Electron desktop application",
   "author": "maxzrb",
   "homepage": "https://github.com/maxzrb/ffcodec-lab",

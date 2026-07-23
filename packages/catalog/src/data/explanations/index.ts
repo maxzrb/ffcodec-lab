@@ -5702,4 +5702,99 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.libsvthevc.lookahead': { id: 'expl.libsvthevc.lookahead', title: 'SVT-HEVC 前瞻帧数', short: '编码器前瞻分析帧数 (0–120)。提升码率控制精度。', effects: { quality: 2, fileSize: 1, speed: 2, compatibility: 0 }, sourceRefs: [{ repository: 'OpenVisualCloud/SVT-HEVC', snapshotDate: '2026-07-20', file: 'README.md', sourceType: 'encoder-official' }] },
   'expl.libsvthevc.asm': { id: 'expl.libsvthevc.asm', title: 'SVT-HEVC 汇编优化', short: '启用汇编优化以提升编码速度。', effects: { quality: 0, fileSize: 0, speed: 2, compatibility: 0 }, sourceRefs: [{ repository: 'OpenVisualCloud/SVT-HEVC', snapshotDate: '2026-07-20', file: 'README.md', sourceType: 'encoder-official' }] },
   'expl.libsvthevc.threads': { id: 'expl.libsvthevc.threads', title: 'SVT-HEVC 逻辑处理器数', short: '指定编码使用的逻辑处理器数。', effects: { quality: 0, fileSize: 0, speed: 3, compatibility: 0 }, sourceRefs: [{ repository: 'OpenVisualCloud/SVT-HEVC', snapshotDate: '2026-07-20', file: 'README.md', sourceType: 'encoder-official' }] },
+
+  // ================================================================
+  // 传统 passlog 双遍补充
+  // ================================================================
+
+  'expl.libsvtav1.twopass': {
+    id: 'expl.libsvtav1.twopass', title: 'SVT-AV1 双遍 VBR',
+    short: '第一遍分析画面复杂度并写入统计文件，第二遍按目标平均码率分配 AV1 比特。',
+    detail: '该模式需要目标码率，不应与 CRF 或 CQP 质量模式混用。',
+    sourceRefs: [{ repository: 'AOMediaCodec/SVT-AV1', snapshotDate: '2026-07-20', file: 'Docs/Parameters.md', sourceType: 'encoder-official' }],
+  },
+  'expl.libsvtav1.twopass.bitrate': {
+    id: 'expl.libsvtav1.twopass.bitrate', title: 'SVT-AV1 双遍目标码率',
+    short: '设置两遍编码的平均视频码率；实际大小仍会受封装和内容复杂度影响。',
+    sourceRefs: [{ repository: 'AOMediaCodec/SVT-AV1', snapshotDate: '2026-07-20', file: 'Docs/Parameters.md', sourceType: 'encoder-official' }],
+  },
+  'expl.libaom.twopass': {
+    id: 'expl.libaom.twopass', title: 'libaom 双遍 VBR',
+    short: '第一遍分析画面复杂度并写入统计文件，第二遍按目标平均码率分配 AV1 比特。',
+    detail: '该模式需要目标码率，不应与 CRF 质量模式混用。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi / libavcodec/libaomenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libaom.twopass.bitrate': {
+    id: 'expl.libaom.twopass.bitrate', title: 'libaom 双遍目标码率',
+    short: '设置两遍编码的平均视频码率；实际大小仍会受封装和内容复杂度影响。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi / libavcodec/libaomenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.twopass': {
+    id: 'expl.libvvenc.twopass', title: 'VVenC 双遍 VBR',
+    short: '第一遍分析画面复杂度并写入统计文件，第二遍按目标平均码率分配 VVC 比特。',
+    detail: 'VVenC 仍要求目标 FFmpeg 和接收端支持 H.266/VVC。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi / libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.libvvenc.twopass.bitrate': {
+    id: 'expl.libvvenc.twopass.bitrate', title: 'VVenC 双遍目标码率',
+    short: '设置两遍编码的平均视频码率；实际大小仍会受封装和内容复杂度影响。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-12', file: 'doc/encoders.texi / libavcodec/libvvenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg2video.encoder': {
+    id: 'expl.mpeg2video.encoder', title: 'MPEG-2 Video 编码器',
+    short: 'FFmpeg 内置的传统 MPEG-2 视频编码器，适合 DVD、广播和旧设备兼容。',
+    effects: { quality: 2, fileSize: 2, speed: 4, compatibility: 4 },
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpeg12enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg2video.pixfmt': {
+    id: 'expl.mpeg2video.pixfmt', title: 'MPEG-2 Video 像素格式',
+    short: '支持 yuv420p 和 yuv422p；yuv420p 的播放兼容性更广。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpeg12enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg2video.vbr': {
+    id: 'expl.mpeg2video.vbr', title: 'MPEG-2 Video VBR',
+    short: '按目标平均码率分配比特，瞬时码率会随画面复杂度变化。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpegvideo_enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg2video.vbr.bitrate': {
+    id: 'expl.mpeg2video.vbr.bitrate', title: 'MPEG-2 Video 目标码率', short: '设置平均视频码率。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpegvideo_enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg2video.twopass': {
+    id: 'expl.mpeg2video.twopass', title: 'MPEG-2 Video 双遍 VBR',
+    short: '使用两遍复杂度分析和目标平均码率，适合需要可预测体积的旧格式输出。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpegvideo_enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg2video.twopass.bitrate': {
+    id: 'expl.mpeg2video.twopass.bitrate', title: 'MPEG-2 Video 双遍目标码率', short: '设置两遍编码的平均视频码率。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpegvideo_enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg4.encoder': {
+    id: 'expl.mpeg4.encoder', title: 'MPEG-4 Part 2 编码器',
+    short: 'FFmpeg 内置的传统 MPEG-4 Part 2 编码器，主要用于旧设备和历史工作流兼容。',
+    effects: { quality: 2, fileSize: 2, speed: 4, compatibility: 3 },
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpeg4videoenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg4.pixfmt': {
+    id: 'expl.mpeg4.pixfmt', title: 'MPEG-4 Part 2 像素格式', short: '当前编码器使用 yuv420p 8-bit 4:2:0。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpeg4videoenc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg4.vbr': {
+    id: 'expl.mpeg4.vbr', title: 'MPEG-4 Part 2 VBR',
+    short: '按目标平均码率分配比特，瞬时码率会随画面复杂度变化。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpegvideo_enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg4.vbr.bitrate': {
+    id: 'expl.mpeg4.vbr.bitrate', title: 'MPEG-4 Part 2 目标码率', short: '设置平均视频码率。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpegvideo_enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg4.twopass': {
+    id: 'expl.mpeg4.twopass', title: 'MPEG-4 Part 2 双遍 VBR',
+    short: '使用两遍复杂度分析和目标平均码率，适合需要可预测体积的旧格式输出。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpegvideo_enc.c', sourceType: 'ffmpeg-official' }],
+  },
+  'expl.mpeg4.twopass.bitrate': {
+    id: 'expl.mpeg4.twopass.bitrate', title: 'MPEG-4 Part 2 双遍目标码率', short: '设置两遍编码的平均视频码率。',
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'libavcodec/mpegvideo_enc.c', sourceType: 'ffmpeg-official' }],
+  },
 }

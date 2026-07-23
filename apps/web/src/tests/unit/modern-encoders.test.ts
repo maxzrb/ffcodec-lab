@@ -6,7 +6,7 @@ import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
 
 const catalog = loadCatalog()
 
-function commandFor(encoderId: 'libaom_av1' | 'libvvenc', mode: 'crf' | 'vbr' | 'cqp') {
+function commandFor(encoderId: 'libaom_av1' | 'libvvenc', mode: 'crf' | 'vbr' | 'cqp' | 'twoPass') {
   const config = createDefaultProjectConfig()
   config.output.containerId = 'mkv'
   config.output.path = 'output.mkv'
@@ -50,6 +50,21 @@ describe('libaom-av1 与 libvvenc', () => {
     expect(command).toContain('-preset:v medium')
     expect(command).toContain('-pix_fmt:v yuv420p10le')
     expect(command).toContain('-qp 32')
+  })
+
+  it('libaom-av1 与 libvvenc 的双遍模式生成目标码率', () => {
+    for (const encoderId of ['libaom_av1', 'libvvenc'] as const) {
+      const encoder = catalog.encoders.video[encoderId]
+      expect(encoder.capabilities.supportsTwoPass).toBe(true)
+      expect(encoder.qualityModes.some((mode) => mode.id === 'twoPass')).toBe(true)
+
+      const { config, render } = commandFor(encoderId, 'twoPass')
+      config.video.rateControl = { mode: 'twoPass', bitrate: '2500k', additionalValues: {} }
+      const command = render()
+      expect(command).toContain('-pass 1')
+      expect(command).toContain('-pass 2')
+      expect(command).toContain('-b:v 2500k')
+    }
   })
 
   it('可选参数在用户未设置时不自动写入命令', () => {

@@ -922,7 +922,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases')
-    expect(screen.getByText('FFCodec Lab desktop v1.2.2')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab desktop v1.2.3')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))

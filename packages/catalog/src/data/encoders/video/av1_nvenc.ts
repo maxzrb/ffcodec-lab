@@ -53,7 +53,8 @@ export const av1Nvenc: EncoderDefinition = {
   capabilities: {
     copy: false,
     disabled: false,
-    supportsTwoPass: true,
+    // NVENC 的 -multipass 是单次编码调用内的硬件分析，不使用传统 passlog 双遍。
+    supportsTwoPass: false,
     supportsLossless: true,
     supportedContainers: ['mp4', 'mkv', 'webm', 'mov'],
   },

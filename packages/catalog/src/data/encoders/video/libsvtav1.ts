@@ -36,7 +36,7 @@ export const libsvtav1: EncoderDefinition = {
   capabilities: {
     copy: false,
     disabled: false,
-    supportsTwoPass: false,
+    supportsTwoPass: true,
     supportsLossless: false,
     supportedContainers: ['mp4', 'mkv', 'webm', 'mov'],
   },
@@ -158,6 +158,24 @@ export const libsvtav1: EncoderDefinition = {
           configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
           defaultValue: '5000k',
           explanationId: 'expl.libsvtav1.vbr.bitrate',
+        },
+      ],
+    },
+    {
+      id: 'twoPass',
+      label: '2-Pass VBR (双遍可变码率)',
+      emitterId: 'emitter.libsvtav1.twopass',
+      explanationId: 'expl.libsvtav1.twopass',
+      sourceRefs: svtav1SourceRefs,
+      controls: [
+        {
+          id: 'libsvtav1.twopass.bitrate',
+          label: '目标码率 (-b:v)',
+          control: 'text',
+          commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+          configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
+          defaultValue: '5000k',
+          explanationId: 'expl.libsvtav1.twopass.bitrate',
         },
       ],
     },

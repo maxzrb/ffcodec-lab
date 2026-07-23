@@ -1,6 +1,6 @@
 {
   "name": "ffcodec-lab",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "private": true,
   "packageManager": "pnpm@11.15.1",
   "scripts": {
@@ -16,7 +16,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "lint": "pnpm -r --if-present lint",
-    "audit:catalog": "pnpm --filter @ffcodec/catalog audit",
+    "audit:catalog": "pnpm --filter @ffcodec/web run audit:catalog",
     "check:web": "pnpm --filter @ffcodec/web check",
     "check:desktop": "pnpm --filter @ffcodec/desktop check",
     "check": "pnpm typecheck && pnpm test && pnpm lint",

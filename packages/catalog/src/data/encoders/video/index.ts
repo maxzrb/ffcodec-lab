@@ -37,6 +37,8 @@ import { h264Mf } from './h264_mf'
 import { hevcMf } from './hevc_mf'
 import { libkvazaar } from './libkvazaar'
 import { libsvthevc } from './libsvthevc'
+import { mpeg2video } from './mpeg2video'
+import { mpeg4 } from './mpeg4'
 import { withAdvancedQualityControls } from './advanced-quality'
 
 const definitions = [
@@ -59,7 +61,7 @@ const definitions = [
   // MediaFoundation — Windows
   h264Mf, hevcMf,
   // CPU software — legacy / niche
-  libvpxVp8, libvpxVp9, ffv1, proresKs, cavs, libxavs2,
+  libvpxVp8, libvpxVp9, mpeg2video, mpeg4, ffv1, proresKs, cavs, libxavs2,
 ].map(withAdvancedQualityControls)
 
 export const videoEncoders: Record<string, EncoderDefinition> = Object.fromEntries(

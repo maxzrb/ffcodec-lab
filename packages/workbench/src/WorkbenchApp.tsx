@@ -38,7 +38,7 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = 'v1.2.2'
+const APP_VERSION = 'v1.2.3'
 const RELEASE_URL = `${PROJECT_URL}/releases`
 
 export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {

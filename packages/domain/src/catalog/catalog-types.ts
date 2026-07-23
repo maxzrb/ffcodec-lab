@@ -13,6 +13,8 @@ export type CodecFamily =
   | 'vvc'
   | 'vp8'
   | 'vp9'
+  | 'mpeg2video'
+  | 'mpeg4'
   | 'avs'
   | 'avs2'
   | 'avs3'
@@ -59,6 +61,8 @@ export const CODEC_CATEGORIES: CodecCategoryDef[] = [
   { id: 'av2', label: 'AV2', families: [], placeholder: true, placeholderNote: 'AV2 正式规范已于 2025 年 5 月由 AOMedia 发布，但截至 FFmpeg 8.1.2 发行版，上游尚未合并任何 AV2 编解码器。保留以等待 FFmpeg 实现。' },
   { id: 'vp8', label: 'VP8', families: ['vp8'] },
   { id: 'vp9', label: 'VP9', families: ['vp9'] },
+  { id: 'mpeg2video', label: 'MPEG-2 Video', families: ['mpeg2video'] },
+  { id: 'mpeg4', label: 'MPEG-4 Part 2', families: ['mpeg4'] },
   { id: 'avs', label: 'AVS (AVS1-P2)', families: ['avs'] },
   { id: 'avs2', label: 'AVS2', families: ['avs2'] },
   { id: 'avs3', label: 'AVS3', families: ['avs3'], placeholder: true, placeholderNote: '截至 FFmpeg 8.1.2 发行版，编码器 uavs3e 未合并入上游。FFmpeg 仅内置 AVS3 解码 (libuavs3d)，编码需自行打补丁编译。' },

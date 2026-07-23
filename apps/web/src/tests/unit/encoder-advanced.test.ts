@@ -41,9 +41,9 @@ function configForEncoder(encoderId: string) {
 }
 
 describe('视频编码器高级参数统一契约', () => {
-  it('40 个编码器都提供独立高级参数，空配置不会发射私有默认值', () => {
+  it('42 个编码器都提供独立高级参数，空配置不会发射私有默认值', () => {
     const encoders = Object.values(catalog.encoders.video)
-    expect(encoders).toHaveLength(40)
+    expect(encoders).toHaveLength(42)
 
     for (const encoder of encoders) {
       expect(encoder.specialParameters.length, encoder.id).toBeGreaterThan(0)

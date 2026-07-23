@@ -1,0 +1,92 @@
+import type { EncoderDefinition } from '@ffcodec/domain/catalog/catalog-types'
+import { CONFIG_PATHS, videoSpecialParamPath } from '@ffcodec/domain/config/config-path'
+
+const mpeg4Source = {
+  repository: 'FFmpeg/FFmpeg',
+  branch: 'master',
+  snapshotDate: '2026-07-24',
+  file: 'libavcodec/mpeg4videoenc.c / libavcodec/mpegvideo_enc.c',
+  sourceType: 'ffmpeg-official' as const,
+  url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/mpeg4videoenc.c',
+}
+
+export const mpeg4: EncoderDefinition = {
+  id: 'mpeg4',
+  label: 'mpeg4 (MPEG-4 Part 2)',
+  ffmpegName: 'mpeg4',
+  mediaType: 'video',
+  family: 'mpeg4',
+  implementation: 'software',
+  availabilityClass: 'generally-available',
+  capabilityScope: {
+    notes: ['FFmpeg 内置 MPEG-4 Part 2 编码器，无需外部库。'],
+  },
+  availabilityNote: 'FFmpeg 内置 MPEG-4 Part 2 编码器，主要用于旧设备和历史工作流兼容。',
+  capabilities: {
+    supportsTwoPass: true,
+    supportsLossless: false,
+    supportedContainers: ['mp4', 'mkv', 'mov'],
+  },
+  pixelFormat: {
+    id: 'mpeg4.pixelFormat',
+    label: '像素格式 (pix_fmt)',
+    control: 'select',
+    commandBinding: { argName: '-pix_fmt', prefix: '-pix_fmt', phase: 'VIDEO_CODEC' },
+    options: [{ value: 'yuv420p', label: 'yuv420p (8-bit 4:2:0)' }],
+    defaultValue: 'yuv420p',
+    explanationId: 'expl.mpeg4.pixfmt',
+  },
+  qualityModes: [
+    {
+      id: 'vbr',
+      label: 'VBR (动态码率)',
+      emitterId: 'emitter.mpeg4.vbr',
+      explanationId: 'expl.mpeg4.vbr',
+      sourceRefs: [mpeg4Source],
+      controls: [{
+        id: 'mpeg4.vbr.bitrate',
+        label: '目标码率 (-b:v)',
+        control: 'text',
+        commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+        configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
+        defaultValue: '2000k',
+        explanationId: 'expl.mpeg4.vbr.bitrate',
+      }],
+    },
+    {
+      id: 'twoPass',
+      label: '2-Pass VBR (双遍可变码率)',
+      emitterId: 'emitter.mpeg4.twopass',
+      explanationId: 'expl.mpeg4.twopass',
+      sourceRefs: [mpeg4Source],
+      controls: [{
+        id: 'mpeg4.twopass.bitrate',
+        label: '目标码率 (-b:v)',
+        control: 'text',
+        commandBinding: { argName: '-b:v', prefix: '-b:v', phase: 'VIDEO_RATE_CONTROL' },
+        configBinding: { path: CONFIG_PATHS.video.rateControl.bitrate },
+        defaultValue: '2000k',
+        explanationId: 'expl.mpeg4.twopass.bitrate',
+      }],
+    },
+  ],
+  specialParameters: [{
+    id: 'mpeg4.keyint',
+    label: '关键帧间隔 (-g)',
+    control: 'number',
+    configBinding: { path: videoSpecialParamPath('keyint') },
+    commandBinding: { argName: '-g', prefix: '-g', phase: 'VIDEO_CODEC' },
+    range: { min: 1, max: 300 },
+    optional: true,
+    explanationId: 'expl.advanced.gopSize',
+    sourceRefs: [mpeg4Source],
+  }],
+  requiredArguments: [],
+  defaultArguments: [],
+  explanationId: 'expl.mpeg4.encoder',
+  sourceRefs: [mpeg4Source],
+  sourceAuthority: 'ffmpeg-official',
+  verificationLevel: 'cross-verified',
+  needsCrossVerification: false,
+  status: 'verified',
+}
