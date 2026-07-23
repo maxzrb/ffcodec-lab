@@ -319,7 +319,7 @@ function startActivePlan(job: InternalJobState): void {
   emitProgress(job.snapshot)
 }
 
-/** 将相对双遍统计前缀替换为应用数据目录中的任务专用路径。 */
+/** 将共享命令中的双遍统计前缀替换为应用数据目录中的任务专用路径。 */
 function replacePassLogPath(args: string[], passLogPrefix: string): string[] {
   const result = [...args]
   for (let index = 0; index < result.length - 1; index++) {

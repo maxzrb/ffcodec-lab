@@ -47,9 +47,10 @@ export function buildCommandPlan(
   if (isTwoPass) {
     const pass2 = structuredClone(invocation)
     pass2.purpose = 'pass-2'
-    pass2.output.qualityArgs = [...buildPassArgs(2), ...pass2.output.qualityArgs]
+    const passLogPrefix = derivePassLogPrefix(invocation.output.path)
+    pass2.output.qualityArgs = [...buildPassArgs(2, passLogPrefix), ...pass2.output.qualityArgs]
 
-    invocation.output.qualityArgs = [...buildPassArgs(1), ...invocation.output.qualityArgs]
+    invocation.output.qualityArgs = [...buildPassArgs(1, passLogPrefix), ...invocation.output.qualityArgs]
     invocation.output = buildFirstPassOutput(invocation.output)
     plan.invocations.push(pass2)
   }
@@ -146,7 +147,7 @@ function buildGlobalArgs(config: ProjectConfig): CommandArg[] {
 }
 
 /** 双遍控制参数属于输出编码选项，必须位于输入文件之后。 */
-function buildPassArgs(pass: 1 | 2): CommandArg[] {
+function buildPassArgs(pass: 1 | 2, passLogPrefix: string): CommandArg[] {
   return [
     {
       id: `quality.pass.${pass}`,
@@ -158,9 +159,19 @@ function buildPassArgs(pass: 1 | 2): CommandArg[] {
       id: `quality.passlogfile.${pass}`,
       originId: 'rule.twopass',
       phase: 'VIDEO_RATE_CONTROL',
-      tokens: ['-passlogfile', 'ffmpeg2pass'],
+      tokens: ['-passlogfile', passLogPrefix],
     },
   ]
+}
+
+/**
+ * 将双遍统计文件放在最终输出文件旁边，避免复制到不可写当前目录（例如 System32）。
+ * 输出路径本身由用户填写，保留其绝对/相对形式并只增加专用后缀；Desktop 运行时
+ * 仍会把该前缀替换为用户数据目录中的任务专用路径。
+ */
+function derivePassLogPrefix(outputPath: string): string {
+  const normalized = outputPath.trim()
+  return `${normalized || 'output'}.ffcodec-pass`
 }
 
 function buildInputs(config: ProjectConfig): InputSpec[] {

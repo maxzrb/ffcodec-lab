@@ -3,6 +3,7 @@ import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import { resolveBuilderView } from '@ffcodec/domain/presentation/resolve-builder-view'
+import { resolveUtilityToolsSection } from '@ffcodec/domain/presentation/resolve-section'
 import { evaluateRules } from '@ffcodec/domain/rules/rule-evaluator'
 import { RuleIndex } from '@ffcodec/catalog/rule-index'
 import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
@@ -36,6 +37,7 @@ describe('目标文件大小工具', () => {
 
   it('根据 MiB、时长、预留和音频预算派生码率并生成正确双遍命令', () => {
     const config = makeEnabledConfig()
+    config.output.path = 'F:\\输出\\target.mp4'
     const calculation = calculateTargetSize(config, catalog)
     const diagnostics = validateConfig(config, catalog, rules)
     const plan = buildCommandPlan(config, catalog, diagnostics)
@@ -51,6 +53,85 @@ describe('目标文件大小工具', () => {
     expect(rendered.text).toContain('-f null -')
     expect(rendered.text).toContain(' && ')
     expect(rendered.text).not.toContain('-map 0:s:0')
+    expect(rendered.text).toContain('F:\\输出\\target.mp4.ffcodec-pass')
+    expect(rendered.text).not.toContain('ffmpeg2pass')
+  })
+
+  it('分辨率和帧率不改变目标码率，但会改变每像素每帧负载并触发画质诊断', () => {
+    const fullHd = makeEnabledConfig()
+    fullHd.frame.resolution = { mode: 'size', width: 1920, height: 1080, keepAspect: true }
+    fullHd.frame.frameRate = { mode: 'value', value: 30 }
+    const fullHdResult = calculateTargetSize(fullHd, catalog)
+
+    const ultraHd = makeEnabledConfig()
+    ultraHd.frame.resolution = { mode: 'size', width: 3840, height: 2160, keepAspect: true }
+    ultraHd.frame.frameRate = { mode: 'value', value: 30 }
+    const ultraHdResult = calculateTargetSize(ultraHd, catalog)
+
+    expect(ultraHdResult.videoBitrateKbps).toBe(fullHdResult.videoBitrateKbps)
+    expect(ultraHdResult.outputWidth).toBe(3840)
+    expect(ultraHdResult.outputHeight).toBe(2160)
+    expect(ultraHdResult.outputFrameRate).toBe(30)
+    expect(ultraHdResult.videoBitsPerFrame).toBeCloseTo((ultraHdResult.videoBitrateKbps ?? 0) * 1000 / 30)
+    expect(ultraHdResult.videoBitsPerPixelFrame).toBeCloseTo(
+      (fullHdResult.videoBitsPerPixelFrame ?? 0) / 4,
+      8,
+    )
+    expect(fullHdResult.diagnostics.map((item) => item.code))
+      .not.toContain('warn.targetSize.videoDensity.low')
+    expect(ultraHdResult.diagnostics.map((item) => item.code))
+      .toContain('warn.targetSize.videoDensity.low')
+
+    const resultField = resolveUtilityToolsSection(ultraHd, catalog).fields
+      .find((field) => field.id === 'section.tools.targetSize.result')
+    expect(resultField?.value).toContain('3840×2160 @ 30 fps')
+    expect(resultField?.value).toContain('bpppf')
+  })
+
+  it('极低画面预算提示编码器码率下限，而不是承诺双遍必定命中大小', () => {
+    const config = makeEnabledConfig()
+    config.tools.targetSize.targetMiB = 250
+    config.frame.resolution = { mode: 'size', width: 3840, height: 2160, keepAspect: true }
+    config.frame.frameRate = { mode: 'value', value: 30 }
+
+    const result = calculateTargetSize(config, catalog)
+    expect(result.videoBitsPerPixelFrame).toBeLessThan(0.001)
+    expect(result.diagnostics.map((item) => item.code))
+      .toContain('warn.targetSize.rateControlFloor')
+    expect(result.diagnostics.map((item) => item.code))
+      .not.toContain('warn.targetSize.videoDensity.low')
+  })
+
+  it('只指定帧率时显示每帧预算，并提示源分辨率未知', () => {
+    const config = makeEnabledConfig()
+    config.frame.frameRate = { mode: 'value', value: 10 }
+
+    const result = calculateTargetSize(config, catalog)
+    expect(result.outputWidth).toBeUndefined()
+    expect(result.outputHeight).toBeUndefined()
+    expect(result.outputFrameRate).toBe(10)
+    expect(result.videoBitsPerFrame).toBe((result.videoBitrateKbps ?? 0) * 100)
+    expect(result.videoBitsPerPixelFrame).toBeUndefined()
+    expect(result.diagnostics.map((item) => item.code))
+      .toContain('info.targetSize.pictureLoad.unknown')
+
+    const resultField = resolveUtilityToolsSection(config, catalog).fields
+      .find((field) => field.id === 'section.tools.targetSize.result')
+    expect(resultField?.value).toContain('?×? @ 10 fps')
+    expect(resultField?.value).toContain('bit/frame')
+  })
+
+  it('裁剪和旋转滤镜参与目标大小输出几何推导', () => {
+    const config = makeEnabledConfig()
+    config.frame.filters!.crop = { enabled: true, width: 1280, height: 720, x: 0, y: 0 }
+    config.frame.filters!.transform.rotate = 'clockwise'
+    config.frame.frameRate = { mode: 'value', value: 24 }
+
+    const result = calculateTargetSize(config, catalog)
+    expect(result.outputWidth).toBe(720)
+    expect(result.outputHeight).toBe(1280)
+    expect(result.outputFrameRate).toBe(24)
+    expect(result.videoBitsPerPixelFrame).toBeGreaterThan(0)
   })
 
   it('关闭工具后恢复之前保存的质量控制设置', () => {

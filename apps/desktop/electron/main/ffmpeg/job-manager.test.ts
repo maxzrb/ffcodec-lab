@@ -42,7 +42,7 @@ import { launchJob } from './job-manager'
 
 function plan(outputPath: string): ExecutionPlan {
   return {
-    args: ['-i', 'input.mkv', '-passlogfile', 'ffmpeg2pass', outputPath],
+    args: ['-i', 'input.mkv', '-passlogfile', 'C:\\output\\result.mp4.ffcodec-pass', outputPath],
     inputPaths: ['input.mkv'],
     outputPaths: [outputPath],
   }
@@ -120,7 +120,7 @@ describe('FFmpeg plan sequence', () => {
     const firstRequest = mocks.startJob.mock.calls[0][0] as FFmpegJobStartRequest
     const firstPassLog = firstRequest.executionPlan.args[firstRequest.executionPlan.args.indexOf('-passlogfile') + 1]
     expect(firstPassLog).toMatch(/ffcodec-pass-/)
-    expect(firstPassLog).not.toBe('ffmpeg2pass')
+    expect(firstPassLog).not.toBe('C:\\output\\result.mp4.ffcodec-pass')
     const firstStartedAt = result.ok ? result.snapshot.startedAt : null
 
     mocks.callbacks[0].onFinish({

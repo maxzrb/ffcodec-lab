@@ -6,12 +6,19 @@ const BYTES_PER_MIB = 1024 * 1024
 const BITS_PER_BYTE = 8
 const SECONDS_PER_MINUTE = 60
 const BITS_PER_KILOBIT = 1000
+const RATE_CONTROL_FLOOR_BITS_PER_PIXEL_FRAME = 0.001
+const LOW_VIDEO_BITS_PER_PIXEL_FRAME = 0.01
 
 export interface TargetSizeCalculation {
   enabled: boolean
   videoBitrateKbps?: number
   audioBitrateKbps?: number
   audioStreamCount?: number
+  outputWidth?: number
+  outputHeight?: number
+  outputFrameRate?: number
+  videoBitsPerFrame?: number
+  videoBitsPerPixelFrame?: number
   diagnostics: Diagnostic[]
 }
 
@@ -134,7 +141,63 @@ export function calculateTargetSize(
     }
   }
 
-  if (videoBitrateKbps < 100) {
+  const outputGeometry = resolveOutputVideoGeometry(config)
+  const videoBitsPerFrame = outputGeometry.frameRate !== undefined
+    ? videoBitrateKbps * BITS_PER_KILOBIT / outputGeometry.frameRate
+    : undefined
+  const videoBitsPerPixelFrame = outputGeometry.width !== undefined
+    && outputGeometry.height !== undefined
+    && videoBitsPerFrame !== undefined
+    ? videoBitsPerFrame / outputGeometry.width / outputGeometry.height
+    : undefined
+
+  if (videoBitsPerPixelFrame !== undefined
+    && videoBitsPerPixelFrame < RATE_CONTROL_FLOOR_BITS_PER_PIXEL_FRAME) {
+    diagnostics.push({
+      code: 'warn.targetSize.rateControlFloor',
+      severity: 'warning',
+      category: 'configuration',
+      message: 'The requested bitrate may be below the encoder rate-control floor for the configured picture load.',
+      originIds: [
+        'tools.targetSize.targetMiB',
+        'tools.targetSize.durationMinutes',
+        'frame.resolution',
+        'frame.frameRate',
+      ],
+      context: {
+        videoBitrateKbps,
+        outputWidth: outputGeometry.width,
+        outputHeight: outputGeometry.height,
+        outputFrameRate: outputGeometry.frameRate,
+        videoBitsPerFrame,
+        videoBitsPerPixelFrame,
+        warningThreshold: RATE_CONTROL_FLOOR_BITS_PER_PIXEL_FRAME,
+      },
+    })
+  } else if (videoBitsPerPixelFrame !== undefined
+    && videoBitsPerPixelFrame < LOW_VIDEO_BITS_PER_PIXEL_FRAME) {
+    diagnostics.push({
+      code: 'warn.targetSize.videoDensity.low',
+      severity: 'warning',
+      category: 'configuration',
+      message: 'The calculated video bitrate is too low for the configured output resolution and frame rate.',
+      originIds: [
+        'tools.targetSize.targetMiB',
+        'tools.targetSize.durationMinutes',
+        'frame.resolution',
+        'frame.frameRate',
+      ],
+      context: {
+        videoBitrateKbps,
+        outputWidth: outputGeometry.width,
+        outputHeight: outputGeometry.height,
+        outputFrameRate: outputGeometry.frameRate,
+        videoBitsPerFrame,
+        videoBitsPerPixelFrame,
+        warningThreshold: LOW_VIDEO_BITS_PER_PIXEL_FRAME,
+      },
+    })
+  } else if (videoBitrateKbps < 100) {
     diagnostics.push({
       code: 'warn.targetSize.videoBitrate.low',
       severity: 'warning',
@@ -145,13 +208,93 @@ export function calculateTargetSize(
     })
   }
 
+  const hasExplicitPictureLoad = config.frame.resolution.mode !== 'source'
+    || config.frame.frameRate.mode !== 'source'
+    || Boolean(config.frame.filters?.crop.enabled)
+  if (hasExplicitPictureLoad && videoBitsPerPixelFrame === undefined) {
+    diagnostics.push({
+      code: 'info.targetSize.pictureLoad.unknown',
+      severity: 'info',
+      category: 'configuration',
+      message: 'The output resolution or frame rate is still inherited from the source, so picture-load feasibility cannot be evaluated completely.',
+      originIds: ['frame.resolution', 'frame.frameRate'],
+      context: {
+        outputWidth: outputGeometry.width ?? null,
+        outputHeight: outputGeometry.height ?? null,
+        outputFrameRate: outputGeometry.frameRate ?? null,
+        videoBitsPerFrame: videoBitsPerFrame ?? null,
+      },
+    })
+  }
+
   return {
     enabled: true,
     videoBitrateKbps,
     audioBitrateKbps: audioBudget.totalKbps,
     audioStreamCount: audioBudget.streamCount,
+    outputWidth: outputGeometry.width,
+    outputHeight: outputGeometry.height,
+    outputFrameRate: outputGeometry.frameRate,
+    videoBitsPerFrame,
+    videoBitsPerPixelFrame,
     diagnostics,
   }
+}
+
+interface OutputVideoGeometry {
+  width?: number
+  height?: number
+  frameRate?: number
+}
+
+/** 按视频滤镜链顺序推导可确定的最终尺寸和帧率，用于目标大小画质负载诊断。 */
+function resolveOutputVideoGeometry(config: ProjectConfig): OutputVideoGeometry {
+  const filters = config.frame.filters
+  let width = filters?.crop.enabled ? positiveNumber(filters.crop.width) : undefined
+  let height = filters?.crop.enabled ? positiveNumber(filters.crop.height) : undefined
+  const resolution = config.frame.resolution
+
+  if (resolution.mode === 'size') {
+    width = positiveNumber(resolution.width)
+    height = positiveNumber(resolution.height)
+  } else if (resolution.mode === 'width') {
+    const targetWidth = positiveNumber(resolution.width)
+    height = width !== undefined && height !== undefined && targetWidth !== undefined
+      ? scaleProportionalDimension(height, targetWidth, width)
+      : undefined
+    width = targetWidth
+  } else if (resolution.mode === 'height') {
+    const targetHeight = positiveNumber(resolution.height)
+    width = width !== undefined && height !== undefined && targetHeight !== undefined
+      ? scaleProportionalDimension(width, targetHeight, height)
+      : undefined
+    height = targetHeight
+  }
+
+  const rotation = filters?.transform.rotate
+  if ((rotation === 'clockwise' || rotation === 'counterclockwise')
+    && width !== undefined
+    && height !== undefined) {
+    [width, height] = [height, width]
+  }
+
+  const frameRate = config.frame.frameRate.mode === 'value'
+    ? positiveNumber(config.frame.frameRate.value)
+    : undefined
+  return { width, height, frameRate }
+}
+
+function positiveNumber(value: number): number | undefined {
+  return Number.isFinite(value) && value > 0 ? value : undefined
+}
+
+/** FFmpeg 的 scale=-2 会保持宽高比并取接近的偶数尺寸。 */
+function scaleProportionalDimension(
+  sourceDimension: number,
+  targetDimension: number,
+  sourceReference: number,
+): number {
+  return Math.max(2, Math.round(sourceDimension * targetDimension / sourceReference / 2) * 2)
 }
 
 interface AudioBudget {

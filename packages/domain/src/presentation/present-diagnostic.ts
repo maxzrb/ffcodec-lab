@@ -348,6 +348,42 @@ const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
       guidance: 'Increase the target, shorten the duration, or reduce the audio budget.',
     },
   },
+  'warn.targetSize.videoDensity.low': {
+    'zh-CN': {
+      title: '目标码率不足以支撑当前画面负载',
+      explanation: '计算得到的平均视频码率相对于输出分辨率和帧率过低；目标大小仍会接近设定值，但单位像素、单位帧可用的数据量很少。',
+      guidance: '增大目标大小，或降低输出分辨率、帧率；bpppf 只能作为跨画面负载的粗略指标，实际画质仍取决于编码器和内容复杂度。',
+    },
+    en: {
+      title: 'Target bitrate is too low for the picture load',
+      explanation: 'The average video bitrate is too low for the configured output resolution and frame rate. The file can still approach the target size, but each pixel and frame receives very little data.',
+      guidance: 'Increase the target size or reduce output resolution or frame rate. bpppf is only a coarse load indicator; actual quality also depends on the encoder and content complexity.',
+    },
+  },
+  'warn.targetSize.rateControlFloor': {
+    'zh-CN': {
+      title: '目标码率可能低于编码器可实现下限',
+      explanation: '当前每帧、每像素预算极低。帧头、切片和块级标记等最低码流开销可能已经超过请求码率，因此双遍编码也可能无法命中目标大小；帧率越高，需要承担最低开销的帧越多。',
+      guidance: '增大目标大小，或降低输出分辨率、帧率。该提示是保守的可实现性判断，最终下限仍受编码器、画面内容和 GOP 结构影响。',
+    },
+    en: {
+      title: 'Target bitrate may be below the encoder rate-control floor',
+      explanation: 'The per-frame and per-pixel budget is extremely low. Minimum bitstream costs such as frame, slice, and block signaling can exceed the requested bitrate, so even two-pass encoding may overshoot the target. Higher frame rates repeat that minimum cost more often.',
+      guidance: 'Increase the target size or reduce output resolution or frame rate. This is a conservative feasibility warning; the actual floor depends on the encoder, content, and GOP structure.',
+    },
+  },
+  'info.targetSize.pictureLoad.unknown': {
+    'zh-CN': {
+      title: '画面负载信息不完整',
+      explanation: '分辨率或帧率仍跟随输入源，当前目标大小配置没有保存对应的源画面参数。因此只能计算目标平均码率和已知的每帧预算，不能判断编码器是否能在该画面负载下命中目标。',
+      guidance: '在“画面与滤镜”中明确输出分辨率和帧率，或在 Desktop 媒体探测后结合源参数人工判断。',
+    },
+    en: {
+      title: 'Picture-load information is incomplete',
+      explanation: 'Resolution or frame rate still follows the source, and the target-size configuration does not store those source picture values. It can calculate the target average bitrate and known per-frame budget but cannot determine whether the encoder can hit that target for the actual picture load.',
+      guidance: 'Set an explicit output resolution and frame rate, or inspect the source in Desktop and evaluate it with those source values.',
+    },
+  },
 }
 
 export function presentDiagnostic(diagnostic: Diagnostic, locale: Locale): PresentedDiagnostic {

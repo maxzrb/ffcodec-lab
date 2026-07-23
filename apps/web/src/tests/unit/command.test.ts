@@ -293,15 +293,42 @@ describe('Command AST — Invariants', () => {
     const pass2 = renderBash({ invocations: [plan.invocations[1]], messages: [] }).text
     expect(pass1).toContain('-pass 1')
     expect(pass1.indexOf('-pass 1')).toBeGreaterThan(pass1.indexOf('-i '))
+    expect(pass1).toContain(`-passlogfile ${config.output.path}.ffcodec-pass`)
+    expect(pass1).not.toContain('-passlogfile ffmpeg2pass')
     expect(pass1).toContain('-an')
     expect(pass1).toContain('-sn')
     expect(pass1).toContain('-f null -')
     expect(pass1).not.toContain('-c:a')
-    expect(pass1).not.toContain(config.output.path)
+    expect(pass1).toMatch(/-f null -$/)
     expect(pass2).toContain('-pass 2')
     expect(pass2.indexOf('-pass 2')).toBeGreaterThan(pass2.indexOf('-i '))
+    expect(pass2).toContain(`-passlogfile ${config.output.path}.ffcodec-pass`)
     expect(pass2).toContain('-c:a aac')
     expect(pass2).toContain(config.output.path)
+  })
+
+  it('双遍统计前缀跟随绝对输出路径，三种 Shell 均可从任意当前目录执行', () => {
+    const config = makeConfig({
+      input: { ...createDefaultProjectConfig().input, path: 'F:\\素材\\input.mkv' },
+      output: { ...createDefaultProjectConfig().output, path: 'F:\\输出\\result.mkv' },
+      video: {
+        ...createDefaultProjectConfig().video,
+        rateControl: { mode: 'twoPass', bitrate: '5000k', additionalValues: {} },
+      },
+    })
+    const plan = buildCommandPlan(config, catalog, [])
+    const expected = 'F:\\输出\\result.mkv.ffcodec-pass'
+
+    for (const rendered of [renderBash(plan), renderPowerShell(plan), renderCmd(plan)]) {
+      expect(rendered.text).toContain(expected)
+      expect(rendered.text).not.toContain('ffmpeg2pass')
+    }
+
+    const passLogfiles = plan.invocations.map((invocation) => {
+      const args = invocation.output.qualityArgs.flatMap((arg) => arg.tokens)
+      return args[args.indexOf('-passlogfile') + 1]
+    })
+    expect(passLogfiles).toEqual([expected, expected])
   })
 
   it('双遍命令在三种 Shell 中都只在第一遍成功后执行第二遍', () => {

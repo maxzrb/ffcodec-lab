@@ -1659,8 +1659,16 @@ export function resolveUtilityToolsSection(
       },
     )
 
+    const outputSize = calculation.outputWidth !== undefined && calculation.outputHeight !== undefined
+      ? `${calculation.outputWidth}×${calculation.outputHeight}`
+      : '?×?'
+    const outputLoad = calculation.outputFrameRate !== undefined
+      ? ` · ${outputSize} @ ${calculation.outputFrameRate} fps · ${Math.round(calculation.videoBitsPerFrame ?? 0)} bit/frame${calculation.videoBitsPerPixelFrame !== undefined ? ` · ${formatBitsPerPixelFrame(calculation.videoBitsPerPixelFrame)} bpppf` : ''}`
+      : calculation.outputWidth !== undefined && calculation.outputHeight !== undefined
+        ? ` · ${outputSize} @ ? fps`
+        : ''
     const result = calculation.videoBitrateKbps !== undefined
-      ? `${calculation.videoBitrateKbps} kbps (video) · ${calculation.audioBitrateKbps ?? 0} kbps (audio)`
+      ? `${calculation.videoBitrateKbps} kbps (video) · ${calculation.audioBitrateKbps ?? 0} kbps (audio)${outputLoad}`
       : '—'
     fields.push({
       ...common,
@@ -1680,6 +1688,10 @@ export function resolveUtilityToolsSection(
     description: '通过双遍平均码率尽量接近指定大小，不保证逐字节精确。',
     fields,
   }
+}
+
+function formatBitsPerPixelFrame(value: number): string {
+  return value < 0.001 ? value.toFixed(6) : value.toFixed(4)
 }
 
 export function resolveCustomArgsSection(config: ProjectConfig): ResolvedSection {
