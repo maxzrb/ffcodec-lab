@@ -2119,6 +2119,14 @@ code {
 .button--run {
   margin-left: 4px;
 }
+.button--run-blocked,
+.button--run-blocked:hover {
+  border-color: color-mix(in srgb, var(--warning) 58%, var(--border));
+  background: color-mix(in srgb, var(--warning) 15%, var(--bg-card));
+  box-shadow: none;
+  color: var(--warning);
+  cursor: context-menu;
+}
 
 /* ---- Desktop settings row ---- */
 .desktop-settings-section__row {

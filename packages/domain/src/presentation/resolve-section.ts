@@ -654,9 +654,7 @@ export function resolveFrameSection(
 
   // Width (when mode is width or size)
   if (config.frame.resolution.mode === 'width' || config.frame.resolution.mode === 'size') {
-    const w = config.frame.resolution.mode === 'size'
-      ? (config.frame.resolution as { width: number }).width
-      : (config.frame.resolution as { width: number }).width
+    const w = config.frame.resolution.width
     fields.push({
       id: 'frame.resolution.width',
       label: '宽度 (像素)',
@@ -672,14 +670,13 @@ export function resolveFrameSection(
       needsCrossVerification: false,
       commandOrigins: [],
       diagnostics: [],
+      optional: true,
     })
   }
 
   // Height (when mode is height or size)
   if (config.frame.resolution.mode === 'height' || config.frame.resolution.mode === 'size') {
-    const h = config.frame.resolution.mode === 'size'
-      ? (config.frame.resolution as { height: number }).height
-      : (config.frame.resolution as { height: number }).height
+    const h = config.frame.resolution.height
     fields.push({
       id: 'frame.resolution.height',
       label: '高度 (像素)',
@@ -695,6 +692,7 @@ export function resolveFrameSection(
       needsCrossVerification: false,
       commandOrigins: [],
       diagnostics: [],
+      optional: true,
     })
   }
 

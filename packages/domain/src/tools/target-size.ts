@@ -284,8 +284,8 @@ function resolveOutputVideoGeometry(config: ProjectConfig): OutputVideoGeometry 
   return { width, height, frameRate }
 }
 
-function positiveNumber(value: number): number | undefined {
-  return Number.isFinite(value) && value > 0 ? value : undefined
+function positiveNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : undefined
 }
 
 /** FFmpeg 的 scale=-2 会保持宽高比并取接近的偶数尺寸。 */

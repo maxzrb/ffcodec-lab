@@ -6,6 +6,11 @@ import { validateCompatibility } from './compatibility-validator'
 import { RuleIndex } from '@ffcodec/catalog/rule-index'
 import { evaluateRules } from '../rules/rule-evaluator'
 import { calculateTargetSize } from '../tools/target-size'
+import {
+  findInvalidExplicitResolutionDimensions,
+  findOddExplicitResolutionDimensions,
+  repairOddExplicitResolution,
+} from '../config/resolution-repair'
 
 /**
  * Full validation pipeline — rules + compatibility.
@@ -22,6 +27,7 @@ export function validateConfig(
   const compatMessages = validateCompatibility(config, catalog)
   const subtitleMessages = validateSubtitleTracks(config)
   const colorMessages = validateColorProcessing(config)
+  const resolutionMessages = validateResolution(config)
   const targetSizeMessages = calculateTargetSize(config, catalog).diagnostics
 
   const placeholderMessages = validatePlaceholderCategory(config)
@@ -31,9 +37,39 @@ export function validateConfig(
     ...compatMessages,
     ...subtitleMessages,
     ...colorMessages,
+    ...resolutionMessages,
     ...placeholderMessages,
     ...targetSizeMessages,
   ]
+}
+
+function validateResolution(config: ProjectConfig): Diagnostic[] {
+  const invalidDimensions = findInvalidExplicitResolutionDimensions(config)
+  if (invalidDimensions.length > 0) {
+    return [{
+      code: 'error.resolution.dimension.invalid',
+      severity: 'error',
+      category: 'configuration',
+      message: `Explicit output dimensions must be positive integers: ${invalidDimensions.map(({ axis }) => axis).join(', ')}.`,
+      originIds: invalidDimensions.map(({ axis }) => `frame.resolution.${axis}`),
+      context: { dimensions: invalidDimensions },
+    }]
+  }
+
+  const dimensions = findOddExplicitResolutionDimensions(config)
+  if (dimensions.length === 0) return []
+
+  return [{
+    code: 'warn.resolution.dimension.odd',
+    severity: 'warning',
+    category: 'configuration',
+    message: `Explicit output dimensions must be even: ${dimensions.map(({ axis, value }) => `${axis}=${value}`).join(', ')}.`,
+    originIds: dimensions.map(({ axis }) => `frame.resolution.${axis}`),
+    context: {
+      dimensions,
+      repairedResolution: repairOddExplicitResolution(config).frame.resolution,
+    },
+  }]
 }
 
 function validateColorProcessing(config: ProjectConfig): Diagnostic[] {

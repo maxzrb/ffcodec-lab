@@ -105,10 +105,13 @@ function describeRateControl(config: ProjectConfig, mode: { label: string } | un
 
 function formatResolution(config: ProjectConfig, isZh: boolean) {
   const resolution = config.frame.resolution
+  const automatic = isZh ? '自动偶数' : 'Auto even'
   if (resolution.mode === 'source') return isZh ? '跟随源视频' : 'Source'
-  if (resolution.mode === 'size') return `${resolution.width} x ${resolution.height}${resolution.keepAspect ? (isZh ? '（保持比例）' : ' (aspect)') : ''}`
-  if (resolution.mode === 'width') return `${isZh ? '宽度' : 'Width'} ${resolution.width}`
-  return `${isZh ? '高度' : 'Height'} ${resolution.height}`
+  if (resolution.mode === 'size') {
+    return `${resolution.width ?? automatic} x ${resolution.height ?? automatic}${resolution.keepAspect ? (isZh ? '（保持比例）' : ' (aspect)') : ''}`
+  }
+  if (resolution.mode === 'width') return `${isZh ? '宽度' : 'Width'} ${resolution.width ?? automatic}`
+  return `${isZh ? '高度' : 'Height'} ${resolution.height ?? automatic}`
 }
 
 function formatFilters(config: ProjectConfig, isZh: boolean) {

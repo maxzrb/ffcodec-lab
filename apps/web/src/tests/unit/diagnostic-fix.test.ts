@@ -4,6 +4,8 @@ import { buildFixSuggestions } from '@ffcodec/domain/diagnostics/build-fix-sugge
 import { applyFix, isAllowedOperation } from '@ffcodec/domain/diagnostics/apply-diagnostic-fix'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { CONFIG_PATHS } from '@ffcodec/domain/config/config-path'
+import { validateConfig } from '@ffcodec/domain/validation/validate-config'
+import { RuleIndex } from '@ffcodec/catalog/rule-index'
 import type { Diagnostic, DiagnosticFix } from '@ffcodec/domain/rules/rule-types'
 
 const catalog = loadCatalog()
@@ -49,6 +51,49 @@ describe('Diagnostic fix suggestions', () => {
     }
     const fixes = buildFixSuggestions(diag, catalog)
     expect(fixes.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('offers and applies an even-dimension repair for odd explicit width', () => {
+    const diagnostic: Diagnostic = {
+      code: 'warn.resolution.dimension.odd',
+      severity: 'warning',
+      category: 'configuration',
+      message: 'Explicit output dimensions must be even: width=223.',
+      originIds: ['frame.resolution.width'],
+      context: {
+        dimensions: [{ axis: 'width', value: 223, repairedValue: 224 }],
+        repairedResolution: { mode: 'width', width: 224 },
+      },
+    }
+    const fix = buildFixSuggestions(diagnostic, catalog).find((candidate) => candidate.id === 'fix.resolution.even')
+
+    expect(fix?.label).toContain('223 → 224')
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'width', width: 223 }
+    const result = applyFix(config, fix!, catalog)
+    expect(result.success).toBe(true)
+    expect(result.newConfig.frame.resolution).toEqual({ mode: 'width', width: 224 })
+  })
+
+  it('repairs both dimensions from the actual odd-size diagnostic', () => {
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'size', width: 2343, height: 321, keepAspect: true }
+    const diagnostic = validateConfig(config, catalog, new RuleIndex()).find(
+      (candidate) => candidate.code === 'warn.resolution.dimension.odd',
+    )
+
+    expect(diagnostic).toBeDefined()
+    const fix = buildFixSuggestions(diagnostic!, catalog).find((candidate) => candidate.id === 'fix.resolution.even')
+    expect(fix?.label).toBe('调整为偶数尺寸（width 2343 → 2344，height 321 → 322）')
+
+    const result = applyFix(config, fix!, catalog)
+    expect(result.success).toBe(true)
+    expect(result.newConfig.frame.resolution).toEqual({
+      mode: 'size',
+      width: 2344,
+      height: 322,
+      keepAspect: true,
+    })
   })
 
   it('returns empty array for unknown diagnostic code', () => {

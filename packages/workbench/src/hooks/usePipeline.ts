@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 import type { Catalog } from '@ffcodec/domain/catalog/catalog-types'
-import type { EvaluationResult } from '@ffcodec/domain/rules/rule-types'
+import type { Diagnostic, EvaluationResult } from '@ffcodec/domain/rules/rule-types'
 import type { CommandPlan } from '@ffcodec/domain/command/command-ast'
 import type { RenderedCommand } from '@ffcodec/domain/shell/shell-types'
 import { normalizeConfig } from '@ffcodec/domain/normalization'
@@ -24,7 +24,11 @@ export interface PipelineOutput {
   hasErrors: boolean
 }
 
-export function usePipeline(config: ProjectConfig, catalog: Catalog): PipelineOutput {
+export function usePipeline(
+  config: ProjectConfig,
+  catalog: Catalog,
+  runtimeDiagnostics: Diagnostic[] = [],
+): PipelineOutput {
   return useMemo(() => {
     // 1. Normalize (against previous — in store we use self-ref)
     const { config: normalized, notices } = normalizeConfig(config, config, catalog)
@@ -36,7 +40,7 @@ export function usePipeline(config: ProjectConfig, catalog: Catalog): PipelineOu
     evaluationResult.normalizationNotices.push(...notices)
 
     // 3. Validate
-    const allMessages = validateConfig(normalized, catalog, ruleIndex)
+    const allMessages = [...validateConfig(normalized, catalog, ruleIndex), ...runtimeDiagnostics]
     // 正式页面必须看到完整校验结果，而不仅是规则引擎消息。
     evaluationResult.messages = allMessages
 
@@ -67,5 +71,5 @@ export function usePipeline(config: ProjectConfig, catalog: Catalog): PipelineOu
       renderedCommand: rendered,
       hasErrors,
     }
-  }, [config, catalog])
+  }, [config, catalog, runtimeDiagnostics])
 }

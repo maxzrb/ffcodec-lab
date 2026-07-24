@@ -6,12 +6,12 @@ const resolutionSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('source') }),
   z.object({
     mode: z.literal('size'),
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-    keepAspect: z.boolean(),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+    keepAspect: z.boolean().default(true),
   }),
-  z.object({ mode: z.literal('width'), width: z.number().int().positive() }),
-  z.object({ mode: z.literal('height'), height: z.number().int().positive() }),
+  z.object({ mode: z.literal('width'), width: z.number().int().positive().optional() }),
+  z.object({ mode: z.literal('height'), height: z.number().int().positive().optional() }),
 ])
 
 const frameRateSchema = z.discriminatedUnion('mode', [

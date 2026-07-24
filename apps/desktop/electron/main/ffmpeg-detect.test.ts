@@ -22,7 +22,7 @@ vi.mock('child_process', () => ({
   execFile: mocks.execFile,
 }))
 
-import { tryFFmpegPath } from './ffmpeg-detect'
+import { detectFilterCapabilities, tryFFmpegPath } from './ffmpeg-detect'
 
 describe('FFmpeg executable detection', () => {
   beforeEach(() => {
@@ -61,6 +61,25 @@ describe('FFmpeg executable detection', () => {
     const result = await tryFFmpegPath('ffmpeg.exe', 'path')
 
     expect(result).toMatchObject({ found: true, version: '8.1.2', source: 'path' })
+  })
+
+  it('reads registered filter names from the selected FFmpeg', async () => {
+    mocks.execFile.mockImplementation((_file, args, _options, callback) => {
+      if (args.includes('-version')) {
+        callback(null, 'ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers\n', '')
+      } else {
+        callback(null, [
+          'Filters:',
+          ' .. zscale            V->V       Apply resizing and colorspace conversion.',
+          ' .S libplacebo        N->V       Apply GPU filters from libplacebo.',
+        ].join('\n'), '')
+      }
+      return undefined
+    })
+
+    const result = await detectFilterCapabilities('C:\\FFmpeg\\ffmpeg.exe')
+
+    expect(result?.filters).toEqual(['zscale', 'libplacebo'])
   })
 })
 

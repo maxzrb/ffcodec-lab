@@ -5,7 +5,7 @@
 // ============================================================
 
 import { useMemo, useCallback, useEffect, useState, Fragment, type ReactNode } from 'react'
-import { useBuilderStore } from './hooks'
+import { useBuilderStore, useRuntimeFilterDiagnostics } from './hooks'
 import { usePipeline } from './hooks/usePipeline'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { CatalogIndex } from '@ffcodec/catalog/catalog-index'
@@ -38,7 +38,7 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = 'v1.2.3'
+const APP_VERSION = 'v1.2.4'
 const RELEASE_URL = `${PROJECT_URL}/releases`
 
 export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {
@@ -76,7 +76,8 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
     window.dispatchEvent(new CustomEvent('ffcodec:locale-change', { detail: locale }))
   }, [locale, storage])
 
-  const pipeline = usePipeline(config, catalog)
+  const runtimeFilterDiagnostics = useRuntimeFilterDiagnostics(config)
+  const pipeline = usePipeline(config, catalog, runtimeFilterDiagnostics)
 
   // Resolve the builder view from pipeline output
   const view = useMemo(

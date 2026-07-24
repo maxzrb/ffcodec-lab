@@ -81,6 +81,10 @@ const desktopExtensions: WorkbenchExtensions = {
     const customPath = getPreferredFFmpegPath()
     return window.electronAPI?.getAudioEncoderCapabilities(customPath) ?? Promise.resolve(null)
   },
+  getFilterCapabilities: () => {
+    const customPath = getPreferredFFmpegPath()
+    return window.electronAPI?.getFilterCapabilities(customPath) ?? Promise.resolve(null)
+  },
   onFFmpegSelectionChange: onPreferredFFmpegPathChange,
   getAudioCapabilityOverride,
   onAudioCapabilityOverrideChange,

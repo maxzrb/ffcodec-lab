@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import { projectConfigSchema } from '@ffcodec/domain/config/config-schema'
-import { buildVideoFilterChain, renderFilterChain } from '@ffcodec/domain/filters/video-filter-builder'
+import { buildVideoFilterChain, collectRequiredVideoFilterNames, renderFilterChain } from '@ffcodec/domain/filters/video-filter-builder'
 import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { validateConfig } from '@ffcodec/domain/validation'
 import { RuleIndex } from '@ffcodec/catalog/rule-index'
+import { findOddExplicitResolutionDimensions, repairOddExplicitResolution } from '@ffcodec/domain/config/resolution-repair'
+import type { ResolutionConfig } from '@ffcodec/domain/config/project-config'
 
 describe('高级视频滤镜', () => {
   it('按固定顺序合并为单个 -vf 参数', () => {
@@ -105,6 +107,69 @@ describe('高级视频滤镜', () => {
     expect(vf).toContain('zscale=transfer=linear:npl=100,format=gbrpf32le')
     expect(vf).toContain('tonemap=tonemap=mobius:desat=1.5')
     expect(vf).toContain('zscale=matrix=bt709:primaries=bt709:transfer=bt709:range=tv,format=yuv420p')
+  })
+
+  it('从受控滤镜链提取 FFmpeg 能力核验所需名称', () => {
+    const config = createDefaultProjectConfig()
+    config.frame.filters!.denoise = { enabled: true, algorithm: 'bm3d', values: {} }
+    config.video.color = {
+      operation: 'convert-and-tag', filter: 'zscale', toneMap: 'mobius',
+      space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
+    }
+
+    expect(collectRequiredVideoFilterNames(config)).toEqual(['bm3d', 'zscale', 'format', 'tonemap'])
+  })
+
+  it('奇数显式尺寸可诊断并向上修复为偶数', () => {
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'width', width: 223 }
+
+    expect(findOddExplicitResolutionDimensions(config)).toEqual([
+      { axis: 'width', value: 223, repairedValue: 224 },
+    ])
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'warn.resolution.dimension.odd' && message.severity === 'warning',
+    )).toBe(true)
+
+    const repaired = repairOddExplicitResolution(config)
+    expect(repaired.frame.resolution).toEqual({ mode: 'width', width: 224 })
+    const vf = renderFilterChain(buildVideoFilterChain(repaired), 'filter.chain')?.tokens[1]
+    expect(vf).toBe('scale=224:-2')
+  })
+
+  it('所有缩放模式留空都会生成合法的自动偶数尺寸 scale=-2:-2', () => {
+    const automaticResolutions: ResolutionConfig[] = [
+      { mode: 'size', keepAspect: true },
+      { mode: 'width' },
+      { mode: 'height' },
+    ]
+
+    for (const resolution of automaticResolutions) {
+      const config = createDefaultProjectConfig()
+      config.frame.resolution = resolution
+
+      expect(projectConfigSchema.safeParse(config).success).toBe(true)
+      expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+        (message) => message.code.startsWith('error.resolution.') || message.code === 'warn.resolution.dimension.odd',
+      )).toBe(false)
+
+      const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1]
+      expect(vf).toBe('scale=-2:-2')
+    }
+  })
+
+  it('指定宽高只填写一边时仅修复已填写的奇数边', () => {
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'size', width: 223, keepAspect: true }
+
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'warn.resolution.dimension.odd',
+    )).toBe(true)
+
+    const repaired = repairOddExplicitResolution(config)
+    expect(repaired.frame.resolution).toEqual({ mode: 'size', width: 224, keepAspect: true })
+    const vf = renderFilterChain(buildVideoFilterChain(repaired), 'filter.chain')?.tokens[1]
+    expect(vf).toBe('scale=224:-2')
   })
 
   it('仅转换模式不写输出色彩标记，libplacebo 保留构建可用性提示', () => {

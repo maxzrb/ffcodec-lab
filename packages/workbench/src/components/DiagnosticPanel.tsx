@@ -83,5 +83,6 @@ function englishFixLabel(fix: DiagnosticFix): string {
   if (fix.id === 'fix.burn.disable') return 'Disable subtitle burn-in'
   if (fix.id === 'fix.burn.switch.encode' || fix.id === 'fix.resolution.encode') return 'Switch video to Encode'
   if (fix.id === 'fix.resolution.source') return 'Reset picture settings'
+  if (fix.id === 'fix.resolution.even') return 'Adjust to even dimensions'
   return fix.label
 }

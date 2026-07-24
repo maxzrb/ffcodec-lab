@@ -240,8 +240,20 @@ describe('Resolver — section resolution', () => {
     })
     const section = resolveFrameSection(config, {})
 
-    expect(section.fields.some((f) => f.id === 'frame.resolution.width')).toBe(true)
-    expect(section.fields.some((f) => f.id === 'frame.resolution.height')).toBe(true)
+    expect(section.fields.find((f) => f.id === 'frame.resolution.width')?.optional).toBe(true)
+    expect(section.fields.find((f) => f.id === 'frame.resolution.height')?.optional).toBe(true)
+  })
+
+  it('allows a blank single-side resolution as an automatic scale dimension', () => {
+    const config = makeConfig({
+      frame: {
+        resolution: { mode: 'width' },
+        frameRate: { mode: 'source' },
+      },
+    })
+    const section = resolveFrameSection(config, {})
+
+    expect(section.fields.find((f) => f.id === 'frame.resolution.width')?.optional).toBe(true)
   })
 
   it('resolves audio section with encoder and quality controls', () => {

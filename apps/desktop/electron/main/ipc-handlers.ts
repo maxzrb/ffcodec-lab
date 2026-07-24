@@ -7,7 +7,7 @@
 import { ipcMain, dialog, shell, BrowserWindow, net, app } from 'electron'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { detectAllFFmpegVersions, detectAudioEncoderCapabilities, detectFFmpeg, detectFFmpegTools } from './ffmpeg-detect'
+import { detectAllFFmpegVersions, detectAudioEncoderCapabilities, detectFFmpeg, detectFFmpegTools, detectFilterCapabilities } from './ffmpeg-detect'
 import {
   initStore,
   getItem as storageGetItem,
@@ -358,6 +358,9 @@ function registerUsageStatsHandler(): void {
   })
   ipcMain.handle('ffmpeg:audioCapabilities', async (_event, customPath?: string) => {
     return detectAudioEncoderCapabilities(customPath)
+  })
+  ipcMain.handle('ffmpeg:filterCapabilities', async (_event, customPath?: string) => {
+    return detectFilterCapabilities(customPath)
   })
 }
 

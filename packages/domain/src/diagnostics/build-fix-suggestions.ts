@@ -119,6 +119,28 @@ const FIX_REGISTRY: Record<string, FixFactory> = {
     },
   ],
 
+  'warn.resolution.dimension.odd': (diag) => {
+    const repairedResolution = diag.context.repairedResolution
+    if (!isValidResolution(repairedResolution)) return []
+    const dimensions = Array.isArray(diag.context.dimensions)
+      ? diag.context.dimensions.filter((value): value is { axis: string; value: number; repairedValue: number } =>
+        Boolean(value) && typeof value === 'object' &&
+        typeof (value as { value?: unknown }).value === 'number' &&
+        typeof (value as { repairedValue?: unknown }).repairedValue === 'number',
+      )
+      : []
+    const summary = dimensions.map(({ axis, value, repairedValue }) => `${axis} ${value} → ${repairedValue}`).join('，')
+    return [{
+      id: 'fix.resolution.even',
+      label: summary ? `调整为偶数尺寸（${summary}）` : '调整为偶数尺寸',
+      description: '向上取相邻偶数，避免常见 yuv420p 与视频编码器拒绝奇数尺寸。',
+      category: 'configuration',
+      operations: [{ op: 'set', path: CONFIG_PATHS.frame.resolution, value: repairedResolution }],
+      safety: 'changes-output',
+      sourceRuleId: diag.sourceRuleId,
+    }]
+  },
+
   'warn.flac.container.incompatible': (_d, cat) => {
     const compatible = Object.values(cat.containers)
       .filter((c) => {
@@ -134,6 +156,27 @@ const FIX_REGISTRY: Record<string, FixFactory> = {
       safety: 'changes-output',
     }))
   },
+}
+
+function isValidResolution(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+  const resolution = value as { mode?: unknown; width?: unknown; height?: unknown; keepAspect?: unknown }
+  if (resolution.mode === 'width') return isOptionalPositiveInteger(resolution.width)
+  if (resolution.mode === 'height') return isOptionalPositiveInteger(resolution.height)
+  if (resolution.mode === 'size') {
+    return isOptionalPositiveInteger(resolution.width)
+      && isOptionalPositiveInteger(resolution.height)
+      && typeof resolution.keepAspect === 'boolean'
+  }
+  return resolution.mode === 'source'
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+function isOptionalPositiveInteger(value: unknown): boolean {
+  return value === undefined || isPositiveInteger(value)
 }
 
 /**

@@ -8,7 +8,7 @@ import type { ResolvedField } from '@ffcodec/domain/presentation/resolved-field'
 import { useI18n } from '../features/i18n/i18n'
 import { Dropdown } from './Dropdown'
 import type { PathFieldRenderer } from '@ffcodec/platform-api'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { AacCoderPicker, AudioEncoderPicker } from './AudioEncoderPicker'
 
 interface ParameterFieldProps {
@@ -191,18 +191,15 @@ function renderControl(
 
     case 'number':
       return (
-        <input
+        <EditableNumberInput
           id={controlId}
-          type="number"
-          value={field.value !== undefined && field.value !== null ? String(field.value) : ''}
-          onChange={(e) => {
-            const v = e.target.value === '' ? undefined : parseFloat(e.target.value)
-            onChange(v)
-          }}
+          value={field.value}
           min={field.min}
           max={field.max}
           step={field.step ?? 1}
           disabled={disabled}
+          optional={field.optional === true}
+          onChange={onChange}
         />
       )
 
@@ -328,6 +325,95 @@ function renderControl(
   }
 }
 
+/**
+ * 数字输入保留编辑草稿，只把范围内的有限数值写回配置。
+ * 这样输入 111 时不会先把首位 1 立即钳制为最小值 2。
+ */
+function EditableNumberInput({
+  id,
+  value,
+  min,
+  max,
+  step,
+  disabled,
+  optional = false,
+  onChange,
+  className,
+  ariaLabel,
+}: {
+  id?: string
+  value: unknown
+  min?: number
+  max?: number
+  step?: number
+  disabled: boolean
+  optional?: boolean
+  onChange: (value: unknown) => void
+  className?: string
+  ariaLabel?: string
+}) {
+  const externalValue = toNumberInputValue(value)
+  const [draft, setDraft] = useState(externalValue)
+  const [focused, setFocused] = useState(false)
+
+  useEffect(() => {
+    if (!focused) setDraft(externalValue)
+  }, [externalValue, focused])
+
+  const commit = (raw: string, allowClear: boolean): boolean => {
+    if (raw.trim() === '') {
+      if (optional && allowClear) {
+        onChange(undefined)
+        return true
+      }
+      return false
+    }
+
+    const parsed = Number(raw)
+    if (!Number.isFinite(parsed)) return false
+    if (min !== undefined && parsed < min) return false
+    if (max !== undefined && parsed > max) return false
+    onChange(parsed)
+    return true
+  }
+
+  return (
+    <input
+      id={id}
+      className={className}
+      type="number"
+      value={draft}
+      min={min}
+      max={max}
+      step={step ?? 1}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onFocus={() => setFocused(true)}
+      onChange={(event) => {
+        const raw = event.target.value
+        setDraft(raw)
+        // 可选数字清空后立即提交，禁用按钮不会夺走焦点，不能依赖 blur 才移除旧值。
+        if (raw.trim() === '') {
+          if (optional) commit(raw, true)
+        } else {
+          commit(raw, false)
+        }
+      }}
+      onBlur={() => {
+        setFocused(false)
+        if (!commit(draft, true)) setDraft(externalValue)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur()
+      }}
+    />
+  )
+}
+
+function toNumberInputValue(value: unknown): string {
+  return typeof value === 'number' && Number.isFinite(value) ? String(value) : ''
+}
+
 function LoudnessSlider({ id, label, value, min, max, step, disabled, onChange }: {
   id: string
   label: string
@@ -340,10 +426,6 @@ function LoudnessSlider({ id, label, value, min, max, step, disabled, onChange }
 }) {
   const { locale } = useI18n()
   const safeValue = Number.isFinite(value) ? value : min
-  const update = (raw: string) => {
-    const parsed = Number(raw)
-    if (Number.isFinite(parsed)) onChange(parsed)
-  }
   return (
     <div className="loudness-slider">
       <output className="loudness-slider__value" htmlFor={id}>{safeValue}</output>
@@ -356,21 +438,21 @@ function LoudnessSlider({ id, label, value, min, max, step, disabled, onChange }
         max={max}
         step={step}
         disabled={disabled}
-        onChange={(event) => update(event.target.value)}
+        onChange={(event) => onChange(Number(event.target.value))}
       />
       <div className="loudness-slider__limits" aria-hidden="true">
         <span>{min}</span><span>{max}</span>
       </div>
-      <input
+      <EditableNumberInput
+        id={`${id}-number`}
         className="loudness-slider__number"
-        type="number"
         aria-label={locale === 'zh-CN' ? `${label}精确值` : `${label} exact value`}
         value={safeValue}
         min={min}
         max={max}
         step={step}
         disabled={disabled}
-        onChange={(event) => update(event.target.value)}
+        onChange={onChange}
       />
     </div>
   )

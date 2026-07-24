@@ -87,6 +87,49 @@ export function buildVideoFilterChain(config: ProjectConfig): VideoFilterSpec[] 
   return chain
 }
 
+/**
+ * 返回当前配置明确要求 FFmpeg 注册的滤镜名称。
+ * 只检查滤镜是否存在，不把 GPU、驱动、字体等运行期依赖误判为已验证。
+ */
+export function collectRequiredVideoFilterNames(config: ProjectConfig): string[] {
+  const names = new Set<string>()
+  for (const spec of buildVideoFilterChain(config)) {
+    switch (spec.type) {
+      case 'yadif':
+      case 'crop':
+      case 'scale':
+      case 'transpose':
+      case 'hflip':
+      case 'vflip':
+      case 'eq':
+      case 'unsharp':
+      case 'fps':
+        names.add(spec.type)
+        break
+      case 'denoise':
+      case 'deband':
+        addFirstFilterName(names, spec.filterString)
+        break
+      case 'color':
+        for (const name of spec.filterString.split(',')) addFirstFilterName(names, name)
+        break
+      case 'subtitles':
+      case 'ass':
+        names.add(spec.type)
+        break
+      case 'custom':
+        addFirstFilterName(names, spec.filterString)
+        break
+    }
+  }
+  return [...names]
+}
+
+function addFirstFilterName(names: Set<string>, expression: string): void {
+  const name = expression.match(/^\s*([A-Za-z0-9_]+)/)?.[1]
+  if (name) names.add(name)
+}
+
 /** 将滤镜规格渲染为一个可追溯的 CommandArg。 */
 export function renderFilterChain(
   chain: VideoFilterSpec[],

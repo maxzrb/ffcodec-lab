@@ -34,6 +34,10 @@ export interface AudioEncoderCapabilities {
   aacOptions: string[]
 }
 
+export interface FilterCapabilities {
+  filters: string[]
+}
+
 // ---- Constants ----
 
 /** Timeout for ffmpeg -version (ms). */
@@ -307,6 +311,23 @@ export async function detectAudioEncoderCapabilities(customPath?: string): Promi
     const aacOptions = ['twoloop', 'fast', 'nmr']
       .filter((option) => new RegExp(`^\\s+${option}\\s+`, 'm').test(aacHelp))
     return { encoders, aacOptions }
+  } catch {
+    return null
+  }
+}
+
+/** 读取当前 FFmpeg 已注册的滤镜名称；不从 configure 文本推断实际可用性。 */
+export async function detectFilterCapabilities(customPath?: string): Promise<FilterCapabilities | null> {
+  const info = await detectFFmpeg(customPath)
+  if (!info.found || !info.path) return null
+
+  try {
+    const { stdout } = await runExecFile(info.path, ['-hide_banner', '-filters'])
+    const filters = stdout
+      .split(/\r?\n/)
+      .map((line) => line.match(/^\s*[.A-Z]{2,3}\s+(\S+)\s+/)?.[1])
+      .filter((name): name is string => Boolean(name))
+    return { filters }
   } catch {
     return null
   }

@@ -96,6 +96,10 @@ export interface WorkbenchExtensions {
     encoders: string[]
     aacOptions: string[]
   } | null>
+  /** 查询当前 FFmpeg 已注册的滤镜，用于执行前能力校验。 */
+  getFilterCapabilities?: () => Promise<{
+    filters: string[]
+  } | null>
   /** 订阅 Desktop 当前 FFmpeg 选择变化。 */
   onFFmpegSelectionChange?: (listener: () => void) => () => void
   getAudioCapabilityOverride?: () => boolean

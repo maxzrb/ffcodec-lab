@@ -97,8 +97,8 @@ export function CommandPreview({
       {!cleared && hasErrors && (
         <div className="command-error-banner" role="alert">
           {locale === 'zh-CN'
-            ? '当前配置存在错误，复制已禁用。请先处理下方诊断。'
-            : 'The configuration contains errors. Resolve the diagnostics below before copying.'}
+            ? '当前配置存在错误，复制已禁用。请先处理“诊断与建议”中的问题。'
+            : 'The configuration contains errors. Resolve the Diagnostics & suggestions items before copying.'}
         </div>
       )}
 

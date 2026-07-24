@@ -308,6 +308,122 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(screen.queryByRole('tab', { name: '诊断 0' })).not.toBeInTheDocument()
   })
 
+  it('诊断的一键修复会将双边奇数尺寸写回工作台配置', async () => {
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'size', width: 2343, height: 321, keepAspect: true }
+    presetStore(config)
+    render(<TestWrapper />)
+
+    await userEvent.click(screen.getByRole('tab', { name: '诊断 1' }))
+    await userEvent.click(screen.getByRole('button', {
+      name: '调整为偶数尺寸（width 2343 → 2344，height 321 → 322）',
+    }))
+
+    await waitFor(() => {
+      expect(useBuilderStore.getState().config.frame.resolution).toEqual({
+        mode: 'size',
+        width: 2344,
+        height: 322,
+        keepAspect: true,
+      })
+      expect(screen.getByRole('tab', { name: '诊断' })).toBeInTheDocument()
+    })
+  })
+
+  it('数值输入保留编辑中的首位，并可修复键盘输入的双边奇数尺寸', async () => {
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'size', width: 212, height: 212, keepAspect: true }
+    presetStore(config)
+    render(<TestWrapper />)
+
+    await openPanel('画面与滤镜')
+    const width = screen.getByLabelText('宽度 (像素)')
+    const height = screen.getByLabelText('高度 (像素)')
+    await userEvent.clear(width)
+    await userEvent.type(width, '111')
+    await userEvent.clear(height)
+    await userEvent.type(height, '111')
+
+    expect(width).toHaveValue(111)
+    expect(height).toHaveValue(111)
+    expect(useBuilderStore.getState().config.frame.resolution).toEqual({
+      mode: 'size',
+      width: 111,
+      height: 111,
+      keepAspect: true,
+    })
+
+    await userEvent.click(screen.getByRole('tab', { name: '诊断 1' }))
+    await userEvent.click(screen.getByRole('button', {
+      name: '调整为偶数尺寸（width 111 → 112，height 111 → 112）',
+    }))
+
+    await waitFor(() => {
+      expect(useBuilderStore.getState().config.frame.resolution).toEqual({
+        mode: 'size',
+        width: 112,
+        height: 112,
+        keepAspect: true,
+      })
+    })
+  })
+
+  it('指定宽高可立即清空为自动偶数尺寸，不产生分辨率错误', async () => {
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'size', width: 212, height: 212, keepAspect: true }
+    presetStore(config)
+    render(<TestWrapper />)
+
+    await openPanel('画面与滤镜')
+    await userEvent.clear(screen.getByLabelText('宽度 (像素)'))
+    await waitFor(() => {
+      const resolution = useBuilderStore.getState().config.frame.resolution
+      expect(resolution.mode).toBe('size')
+      if (resolution.mode !== 'size') throw new Error('Expected size resolution mode')
+      expect(resolution.width).toBeUndefined()
+    })
+    await userEvent.clear(screen.getByLabelText('高度 (像素)'))
+
+    await waitFor(() => {
+      const resolution = useBuilderStore.getState().config.frame.resolution
+      expect(resolution).toMatchObject({ mode: 'size', keepAspect: true })
+      if (resolution.mode !== 'size') throw new Error('Expected size resolution mode')
+      expect(resolution.width).toBeUndefined()
+      expect(resolution.height).toBeUndefined()
+      expect(screen.getByRole('tab', { name: '诊断' })).toBeInTheDocument()
+    })
+  })
+
+  it('指定宽度清空后立即恢复自动尺寸，复制不会被旧诊断阻塞', async () => {
+    const config = createDefaultProjectConfig()
+    config.frame.resolution = { mode: 'width', width: 212 }
+    presetStore(config)
+    render(<TestWrapper />)
+
+    await openPanel('画面与滤镜')
+    await userEvent.clear(screen.getByLabelText('宽度 (像素)'))
+
+    await waitFor(() => {
+      const resolution = useBuilderStore.getState().config.frame.resolution
+      expect(resolution.mode).toBe('width')
+      if (resolution.mode !== 'width') throw new Error('Expected width resolution mode')
+      expect(resolution.width).toBeUndefined()
+      expect(screen.getByRole('tab', { name: '诊断' })).toBeInTheDocument()
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '复制' })).not.toBeDisabled()
+    })
+  })
+
+  it('命令错误提示不假定诊断在下方', () => {
+    const config = createDefaultProjectConfig()
+    config.video.color = { operation: 'convert-and-tag', filter: 'zscale' }
+    presetStore(config)
+    render(<TestWrapper />)
+
+    expect(screen.getByRole('alert')).toHaveTextContent('请先处理“诊断与建议”中的问题')
+    expect(screen.queryByText('请先处理下方诊断。')).not.toBeInTheDocument()
+  })
+
   it('编码总览位于命令和诊断之间并展示当前有效参数', async () => {
     const config = createDefaultProjectConfig()
     config.frame.resolution = { mode: 'size', width: 1280, height: 720, keepAspect: true }
@@ -922,7 +1038,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases')
-    expect(screen.getByText('FFCodec Lab desktop v1.2.3')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab desktop v1.2.4')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))

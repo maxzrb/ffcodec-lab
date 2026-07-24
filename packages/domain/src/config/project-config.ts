@@ -156,9 +156,13 @@ export interface RateControlConfig {
 
 export type ResolutionConfig =
   | { mode: 'source' }
-  | { mode: 'size'; width: number; height: number; keepAspect: boolean }
-  | { mode: 'width'; width: number }
-  | { mode: 'height'; height: number }
+  /**
+   * `scale=-2:-2` 是 FFmpeg 合法的自动偶数尺寸写法，因此所有手工缩放模式都允许对应边留空。
+   * 只有用户明确输入的边才是显式尺寸，并参与奇数尺寸诊断。
+   */
+  | { mode: 'size'; width?: number; height?: number; keepAspect: boolean }
+  | { mode: 'width'; width?: number }
+  | { mode: 'height'; height?: number }
 
 export type FrameRateConfig =
   | { mode: 'source' }

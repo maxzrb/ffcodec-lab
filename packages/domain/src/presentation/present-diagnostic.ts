@@ -348,6 +348,18 @@ const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
       guidance: 'Increase the target, shorten the duration, or reduce the audio budget.',
     },
   },
+  'error.resolution.dimension.invalid': {
+    'zh-CN': {
+      title: '输出尺寸尚未填写完整',
+      explanation: '指定宽度或高度必须是正整数，输入过程中不会把不完整的数字写入配置。',
+      guidance: '完成该数值输入后再运行；若需兼容常见 YUV 格式，可再按建议调整为偶数。',
+    },
+    en: {
+      title: 'Output dimensions are incomplete',
+      explanation: 'Explicit width and height must be positive integers. Partial numeric edits are not written to the configuration.',
+      guidance: 'Finish the numeric value before running, then use the even-dimension suggestion if compatibility requires it.',
+    },
+  },
   'warn.targetSize.videoDensity.low': {
     'zh-CN': {
       title: '目标码率不足以支撑当前画面负载',
@@ -390,6 +402,10 @@ export function presentDiagnostic(diagnostic: Diagnostic, locale: Locale): Prese
   const level = locale === 'zh-CN'
     ? diagnostic.severity === 'error' ? '错误' : diagnostic.severity === 'warning' ? '警告' : '提示'
     : diagnostic.severity === 'error' ? 'Error' : diagnostic.severity === 'warning' ? 'Warning' : 'Info'
+  const resolutionDiagnostic = presentOddResolutionDiagnostic(diagnostic, locale)
+  if (resolutionDiagnostic) return { level, ...resolutionDiagnostic }
+  const runtimeFilterDiagnostic = presentRuntimeFilterDiagnostic(diagnostic, locale)
+  if (runtimeFilterDiagnostic) return { level, ...runtimeFilterDiagnostic }
   const copy = COPY[diagnostic.code]?.[locale]
   if (copy) return { level, ...copy }
 
@@ -405,5 +421,75 @@ export function presentDiagnostic(diagnostic: Diagnostic, locale: Locale): Prese
         title: 'Configuration diagnostic',
         explanation: diagnostic.message || diagnostic.code,
         guidance: 'Review the affected fields. If the issue persists, reset them to defaults and configure again.',
+  }
+}
+
+function presentOddResolutionDiagnostic(diagnostic: Diagnostic, locale: Locale): Copy | null {
+  if (diagnostic.code !== 'warn.resolution.dimension.odd') return null
+  const dimensions = Array.isArray(diagnostic.context.dimensions)
+    ? diagnostic.context.dimensions.filter((value): value is { axis: string; value: number; repairedValue: number } =>
+      Boolean(value) && typeof value === 'object' &&
+      typeof (value as { axis?: unknown }).axis === 'string' &&
+      typeof (value as { value?: unknown }).value === 'number' &&
+      typeof (value as { repairedValue?: unknown }).repairedValue === 'number',
+    )
+    : []
+  const zhSummary = dimensions.map(({ axis, value, repairedValue }) => `${axis === 'width' ? '宽度' : '高度'} ${value} → ${repairedValue}`).join('，')
+  const enSummary = dimensions.map(({ axis, value, repairedValue }) => `${axis} ${value} → ${repairedValue}`).join(', ')
+  return locale === 'zh-CN'
+    ? {
+        title: '显式输出尺寸必须为偶数',
+        explanation: `${zhSummary || '当前显式尺寸'}为奇数。自动计算的另一边会使用 -2 保持偶数，但常见 yuv420p 和视频编码器仍可能拒绝用户直接填写的奇数边。`,
+        guidance: '可使用“一键调整为偶数尺寸”。Desktop 左键“运行”也会自动应用同一修复；右键强制运行会保留原始命令，不做尺寸修改。',
+      }
+    : {
+        title: 'Explicit output dimensions must be even',
+        explanation: `${enSummary || 'An explicit dimension'} is odd. FFmpeg uses -2 for the calculated side, but common yuv420p pipelines and encoders can still reject the user-supplied odd side.`,
+        guidance: 'Use the one-click even-dimension fix. Desktop left-click Run applies the same repair automatically; right-click force-run preserves the original command.',
+      }
+}
+
+function presentRuntimeFilterDiagnostic(diagnostic: Diagnostic, locale: Locale): Copy | null {
+  if (diagnostic.code === 'error.filter.capabilities.pending') {
+    return locale === 'zh-CN'
+      ? {
+          title: '正在核验 FFmpeg 滤镜能力',
+          explanation: '已启用画面滤镜，Desktop 正在读取当前选中 FFmpeg 的滤镜列表。核验完成前不会按“可运行”处理。',
+          guidance: '等待核验完成；若确实需要跳过检查，可右键“运行”并在确认风险后强制执行。',
+        }
+      : {
+          title: 'Checking FFmpeg filter capabilities',
+          explanation: 'Picture filters are enabled and Desktop is reading the selected FFmpeg filter list. The command is not treated as runnable until checking finishes.',
+          guidance: 'Wait for the check to finish, or right-click Run and confirm the risk to force execution.',
+        }
+  }
+  if (diagnostic.code === 'error.filter.capabilities.unknown') {
+    return locale === 'zh-CN'
+      ? {
+          title: '无法核验 FFmpeg 滤镜能力',
+          explanation: '无法读取当前选中 FFmpeg 的滤镜列表，因此无法确认已启用滤镜是否存在。',
+          guidance: '检查 FFmpeg 路径和可执行权限，或右键“运行”并在确认风险后强制执行。',
+        }
+      : {
+          title: 'Unable to inspect FFmpeg filter capabilities',
+          explanation: 'The selected FFmpeg filter list could not be read, so enabled filters cannot be verified.',
+          guidance: 'Check the FFmpeg path and execution permission, or right-click Run and confirm the risk to force execution.',
+        }
+  }
+  if (diagnostic.code !== 'error.filter.capabilities.unavailable') return null
+
+  const filters = Array.isArray(diagnostic.context.filters)
+    ? diagnostic.context.filters.filter((value): value is string => typeof value === 'string').join(', ')
+    : diagnostic.message
+  return locale === 'zh-CN'
+    ? {
+        title: '当前 FFmpeg 缺少已启用滤镜',
+        explanation: `当前配置需要以下滤镜，但选中的 FFmpeg 未注册：${filters}。`,
+        guidance: '切换到包含这些滤镜的 FFmpeg，或关闭相应画面处理。右键“运行”可跳过本程序检查，但不保证命令能够执行。',
+      }
+    : {
+        title: 'The selected FFmpeg lacks enabled filters',
+        explanation: `The configuration requires filters not registered by the selected FFmpeg: ${filters}.`,
+        guidance: 'Switch to an FFmpeg build that provides them, or disable the related picture processing. Right-click Run to bypass this app check, but execution is not guaranteed.',
       }
 }

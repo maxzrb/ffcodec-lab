@@ -194,7 +194,11 @@ export function applyFieldChangeToConfig(
     change.path = 'streams.audioStreams' as unknown as ConfigPath
   }
 
-  let next = setByPath(previous, change.path, effectiveValue)
+  // 从“保持原分辨率”切到“指定宽高”时补齐 size 模式的稳定默认结构。
+  // 宽高刻意保留为空，对应 FFmpeg 的 scale=-2:-2 自动偶数尺寸。
+  let next = fieldId === 'frame.resolution.mode' && effectiveValue === 'size'
+    ? switchToAutomaticSizeResolution(previous)
+    : setByPath(previous, change.path, effectiveValue)
   const currentAudioEncoder = previous.audio.encoderId
     ? catalog.encoders.audio[previous.audio.encoderId]
     : undefined
@@ -262,6 +266,31 @@ function normalizeAndSync(
   }
 }
 
+function switchToAutomaticSizeResolution(previous: ProjectConfig): ProjectConfig {
+  const previousResolution = previous.frame.resolution as {
+    width?: unknown
+    height?: unknown
+    keepAspect?: unknown
+  }
+  const width = previousResolution.width
+  const height = previousResolution.height
+
+  return {
+    ...previous,
+    frame: {
+      ...previous.frame,
+      resolution: {
+        mode: 'size',
+        ...(typeof width === 'number' ? { width } : {}),
+        ...(typeof height === 'number' ? { height } : {}),
+        keepAspect: typeof previousResolution.keepAspect === 'boolean'
+          ? previousResolution.keepAspect
+          : true,
+      },
+    },
+  }
+}
+
 // -- helpers ----------------------------------------------------
 
 function coerceValue(
@@ -311,9 +340,27 @@ function coerceValue(
     case 'number': {
       // Ensure number or undefined
       if (value === '' || value === null || value === undefined) {
-        return { value: undefined }
+        if (field.optional) return { value: undefined }
+        return {
+          value: field.value,
+          notice: {
+            code: 'INVALID_NUMBER',
+            message: `Empty value rejected for required number field "${field.id}"`,
+            originIds: [field.id],
+          },
+        }
       }
       if (typeof value === 'number') {
+        if (!Number.isFinite(value)) {
+          return {
+            value: field.value,
+            notice: {
+              code: 'INVALID_NUMBER',
+              message: `Value "${String(value)}" is not a finite number for field "${field.id}"`,
+              originIds: [field.id],
+            },
+          }
+        }
         // Enforce range
         if (field.min !== undefined && value < field.min) {
           return {
@@ -338,10 +385,10 @@ function coerceValue(
         return { value }
       }
       // Try to parse
-      const num = parseFloat(String(value))
-      if (isNaN(num)) {
+      const num = Number(String(value))
+      if (!Number.isFinite(num)) {
         return {
-          value: undefined,
+          value: field.value,
           notice: {
             code: 'INVALID_NUMBER',
             message: `Value "${String(value)}" is not a valid number for field "${field.id}"`,

@@ -47,9 +47,14 @@ export const shareableConfigSchema = z.object({
   f: z.object({
     resolution: z.discriminatedUnion('mode', [
       z.object({ mode: z.literal('source') }),
-      z.object({ mode: z.literal('size'), width: z.number(), height: z.number(), keepAspect: z.boolean() }),
-      z.object({ mode: z.literal('width'), width: z.number() }),
-      z.object({ mode: z.literal('height'), height: z.number() }),
+      z.object({
+        mode: z.literal('size'),
+        width: z.number().positive().optional(),
+        height: z.number().positive().optional(),
+        keepAspect: z.boolean().default(true),
+      }),
+      z.object({ mode: z.literal('width'), width: z.number().positive().optional() }),
+      z.object({ mode: z.literal('height'), height: z.number().positive().optional() }),
     ]),
     frameRate: z.discriminatedUnion('mode', [
       z.object({ mode: z.literal('source') }),
