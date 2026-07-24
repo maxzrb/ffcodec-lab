@@ -38,11 +38,12 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = 'v1.2.4'
+const APP_VERSION = 'v1.3.0'
 const RELEASE_URL = `${PROJECT_URL}/releases`
+const WEB_APP_URL = 'https://fflab.loliland.cn'
 
 export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerItems?: ReactNode; commandInspectorFooter?: ReactNode }) {
-  const { storage, extensions } = usePlatform()
+  const { storage, extensions, capabilities } = usePlatform()
   const dialog = useAppDialog()
   const config = useBuilderStore((s) => s.config)
   const setConfigValue = useBuilderStore((s) => s.setConfigValue)
@@ -374,15 +375,15 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
               <span className="builder-footer__separator" aria-hidden="true" />
               <a
                 className="builder-footer__version"
-                href={RELEASE_URL}
+                href={capabilities.desktop ? WEB_APP_URL : RELEASE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={isZh
-                  ? '打开 FFCodec Lab Releases 页面'
-                  : 'Open FFCodec Lab releases'}
-                title={RELEASE_URL}
+                  ? (capabilities.desktop ? '打开 FFCodec Lab Web 网页版' : '打开 FFCodec Lab Releases 页面')
+                  : (capabilities.desktop ? 'Open FFCodec Lab Web' : 'Open FFCodec Lab releases')}
+                title={capabilities.desktop ? WEB_APP_URL : RELEASE_URL}
               >
-                FFCodec Lab desktop {APP_VERSION}
+                {capabilities.desktop ? 'FFCodec Lab Web' : 'FFCodec Lab desktop'} {APP_VERSION}
               </a>
             </div>
             {footerItems && <div className="builder-footer__stats">{footerItems}</div>}

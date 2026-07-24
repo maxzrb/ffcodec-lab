@@ -27,7 +27,11 @@ describe('Share config — encoding', () => {
   it('toShareable strips local paths', () => {
     const config = {
       ...createDefaultProjectConfig(),
-      input: { path: '/home/user/video.mkv', additionalInputs: [] as never[] },
+      input: {
+        ...createDefaultProjectConfig().input,
+        path: '/home/user/video.mkv',
+        additionalInputs: [] as never[],
+      },
       output: { path: '/home/user/output.mp4', containerId: 'mp4', overwrite: false },
     }
     const shareable = toShareable(config)
@@ -52,7 +56,8 @@ describe('Share config — decoding', () => {
     const migrated = migrateConfig(2, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config
     const migratedVideo = migrated.video as Record<string, unknown>
     const migratedFilters = (migrated.frame as Record<string, unknown>).filters as Record<string, unknown>
-    expect(migrated.schemaVersion).toBe(6)
+    expect(migrated.schemaVersion).toBe(7)
+    expect((migrated.input as Record<string, unknown>).decode).toEqual({})
     expect(migratedVideo.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
     expect(migratedFilters.denoise).toEqual({ enabled: false, values: {} })
     expect(migratedFilters.deband).toEqual({ enabled: false, values: {} })
@@ -118,7 +123,7 @@ describe('Share config — decoding', () => {
 
     const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
     expect(decoded.success).toBe(true)
-    expect(decoded.config?.schemaVersion).toBe(6)
+    expect(decoded.config?.schemaVersion).toBe(7)
     expect(decoded.config?.video.color?.space).toBe('bt709')
     expect(decoded.config?.video.color?.operation).toBe('convert-and-tag')
     expect(decoded.config?.video.color?.toneMap).toBe('mobius')

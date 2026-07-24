@@ -64,6 +64,13 @@ export const CONFIG_PATHS = {
   input: {
     path: configPath(['input', 'path']),
     additionalInputs: configPath(['input', 'additionalInputs']),
+    decode: {
+      hwaccel: configPath(['input', 'decode', 'hwaccel']),
+      threads: configPath(['input', 'decode', 'threads']),
+      outputFormat: configPath(['input', 'decode', 'outputFormat']),
+      deviceParameter: configPath(['input', 'decode', 'device', 'parameter']),
+      deviceValue: configPath(['input', 'decode', 'device', 'value']),
+    },
   },
 
   output: {

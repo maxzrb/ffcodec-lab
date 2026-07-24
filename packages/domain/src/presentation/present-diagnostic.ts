@@ -12,6 +12,78 @@ export interface PresentedDiagnostic {
 type Copy = Omit<PresentedDiagnostic, 'level'>
 
 const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
+  'warn.decode.hwaccel.environment': {
+    'zh-CN': {
+      title: '硬件解码不保证在当前电脑可用',
+      explanation: 'FFmpeg 能识别参数不代表该输入一定能硬解。是否成功同时取决于 FFmpeg 构建、操作系统、GPU、驱动、输入编码、位深和 Profile。失败时 FFmpeg 可能直接退出，也可能回退软件解码。',
+      guidance: '先保持输出格式和设备参数为空，用 10–30 秒样片测试并查看日志。失败时清空硬件解码设置；Desktop 后续可按所选 FFmpeg 的 -hwaccels 结果进一步提示。',
+    },
+    en: {
+      title: 'Hardware decoding is not guaranteed on this computer',
+      explanation: 'Recognizing the option does not mean the source can be decoded in hardware. Support also depends on the FFmpeg build, OS, GPU, driver, source codec, bit depth, and profile.',
+      guidance: 'Leave output format and device unset first, test a 10–30 second sample, and inspect the log. Clear hardware decoding if it fails.',
+    },
+  },
+  'warn.decode.outputFormat.without.hwaccel': {
+    'zh-CN': {
+      title: '解码输出格式缺少硬件解码方式',
+      explanation: '-hwaccel_output_format 用于约束硬件解码器交出的帧格式；未设置 -hwaccel 时通常没有必要，且可能被忽略或导致协商失败。',
+      guidance: '先选择对应的硬件加速解码方式，或把解码输出格式恢复为“不设置”。',
+    },
+    en: {
+      title: 'Decoder output format has no hardware decoder',
+      explanation: '-hwaccel_output_format constrains frames produced by a hardware decoder and is normally unnecessary without -hwaccel.',
+      guidance: 'Choose a matching hardware acceleration method, or leave decoder output format unset.',
+    },
+  },
+  'warn.decode.outputFormat.hardwareFrames': {
+    'zh-CN': {
+      title: 'D3D11 硬件帧可能与当前处理链不兼容',
+      explanation: 'd3d11 会让解码帧留在 GPU 设备内存。当前工作台的缩放、调色、降噪、字幕等多数滤镜以及软件编码器通常需要系统内存帧，没有显式 hwdownload/format 时可能报错。',
+      guidance: '只有在确认后续滤镜和硬件编码器支持同一设备帧时使用；否则留空，或选择 nv12/yuv420p/p010 并用短样片验证。',
+    },
+    en: {
+      title: 'D3D11 hardware frames may not match the processing chain',
+      explanation: 'd3d11 keeps decoded frames in GPU memory. Most CPU filters and software encoders need system-memory frames and may fail without hwdownload/format.',
+      guidance: 'Use it only with a verified compatible filter and hardware encoder chain; otherwise leave it unset or test a software format.',
+    },
+  },
+  'info.decode.threads.hwaccel': {
+    'zh-CN': {
+      title: 'CPU 解码线程数对硬件解码可能无效',
+      explanation: '硬件解码的并行调度主要由 GPU、驱动和硬件解码器管理，输入前的 -threads 通常只影响软件解码路径或部分辅助工作。',
+      guidance: '除非正在限制软件解码的 CPU 占用，否则建议清空线程数，让 FFmpeg 自动决定。',
+    },
+    en: {
+      title: 'CPU decoder threads may not affect hardware decoding',
+      explanation: 'GPU hardware and drivers manage most hardware-decoder scheduling, so input-side -threads often affects only software decoding or auxiliary work.',
+      guidance: 'Leave it unset unless you specifically need to constrain software decoding CPU use.',
+    },
+  },
+  'warn.decode.device.incomplete': {
+    'zh-CN': {
+      title: '硬件设备参数尚未填写完整',
+      explanation: '参数名和值必须同时存在才会进入命令。当前设置会被保留，但不会生成半条设备参数。',
+      guidance: '填写与所选参数匹配的设备值，或同时清空参数名和值。-init_hw_device 需要完整设备表达式，不一定是数字。',
+    },
+    en: {
+      title: 'Hardware device setting is incomplete',
+      explanation: 'Both the option name and value are required. The incomplete setting is retained but is not emitted.',
+      guidance: 'Enter a matching device value, or clear both fields. -init_hw_device usually needs a full device expression, not just a number.',
+    },
+  },
+  'warn.decode.device.qsvMismatch': {
+    'zh-CN': {
+      title: 'QSV 设备参数与解码方式不匹配',
+      explanation: '-qsv_device 专用于 Intel QSV，但当前选择了其他硬件解码方式，设备设置可能无效或误导。',
+      guidance: '将硬件解码方式改为 qsv，或改用 -hwaccel_device/清空设备参数。',
+    },
+    en: {
+      title: 'QSV device does not match the decoder method',
+      explanation: '-qsv_device is specific to Intel QSV, but another hardware acceleration method is selected.',
+      guidance: 'Switch the decoder method to qsv, or use -hwaccel_device/clear the device setting.',
+    },
+  },
   'error.color.requires.encode': {
     'zh-CN': {
       title: '色彩转换需要重新编码视频',

@@ -193,7 +193,7 @@ const metadataConfigSchema = z.object({
 // -- top-level schema -----------------------------------------
 
 export const projectConfigSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7)]),
   shell: z.enum(['bash', 'powershell', 'cmd']),
   input: z.object({
     path: z.string(),
@@ -204,6 +204,17 @@ export const projectConfigSchema = z.object({
         purpose: z.enum(['subtitle', 'attachment', 'concat', 'other']),
       })
     ),
+    decode: z.object({
+      hwaccel: z.enum([
+        'd3d11va', 'd3d12va', 'cuda', 'qsv', 'amf', 'vulkan', 'dxva2', 'vaapi', 'opencl',
+      ]).optional(),
+      threads: z.number().int().positive().optional(),
+      outputFormat: z.enum(['nv12', 'yuv420p', 'p010', 'd3d11']).optional(),
+      device: z.object({
+        parameter: z.enum(['hwaccel_device', 'init_hw_device', 'qsv_device']).optional(),
+        value: z.string().optional(),
+      }).optional(),
+    }).default({}),
   }),
   output: z.object({
     path: z.string(),

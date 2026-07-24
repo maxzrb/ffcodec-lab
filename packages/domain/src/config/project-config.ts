@@ -43,6 +43,32 @@ export interface TargetSizeToolConfig {
 export interface InputConfig {
   path: string
   additionalInputs: AdditionalInputConfig[]
+  /** 仅作用于主输入的解码参数；空对象表示使用 FFmpeg 默认行为。 */
+  decode: DecodeConfig
+}
+
+export type HardwareAccelerationMethod =
+  | 'd3d11va'
+  | 'd3d12va'
+  | 'cuda'
+  | 'qsv'
+  | 'amf'
+  | 'vulkan'
+  | 'dxva2'
+  | 'vaapi'
+  | 'opencl'
+
+export type HardwareDeviceParameter = 'hwaccel_device' | 'init_hw_device' | 'qsv_device'
+
+export interface DecodeConfig {
+  hwaccel?: HardwareAccelerationMethod
+  /** 输入侧 -threads，与编码器的线程设置相互独立。 */
+  threads?: number
+  outputFormat?: 'nv12' | 'yuv420p' | 'p010' | 'd3d11'
+  device?: {
+    parameter?: HardwareDeviceParameter
+    value?: string
+  }
 }
 
 export interface AdditionalInputConfig {

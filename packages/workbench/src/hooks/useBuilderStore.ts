@@ -43,6 +43,7 @@ export const useBuilderStore = create<BuilderState>()(persist((set) => ({
 
   expandedSections: {
     'section.input': true,
+    'section.decode': true,
     'section.video': true,
     'section.video-advanced': false,
     'section.frame': true,

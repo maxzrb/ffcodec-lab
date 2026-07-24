@@ -166,6 +166,41 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(new URL(window.location.href).searchParams.get('panel')).toBe('video')
   })
 
+  it('解码面板更新主输入参数、命令预览和复制模式警告', async () => {
+    render(<TestWrapper />)
+    await openPanel('解码')
+
+    expect(screen.getByText(/只作用于主输入/)).toBeInTheDocument()
+    expect(dropdownText('硬件加速解码方式 (-hwaccel)')).toContain('不设置')
+
+    await chooseDropdown('硬件加速解码方式 (-hwaccel)', 'cuda')
+    expect(useBuilderStore.getState().config.input.decode.hwaccel).toBe('cuda')
+    await waitFor(() => {
+      const command = screen.getByLabelText('命令预览').textContent ?? ''
+      expect(command).toContain('-hwaccel cuda')
+      expect(command.indexOf('-hwaccel cuda')).toBeLessThan(command.indexOf('-i input.mkv'))
+    })
+
+    expect(screen.queryByLabelText('硬件设备参数值')).not.toBeInTheDocument()
+    await chooseDropdown('硬件设备参数名', 'hwaccel_device')
+    const deviceValue = screen.getByLabelText('硬件设备参数值')
+    await userEvent.type(deviceValue, 'GPU 1')
+    expect(useBuilderStore.getState().config.input.decode.device).toEqual({
+      parameter: 'hwaccel_device',
+      value: 'GPU 1',
+    })
+
+    await chooseDropdown('硬件设备参数名', '')
+    expect(useBuilderStore.getState().config.input.decode.device?.value).toBeUndefined()
+    expect(screen.queryByLabelText('硬件设备参数值')).not.toBeInTheDocument()
+
+    const copied = structuredClone(useBuilderStore.getState().config)
+    copied.video.mode = 'copy'
+    act(() => useBuilderStore.getState().setConfig(copied))
+    expect(await screen.findByText('视频复制模式不执行视频解码')).toBeInTheDocument()
+    expect(screen.getByText(/解码面板的参数不会进入命令/)).toBeInTheDocument()
+  })
+
   it('实用工具可启用目标大小、接管双遍码率并在关闭后恢复原质量模式', async () => {
     render(<TestWrapper />)
     await openPanel('实用工具')
@@ -612,7 +647,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(useBuilderStore.getState().config.audio.qualityValues.application).toBe('voip')
 
     await chooseDropdown('编码应用类型', '')
-    expect(useBuilderStore.getState().config.audio.qualityValues.application).toBe('')
+    expect(useBuilderStore.getState().config.audio.qualityValues.application).toBeUndefined()
   })
 
   // -- 用例 6：普通 output.overwrite 复选框回归测试 --
@@ -1038,7 +1073,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases')
-    expect(screen.getByText('FFCodec Lab desktop v1.2.4')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab desktop v1.3.0')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))
@@ -1047,6 +1082,20 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     // 解释面板不暴露内部数据来源元数据
     expect(screen.queryByText('数据来源：')).not.toBeInTheDocument()
     // 页脚致谢链接是公开署名，不属于"解释面板内部来源"
+  })
+
+  it('Desktop 页脚指向 Web 版，Web 页脚继续指向 Releases', () => {
+    testPlatform = {
+      ...testPlatform,
+      capabilities: { ...testPlatform.capabilities, desktop: true },
+    }
+    render(<TestWrapper />)
+
+    expect(screen.getByRole('link', { name: '打开 FFCodec Lab Web 网页版' }))
+      .toHaveAttribute('href', 'https://fflab.loliland.cn')
+    expect(screen.getByText('FFCodec Lab Web v1.3.0')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
+      .not.toBeInTheDocument()
   })
 
   it('warning显示可读建议并跟随全局语言切换', async () => {

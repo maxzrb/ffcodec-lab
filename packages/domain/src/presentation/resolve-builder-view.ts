@@ -11,6 +11,7 @@ import type { ResolvedBuilderView, ResolvedField } from './resolved-field'
 import type { CommandPlan } from '../command/command-ast'
 import {
   resolveInputSection,
+  resolveDecodeSection,
   resolveVideoSection,
   resolveGenericCodecSection,
   resolveVideoAdvancedSection,
@@ -41,6 +42,7 @@ export function resolveBuilderView(
 
   const sections = [
     resolveInputSection(config, fieldStates),
+    resolveDecodeSection(config, fieldStates),
     resolveVideoSection(config, catalog, fieldStates),
     resolveGenericCodecSection(config, catalog, fieldStates),
     resolveVideoAdvancedSection(config, catalog, fieldStates),
@@ -86,6 +88,7 @@ export function resolveBuilderView(
 
 const PANEL_DEFINITIONS = [
   ['input-output', '输入与输出'],
+  ['decode', '解码'],
   ['video', '视频编码'],
   ['quality', '质量控制'],
   ['color', '色彩管理'],
@@ -130,6 +133,16 @@ function resolvePanelStateNotice(
   panelId: string,
   config: ProjectConfig,
 ): ResolvedBuilderView['panels'][number]['stateNotice'] {
+  if (panelId === 'decode' && config.video.mode === 'copy') return {
+    title: '视频复制模式不执行视频解码',
+    description: '当前使用 -c:v copy，压缩视频数据直接写入输出；解码面板的参数不会进入命令。切换到重新编码后才会应用。',
+    actionPanelId: 'video', actionLabel: '前往视频编码',
+  }
+  if (panelId === 'decode' && config.video.mode === 'disabled') return {
+    title: '当前不输出视频',
+    description: '已选择 -vn，解码设置不会进入命令。切换到重新编码后才会应用。',
+    actionPanelId: 'video', actionLabel: '前往视频编码',
+  }
   if (config.video.mode === 'copy') {
     if (panelId === 'video') return {
       title: '正在复制视频流',
@@ -193,6 +206,7 @@ function resolvePanelId(sectionId: string, field: ResolvedField): string {
   if (field.panelId) return field.panelId
   if (field.id.startsWith('streams.') || sectionId === 'section.container') return 'streams-container'
   if (sectionId === 'section.input') return 'input-output'
+  if (sectionId === 'section.decode') return 'decode'
   if (sectionId === 'section.video') return 'video'
   if (sectionId === 'section.frame') return 'filters'
   if (sectionId === 'section.color') return 'color'
@@ -218,6 +232,7 @@ function attachCommandOrigins(fields: ResolvedField[], plan: CommandPlan): void 
   for (const inv of plan.invocations) {
     const allArgs = [
       ...inv.globalArgs,
+      ...inv.inputs.flatMap((input) => input.argsBeforeInput),
       ...inv.output.maps,
       ...inv.output.codecArgs,
       ...inv.output.qualityArgs,

@@ -5,12 +5,23 @@
 
 import { z } from 'zod'
 
-export const SHARE_PAYLOAD_VERSION = 6
+export const SHARE_PAYLOAD_VERSION = 7
 
 /** Privacy-safe config subset: no input path, output path, or external subtitle paths */
 export const shareableConfigSchema = z.object({
   sv: z.number().int().positive(),
   shell: z.enum(['bash', 'powershell', 'cmd']),
+  d: z.object({
+    hwaccel: z.enum([
+      'd3d11va', 'd3d12va', 'cuda', 'qsv', 'amf', 'vulkan', 'dxva2', 'vaapi', 'opencl',
+    ]).optional(),
+    threads: z.number().int().positive().optional(),
+    outputFormat: z.enum(['nv12', 'yuv420p', 'p010', 'd3d11']).optional(),
+    device: z.object({
+      parameter: z.enum(['hwaccel_device', 'init_hw_device', 'qsv_device']).optional(),
+      value: z.string().optional(),
+    }).optional(),
+  }).default({}),
   v: z.object({
     mode: z.enum(['encode', 'copy', 'disabled']),
     encoderId: z.string().optional(),

@@ -24,6 +24,7 @@ const SIDEBAR_COLLAPSED_KEY = 'ffcodec-workbench-sidebar-collapsed'
 
 const PANEL_SHORT_LABELS: Record<string, { zh: string; en: string }> = {
   'input-output': { zh: '入', en: 'IO' },
+  decode: { zh: '解', en: 'D' },
   video: { zh: '视', en: 'V' },
   quality: { zh: '质', en: 'Q' },
   color: { zh: '色', en: 'C' },

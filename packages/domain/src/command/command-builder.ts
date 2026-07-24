@@ -132,6 +132,16 @@ function buildGlobalArgs(config: ProjectConfig): CommandArg[] {
     })
   }
 
+  const device = config.input.decode.device
+  if (config.video.mode === 'encode' && device?.parameter && device.value?.trim() && device.parameter !== 'hwaccel_device') {
+    args.push({
+      id: `decode.device.${device.parameter}`,
+      originId: 'input.decode.device.parameter',
+      phase: 'GLOBAL',
+      tokens: [`-${device.parameter}`, device.value.trim()],
+    })
+  }
+
   // Custom global args
   for (let i = 0; i < config.customArgs.globalArgs.length; i++) {
     args.push({
@@ -183,6 +193,42 @@ function buildInputs(config: ProjectConfig): InputSpec[] {
       originId: 'input.path',
     },
   ]
+
+  const decode = config.input.decode
+  if (config.video.mode === 'encode') {
+    if (decode.hwaccel) {
+      inputs[0].argsBeforeInput.push({
+        id: 'decode.hwaccel',
+        originId: 'input.decode.hwaccel',
+        phase: 'PRE_INPUT',
+        tokens: ['-hwaccel', decode.hwaccel],
+      })
+    }
+    if (decode.threads !== undefined) {
+      inputs[0].argsBeforeInput.push({
+        id: 'decode.threads',
+        originId: 'input.decode.threads',
+        phase: 'PRE_INPUT',
+        tokens: ['-threads', String(decode.threads)],
+      })
+    }
+    if (decode.outputFormat) {
+      inputs[0].argsBeforeInput.push({
+        id: 'decode.outputFormat',
+        originId: 'input.decode.outputFormat',
+        phase: 'PRE_INPUT',
+        tokens: ['-hwaccel_output_format', decode.outputFormat],
+      })
+    }
+    if (decode.device?.parameter === 'hwaccel_device' && decode.device.value?.trim()) {
+      inputs[0].argsBeforeInput.push({
+        id: 'decode.device.hwaccel_device',
+        originId: 'input.decode.device.parameter',
+        phase: 'PRE_INPUT',
+        tokens: ['-hwaccel_device', decode.device.value.trim()],
+      })
+    }
+  }
 
   for (let index = 0; index < config.customArgs.preInputArgs.length; index++) {
     inputs[0].argsBeforeInput.push({

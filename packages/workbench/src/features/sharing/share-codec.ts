@@ -20,6 +20,7 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
   return {
     sv: config.schemaVersion,
     shell: config.shell,
+    d: config.input.decode,
     v: {
       mode: config.video.mode,
       encoderId: config.video.encoderId,
@@ -99,7 +100,7 @@ export function fromShareable(
   const defaults: ProjectConfig = {
     schemaVersion: shareable.sv,
     shell: shareable.shell,
-    input: { path: base?.input?.path ?? 'input.mkv', additionalInputs: [] },
+    input: { path: base?.input?.path ?? 'input.mkv', additionalInputs: [], decode: shareable.d },
     output: {
       path: base?.output?.path ?? 'output.' + shareable.o.containerId,
       containerId: shareable.o.containerId,

@@ -9,7 +9,7 @@
 //   - concatenate argument names
 // ============================================================
 
-import { audioQualityValuePath, type ConfigPath } from '../config/config-path'
+import { audioQualityValuePath, CONFIG_PATHS, type ConfigPath } from '../config/config-path'
 import type { ProjectConfig } from '../config/project-config'
 import type { Catalog } from '../catalog/catalog-types'
 import type { ResolvedField } from './resolved-field'
@@ -199,6 +199,10 @@ export function applyFieldChangeToConfig(
   let next = fieldId === 'frame.resolution.mode' && effectiveValue === 'size'
     ? switchToAutomaticSizeResolution(previous)
     : setByPath(previous, change.path, effectiveValue)
+  if (fieldId === 'input.decode.device.parameter' && effectiveValue === undefined) {
+    // 参数名清空后设备值不再有语义，避免留下隐藏且无法直接清理的孤立值。
+    next = setByPath(next, CONFIG_PATHS.input.decode.deviceValue, undefined)
+  }
   const currentAudioEncoder = previous.audio.encoderId
     ? catalog.encoders.audio[previous.audio.encoderId]
     : undefined
@@ -400,6 +404,9 @@ function coerceValue(
     }
 
     case 'select':
+      if (field.optional && (value === undefined || value === null || value === '')) {
+        return { value: undefined }
+      }
       // Ensure value is a valid option
       if (field.options && field.options.length > 0) {
         const matchedOption = field.options.find((option) => String(option.value) === String(value))

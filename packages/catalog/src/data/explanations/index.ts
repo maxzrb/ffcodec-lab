@@ -3,6 +3,34 @@ import { audioExpandedExplanations } from './audio-expanded'
 
 export const explanations: Record<string, ExplanationDefinition> = {
   ...audioExpandedExplanations,
+  'expl.decode.hwaccel': {
+    id: 'expl.decode.hwaccel', title: '硬件加速解码方式 (-hwaccel)',
+    short: '为主输入请求指定的 FFmpeg 硬件解码路径；不设置时使用 FFmpeg 默认的软件解码行为。',
+    detail: '该参数必须位于主输入 -i 之前。可用性取决于 FFmpeg 构建、操作系统、GPU、驱动、输入编码、Profile 和位深，菜单中存在某个名称不代表当前电脑一定可用。建议先只选择解码方式，保持输出格式和设备为空，再用短样片查看 FFmpeg 日志。',
+    warnings: ['硬件解码失败时可能直接退出，也可能回退软件解码。', '硬件解码不等于硬件编码；两者需要分别配置。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'doc/ffmpeg.texi', symbol: '-hwaccel', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg.html' }],
+  },
+  'expl.decode.threads': {
+    id: 'expl.decode.threads', title: 'CPU 解码线程数 (-threads)',
+    short: '限制主输入的软件解码线程数；留空时由 FFmpeg 和解码器自动决定。',
+    detail: '输入前的 -threads 作用于解码侧，与输出编码器自己的 -threads 相互独立。硬件解码时该值通常作用有限；除非要限制 CPU 占用或排查特定解码器并行问题，否则建议保持不设置。',
+    warnings: ['过低的线程数可能降低高分辨率软件解码速度。', '不是所有解码器都会严格遵守该值。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'doc/ffmpeg.texi', symbol: '-threads', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg.html' }],
+  },
+  'expl.decode.outputFormat': {
+    id: 'expl.decode.outputFormat', title: '解码输出格式 (-hwaccel_output_format)',
+    short: '约束硬件解码器向后续滤镜或编码器交出的帧格式；通常应保持自动协商。',
+    detail: 'nv12、yuv420p、p010 等软件格式通常意味着帧进入系统内存；d3d11 等硬件格式会让帧留在设备内存，可能减少复制，但要求后续滤镜和编码器接受同一类硬件帧。当前工作台没有自动补 hwdownload/hwupload，错误组合可能在滤镜初始化阶段失败。',
+    warnings: ['没有选择 -hwaccel 时通常不要单独设置本参数。', '使用 d3d11 硬件帧前必须验证缩放、调色、字幕等滤镜链。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'doc/ffmpeg.texi', symbol: '-hwaccel_output_format', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg.html' }],
+  },
+  'expl.decode.device': {
+    id: 'expl.decode.device', title: '硬件加速解码设备',
+    short: '在多 GPU 或需要显式初始化硬件设备时指定设备参数和值。',
+    detail: '-hwaccel_device 是主输入选项；-init_hw_device 和 -qsv_device 是全局设备初始化选项。设备值不一定是数字：不同平台可能使用适配器索引、DRM 路径、X11 display，或 type=name:device 形式的完整初始化表达式。参数名和值必须同时填写。',
+    warnings: ['错误设备值通常会让 FFmpeg 在打开输入前失败。', '-qsv_device 只适用于 Intel QSV。'],
+    sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'doc/ffmpeg.texi', symbol: '-hwaccel_device/-init_hw_device/-qsv_device', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg.html' }],
+  },
   // -- video encoders -------------------------------------------
   'expl.libx264': {
     id: 'expl.libx264',

@@ -1688,6 +1688,114 @@ export function resolveUtilityToolsSection(
   }
 }
 
+export function resolveDecodeSection(
+  config: ProjectConfig,
+  _fieldStates: Record<string, FieldState>,
+): ResolvedSection {
+  const decode = config.input.decode
+  const videoNeedsDecode = config.video.mode === 'encode'
+  const disabledReason = videoNeedsDecode
+    ? undefined
+    : config.video.mode === 'copy'
+      ? '视频流复制不会解码视频，解码设置不会进入命令。'
+      : '当前不输出视频，解码设置不会进入命令。'
+  const sourceRefs: SourceRef[] = [{
+    repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24',
+    file: 'doc/ffmpeg.texi', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg.html',
+  }]
+  const base = {
+    visible: true,
+    disabled: !videoNeedsDecode,
+    disabledReason,
+    sourceRefs,
+    verificationLevel: 'official' as const,
+    needsCrossVerification: false,
+    diagnostics: [],
+    panelId: 'decode',
+  }
+
+  const fields: ResolvedField[] = [
+    {
+      ...base,
+      id: 'input.decode.hwaccel',
+      label: '硬件加速解码方式 (-hwaccel)',
+      description: '不设置时由 FFmpeg 使用普通软件解码。所选方式仍需当前 FFmpeg 构建、操作系统、GPU、驱动和输入编码格式共同支持。',
+      controlType: 'select', value: decode.hwaccel ?? '',
+      optional: true,
+      options: [
+        { value: '', label: '不设置（使用 FFmpeg 默认解码）' },
+        { value: 'd3d11va', label: 'd3d11va', description: 'Windows Direct3D 11 视频解码。' },
+        { value: 'd3d12va', label: 'd3d12va', description: 'Windows Direct3D 12 视频解码，需要较新的 FFmpeg、驱动与硬件。' },
+        { value: 'cuda', label: 'cuda', description: 'NVIDIA CUDA/NVDEC 路径。' },
+        { value: 'qsv', label: 'qsv', description: 'Intel Quick Sync Video。' },
+        { value: 'amf', label: 'amf', description: 'AMD Advanced Media Framework。' },
+        { value: 'vulkan', label: 'vulkan', description: 'Vulkan 硬件设备路径，实际解码支持依赖构建与驱动。' },
+        { value: 'dxva2', label: 'dxva2', description: '较旧的 Windows DirectX Video Acceleration 2 路径。' },
+        { value: 'vaapi', label: 'vaapi', description: 'Linux/Unix 常用 VAAPI 路径；Windows 通常不可用。' },
+        { value: 'opencl', label: 'opencl', description: 'OpenCL 硬件设备路径，不能保证具体输入编码可硬解。' },
+      ],
+      explanationId: 'expl.decode.hwaccel', commandOrigins: ['input.decode.hwaccel'],
+      configBinding: { path: CONFIG_PATHS.input.decode.hwaccel }, groupId: 'decode-basic', tier: 'basic',
+    },
+    {
+      ...base,
+      id: 'input.decode.threads', label: 'CPU 解码线程数 (-threads)',
+      description: '仅用于限制主输入的解码线程。通常留空让 FFmpeg/解码器自动决定；它与视频编码器线程数相互独立。',
+      controlType: 'number', value: decode.threads, min: 1, max: 1024, step: 1, optional: true,
+      explanationId: 'expl.decode.threads', commandOrigins: ['input.decode.threads'],
+      configBinding: { path: CONFIG_PATHS.input.decode.threads }, groupId: 'decode-basic', tier: 'advanced',
+    },
+    {
+      ...base,
+      id: 'input.decode.outputFormat', label: '解码输出格式 (-hwaccel_output_format)',
+      description: '通常留空。软件格式会把帧交回系统内存；硬件格式可能实现零拷贝，但当前滤镜或编码器若不接受硬件帧会失败。',
+      controlType: 'select', value: decode.outputFormat ?? '',
+      optional: true,
+      options: [
+        { value: '', label: '不设置（由 FFmpeg 自动协商）' },
+        { value: 'nv12', label: 'nv12', description: '8-bit 4:2:0 半平面软件格式。' },
+        { value: 'yuv420p', label: 'yuv420p', description: '8-bit 4:2:0 平面软件格式，兼容性较广。' },
+        { value: 'p010', label: 'p010', description: '10-bit 4:2:0 半平面格式；实际名称和支持取决于解码路径。' },
+        { value: 'd3d11', label: 'd3d11', description: 'Direct3D 11 硬件帧；CPU 滤镜通常不能直接处理。' },
+      ],
+      explanationId: 'expl.decode.outputFormat', commandOrigins: ['input.decode.outputFormat'],
+      configBinding: { path: CONFIG_PATHS.input.decode.outputFormat }, groupId: 'decode-format', tier: 'advanced',
+    },
+    {
+      ...base,
+      id: 'input.decode.device.parameter', label: '硬件设备参数名',
+      description: '仅在需要指定显卡或初始化硬件设备时设置。三种参数的值语法不同，不能互换。',
+      controlType: 'select', value: decode.device?.parameter ?? '',
+      optional: true,
+      options: [
+        { value: '', label: '不设置设备参数' },
+        { value: 'hwaccel_device', label: '-hwaccel_device', description: '为当前主输入选择硬件加速设备。' },
+        { value: 'init_hw_device', label: '-init_hw_device', description: '全局初始化命名硬件设备，值通常包含类型、名称和设备表达式。' },
+        { value: 'qsv_device', label: '-qsv_device', description: '设置 QSV 使用的 DirectX 适配器索引、DRM 路径或 X11 display。' },
+      ],
+      explanationId: 'expl.decode.device', commandOrigins: ['input.decode.device.parameter'],
+      configBinding: { path: CONFIG_PATHS.input.decode.deviceParameter }, groupId: 'decode-device', tier: 'advanced',
+    },
+    {
+      ...base,
+      id: 'input.decode.device.value', label: '硬件设备参数值',
+      description: decode.device?.parameter === 'init_hw_device'
+        ? '示例：cuda=gpu:0 或 qsv=qs:hw。请按当前 FFmpeg 的 -init_hw_device 语法填写完整表达式。'
+        : '示例：0、1，或平台支持的设备路径。请先确认所选参数和当前平台的语法。',
+      controlType: 'text', value: decode.device?.value ?? '',
+      visible: Boolean(decode.device?.parameter || decode.device?.value),
+      explanationId: 'expl.decode.device', commandOrigins: ['input.decode.device.parameter'],
+      configBinding: { path: CONFIG_PATHS.input.decode.deviceValue }, groupId: 'decode-device', tier: 'advanced',
+    },
+  ]
+
+  return {
+    id: 'section.decode', label: '解码设置',
+    description: '只作用于主输入。没有明确需求时保持全部“不设置”；硬件加速可用性必须用短样片实测。',
+    fields,
+  }
+}
+
 function formatBitsPerPixelFrame(value: number): string {
   return value < 0.001 ? value.toFixed(6) : value.toFixed(4)
 }

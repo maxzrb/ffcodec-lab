@@ -5,12 +5,12 @@
 </p>
 
 <p align="center">
-  面向 Web 与 Windows Desktop 的 FFmpeg 参数工作台、命令生成器和本地编码工具。
+  面向 Web 与 Windows Desktop 的 FFmpeg 编解码参数工作台、命令生成器和本地媒体处理工具。
 </p>
 
-FFCodec Lab 把视频、音频、画面滤镜、字幕、流映射、封装和自定义参数组织成一套可检查的编码工作流。Web 版负责生成可复制的命令；Desktop 版在同一套工作台之上增加本机 FFmpeg 探测、媒体信息、任务执行、进度、取消、历史和硬件监控。
+FFCodec Lab 把主输入解码、视频与音频编码、画面滤镜、字幕、流映射、封装和自定义参数组织成一套可检查的工作流。Web 版可在 [fflab.loliland.cn](https://fflab.loliland.cn) 直接生成 Bash、PowerShell 或 CMD 命令；Desktop 版在同一套工作台之上增加本机 FFmpeg 探测、媒体信息、任务执行、进度、取消、历史和硬件监控。
 
-当前版本：`v1.2.4`
+当前版本：`v1.3.0`
 
 ## 下载
 
@@ -18,16 +18,17 @@ Windows 10/11 x64 用户请前往 [GitHub Releases](https://github.com/maxzrb/ff
 
 | 包 | 适用场景 | FFmpeg |
 | --- | --- | --- |
-| [Full 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.4/FFCodec-Lab-Setup-Full-1.2.4.exe) | 安装后直接使用 | 内置 `ffmpeg`、`ffprobe`、`ffplay` |
-| [Base 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.4/FFCodec-Lab-Setup-Base-1.2.4.exe) | 已有 FFmpeg，或自行管理版本 | 不包含 |
-| [Onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.4/FFCodec-Lab-Onedir-1.2.4.zip) | 免安装、解压即用 | 不包含 |
+| [Full 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.3.0/FFCodec-Lab-Setup-Full-1.3.0.exe) | 安装后直接使用 | 内置 `ffmpeg`、`ffprobe`、`ffplay` |
+| [Base 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.3.0/FFCodec-Lab-Setup-Base-1.3.0.exe) | 已有 FFmpeg，或自行管理版本 | 不包含 |
+| [Onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.3.0/FFCodec-Lab-Onedir-1.3.0.zip) | 免安装、解压即用 | 不包含 |
 
-下载后可使用 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.2.4/SHA256SUMS.txt) 校验文件完整性。Base 和 Onedir 会自动搜索系统 PATH、同目录和常见目录中的 FFmpeg，也可以在设置中选择自定义文件夹。Full 包会严格确认候选程序的身份，避免把 `ffprobe.exe` 当作 FFmpeg 而显示 `unknown`。
+下载后可使用 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.3.0/SHA256SUMS.txt) 校验文件完整性。Base 和 Onedir 会自动搜索系统 PATH、同目录和常见目录中的 FFmpeg，也可以在设置中选择自定义文件夹。Full 包会严格确认候选程序的身份，避免把 `ffprobe.exe` 当作 FFmpeg 而显示 `unknown`。
 
 > Windows 发布包目前未配置代码签名证书，首次下载或运行时可能出现 SmartScreen 提示。
 
 ## 主要能力
 
+- 独立“解码”面板支持 `-hwaccel`、输入侧 `-threads`、`-hwaccel_output_format` 和硬件设备参数，并明确提示 FFmpeg 构建、GPU、驱动、输入格式和硬件帧滤镜链风险。
 - 覆盖 `libx264`、`libx265`、SVT-AV1、libaom、VVenC、NVENC、QSV、AMF、VideoToolbox 等视频编码路径，以及 29 个音频编码器。
 - 按视频、音频和字幕逐流选择编码或复制，支持保留全部流和精确的 FFmpeg `-map` 生成。
 - 使用媒体探测读取格式、时长和流信息，可将探测结果联动到流选择和目标文件大小计算。
@@ -42,7 +43,8 @@ Windows 10/11 x64 用户请前往 [GitHub Releases](https://github.com/maxzrb/ff
 
 ### Web
 
-- 浏览器中运行参数工作台和命令生成器。
+- 在线地址：[https://fflab.loliland.cn](https://fflab.loliland.cn)。
+- 浏览器中运行完整参数工作台和命令生成器。
 - 配置保存在浏览器本地存储中。
 - 不读取本机媒体，也不直接执行 FFmpeg。
 - 支持 Bash、PowerShell 和 CMD 命令预览与复制。
@@ -53,6 +55,7 @@ Windows 10/11 x64 用户请前往 [GitHub Releases](https://github.com/maxzrb/ff
 - 使用 ffprobe 读取本地媒体信息，并执行结构化 FFmpeg 任务。
 - 提供实时进度、ETA、取消、事件日志、任务历史、输出定位和硬件监控。
 - 配置由 localStorage 与 INI 双写，可选择用户目录或便携目录模式。
+- 页脚可直接打开 Web 版；Web 页脚仍保留 Desktop GitHub Releases 下载入口。
 
 媒体探测和编码均在本机完成，输入文件不会上传。
 
@@ -96,7 +99,7 @@ Full 构建需要仓库根目录的 `ffmpeg-full.7z` 和可调用的 `7z`。也�
 pnpm check
 ```
 
-该命令执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`v1.2.4` 发布门禁为 Web `602/602`、Desktop `30/30`，并额外通过 Web/Desktop production build、Windows 三种包型构建、安装器内层资源检查和 Onedir ZIP 完整性测试。
+该命令执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`v1.3.0` 发布门禁包括 Web/Desktop 全量测试、目录审计、双端 production build、Windows 三种包型构建、安装器内层资源检查、Onedir ZIP 完整性测试和 SHA-256 校验。
 
 ## 项目结构
 

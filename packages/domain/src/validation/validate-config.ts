@@ -27,6 +27,7 @@ export function validateConfig(
   const compatMessages = validateCompatibility(config, catalog)
   const subtitleMessages = validateSubtitleTracks(config)
   const colorMessages = validateColorProcessing(config)
+  const decodeMessages = validateDecodeSettings(config)
   const resolutionMessages = validateResolution(config)
   const targetSizeMessages = calculateTargetSize(config, catalog).diagnostics
 
@@ -37,10 +38,73 @@ export function validateConfig(
     ...compatMessages,
     ...subtitleMessages,
     ...colorMessages,
+    ...decodeMessages,
     ...resolutionMessages,
     ...placeholderMessages,
     ...targetSizeMessages,
   ]
+}
+
+function validateDecodeSettings(config: ProjectConfig): Diagnostic[] {
+  if (config.video.mode !== 'encode') return []
+  const decode = config.input.decode
+  const messages: Diagnostic[] = []
+  const hasDeviceParameter = Boolean(decode.device?.parameter)
+  const hasDeviceValue = Boolean(decode.device?.value?.trim())
+
+  if (decode.hwaccel) {
+    messages.push({
+      code: 'warn.decode.hwaccel.environment', severity: 'warning', category: 'availability',
+      message: 'Hardware decoding depends on the FFmpeg build, operating system, GPU, driver, and source codec.',
+      originIds: ['input.decode.hwaccel'], context: { hwaccel: decode.hwaccel },
+    })
+  }
+
+  if (decode.outputFormat && !decode.hwaccel) {
+    messages.push({
+      code: 'warn.decode.outputFormat.without.hwaccel', severity: 'warning', category: 'configuration',
+      message: 'A hardware-decoder output format is set without selecting a hardware acceleration method.',
+      originIds: ['input.decode.outputFormat', 'input.decode.hwaccel'],
+      context: { outputFormat: decode.outputFormat },
+    })
+  }
+
+  if (decode.outputFormat === 'd3d11') {
+    messages.push({
+      code: 'warn.decode.outputFormat.hardwareFrames', severity: 'warning', category: 'compatibility',
+      message: 'D3D11 hardware frames may be incompatible with CPU filters or software encoders without an explicit download step.',
+      originIds: ['input.decode.outputFormat'], context: { outputFormat: 'd3d11' },
+    })
+  }
+
+  if (decode.threads !== undefined && decode.hwaccel) {
+    messages.push({
+      code: 'info.decode.threads.hwaccel', severity: 'info', category: 'configuration',
+      message: 'Decoder thread limits may have little or no effect when hardware decoding is active.',
+      originIds: ['input.decode.threads', 'input.decode.hwaccel'],
+      context: { threads: decode.threads, hwaccel: decode.hwaccel },
+    })
+  }
+
+  if (hasDeviceParameter !== hasDeviceValue) {
+    messages.push({
+      code: 'warn.decode.device.incomplete', severity: 'warning', category: 'configuration',
+      message: 'The hardware device parameter name and value must both be set before they are emitted.',
+      originIds: ['input.decode.device.parameter', 'input.decode.device.value'],
+      context: { parameter: decode.device?.parameter, hasValue: hasDeviceValue },
+    })
+  }
+
+  if (decode.device?.parameter === 'qsv_device' && decode.hwaccel && decode.hwaccel !== 'qsv') {
+    messages.push({
+      code: 'warn.decode.device.qsvMismatch', severity: 'warning', category: 'configuration',
+      message: 'qsv_device is selected while the hardware acceleration method is not QSV.',
+      originIds: ['input.decode.device.parameter', 'input.decode.hwaccel'],
+      context: { hwaccel: decode.hwaccel },
+    })
+  }
+
+  return messages
 }
 
 function validateResolution(config: ProjectConfig): Diagnostic[] {

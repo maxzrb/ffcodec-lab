@@ -6,6 +6,7 @@ import {
   resolveAudioSection,
   resolveContainerSection,
   resolveCustomArgsSection,
+  resolveDecodeSection,
   resolveFrameSection,
   resolveInputSection,
   resolveSubtitleSection,
@@ -100,6 +101,7 @@ describe('全局中英文切换', () => {
     toolsConfig.tools.targetSize.enabled = true
     sections.push(
       resolveInputSection(base, fieldStates),
+      resolveDecodeSection(base, fieldStates),
       resolveFrameSection(base, fieldStates),
       resolveContainerSection(base, catalog, fieldStates),
       resolveUtilityToolsSection(toolsConfig, catalog),
