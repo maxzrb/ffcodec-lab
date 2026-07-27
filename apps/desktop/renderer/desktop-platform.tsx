@@ -13,6 +13,11 @@ import { CustomCommandActions } from './components/CustomCommandActions'
 import { ConfigFilePanel } from './components/ConfigFilePanel'
 import { MediaProbePanel } from './components/MediaProbePanel'
 import { TargetDurationProbeAction } from './components/TargetDurationProbeAction'
+import { BatchQueuePanel, SingleFileOutputLocationControl } from './batch-queue/BatchQueuePanel'
+import {
+  getSelectedBatchQueueConfig,
+  onSelectedBatchQueueConfigChange,
+} from './batch-queue/batch-queue-store'
 import {
   getAudioCapabilityOverride,
   onAudioCapabilityOverrideChange,
@@ -68,6 +73,15 @@ class ElectronStorageAdapter implements StorageAdapter {
 
 const desktopExtensions: WorkbenchExtensions = {
   headerItems: [<AudioCapabilityUnlockButton key="audio-capability-unlock" />],
+  inputOutputSection: {
+    additionalContent: <SingleFileOutputLocationControl />,
+    after: <BatchQueuePanel />,
+  },
+  getCommandPreviewOverride: () => {
+    const config = getSelectedBatchQueueConfig()
+    return config ? { config } : null
+  },
+  onCommandPreviewOverrideChange: onSelectedBatchQueueConfigChange,
   pathFieldRenderer: DesktopPathField,
   commandActions: desktopCommandActions,
   renderCommandEditorActions: ({ command, dirty }) => <CustomCommandActions command={command} dirty={dirty} />,

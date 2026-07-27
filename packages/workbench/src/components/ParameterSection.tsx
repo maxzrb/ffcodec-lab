@@ -9,6 +9,7 @@ import type { ResolvedField, ResolvedSection } from '@ffcodec/domain/presentatio
 import type { ReactNode } from 'react'
 import type { PathFieldRenderer } from '@ffcodec/platform-api'
 import { useCallback } from 'react'
+import { CollapsibleSection } from './CollapsibleSection'
 import { ParameterField } from './ParameterField'
 import { useI18n } from '../features/i18n/i18n'
 
@@ -20,6 +21,8 @@ interface ParameterSectionProps {
   onExplain: (fieldId: string) => void
   highlightedFieldId?: string
   actions?: ReactNode
+  /** 平台在既有参数区正文末尾追加的内容。 */
+  additionalContent?: ReactNode
   /** Platform-specific path field renderer, passed through to ParameterField. */
   pathFieldRenderer?: PathFieldRenderer
   renderFieldAction?: (fieldId: string) => ReactNode
@@ -91,6 +94,7 @@ export function ParameterSection({
   onExplain,
   highlightedFieldId,
   actions,
+  additionalContent,
   pathFieldRenderer,
   renderFieldAction,
 }: ParameterSectionProps) {
@@ -113,39 +117,24 @@ export function ParameterSection({
   const navigableGroups = groups.filter((g) => g.divider)
 
   return (
-    <section className="parameter-section">
-      <div className="parameter-section__header">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="parameter-section__toggle"
-          aria-expanded={expanded}
-        >
-          <span className={`parameter-section__chevron ${expanded ? 'parameter-section__chevron--open' : ''}`} aria-hidden="true">
-            ▶
-          </span>
-          <span className="parameter-section__title">{text(section.label)}</span>
-          {section.description && (
-            <span className="parameter-section__description" title={text(section.description)}>— {text(section.description)}</span>
-          )}
-        </button>
-        {actions && <div className="parameter-section__actions">{actions}</div>}
-      </div>
-
-      <div className={`parameter-section__body ${expanded ? 'parameter-section__body--expanded' : 'parameter-section__body--collapsed'}`}>
-        <div className="parameter-section__body-inner">
-          {navigableGroups.length > 1 && <GroupNav groups={navigableGroups} text={text} />}
-          {hasGroups
-            ? groups.map((group) => (
-                <div key={group.key} id={`pgroup-${group.key}`} className="parameter-field-group">
-                  {group.divider && renderField(group.divider)}
-                  {group.fields.map(renderField)}
-                </div>
-              ))
-            : groups[0]?.fields.map(renderField)
-          }
-        </div>
-      </div>
-    </section>
+    <CollapsibleSection
+      title={text(section.label)}
+      description={section.description ? text(section.description) : undefined}
+      expanded={expanded}
+      onToggle={onToggle}
+      actions={actions}
+    >
+      {navigableGroups.length > 1 && <GroupNav groups={navigableGroups} text={text} />}
+      {hasGroups
+        ? groups.map((group) => (
+            <div key={group.key} id={`pgroup-${group.key}`} className="parameter-field-group">
+              {group.divider && renderField(group.divider)}
+              {group.fields.map(renderField)}
+            </div>
+          ))
+        : groups[0]?.fields.map(renderField)
+      }
+      {additionalContent}
+    </CollapsibleSection>
   )
 }

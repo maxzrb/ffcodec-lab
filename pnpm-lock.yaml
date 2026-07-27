@@ -22,6 +22,9 @@ importers:
       uplot:
         specifier: 1.6.32
         version: 1.6.32
+      zustand:
+        specifier: ^4.5.4
+        version: 4.5.7(@types/react@18.3.31)(react@18.3.1)
     devDependencies:
       '@types/react':
         specifier: ^18.3.3
@@ -171,6 +174,9 @@ importers:
 
   packages/platform-api:
     dependencies:
+      '@ffcodec/domain':
+        specifier: workspace:*
+        version: link:../domain
       react:
         specifier: ^18.3.1
         version: 18.3.1

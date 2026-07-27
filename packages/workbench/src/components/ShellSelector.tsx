@@ -4,6 +4,7 @@ import { useI18n } from '../features/i18n/i18n'
 interface ShellSelectorProps {
   value: ShellKind
   onChange: (shell: ShellKind) => void
+  disabled?: boolean
 }
 
 const shellOptions: { value: ShellKind; label: string }[] = [
@@ -12,7 +13,7 @@ const shellOptions: { value: ShellKind; label: string }[] = [
   { value: 'cmd', label: 'CMD' },
 ]
 
-export function ShellSelector({ value, onChange }: ShellSelectorProps) {
+export function ShellSelector({ value, onChange, disabled = false }: ShellSelectorProps) {
   const { locale } = useI18n()
   return (
     <div className="shell-selector" role="group" aria-label={locale === 'zh-CN' ? '命令环境' : 'Shell'}>
@@ -21,6 +22,7 @@ export function ShellSelector({ value, onChange }: ShellSelectorProps) {
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
+          disabled={disabled}
           className={`segmented-button ${value === option.value ? 'segmented-button--active' : ''}`}
           aria-pressed={value === option.value}
         >

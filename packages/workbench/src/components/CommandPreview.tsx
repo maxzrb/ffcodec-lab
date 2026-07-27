@@ -17,6 +17,8 @@ interface CommandPreviewProps {
   onTokenClick?: (originId: string) => void
   /** Platform-provided action buttons rendered in the command toolbar. */
   commandActions?: ReactNode[]
+  /** 冻结任务只允许查看和复制，避免编辑当前工作台配置。 */
+  readOnly?: boolean
 }
 
 export function CommandPreview({
@@ -29,6 +31,7 @@ export function CommandPreview({
   onClear,
   onTokenClick,
   commandActions,
+  readOnly = false,
 }: CommandPreviewProps) {
   const { locale } = useI18n()
   const [multiline, setMultiline] = useState(false)
@@ -58,7 +61,7 @@ export function CommandPreview({
     <section className={`command-card ${hasErrors ? 'command-card--error' : ''}`} aria-label={locale === 'zh-CN' ? '命令预览' : 'Command preview'}>
       <div className="command-toolbar">
         <span className="command-toolbar__title">{locale === 'zh-CN' ? '命令预览' : 'Command preview'}</span>
-        <ShellSelector value={shell} onChange={onShellChange} />
+        <ShellSelector value={shell} onChange={onShellChange} disabled={readOnly} />
         <button
           type="button"
           onClick={() => setMultiline(!multiline)}
@@ -76,14 +79,16 @@ export function CommandPreview({
         >
           {copied ? (locale === 'zh-CN' ? '已复制' : 'Copied') : (locale === 'zh-CN' ? '复制' : 'Copy')}
         </button>
-        <button
-          type="button"
-          onClick={onClear}
-          disabled={cleared}
-          className="button-ghost button-ghost--danger"
-        >
-          {locale === 'zh-CN' ? '清空全部' : 'Clear all'}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={cleared}
+            className="button-ghost button-ghost--danger"
+          >
+            {locale === 'zh-CN' ? '清空全部' : 'Clear all'}
+          </button>
+        )}
         {commandActions?.map((action, i) => (
           <span key={`cmd-action-${i}`}>{action}</span>
         ))}
@@ -91,6 +96,9 @@ export function CommandPreview({
           <span className="meta-pill">
             {locale === 'zh-CN' ? `${commandPlan.invocations.length} 条两遍命令` : `${commandPlan.invocations.length} two-pass commands`}
           </span>
+        )}
+        {readOnly && (
+          <span className="meta-pill">{locale === 'zh-CN' ? '队列项快照' : 'Queue item snapshot'}</span>
         )}
       </div>
 

@@ -10,7 +10,7 @@
 
 FFCodec Lab 把主输入解码、视频与音频编码、画面滤镜、字幕、流映射、封装和自定义参数组织成一套可检查的工作流。Web 版可在 [fflab.loliland.cn](https://fflab.loliland.cn) 直接生成 Bash、PowerShell 或 CMD 命令；Desktop 版在同一套工作台之上增加本机 FFmpeg 探测、媒体信息、任务执行、进度、取消、历史和硬件监控。
 
-当前版本：`v1.3.0`
+当前版本：`v1.4.0`
 
 ## 下载
 
@@ -18,11 +18,11 @@ Windows 10/11 x64 用户请前往 [GitHub Releases](https://github.com/maxzrb/ff
 
 | 包 | 适用场景 | FFmpeg |
 | --- | --- | --- |
-| [Full 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.3.0/FFCodec-Lab-Setup-Full-1.3.0.exe) | 安装后直接使用 | 内置 `ffmpeg`、`ffprobe`、`ffplay` |
-| [Base 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.3.0/FFCodec-Lab-Setup-Base-1.3.0.exe) | 已有 FFmpeg，或自行管理版本 | 不包含 |
-| [Onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.3.0/FFCodec-Lab-Onedir-1.3.0.zip) | 免安装、解压即用 | 不包含 |
+| [Full 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.4.0/FFCodec-Lab-Setup-Full-1.4.0.exe) | 安装后直接使用 | 内置 `ffmpeg`、`ffprobe`、`ffplay` |
+| [Base 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.4.0/FFCodec-Lab-Setup-Base-1.4.0.exe) | 已有 FFmpeg，或自行管理版本 | 不包含 |
+| [Onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.4.0/FFCodec-Lab-Onedir-1.4.0.zip) | 免安装、解压即用 | 不包含 |
 
-下载后可使用 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.3.0/SHA256SUMS.txt) 校验文件完整性。Base 和 Onedir 会自动搜索系统 PATH、同目录和常见目录中的 FFmpeg，也可以在设置中选择自定义文件夹。Full 包会严格确认候选程序的身份，避免把 `ffprobe.exe` 当作 FFmpeg 而显示 `unknown`。
+下载后可使用 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.4.0/SHA256SUMS.txt) 校验文件完整性。Base 和 Onedir 会自动搜索系统 PATH、同目录和常见目录中的 FFmpeg，也可以在设置中选择自定义文件夹。Full 包会严格确认候选程序的身份，避免把 `ffprobe.exe` 当作 FFmpeg 而显示 `unknown`。
 
 > Windows 发布包目前未配置代码签名证书，首次下载或运行时可能出现 SmartScreen 提示。
 
@@ -99,7 +99,7 @@ Full 构建需要仓库根目录的 `ffmpeg-full.7z` 和可调用的 `7z`。也�
 pnpm check
 ```
 
-该命令执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`v1.3.0` 发布门禁包括 Web/Desktop 全量测试、目录审计、双端 production build、Windows 三种包型构建、安装器内层资源检查、Onedir ZIP 完整性测试和 SHA-256 校验。
+该命令执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`v1.4.0` 发布门禁包括 Web/Desktop 全量测试、目录审计、双端 production build、Windows 三种包型构建、安装器内层资源检查、Onedir ZIP 完整性测试和 SHA-256 校验。
 
 ## 项目结构
 

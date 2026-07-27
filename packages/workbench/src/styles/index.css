@@ -2118,6 +2118,7 @@ code {
 /* ---- Desktop run button ---- */
 .button--run {
   margin-left: 4px;
+  color: #fff;
 }
 .button--run-blocked,
 .button--run-blocked:hover {
@@ -3879,4 +3880,272 @@ html.performance-page-open .performance-page {
   font-size: 12px;
   color: var(--color-text-muted);
   text-align: center;
+}
+
+/* Desktop 批处理队列复用参数区的折叠卡片；单文件开关位于既有输入与输出卡片内。 */
+.input-output-output-location {
+  display: grid;
+  gap: 5px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+}
+
+.batch-queue-section .parameter-section__body--expanded .parameter-section__body-inner {
+  gap: 12px;
+  padding: 12px;
+}
+
+.batch-queue-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  color: var(--text);
+  font-size: var(--font-body);
+  cursor: pointer;
+}
+
+.batch-queue-toggle input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.batch-queue-hint,
+.batch-queue-notice,
+.batch-queue-empty,
+.batch-queue-item__error {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-small);
+  line-height: 1.6;
+}
+
+.batch-queue-hint code {
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+
+.batch-queue-toolbar,
+.batch-queue-toolbar__toggles,
+.batch-queue-header-actions,
+.batch-queue-file-actions,
+.batch-queue-footer,
+.batch-queue-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.batch-queue-toolbar {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.batch-queue-header-actions,
+.batch-queue-file-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.batch-queue-toolbar__toggles {
+  flex-wrap: wrap;
+}
+
+.batch-queue-header-actions .button,
+.batch-queue-header-actions .button-ghost,
+.batch-queue-file-actions .button-ghost,
+.batch-queue-footer .button-ghost,
+.batch-queue-item > .button-ghost {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: var(--font-small);
+}
+
+.batch-queue-header-actions .button--primary {
+  color: #fff;
+}
+
+.batch-queue-output-directory {
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  font-size: var(--font-body);
+  font-weight: 600;
+}
+
+.batch-queue-output-directory__control {
+  display: flex;
+  gap: 8px;
+}
+
+.batch-queue-output-directory__control input {
+  min-width: 0;
+  flex: 1;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-input, var(--bg));
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+  padding: 6px 8px;
+}
+
+.batch-queue-notice {
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.batch-queue-empty {
+  padding: 14px 0;
+  font-size: var(--font-body);
+  text-align: center;
+}
+
+.batch-queue-list {
+  display: grid;
+  gap: 10px;
+  max-height: 380px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.batch-queue-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.batch-queue-item--selected {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+}
+
+.batch-queue-item__select {
+  display: grid;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.batch-queue-item__name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--font-control);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-queue-item__path {
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: var(--font-small);
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-queue-item__meta {
+  justify-content: flex-end;
+}
+
+.batch-queue-status {
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: var(--text-dim);
+  background: var(--bg-hover);
+  font-size: var(--font-small);
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.batch-queue-status--running { color: var(--info); }
+.batch-queue-status--completed { color: var(--success); }
+.batch-queue-status--failed { color: var(--error); }
+.batch-queue-status--cancelled { color: var(--warning); }
+
+.batch-queue-icon-button {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.batch-queue-icon-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  color: var(--error);
+}
+
+.batch-queue-icon-button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.batch-queue-item__output {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: var(--font-small);
+}
+
+.batch-queue-item__output input {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-input, var(--bg));
+  color: var(--text);
+  font: inherit;
+  padding: 6px 8px;
+}
+
+.batch-queue-item__error {
+  grid-column: 1 / -1;
+  max-height: 48px;
+  overflow: auto;
+  color: var(--error);
+  white-space: pre-wrap;
+}
+
+.batch-queue-item > .button-ghost { width: fit-content; }
+
+.batch-queue-footer {
+  justify-content: space-between;
+  color: var(--text-dim);
+  font-size: var(--font-small);
+}
+
+@media (max-width: 720px) {
+  .batch-queue-section .parameter-section__header { flex-wrap: wrap; }
+  .batch-queue-section .parameter-section__actions {
+    width: 100%;
+    padding: 0 10px 10px;
+  }
+  .batch-queue-header-actions { width: 100%; }
+  .batch-queue-header-actions > button { flex: 1 1 auto; }
+  .batch-queue-header-actions .button--primary { width: auto; }
+  .batch-queue-file-actions > button { flex: 1 1 auto; }
+  .batch-queue-output-directory__control { flex-wrap: wrap; }
+  .batch-queue-output-directory__control .button-ghost { flex: 1 1 auto; }
 }

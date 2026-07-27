@@ -38,7 +38,7 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = 'v1.3.0'
+const APP_VERSION = 'v1.4.0'
 const RELEASE_URL = `${PROJECT_URL}/releases`
 const WEB_APP_URL = 'https://fflab.loliland.cn'
 
@@ -65,6 +65,8 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
   )
   const isZh = locale === 'zh-CN'
   const text = useCallback((value: string) => translateText(value, locale), [locale])
+  const inputOutputExtension = activePanelId === 'input-output' ? extensions?.inputOutputSection : undefined
+  const [commandPreviewRevision, setCommandPreviewRevision] = useState(0)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -79,6 +81,13 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
 
   const runtimeFilterDiagnostics = useRuntimeFilterDiagnostics(config)
   const pipeline = usePipeline(config, catalog, runtimeFilterDiagnostics)
+  const commandPreviewOverride = useMemo(
+    () => extensions?.getCommandPreviewOverride?.() ?? null,
+    [extensions, commandPreviewRevision],
+  )
+  const commandPreviewConfig = commandPreviewOverride?.config ?? config
+  const commandPreviewRuntimeFilterDiagnostics = useRuntimeFilterDiagnostics(commandPreviewConfig)
+  const commandPreviewPipeline = usePipeline(commandPreviewConfig, catalog, commandPreviewRuntimeFilterDiagnostics)
 
   // Resolve the builder view from pipeline output
   const view = useMemo(
@@ -104,6 +113,26 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
     setInspectorTab(tabId)
     window.dispatchEvent(new CustomEvent('ffcodec:open-inspector'))
   }, [])
+
+  useEffect(() => {
+    return extensions?.onCommandPreviewOverrideChange?.(() => {
+      setCommandPreviewRevision((revision) => revision + 1)
+      handleOpenInspectorTab('command')
+    })
+  }, [extensions, handleOpenInspectorTab])
+
+  useEffect(() => {
+    const openRequestedTab = (event: Event) => {
+      const tabId = (event as CustomEvent<string>).detail
+      const isKnownTab = tabId === 'command'
+        || tabId === 'overview'
+        || tabId === 'diagnostics'
+        || extensions?.inspectorTabs?.some((tab) => tab.id === tabId)
+      if (isKnownTab) handleOpenInspectorTab(tabId)
+    }
+    window.addEventListener('ffcodec:open-inspector-tab', openRequestedTab)
+    return () => window.removeEventListener('ffcodec:open-inspector-tab', openRequestedTab)
+  }, [extensions?.inspectorTabs, handleOpenInspectorTab])
 
   const renderFieldAction = useCallback((fieldId: string) => (
     extensions?.renderFieldAction?.(fieldId, { openInspectorTab: handleOpenInspectorTab })
@@ -395,23 +424,33 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
           <>
             {activePanel.sections.map((section) => (
               <Fragment key={section.id}>
-                <ParameterSection
-                  section={section}
-                  expanded={expandedSections[section.id] ?? true}
-                  onToggle={() => toggleSection(section.id)}
-                  onFieldChange={handleFieldChange}
-                  onExplain={handleExplain}
-                  highlightedFieldId={highlightedFieldId}
-                  pathFieldRenderer={extensions?.pathFieldRenderer}
-                  renderFieldAction={renderFieldAction}
-                  actions={section.id === 'section.subtitle' ? (
-                    <SubtitleSectionActions
-                      tracks={config.subtitle.tracks}
-                      onAdd={handleAddSubtitleTrack}
-                      onRemove={handleRemoveSubtitleTrack}
-                    />
-                  ) : undefined}
-                />
+                {/** 输入区在包含流选择字段时会拆分为 section.input.input-output。 */}
+                {(() => {
+                  const isInputOutputSection = section.id === 'section.input' || section.id.startsWith('section.input.')
+                  return (
+                    <>
+                      <ParameterSection
+                        section={section}
+                        expanded={expandedSections[section.id] ?? true}
+                        onToggle={() => toggleSection(section.id)}
+                        onFieldChange={handleFieldChange}
+                        onExplain={handleExplain}
+                        highlightedFieldId={highlightedFieldId}
+                        pathFieldRenderer={extensions?.pathFieldRenderer}
+                        renderFieldAction={renderFieldAction}
+                        additionalContent={isInputOutputSection ? inputOutputExtension?.additionalContent : undefined}
+                        actions={section.id === 'section.subtitle' ? (
+                          <SubtitleSectionActions
+                            tracks={config.subtitle.tracks}
+                            onAdd={handleAddSubtitleTrack}
+                            onRemove={handleRemoveSubtitleTrack}
+                          />
+                        ) : undefined}
+                      />
+                      {isInputOutputSection && inputOutputExtension?.after}
+                    </>
+                  )
+                })()}
               </Fragment>
             ))}
             {activePanel.stateNotice && (
@@ -454,21 +493,24 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
             {inspectorTab === 'command' ? (
               <div className="inspector-panel" key="command">
                 <CommandPreview
-                  commandPlan={pipeline.commandPlan}
-                  renderedCommand={pipeline.renderedCommand}
-                  shell={config.shell}
-                  hasErrors={view.hasErrors}
-                  cleared={commandPreviewCleared}
+                  commandPlan={commandPreviewPipeline.commandPlan}
+                  renderedCommand={commandPreviewPipeline.renderedCommand}
+                  shell={commandPreviewConfig.shell}
+                  hasErrors={commandPreviewPipeline.hasErrors}
+                  cleared={commandPreviewOverride ? false : commandPreviewCleared}
                   onShellChange={handleShellChange}
                   onClear={handleClearAllCommands}
-                  onTokenClick={handleTokenClick}
-                  commandActions={extensions?.commandActions?.map((a) => a.render())}
+                  onTokenClick={commandPreviewOverride ? undefined : handleTokenClick}
+                  commandActions={commandPreviewOverride ? undefined : extensions?.commandActions?.map((a) => a.render())}
+                  readOnly={Boolean(commandPreviewOverride)}
                 />
-                <CommandEditor
-                  generatedCommand={commandPreviewCleared ? '' : pipeline.renderedCommand.text}
-                  cleared={commandPreviewCleared}
-                  renderActions={extensions?.renderCommandEditorActions}
-                />
+                {!commandPreviewOverride && (
+                  <CommandEditor
+                    generatedCommand={commandPreviewCleared ? '' : pipeline.renderedCommand.text}
+                    cleared={commandPreviewCleared}
+                    renderActions={extensions?.renderCommandEditorActions}
+                  />
+                )}
                 {commandInspectorFooter}
               </div>
             ) : inspectorTab === 'overview' ? (

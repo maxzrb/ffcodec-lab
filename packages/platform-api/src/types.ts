@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { ReactNode } from 'react'
+import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 
 // ---- Platform capabilities (feature flags) ----
 
@@ -55,6 +56,11 @@ export interface CommandActionExtension {
   render: () => ReactNode
 }
 
+/** 平台可临时将共享命令面板切换为一份冻结配置的只读预览。 */
+export interface CommandPreviewOverride {
+  config: ProjectConfig
+}
+
 export type PathFieldRenderer = (props: {
   fieldId: string
   value: string
@@ -78,9 +84,20 @@ export interface FieldActionContext {
   openInspectorTab: (tabId: string) => void
 }
 
+/** 附加在共享“输入与输出”参数区的 Desktop 专用内容。 */
+export interface InputOutputSectionExtension {
+  /** 渲染在既有输入与输出字段之后，仍属于同一张折叠卡片。 */
+  additionalContent?: ReactNode
+  /** 渲染在既有输入与输出卡片之后的同级内容。 */
+  after?: ReactNode
+}
+
 export interface WorkbenchExtensions {
   headerItems?: ReactNode[]
+  inputOutputSection?: InputOutputSectionExtension
   inspectorTabs?: InspectorTabExtension[]
+  getCommandPreviewOverride?: () => CommandPreviewOverride | null
+  onCommandPreviewOverrideChange?: (listener: () => void) => () => void
   commandActions?: CommandActionExtension[]
   renderCommandEditorActions?: (context: { command: string; dirty: boolean }) => ReactNode
   renderFieldAction?: (fieldId: string, context: FieldActionContext) => ReactNode

@@ -11,6 +11,9 @@
   "scripts": {
     "typecheck": "tsc -b --noEmit"
   },
+  "dependencies": {
+    "@ffcodec/domain": "workspace:*"
+  },
   "peerDependencies": {
     "react": "^18.3.1"
   },

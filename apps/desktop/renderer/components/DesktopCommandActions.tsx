@@ -14,6 +14,7 @@ import { useEncodingJob } from './useEncodingJob'
 import { localizeJobError } from './encoding-job'
 import { getPreferredFFmpegPath } from '../ffmpeg-path-selection'
 import { canRunExecutionPlans } from './execution-plan-guards'
+import { useBatchQueueStore } from '../batch-queue/batch-queue-store'
 
 const catalog = loadCatalog()
 
@@ -24,6 +25,7 @@ function RunButton() {
   const config = useBuilderStore((s) => s.config)
   const setConfig = useBuilderStore((s) => s.setConfig)
   const runtimeFilterDiagnostics = useRuntimeFilterDiagnostics(config)
+  const batchQueueRunning = useBatchQueueStore((state) => state.running)
 
   // Mini-pipeline to get the command plan (shared pipeline runs in WorkbenchApp,
   // but we need the plan here for execution; re-running is cheap and guarantees
@@ -52,7 +54,7 @@ function RunButton() {
   )
   const canRun = canForceRun && !pipeline.hasErrors
 
-  const isRunning = jobState.phase === 'preparing' || jobState.phase === 'running' || jobState.phase === 'cancelling'
+  const isRunning = batchQueueRunning || jobState.phase === 'preparing' || jobState.phase === 'running' || jobState.phase === 'cancelling'
 
   const handleRun = useCallback(async (force = false) => {
     if ((force ? !canForceRun : !canRun) || isRunning) return
@@ -128,7 +130,9 @@ function RunButton() {
         className="button button--primary button--run"
         disabled
       >
-        {jobState.phase === 'preparing'
+        {batchQueueRunning && jobState.phase === 'idle'
+          ? (isZh ? '批处理进行中…' : 'Batch running…')
+          : jobState.phase === 'preparing'
           ? (isZh ? '准备中…' : 'Preparing…')
           : (isZh ? '取消中…' : 'Cancelling…')}
       </button>
