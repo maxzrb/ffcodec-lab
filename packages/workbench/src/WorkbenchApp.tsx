@@ -38,7 +38,7 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = 'v1.4.0'
+const APP_VERSION = '1.4.1（9）'
 const RELEASE_URL = `${PROJECT_URL}/releases`
 const WEB_APP_URL = 'https://fflab.loliland.cn'
 
