@@ -10,6 +10,8 @@
 
 FFCodec Lab 把主输入解码、视频与音频编码、画面滤镜、字幕、流映射、封装和自定义参数组织成一套可检查的工作流。Web 版可在 [fflab.loliland.cn](https://fflab.loliland.cn) 直接生成 Bash、PowerShell 或 CMD 命令；Desktop 版在同一套工作台之上增加本机 FFmpeg 探测、媒体信息、任务执行、进度、取消、历史和硬件监控。
 
+> 字体声明：本软件使用 HarmonyOS Sans 字体，详见 [`packages/workbench/src/assets/fonts/LICENSE_HarmonyOS_Sans.txt`](packages/workbench/src/assets/fonts/LICENSE_HarmonyOS_Sans.txt)。
+
 当前版本：`v1.4.0`
 
 ## 下载

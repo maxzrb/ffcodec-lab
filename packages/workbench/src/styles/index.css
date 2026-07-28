@@ -4,10 +4,13 @@
   box-sizing: border-box;
 }
 
-/* 优先使用本地已安装的 HarmonyOS Sans，未安装时由 CDN CSS 的 url() 兜底下载 */
+/* 字体资源由 Vite 打包：Desktop 随应用内嵌，Web 由站点同源提供，不依赖外部 CDN。 */
 @font-face {
   font-family: "HarmonyOS Sans SC";
-  src: local("HarmonyOS Sans SC"), local("HarmonyOS Sans SC Regular");
+  src: local("HarmonyOS Sans SC"), local("HarmonyOS Sans SC Regular"),
+    url("../assets/fonts/HarmonyOS_Sans_SC_Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
   font-display: swap;
 }
 

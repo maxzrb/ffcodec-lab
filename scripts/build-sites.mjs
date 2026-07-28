@@ -3,7 +3,21 @@ import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 // Sites 使用 Cloudflare Workers 入口转发同一份 Vite 静态成品。
 const worker = `export default {
   async fetch(request, env) {
-    return env.ASSETS.fetch(request)
+    const response = await env.ASSETS.fetch(request)
+    const pathname = new URL(request.url).pathname
+
+    // 字体文件名包含内容哈希，可安全设置一年不可变缓存。
+    if (pathname.startsWith('/assets/') && pathname.endsWith('.woff2')) {
+      const headers = new Headers(response.headers)
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      })
+    }
+
+    return response
   },
 }
 `
