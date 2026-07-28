@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.15.1",
   "scripts": {
-    "build": "corepack pnpm build:web && node scripts/sync-web-dist.mjs",
+    "build": "corepack pnpm --filter @ffcodec/web build && node scripts/sync-web-dist.mjs",
     "dev:web": "pnpm --filter @ffcodec/web dev",
     "dev:desktop": "pnpm --filter @ffcodec/desktop dev",
     "build:web": "pnpm --filter @ffcodec/web build",
