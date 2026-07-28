@@ -1,4 +1,13 @@
-import { copyFile, mkdir, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, writeFile } from 'node:fs/promises'
+
+const webDistUrl = new URL('../apps/web/dist/', import.meta.url)
+const clientDistUrl = new URL('../apps/web/dist/client/', import.meta.url)
+
+// 保留 dist 根目录供 Cloudflare Pages 使用，同时为 Sites 生成 vinext 约定的静态目录。
+await mkdir(clientDistUrl, { recursive: true })
+for (const path of ['index.html', 'assets', '_headers', '_routes.json', 'robots.txt', 'sitemap.xml']) {
+  await cp(new URL(path, webDistUrl), new URL(path, clientDistUrl), { recursive: true })
+}
 
 // Sites 使用 Cloudflare Workers 入口转发同一份 Vite 静态成品。
 const worker = `export default {
