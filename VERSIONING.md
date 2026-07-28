@@ -60,3 +60,9 @@ FFCodec Lab 的每次正式发布同时使用“语义版本号”和“版本�
 4. README 当前版本、下载链接和发布门禁说明。
 5. `version/版本迭代记录.md`、`docs/codex/STATUS.md` 和 `version/工作进度.md`。
 6. 注解 Git 标签、GitHub Release 标题/说明、Windows 发布资产和 SHA256SUMS。
+
+## Web 发布渠道
+
+- Web 正式生产环境为 Cloudflare，由 GitHub `master` 推送自动触发构建和部署。
+- 不使用 OpenAI Sites 发布 Web 正式版本，也不把 Sites 版本或部署状态作为发布完成条件。
+- 发布后以 `https://fflab.loliland.cn` 的实际页面、版本显示和静态资源响应头作为 Web 线上验收依据。
