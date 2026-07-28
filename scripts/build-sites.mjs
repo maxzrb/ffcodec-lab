@@ -1,4 +1,4 @@
-import { copyFile, cp, mkdir, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 
 const webDistUrl = new URL('../apps/web/dist/', import.meta.url)
 const clientDistUrl = new URL('../apps/web/dist/client/', import.meta.url)
@@ -9,14 +9,25 @@ for (const path of ['index.html', 'assets', '_headers', '_routes.json', 'robots.
   await cp(new URL(path, webDistUrl), new URL(path, clientDistUrl), { recursive: true })
 }
 
+// Sites 的静态层会覆盖缓存头，因此让字体经 Worker 虚拟路径返回。
+const clientAssetsUrl = new URL('assets/', clientDistUrl)
+for (const fileName of await readdir(clientAssetsUrl)) {
+  if (!fileName.endsWith('.css')) continue
+  const cssUrl = new URL(fileName, clientAssetsUrl)
+  const css = await readFile(cssUrl, 'utf8')
+  await writeFile(cssUrl, css.replaceAll('/assets/HarmonyOS_Sans_SC_', '/fonts/HarmonyOS_Sans_SC_'), 'utf8')
+}
+
 // Sites 使用 Cloudflare Workers 入口转发同一份 Vite 静态成品。
 const worker = `export default {
   async fetch(request, env) {
-    const response = await env.ASSETS.fetch(request)
-    const pathname = new URL(request.url).pathname
+    const requestUrl = new URL(request.url)
+    const pathname = requestUrl.pathname
 
     // 字体文件名包含内容哈希，可安全设置一年不可变缓存。
-    if (pathname.startsWith('/assets/') && pathname.endsWith('.woff2')) {
+    if (pathname.startsWith('/fonts/') && pathname.endsWith('.woff2')) {
+      requestUrl.pathname = pathname.replace('/fonts/', '/assets/')
+      const response = await env.ASSETS.fetch(new Request(requestUrl, request))
       const headers = new Headers(response.headers)
       headers.set('Cache-Control', 'public, max-age=31536000, immutable')
       return new Response(response.body, {
@@ -26,7 +37,7 @@ const worker = `export default {
       })
     }
 
-    return response
+    return env.ASSETS.fetch(request)
   },
 }
 `
