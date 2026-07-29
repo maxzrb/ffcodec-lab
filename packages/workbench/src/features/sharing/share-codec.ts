@@ -13,7 +13,7 @@ import { migrateConfig } from '@ffcodec/domain/migration/migrate-config'
 import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '@ffcodec/domain/migration/migration-registry'
 
 /** Maximum URL hash length before falling back to JSON export */
-const MAX_HASH_LENGTH = 2000
+const MAX_HASH_LENGTH = 3000
 
 /** Convert ProjectConfig to privacy-safe ShareableProjectConfig */
 export function toShareable(config: ProjectConfig): ShareableProjectConfig {
@@ -168,7 +168,16 @@ export function fromShareable(
       },
     },
     tools: shareable.u,
-    customArgs: { globalArgs: [], preInputArgs: [], videoArgs: [], audioArgs: [], preOutputArgs: [], tailArgs: [] },
+    customArgs: {
+      videoFilters: [],
+      audioFilters: [],
+      globalArgs: [],
+      preInputArgs: [],
+      videoArgs: [],
+      audioArgs: [],
+      preOutputArgs: [],
+      tailArgs: [],
+    },
   }
   return { ...defaults, ...base }
 }

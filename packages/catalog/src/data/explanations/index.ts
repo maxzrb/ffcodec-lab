@@ -5741,6 +5741,16 @@ export const explanations: Record<string, ExplanationDefinition> = {
     detail: '该模式需要目标码率，不应与 CRF 或 CQP 质量模式混用。',
     sourceRefs: [{ repository: 'AOMediaCodec/SVT-AV1', snapshotDate: '2026-07-20', file: 'Docs/Parameters.md', sourceType: 'encoder-official' }],
   },
+
+  'expl.filter.processing.mode': {
+    id: 'expl.filter.processing.mode',
+    title: '滤镜处理格式',
+    short: '控制整条视频滤镜链的内部位深、色度采样、色彩家族、Alpha 保留和最终降位抖动。',
+    detail: '“兼容自动协商”保持旧版命令，由 FFmpeg 自行插入格式转换；“自动高精度”使用候选像素格式把 CPU 滤镜链提升到至少 10-bit，同时尽量保持 4:2:0、4:2:2、4:4:4、RGB、灰度和 Alpha 结构；“自定义”允许明确选择更高整数位深或浮点格式。程序会识别已知只能处理 8-bit 的滤镜，避免把链尾重新升到 10-bit 误报为全链高精度。',
+    sourceRefs: [
+      { repository: 'FFmpeg/FFmpeg', snapshotDate: '2026-07-30', file: 'doc/filters.texi#format', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg-filters.html#format' },
+    ],
+  },
   'expl.libsvtav1.twopass.bitrate': {
     id: 'expl.libsvtav1.twopass.bitrate', title: 'SVT-AV1 双遍目标码率',
     short: '设置两遍编码的平均视频码率；实际大小仍会受封装和内容复杂度影响。',

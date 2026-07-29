@@ -624,6 +624,112 @@ function resolveQualityControlConfigPath(ctrl: { id: string; configBinding?: { p
   return `video.rateControl.additionalValues.${ctrl.id}`
 }
 
+/** 滤镜链内部处理格式独立成卡片，避免与具体画面滤镜混淆。 */
+export function resolveFilterProcessingSection(
+  config: ProjectConfig,
+  fieldStates: Record<string, FieldState>,
+): ResolvedSection {
+  const fields: ResolvedField[] = []
+  const filterState = fieldStates['section.frame']
+  const sourceRefs: SourceRef[] = [{
+    repository: 'FFmpeg/FFmpeg',
+    branch: 'master',
+    snapshotDate: '2026-07-11',
+    file: 'doc/filters.texi',
+    sourceType: 'ffmpeg-official',
+    url: 'https://ffmpeg.org/ffmpeg-filters.html',
+  }]
+  const addField = (
+    id: string,
+    label: string,
+    controlType: ResolvedField['controlType'],
+    value: unknown,
+    options?: ResolvedField['options'],
+    description?: string,
+    explanationId?: string,
+  ) => {
+    fields.push({
+      id,
+      label,
+      description,
+      explanationId,
+      controlType,
+      value,
+      options,
+      visible: filterState?.visible !== false,
+      disabled: filterState?.enabled === false,
+      disabledReason: filterState?.reason,
+      sourceRefs,
+      verificationLevel: 'official',
+      needsCrossVerification: false,
+      commandOrigins: ['filter.chain'],
+      diagnostics: [],
+    })
+  }
+
+  const processing = (config.frame.filters ?? createDefaultAdvancedVideoFilters()).processing
+  addField(
+    'frame.filters.processing.mode',
+    '处理格式策略',
+    'select',
+    processing.mode,
+    [
+      { value: 'compatible', label: '兼容自动协商' },
+      { value: 'high-precision', label: '自动高精度（推荐）' },
+      { value: 'custom', label: '自定义' },
+    ],
+    '控制整条视频滤镜链的内部位深、色度采样、色彩家族和最终降位方式。自动高精度至少使用 10-bit，并尽量保持输入采样结构。',
+    'expl.filter.processing.mode',
+  )
+  if (processing.mode === 'custom') {
+    addField('frame.filters.processing.bitDepth', '工作位深', 'select', processing.bitDepth, [
+      { value: 'preserve', label: '尽量保持输入' },
+      { value: '10', label: '10-bit' },
+      { value: '12', label: '12-bit' },
+      { value: '16', label: '16-bit 整数' },
+      { value: 'float', label: '32-bit 浮点 RGB' },
+    ])
+    addField('frame.filters.processing.chroma', '色度采样', 'select', processing.chroma, [
+      { value: 'preserve', label: '尽量保持输入' },
+      { value: '420', label: '4:2:0' },
+      { value: '422', label: '4:2:2' },
+      { value: '444', label: '4:4:4' },
+    ])
+    addField('frame.filters.processing.colorFamily', '工作色彩家族', 'select', processing.colorFamily, [
+      { value: 'preserve', label: '尽量保持输入' },
+      { value: 'yuv', label: 'YUV' },
+      { value: 'rgb', label: 'RGB' },
+    ])
+    addField('frame.filters.processing.preserveAlpha', '保留 Alpha 通道', 'switch', processing.preserveAlpha)
+  }
+  if (processing.mode !== 'compatible') {
+    addField(
+      'frame.filters.processing.dither',
+      '最终降位抖动',
+      'select',
+      processing.dither,
+      [
+        { value: 'auto', label: '自动（误差扩散）' },
+        { value: 'none', label: '不抖动' },
+        { value: 'ordered', label: '有序抖动' },
+        { value: 'random', label: '随机抖动' },
+        { value: 'error_diffusion', label: '误差扩散' },
+      ],
+      '在显式输出像素格式或 CPU HDR 色调映射发生降位时生效；输出像素格式为“自动”时，最终转换仍由编码器协商。',
+    )
+    addField('frame.filters.processing.incompatiblePolicy', '不兼容滤镜处理', 'select', processing.incompatiblePolicy, [
+      { value: 'block', label: '阻止执行并要求调整' },
+      { value: 'warn', label: '允许降级并警告' },
+    ])
+  }
+  return {
+    id: 'section.filter-processing',
+    label: '滤镜处理格式',
+    description: '设置滤镜链内部采用的像素格式与精度，不选择具体画面效果。',
+    fields,
+  }
+}
+
 export function resolveFrameSection(
   config: ProjectConfig,
   fieldStates: Record<string, FieldState>,
@@ -1826,6 +1932,46 @@ export function resolveCustomArgsSection(config: ProjectConfig): ResolvedSection
     diagnostics: [],
   }))
   return { id: 'section.customArgs', label: '自定义参数（高级）', fields }
+}
+
+function resolveCustomFilterSection(
+  config: ProjectConfig,
+  kind: 'video' | 'audio',
+): ResolvedSection {
+  const video = kind === 'video'
+  const key = video ? 'videoFilters' : 'audioFilters'
+  const label = video ? '自定义视频滤镜' : '自定义音频滤镜'
+  const option = video ? '-vf' : '-af'
+  return {
+    id: `section.custom-${kind}-filters`,
+    label,
+    description: `每行填写一个完整滤镜表达式；从上到下即执行顺序，系统只负责合并为唯一 ${option}，不修改或校验表达式。`,
+    fields: [{
+      id: `customArgs.${key}`,
+      label: video ? '视频滤镜顺序' : '音频滤镜顺序',
+      description: `一行一个表达式。可直接移动整行调整顺序；不要填写 ${option} 参数名或外层引号。`,
+      controlType: 'textarea',
+      value: (config.customArgs[key] ?? []).join('\n'),
+      visible: true,
+      disabled: video ? config.video.mode !== 'encode' : config.audio.mode !== 'encode',
+      disabledReason: video
+        ? '自定义视频滤镜仅在视频重新编码时生效。'
+        : '自定义音频滤镜仅在音频重新编码时生效。',
+      sourceRefs: [],
+      verificationLevel: 'project-derived',
+      needsCrossVerification: true,
+      commandOrigins: [`customArgs.${key}`, video ? 'filter.chain' : 'filter.audio.chain'],
+      diagnostics: [],
+    }],
+  }
+}
+
+export function resolveCustomVideoFiltersSection(config: ProjectConfig): ResolvedSection {
+  return resolveCustomFilterSection(config, 'video')
+}
+
+export function resolveCustomAudioFiltersSection(config: ProjectConfig): ResolvedSection {
+  return resolveCustomFilterSection(config, 'audio')
 }
 
 export function resolveMetadataSection(config: ProjectConfig): ResolvedSection {

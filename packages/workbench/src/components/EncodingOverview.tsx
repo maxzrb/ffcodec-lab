@@ -49,6 +49,7 @@ export function EncodingOverview({ config, catalog, locale, invocationCount }: E
       <OverviewSection title={isZh ? '画面与滤镜' : 'Picture and filters'} rows={[
         [isZh ? '分辨率' : 'Resolution', formatResolution(config, isZh)],
         [isZh ? '帧率' : 'Frame rate', config.frame.frameRate.mode === 'value' ? `${config.frame.frameRate.value} fps` : (isZh ? '跟随源视频' : 'Source')],
+        [isZh ? '滤镜处理格式' : 'Filter processing format', formatFilterProcessing(config, isZh)],
         [isZh ? '滤镜' : 'Filters', formatFilters(config, isZh)],
       ]} />
 
@@ -126,6 +127,23 @@ function formatFilters(config: ProjectConfig, isZh: boolean) {
   if (filters.denoise.enabled) active.push(isZh ? '降噪' : 'Denoise')
   if (filters.deband.enabled) active.push(isZh ? '去色带' : 'Deband')
   return active.length > 0 ? active.join(isZh ? '、' : ', ') : (isZh ? '无' : 'None')
+}
+
+function formatFilterProcessing(config: ProjectConfig, isZh: boolean) {
+  const processing = config.frame.filters?.processing
+  if (!processing || processing.mode === 'compatible') {
+    return isZh ? '兼容自动协商' : 'Compatible negotiation'
+  }
+  if (processing.mode === 'high-precision') {
+    return isZh ? '自动高精度（至少 10-bit）' : 'Automatic high precision (10-bit minimum)'
+  }
+  const depth = processing.bitDepth === 'preserve'
+    ? (isZh ? '保持位深' : 'Preserve depth')
+    : processing.bitDepth === 'float'
+      ? '32-bit float'
+      : `${processing.bitDepth}-bit`
+  const chroma = processing.chroma === 'preserve' ? (isZh ? '保持采样' : 'Preserve chroma') : `4:${processing.chroma[1]}:${processing.chroma[2]}`
+  return `${depth} / ${chroma} / ${processing.colorFamily.toUpperCase()}`
 }
 
 function modeLabel(mode: ProjectConfig['video']['mode'], isZh: boolean, media: 'video' | 'audio') {

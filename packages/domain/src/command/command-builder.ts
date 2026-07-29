@@ -699,28 +699,18 @@ function buildOutput(
           })
         }
 
-        const loudness = config.audio.loudnessNormalization
-        const loudnessTargets = [
-          loudness.integratedLoudnessEnabled ? `I=${loudness.integratedLoudness}` : undefined,
-          loudness.loudnessRangeEnabled ? `LRA=${loudness.loudnessRange}` : undefined,
-          loudness.truePeakEnabled ? `TP=${loudness.truePeak}` : undefined,
-        ].filter((value): value is string => Boolean(value))
-        if (loudnessTargets.length > 0) {
-          const filter = [
-            ...loudnessTargets,
-            'linear=false',
-            `dual_mono=${loudness.dualMono ? 'true' : 'false'}`,
-          ].join(':')
+        const audioFilter = buildAudioFilterExpression(config)
+        if (audioFilter) {
+          const hasLoudnorm = hasEnabledLoudnessTarget(config)
           output.audioArgs.push({
-            id: 'filter.audio.loudnorm',
-            originId: loudness.integratedLoudnessEnabled
-              ? 'audio.loudnessNormalization.integratedLoudness'
-              : loudness.loudnessRangeEnabled
-                ? 'audio.loudnessNormalization.loudnessRange'
-                : 'audio.loudnessNormalization.truePeak',
+            id: 'filter.audio.chain',
+            originId: hasLoudnorm
+              ? resolveLoudnessOriginId(config)
+              : 'customArgs.audioFilters',
             phase: 'AUDIO_QUALITY',
-            tokens: ['-filter:a', `loudnorm=${filter}`],
-            explanationId: 'expl.audio.loudnorm',
+            tokens: ['-filter:a', audioFilter],
+            explanationId: hasLoudnorm ? 'expl.audio.loudnorm' : undefined,
+            unsafe: (config.customArgs.audioFilters?.length ?? 0) > 0,
           })
         }
 
@@ -794,29 +784,19 @@ function buildOutput(
           }
         })
 
-        const loudness = config.audio.loudnessNormalization
-        const loudnessTargets = [
-          loudness.integratedLoudnessEnabled ? `I=${loudness.integratedLoudness}` : undefined,
-          loudness.loudnessRangeEnabled ? `LRA=${loudness.loudnessRange}` : undefined,
-          loudness.truePeakEnabled ? `TP=${loudness.truePeak}` : undefined,
-        ].filter((value): value is string => Boolean(value))
-        if (loudnessTargets.length > 0) {
-          const filter = [
-            ...loudnessTargets,
-            'linear=false',
-            `dual_mono=${loudness.dualMono ? 'true' : 'false'}`,
-          ].join(':')
+        const audioFilter = buildAudioFilterExpression(config)
+        if (audioFilter) {
+          const hasLoudnorm = hasEnabledLoudnessTarget(config)
           audioEncodeIndices.forEach((outIdx) => {
             output.audioArgs.push({
-              id: `filter.audio.loudnorm.${outIdx}`,
-              originId: loudness.integratedLoudnessEnabled
-                ? 'audio.loudnessNormalization.integratedLoudness'
-                : loudness.loudnessRangeEnabled
-                  ? 'audio.loudnessNormalization.loudnessRange'
-                  : 'audio.loudnessNormalization.truePeak',
+              id: `filter.audio.chain.${outIdx}`,
+              originId: hasLoudnorm
+                ? resolveLoudnessOriginId(config)
+                : 'customArgs.audioFilters',
               phase: 'AUDIO_QUALITY',
-              tokens: [`-filter:a:${outIdx}`, `loudnorm=${filter}`],
-              explanationId: 'expl.audio.loudnorm',
+              tokens: [`-filter:a:${outIdx}`, audioFilter],
+              explanationId: hasLoudnorm ? 'expl.audio.loudnorm' : undefined,
+              unsafe: (config.customArgs.audioFilters?.length ?? 0) > 0,
             })
           })
         }
@@ -1004,6 +984,45 @@ function buildOutput(
   })
 
   return output
+}
+
+/** 受控 loudnorm 固定在前，自定义音频滤镜按用户列表顺序追加，并只生成一个 -filter:a。 */
+function buildAudioFilterExpression(config: ProjectConfig): string | undefined {
+  const filters: string[] = []
+  const loudness = config.audio.loudnessNormalization
+  const loudnessTargets = [
+    loudness.integratedLoudnessEnabled ? `I=${loudness.integratedLoudness}` : undefined,
+    loudness.loudnessRangeEnabled ? `LRA=${loudness.loudnessRange}` : undefined,
+    loudness.truePeakEnabled ? `TP=${loudness.truePeak}` : undefined,
+  ].filter((value): value is string => Boolean(value))
+  if (loudnessTargets.length > 0) {
+    filters.push(`loudnorm=${[
+      ...loudnessTargets,
+      'linear=false',
+      `dual_mono=${loudness.dualMono ? 'true' : 'false'}`,
+    ].join(':')}`)
+  }
+  for (const filter of config.customArgs.audioFilters ?? []) {
+    const expression = filter.trim()
+    if (expression) filters.push(expression)
+  }
+  return filters.length > 0 ? filters.join(',') : undefined
+}
+
+function hasEnabledLoudnessTarget(config: ProjectConfig): boolean {
+  const loudness = config.audio.loudnessNormalization
+  return loudness.integratedLoudnessEnabled
+    || loudness.loudnessRangeEnabled
+    || loudness.truePeakEnabled
+}
+
+function resolveLoudnessOriginId(config: ProjectConfig): string {
+  const loudness = config.audio.loudnessNormalization
+  return loudness.integratedLoudnessEnabled
+    ? 'audio.loudnessNormalization.integratedLoudness'
+    : loudness.loudnessRangeEnabled
+      ? 'audio.loudnessNormalization.loudnessRange'
+      : 'audio.loudnessNormalization.truePeak'
 }
 
 /**

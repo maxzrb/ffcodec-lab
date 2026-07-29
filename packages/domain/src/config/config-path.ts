@@ -133,6 +133,15 @@ export const CONFIG_PATHS = {
     resolution: configPath(['frame', 'resolution']),
     frameRate: configPath(['frame', 'frameRate']),
     filters: configPath(['frame', 'filters']),
+    processing: {
+      mode: configPath(['frame', 'filters', 'processing', 'mode']),
+      bitDepth: configPath(['frame', 'filters', 'processing', 'bitDepth']),
+      chroma: configPath(['frame', 'filters', 'processing', 'chroma']),
+      colorFamily: configPath(['frame', 'filters', 'processing', 'colorFamily']),
+      preserveAlpha: configPath(['frame', 'filters', 'processing', 'preserveAlpha']),
+      dither: configPath(['frame', 'filters', 'processing', 'dither']),
+      incompatiblePolicy: configPath(['frame', 'filters', 'processing', 'incompatiblePolicy']),
+    },
   },
 
   audio: {

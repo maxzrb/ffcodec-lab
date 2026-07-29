@@ -20,6 +20,23 @@ const frameRateSchema = z.discriminatedUnion('mode', [
 ])
 
 const advancedVideoFiltersSchema = z.object({
+  processing: z.object({
+    mode: z.enum(['compatible', 'high-precision', 'custom']),
+    bitDepth: z.enum(['preserve', '10', '12', '16', 'float']),
+    chroma: z.enum(['preserve', '420', '422', '444']),
+    colorFamily: z.enum(['preserve', 'yuv', 'rgb']),
+    preserveAlpha: z.boolean(),
+    dither: z.enum(['auto', 'none', 'ordered', 'random', 'error_diffusion']),
+    incompatiblePolicy: z.enum(['block', 'warn']),
+  }).default({
+    mode: 'compatible',
+    bitDepth: 'preserve',
+    chroma: 'preserve',
+    colorFamily: 'preserve',
+    preserveAlpha: true,
+    dither: 'auto',
+    incompatiblePolicy: 'block',
+  }),
   crop: z.object({
     enabled: z.boolean(),
     width: z.number().int().positive(),
@@ -193,7 +210,7 @@ const metadataConfigSchema = z.object({
 // -- top-level schema -----------------------------------------
 
 export const projectConfigSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8)]),
   shell: z.enum(['bash', 'powershell', 'cmd']),
   input: z.object({
     path: z.string(),
@@ -215,6 +232,15 @@ export const projectConfigSchema = z.object({
         value: z.string().optional(),
       }).optional(),
     }).default({}),
+    probe: z.object({
+      inputPath: z.string(),
+      videoStreams: z.array(z.object({
+        index: z.number().int().nonnegative(),
+        pixFmt: z.string().optional(),
+        width: z.number().int().positive().optional(),
+        height: z.number().int().positive().optional(),
+      })),
+    }).optional(),
   }),
   output: z.object({
     path: z.string(),
@@ -255,6 +281,15 @@ export const projectConfigSchema = z.object({
     resolution: resolutionSchema,
     frameRate: frameRateSchema,
     filters: advancedVideoFiltersSchema.default({
+      processing: {
+        mode: 'compatible',
+        bitDepth: 'preserve',
+        chroma: 'preserve',
+        colorFamily: 'preserve',
+        preserveAlpha: true,
+        dither: 'auto',
+        incompatiblePolicy: 'block',
+      },
       crop: { enabled: false, width: 1920, height: 1080, x: 0, y: 0 },
       transform: { rotate: 'none', horizontalFlip: false, verticalFlip: false },
       adjustment: { enabled: false, brightness: 0, contrast: 1, saturation: 1, gamma: 1 },
@@ -286,6 +321,8 @@ export const projectConfigSchema = z.object({
     },
   }),
   customArgs: z.object({
+    videoFilters: z.array(z.string()).default([]),
+    audioFilters: z.array(z.string()).default([]),
     globalArgs: z.array(z.string()),
     preInputArgs: z.array(z.string()),
     videoArgs: z.array(z.string()),

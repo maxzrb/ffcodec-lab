@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
-import { applyProbeStreamsToConfig, getProbeDurationMinutes, type ProbeResult } from './media-probe-model'
+import {
+  applyProbeMetadataToConfig,
+  applyProbeStreamsToConfig,
+  getProbeDurationMinutes,
+  type ProbeResult,
+} from './media-probe-model'
 
 const probeResult: ProbeResult = {
   streams: [
-    { index: 0, codecType: 'video', duration: 121.5 },
+    { index: 0, codecType: 'video', duration: 121.5, width: 1920, height: 1080, pixFmt: 'yuv420p10le' },
     { index: 1, codecType: 'audio', duration: 121.4 },
     { index: 2, codecType: 'audio', duration: 121.4 },
     { index: 3, codecType: 'subtitle' },
@@ -14,6 +19,11 @@ const probeResult: ProbeResult = {
 
 function createConfig(): ProjectConfig {
   return {
+    input: {
+      path: 'D:\\media\\input.mkv',
+      additionalInputs: [],
+      decode: {},
+    },
     streams: {
       videoStreams: [{ index: 0, codecMode: 'encode' }],
       audioStreams: [{ index: 0, codecMode: 'encode' }],
@@ -45,6 +55,16 @@ describe('media probe config reuse', () => {
     ])
     expect(next.streams.subtitleStreams).toEqual([{ index: 0, codecMode: 'encode' }])
     expect(next.tools.targetSize.durationMinutes).toBe(90)
+    expect(next.input.probe).toEqual({
+      inputPath: 'D:\\media\\input.mkv',
+      videoStreams: [{ index: 0, pixFmt: 'yuv420p10le', width: 1920, height: 1080 }],
+    })
+  })
+
+  it('无需联动流选择也能单独保存滤镜协商所需的探测摘要', () => {
+    const next = applyProbeMetadataToConfig(createConfig(), probeResult)
+    expect(next.streams.preserveAllAudioStreams).toBe(true)
+    expect(next.input.probe?.videoStreams[0]?.pixFmt).toBe('yuv420p10le')
   })
 
   it('从容器时长计算目标大小工具使用的分钟数', () => {

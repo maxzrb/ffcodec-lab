@@ -5,7 +5,7 @@
 
 import { z } from 'zod'
 
-export const SHARE_PAYLOAD_VERSION = 7
+export const SHARE_PAYLOAD_VERSION = 8
 
 /** Privacy-safe config subset: no input path, output path, or external subtitle paths */
 export const shareableConfigSchema = z.object({
@@ -72,6 +72,23 @@ export const shareableConfigSchema = z.object({
       z.object({ mode: z.literal('value'), value: z.number() }),
     ]),
     filters: z.object({
+      processing: z.object({
+        mode: z.enum(['compatible', 'high-precision', 'custom']),
+        bitDepth: z.enum(['preserve', '10', '12', '16', 'float']),
+        chroma: z.enum(['preserve', '420', '422', '444']),
+        colorFamily: z.enum(['preserve', 'yuv', 'rgb']),
+        preserveAlpha: z.boolean(),
+        dither: z.enum(['auto', 'none', 'ordered', 'random', 'error_diffusion']),
+        incompatiblePolicy: z.enum(['block', 'warn']),
+      }).default({
+        mode: 'compatible',
+        bitDepth: 'preserve',
+        chroma: 'preserve',
+        colorFamily: 'preserve',
+        preserveAlpha: true,
+        dither: 'auto',
+        incompatiblePolicy: 'block',
+      }),
       crop: z.object({ enabled: z.boolean(), width: z.number(), height: z.number(), x: z.number(), y: z.number() }),
       transform: z.object({
         rotate: z.enum(['none', 'clockwise', 'counterclockwise', '180']),

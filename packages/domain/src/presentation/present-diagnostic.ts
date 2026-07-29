@@ -12,6 +12,54 @@ export interface PresentedDiagnostic {
 type Copy = Omit<PresentedDiagnostic, 'level'>
 
 const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
+  'warn.filter.processing.probeRecommended': {
+    'zh-CN': {
+      title: '强烈建议先探测输入媒体',
+      explanation: '当前没有与输入路径匹配的 ffprobe 像素格式信息。高精度滤镜只能生成通用候选列表，命令会更长，也无法针对真实位深、采样方式、RGB 或 Alpha 精确收敛。',
+      guidance: '在 Desktop 的“媒体信息探测”中点击“探测”。探测成功后，工作格式会自动联动到当前参与编码的视频流；无需开启“联动流选择”。',
+    },
+    en: {
+      title: 'Probe the input media first',
+      explanation: 'No ffprobe pixel-format data matches the current input path. The high-precision pipeline must use a longer generic fallback list and cannot converge on the source bit depth, chroma, RGB family, or alpha layout.',
+      guidance: 'Click Probe in Desktop Media Probe. A successful probe automatically informs filter-format negotiation; enabling Sync streams is not required.',
+    },
+  },
+  'error.filter.processing.precision': {
+    'zh-CN': {
+      title: '当前滤镜会破坏高精度处理链',
+      explanation: '至少一个已启用滤镜在 FFmpeg 8.1.2 中只能协商到 8-bit，链尾重新升位不能恢复已经发生的量化损失。',
+      guidance: '改用诊断中列出的高位深替代滤镜，或明确把不兼容策略改为“允许降级并警告”。',
+    },
+    en: {
+      title: 'A filter breaks the high-precision pipeline',
+      explanation: 'At least one enabled filter negotiates only 8-bit formats in FFmpeg 8.1.2. Raising the bit depth afterwards cannot recover the quantized values.',
+      guidance: 'Use one of the listed high-bit-depth alternatives, or explicitly allow a warned precision downgrade.',
+    },
+  },
+  'warn.filter.processing.precision': {
+    'zh-CN': {
+      title: '高精度滤镜链将发生已知降级',
+      explanation: '当前策略允许执行，但至少一个滤镜会在处理中降到 8-bit。程序会在该滤镜后恢复工作格式，已经丢失的精度无法恢复。',
+      guidance: '优先改用诊断中列出的高位深替代滤镜，并用短样片检查 FFmpeg 日志中的实际像素格式。',
+    },
+    en: {
+      title: 'The high-precision pipeline has a known downgrade',
+      explanation: 'Execution is allowed, but at least one filter drops to 8-bit internally. The working format is restored afterwards, but lost precision cannot be recovered.',
+      guidance: 'Prefer a listed high-bit-depth alternative and verify the actual pixel formats in a short FFmpeg run.',
+    },
+  },
+  'error.filter.processing.hardwareUpload': {
+    'zh-CN': {
+      title: '高精度 CPU 滤镜链缺少安全的硬件上传边界',
+      explanation: 'VAAPI、Vulkan Video 或 D3D12 编码器需要对应 API 的硬件帧。当前解析链以软件帧结束，但配置中没有足够的设备信息来可靠生成 hwupload、hwupload_vaapi 或跨 API 映射。',
+      guidance: '改用可直接接收软件帧的编码器，或先配置并验证完整硬件设备链；不要只追加一个没有设备上下文的 hwupload。',
+    },
+    en: {
+      title: 'The high-precision CPU pipeline has no safe hardware-upload boundary',
+      explanation: 'VAAPI, Vulkan Video, and D3D12 encoders require API-specific hardware frames. The resolved pipeline ends in software frames and lacks enough device context for a reliable upload or cross-API mapping.',
+      guidance: 'Use an encoder that accepts software frames, or configure and verify a complete hardware-device pipeline. Do not append a context-free hwupload.',
+    },
+  },
   'warn.decode.hwaccel.environment': {
     'zh-CN': {
       title: '硬件解码不保证在当前电脑可用',
@@ -46,6 +94,18 @@ const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
       title: 'D3D11 hardware frames may not match the processing chain',
       explanation: 'd3d11 keeps decoded frames in GPU memory. Most CPU filters and software encoders need system-memory frames and may fail without hwdownload/format.',
       guidance: 'Use it only with a verified compatible filter and hardware encoder chain; otherwise leave it unset or test a software format.',
+    },
+  },
+  'info.decode.outputFormat.hardwareFramesDownloaded': {
+    'zh-CN': {
+      title: '硬件帧将在 CPU 滤镜前显式下载',
+      explanation: '当前高精度处理链会生成 hwdownload，并紧接软件像素格式候选，避免把 D3D11 设备帧直接交给 CPU 滤镜。',
+      guidance: '仍需用目标 GPU 和短样片验证硬件解码；如果后续改成纯 GPU 滤镜链，应重新评估是否需要下载和上传。',
+    },
+    en: {
+      title: 'Hardware frames are downloaded before CPU filters',
+      explanation: 'The high-precision pipeline emits hwdownload followed by software pixel-format candidates instead of feeding D3D11 frames directly to CPU filters.',
+      guidance: 'Verify hardware decoding with the target GPU and a short sample. Re-evaluate the boundary if the pipeline later becomes GPU-only.',
     },
   },
   'info.decode.threads.hwaccel': {

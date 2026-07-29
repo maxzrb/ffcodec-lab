@@ -45,6 +45,19 @@ export interface InputConfig {
   additionalInputs: AdditionalInputConfig[]
   /** 仅作用于主输入的解码参数；空对象表示使用 FFmpeg 默认行为。 */
   decode: DecodeConfig
+  /** Desktop 最近一次与当前输入路径匹配的 ffprobe 摘要，用于收敛滤镜格式协商。 */
+  probe?: InputProbeSummary
+}
+
+export interface InputProbeSummary {
+  inputPath: string
+  videoStreams: Array<{
+    /** 视频类型内相对序号，对应 FFmpeg 的 v:N。 */
+    index: number
+    pixFmt?: string
+    width?: number
+    height?: number
+  }>
 }
 
 export type HardwareAccelerationMethod =
@@ -201,6 +214,8 @@ export interface FrameConfig {
 }
 
 export interface AdvancedVideoFiltersConfig {
+  /** 滤镜链内部的像素格式、工作精度和降位策略。 */
+  processing: VideoFilterProcessingConfig
   crop: {
     enabled: boolean
     width: number
@@ -239,6 +254,19 @@ export interface AdvancedVideoFiltersConfig {
     algorithm?: 'deband' | 'gradfun'
     values: Record<string, number | boolean>
   }
+}
+
+export interface VideoFilterProcessingConfig {
+  /** compatible 保留旧版 FFmpeg 自动协商；high-precision 自动保持家族/采样并至少使用 10-bit；custom 使用下方细项。 */
+  mode: 'compatible' | 'high-precision' | 'custom'
+  bitDepth: 'preserve' | '10' | '12' | '16' | 'float'
+  chroma: 'preserve' | '420' | '422' | '444'
+  colorFamily: 'preserve' | 'yuv' | 'rgb'
+  preserveAlpha: boolean
+  /** 最终降低位深时的抖动算法。 */
+  dither: 'auto' | 'none' | 'ordered' | 'random' | 'error_diffusion'
+  /** block 阻止已知会降低精度的组合；warn 允许执行但给出显著警告。 */
+  incompatiblePolicy: 'block' | 'warn'
 }
 
 export interface AudioConfig {
@@ -331,6 +359,10 @@ export interface SubtitleStyleConfig {
 }
 
 export interface CustomArgsConfig {
+  /** 每项是一个完整视频滤镜表达式，按数组顺序追加到受控视频滤镜之后。 */
+  videoFilters: string[]
+  /** 每项是一个完整音频滤镜表达式，按数组顺序追加到受控音频滤镜之后。 */
+  audioFilters: string[]
   globalArgs: string[]
   preInputArgs: string[]
   videoArgs: string[]

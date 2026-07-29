@@ -11,6 +11,7 @@ import {
 } from '../ffmpeg-path-selection'
 import {
   applyProbeStreamsToConfig,
+  applyProbeMetadataToConfig,
   type ProbeResult,
   type ProbeStreamInfo,
 } from './media-probe-model'
@@ -177,6 +178,7 @@ export function MediaProbePanel() {
       }
       const data = result as unknown as ProbeResult
       setMediaProbeResult(inputPath, data)
+      setConfig(applyProbeMetadataToConfig(useBuilderStore.getState().config, data))
       setExpanded(true)
       if (syncStreamsEnabled) syncProbeStreams(data)
     } catch (err: unknown) {
@@ -189,6 +191,7 @@ export function MediaProbePanel() {
     locale,
     checkTools,
     setError,
+    setConfig,
     syncProbeStreams,
     syncStreamsEnabled,
   ])
@@ -249,6 +252,8 @@ export function MediaProbePanel() {
               className="button-ghost media-probe-panel__action media-probe-panel__action--clear"
               onClick={() => {
                 clearMediaProbeResult()
+                const current = useBuilderStore.getState().config
+                setConfig({ ...current, input: { ...current.input, probe: undefined } })
                 setError(null)
               }}
               title={zh ? '清除当前媒体探测结果' : 'Clear the current media probe result'}

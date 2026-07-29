@@ -40,6 +40,30 @@ describe('PresetService', () => {
     expect(loaded!.config.video.encoderId).toBe('libx264')
   })
 
+  it('预设完整保留滤镜格式协商策略', () => {
+    const config = createDefaultProjectConfig()
+    config.frame.filters!.processing = {
+      mode: 'custom',
+      bitDepth: '12',
+      chroma: '444',
+      colorFamily: 'rgb',
+      preserveAlpha: true,
+      dither: 'random',
+      incompatiblePolicy: 'warn',
+    }
+    const saved = service.save({ name: 'Filter format policy', config })
+    expect(service.load(saved.id)?.config.frame.filters?.processing).toEqual(config.frame.filters!.processing)
+  })
+
+  it('预设完整保留自定义视频和音频滤镜顺序', () => {
+    const config = createDefaultProjectConfig()
+    config.customArgs.videoFilters = ['hflip', 'eq=gamma=1.1']
+    config.customArgs.audioFilters = ['highpass=f=80', 'volume=0.9']
+    const saved = service.save({ name: 'Custom filter order', config })
+    expect(service.load(saved.id)?.config.customArgs.videoFilters).toEqual(config.customArgs.videoFilters)
+    expect(service.load(saved.id)?.config.customArgs.audioFilters).toEqual(config.customArgs.audioFilters)
+  })
+
   it('loads v2 project config as schema v4 without enabling pixel conversion', () => {
     const legacy = createDefaultProjectConfig()
     legacy.schemaVersion = 2
@@ -50,7 +74,7 @@ describe('PresetService', () => {
     const saved = service.save({ name: 'Legacy v2', config: legacy })
 
     const loaded = service.load(saved.id)
-    expect(loaded?.config.schemaVersion).toBe(7)
+    expect(loaded?.config.schemaVersion).toBe(8)
     expect(loaded?.config.input.decode).toEqual({})
     expect(loaded?.config.video.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
     expect(loaded?.config.frame.filters?.denoise.enabled).toBe(false)

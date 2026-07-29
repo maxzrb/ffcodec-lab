@@ -307,6 +307,11 @@ function coerceValue(
       if (field.id.startsWith('output.metadata.')) {
         return { value: String(value ?? '') }
       }
+      // 自定义滤镜必须保留编辑中的末尾空行，否则受控 textarea 会在按 Enter 后立刻吞掉换行。
+      if (field.id === 'customArgs.videoFilters' || field.id === 'customArgs.audioFilters') {
+        const raw = String(value ?? '')
+        return { value: raw.length === 0 ? [] : raw.split(/\r?\n/) }
+      }
       return {
         value: String(value ?? '')
           .split(/\r?\n/)

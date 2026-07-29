@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { createDefaultProjectConfig as createBaseProjectConfig } from '@ffcodec/domain/config/defaults'
 import { projectConfigSchema } from '@ffcodec/domain/config/config-schema'
 import { buildVideoFilterChain, collectRequiredVideoFilterNames, renderFilterChain } from '@ffcodec/domain/filters/video-filter-builder'
 import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
@@ -8,8 +8,154 @@ import { validateConfig } from '@ffcodec/domain/validation'
 import { RuleIndex } from '@ffcodec/catalog/rule-index'
 import { findOddExplicitResolutionDimensions, repairOddExplicitResolution } from '@ffcodec/domain/config/resolution-repair'
 import type { ResolutionConfig } from '@ffcodec/domain/config/project-config'
+import { migrateConfig } from '@ffcodec/domain/migration/migrate-config'
+import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '@ffcodec/domain/migration/migration-registry'
+
+function createDefaultProjectConfig() {
+  const config = createBaseProjectConfig()
+  config.frame.filters!.processing.mode = 'compatible'
+  return config
+}
 
 describe('高级视频滤镜', () => {
+  it('新配置默认使用保持采样家族的至少 10-bit 高精度候选，并以 lutyuv 替代 8-bit eq', () => {
+    const config = createBaseProjectConfig()
+    config.frame.filters!.adjustment.enabled = true
+    config.frame.filters!.adjustment.brightness = 0.1
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+
+    expect(vf).toContain('format=pix_fmts=yuv420p10le|yuv422p10le|yuv444p10le')
+    expect(vf).toContain('gbrp10le')
+    expect(vf).toContain('lutyuv=')
+    expect(vf).not.toContain(',eq=')
+  })
+
+  it('探测到当前输入格式后把通用能力全集收敛为真实工作格式', () => {
+    const config = createBaseProjectConfig()
+    config.input.path = 'D:\\media\\input.mkv'
+    config.input.probe = {
+      inputPath: config.input.path,
+      videoStreams: [{ index: 0, pixFmt: 'yuv420p10le', width: 1280, height: 720 }],
+    }
+    config.frame.filters!.adjustment.enabled = true
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+
+    expect(vf).toMatch(/^format=pix_fmts=yuv420p10le,lutyuv=/)
+    expect(vf).not.toContain('|')
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'warn.filter.processing.probeRecommended',
+    )).toBe(false)
+  })
+
+  it('8-bit 探测输入在自动高精度模式中按原采样升至单一 10-bit 工作格式', () => {
+    const config = createBaseProjectConfig()
+    config.input.path = 'input.mkv'
+    config.input.probe = {
+      inputPath: config.input.path,
+      videoStreams: [{ index: 0, pixFmt: 'yuv422p' }],
+    }
+    config.frame.filters!.sharpen.enabled = true
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+    expect(vf).toBe('format=pix_fmts=yuv422p10le,unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=1')
+  })
+
+  it('缺少匹配探测结果时强提示用户先探测，过期路径不会参与协商', () => {
+    const config = createBaseProjectConfig()
+    config.input.path = 'D:\\media\\input.mkv'
+    config.frame.filters!.crop.enabled = true
+    config.input.probe = {
+      inputPath: 'old-input.mkv',
+      videoStreams: [{ index: 0, pixFmt: 'yuv420p10le' }],
+    }
+    const diagnostics = validateConfig(config, loadCatalog(), new RuleIndex())
+    expect(diagnostics.some(
+      (message) => message.code === 'warn.filter.processing.probeRecommended',
+    )).toBe(true)
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+    expect(vf).toContain('|')
+  })
+
+  it('自定义 12-bit YUV 4:4:4 可丢弃 alpha，并为显式 8-bit 输出执行误差扩散降位', () => {
+    const config = createBaseProjectConfig()
+    config.frame.filters!.processing = {
+      mode: 'custom',
+      bitDepth: '12',
+      chroma: '444',
+      colorFamily: 'yuv',
+      preserveAlpha: false,
+      dither: 'error_diffusion',
+      incompatiblePolicy: 'block',
+    }
+    config.frame.filters!.sharpen.enabled = true
+    config.video.pixelFormat = 'yuv420p'
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+
+    expect(vf).toContain('format=pix_fmts=yuv444p12le')
+    expect(vf).not.toContain('yuva444p12le')
+    expect(vf).toContain('zscale=dither=error_diffusion,format=pix_fmts=yuv420p')
+  })
+
+  it('D3D11 硬件帧进入 CPU 高精度链时显式下载', () => {
+    const config = createBaseProjectConfig()
+    config.input.decode = { hwaccel: 'd3d11va', outputFormat: 'd3d11' }
+    config.frame.filters!.crop.enabled = true
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+    expect(vf).toMatch(/^hwdownload,format=pix_fmts=/)
+  })
+
+  it('硬件帧专用编码器在缺少设备上传上下文时阻止 CPU 高精度链', () => {
+    const config = createBaseProjectConfig()
+    config.video.encoderId = 'av1_vulkan'
+    config.frame.filters!.crop.enabled = true
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'error.filter.processing.hardwareUpload',
+    )).toBe(true)
+  })
+
+  it('色彩转换前格式不得把高精度链重新压回较低位深', () => {
+    const config = createBaseProjectConfig()
+    config.video.color = {
+      operation: 'convert-and-tag',
+      filter: 'zscale',
+      toneMap: 'none',
+      preFormat: 'yuv420p',
+      space: 'bt709',
+    }
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'error.filter.processing.precision'
+        && message.context?.filter === 'color-pre-format',
+    )).toBe(true)
+  })
+
+  it('已知 8-bit-only 滤镜默认阻止高精度执行，允许降级时恢复后续工作格式', () => {
+    const config = createBaseProjectConfig()
+    config.frame.filters!.denoise = { enabled: true, algorithm: 'nlmeans', values: {} }
+    const blocked = validateConfig(config, loadCatalog(), new RuleIndex())
+    expect(blocked.some((message) => message.code === 'error.filter.processing.precision')).toBe(true)
+
+    config.frame.filters!.processing.incompatiblePolicy = 'warn'
+    const warned = validateConfig(config, loadCatalog(), new RuleIndex())
+    expect(warned.some((message) => message.code === 'warn.filter.processing.precision')).toBe(true)
+    const types = buildVideoFilterChain(config).map((item) => item.type)
+    expect(types).toEqual(['format', 'denoise', 'format'])
+  })
+
+  it('自定义 float 会阻止不支持浮点的滤镜，自动模式则保留到该链可证明的最高整数精度', () => {
+    const config = createBaseProjectConfig()
+    config.frame.filters!.processing.mode = 'custom'
+    config.frame.filters!.processing.bitDepth = 'float'
+    config.frame.filters!.sharpen.enabled = true
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'error.filter.processing.precision'
+        && message.context?.filter === 'float32-pipeline',
+    )).toBe(true)
+
+    config.frame.filters!.processing.mode = 'high-precision'
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+    expect(vf).toContain('yuv420p16le')
+    expect(vf).not.toContain('gbrpf32le')
+  })
+
   it('按固定顺序合并为单个 -vf 参数', () => {
     const config = createDefaultProjectConfig()
     const filters = config.frame.filters!
@@ -64,6 +210,21 @@ describe('高级视频滤镜', () => {
     expect(parsed.frame.filters.deband.enabled).toBe(false)
   })
 
+  it('v7 含滤镜配置迁移到 v8 后保持旧命令不变', () => {
+    const before = createDefaultProjectConfig()
+    before.frame.filters!.crop.enabled = true
+    const beforeVf = renderFilterChain(buildVideoFilterChain(before), 'filter.chain')?.tokens[1]
+    const legacy = structuredClone(before) as unknown as Record<string, unknown>
+    legacy.schemaVersion = 7
+    delete ((legacy.frame as Record<string, unknown>).filters as Record<string, unknown>).processing
+
+    const migrated = migrateConfig(7, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config
+    const parsed = projectConfigSchema.parse(migrated)
+    expect(parsed.schemaVersion).toBe(8)
+    expect(parsed.frame.filters.processing.mode).toBe('compatible')
+    expect(renderFilterChain(buildVideoFilterChain(parsed), 'filter.chain')?.tokens[1]).toBe(beforeVf)
+  })
+
   it('视频复制模式不会生成滤镜链', () => {
     const config = createDefaultProjectConfig()
     config.video.mode = 'copy'
@@ -107,6 +268,24 @@ describe('高级视频滤镜', () => {
     expect(vf).toContain('zscale=transfer=linear:npl=100,format=gbrpf32le')
     expect(vf).toContain('tonemap=tonemap=mobius:desat=1.5')
     expect(vf).toContain('zscale=matrix=bt709:primaries=bt709:transfer=bt709:range=tv,format=yuv420p')
+  })
+
+  it('自动高精度 CPU HDR tone-map 在浮点降位阶段应用所选抖动且不重复链尾转换', () => {
+    const config = createBaseProjectConfig()
+    config.video.pixelFormat = 'yuv420p10le'
+    config.video.color = {
+      operation: 'convert-and-tag',
+      filter: 'zscale',
+      toneMap: 'mobius',
+      space: 'bt709',
+      primaries: 'bt709',
+      transfer: 'bt709',
+      range: 'tv',
+    }
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+    expect(vf).toContain('tonemap=tonemap=mobius')
+    expect(vf).toContain('zscale=matrix=bt709:primaries=bt709:transfer=bt709:range=tv:dither=error_diffusion')
+    expect(vf.match(/format=yuv420p10le/g)).toHaveLength(1)
   })
 
   it('从受控滤镜链提取 FFmpeg 能力核验所需名称', () => {

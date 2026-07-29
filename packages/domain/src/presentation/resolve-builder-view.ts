@@ -15,6 +15,7 @@ import {
   resolveVideoSection,
   resolveGenericCodecSection,
   resolveVideoAdvancedSection,
+  resolveFilterProcessingSection,
   resolveFrameSection,
   resolveColorSection,
   resolveAudioSection,
@@ -25,6 +26,8 @@ import {
   resolveCustomArgsSection,
   resolveMetadataSection,
   resolveUtilityToolsSection,
+  resolveCustomVideoFiltersSection,
+  resolveCustomAudioFiltersSection,
 } from './resolve-section'
 import { attachDiagnostics } from './resolve-field'
 
@@ -46,6 +49,7 @@ export function resolveBuilderView(
     resolveVideoSection(config, catalog, fieldStates),
     resolveGenericCodecSection(config, catalog, fieldStates),
     resolveVideoAdvancedSection(config, catalog, fieldStates),
+    resolveFilterProcessingSection(config, fieldStates),
     resolveFrameSection(config, fieldStates),
     resolveColorSection(config, fieldStates),
     resolveAudioSection(config, catalog, fieldStates),
@@ -55,6 +59,8 @@ export function resolveBuilderView(
     resolveContainerSection(config, catalog, fieldStates),
     resolveUtilityToolsSection(config, catalog),
     resolveMetadataSection(config),
+    resolveCustomVideoFiltersSection(config),
+    resolveCustomAudioFiltersSection(config),
     resolveCustomArgsSection(config),
   ].filter((s) => s.fields.length > 0)
 
@@ -194,9 +200,13 @@ function resolvePanelSectionLabel(panelId: string, sectionId: string, fallback: 
   if (panelId === 'quality' && sectionId === 'section.video') return '码率与编码器参数'
   if (panelId === 'color' && sectionId === 'section.video') return '像素格式'
   if (panelId === 'color' && sectionId === 'section.color') return '色彩元数据'
+  if (panelId === 'filters' && sectionId === 'section.filter-processing') return '滤镜处理格式'
+  if (panelId === 'filters' && sectionId === 'section.frame') return '画面参数与滤镜'
   if (panelId === 'streams-container' && sectionId === 'section.input') return '流选择'
   if (panelId === 'streams-container' && sectionId === 'section.container') return '封装设置'
   if (panelId === 'custom' && sectionId === 'section.metadata') return '自定义元数据'
+  if (panelId === 'custom' && sectionId === 'section.custom-video-filters') return '自定义视频滤镜'
+  if (panelId === 'custom' && sectionId === 'section.custom-audio-filters') return '自定义音频滤镜'
   if (panelId === 'custom' && sectionId === 'section.customArgs') return '自定义参数'
   if (panelId === 'tools' && sectionId === 'section.tools') return '目标文件大小'
   return fallback
@@ -208,6 +218,7 @@ function resolvePanelId(sectionId: string, field: ResolvedField): string {
   if (sectionId === 'section.input') return 'input-output'
   if (sectionId === 'section.decode') return 'decode'
   if (sectionId === 'section.video') return 'video'
+  if (sectionId === 'section.filter-processing') return 'filters'
   if (sectionId === 'section.frame') return 'filters'
   if (sectionId === 'section.color') return 'color'
   if (sectionId === 'section.audio') return 'audio'
@@ -215,6 +226,7 @@ function resolvePanelId(sectionId: string, field: ResolvedField): string {
   if (sectionId === 'section.audio-loudness') return 'audio'
   if (sectionId === 'section.subtitle') return 'subtitle'
   if (sectionId === 'section.tools') return 'tools'
+  if (sectionId === 'section.custom-video-filters' || sectionId === 'section.custom-audio-filters') return 'custom'
   return 'custom'
 }
 

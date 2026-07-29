@@ -1,9 +1,13 @@
 import type { AdvancedVideoFiltersConfig, ProjectConfig } from '../config/project-config'
 import type { CommandArg } from '../command/command-ast'
 import { createDefaultAdvancedVideoFilters } from '../config/defaults'
+import { resolveFilterFormatPlan } from './filter-format-resolver'
 
 // 所有画面处理都进入同一有序滤镜链，最终最多生成一个 -vf 参数。
 export type VideoFilterSpec =
+  | { type: 'hwdownload' }
+  | { type: 'format'; pixelFormats: string[] }
+  | { type: 'zscale-dither'; algorithm: 'ordered' | 'random' | 'error_diffusion' }
   | { type: 'yadif'; mode: 'send_frame' | 'send_field'; parity: 'auto' | 'tff' | 'bff' }
   | { type: 'crop'; width: number; height: number; x: number; y: number }
   | { type: 'scale'; width?: number; height?: number }
@@ -11,6 +15,7 @@ export type VideoFilterSpec =
   | { type: 'hflip' }
   | { type: 'vflip' }
   | { type: 'eq'; brightness: number; contrast: number; saturation: number; gamma: number }
+  | { type: 'lutyuv-adjustment'; brightness: number; contrast: number; saturation: number; gamma: number }
   | { type: 'unsharp'; amount: number }
   | { type: 'denoise'; filterString: string }
   | { type: 'deband'; filterString: string }
@@ -84,7 +89,13 @@ export function buildVideoFilterChain(config: ProjectConfig): VideoFilterSpec[] 
     })
   }
 
-  return chain
+  // 自定义表达式保持用户给定顺序，并与受控滤镜合并为唯一 -vf。
+  for (const filterString of config.customArgs.videoFilters ?? []) {
+    const expression = filterString.trim()
+    if (expression) chain.push({ type: 'custom', filterString: expression })
+  }
+
+  return resolveFilterFormatPlan(config, chain).chain
 }
 
 /**
@@ -105,6 +116,16 @@ export function collectRequiredVideoFilterNames(config: ProjectConfig): string[]
       case 'unsharp':
       case 'fps':
         names.add(spec.type)
+        break
+      case 'hwdownload':
+      case 'format':
+        names.add(spec.type)
+        break
+      case 'zscale-dither':
+        names.add('zscale')
+        break
+      case 'lutyuv-adjustment':
+        names.add('lutyuv')
         break
       case 'denoise':
       case 'deband':
@@ -139,6 +160,12 @@ export function renderFilterChain(
 
   const parts = chain.map((spec) => {
     switch (spec.type) {
+      case 'hwdownload':
+        return 'hwdownload'
+      case 'format':
+        return `format=pix_fmts=${spec.pixelFormats.join('|')}`
+      case 'zscale-dither':
+        return `zscale=dither=${spec.algorithm}`
       case 'yadif':
         return `yadif=mode=${spec.mode}:parity=${spec.parity}:deint=all`
       case 'crop':
@@ -152,6 +179,11 @@ export function renderFilterChain(
         return spec.type
       case 'eq':
         return `eq=brightness=${spec.brightness}:contrast=${spec.contrast}:saturation=${spec.saturation}:gamma=${spec.gamma}`
+      case 'lutyuv-adjustment': {
+        const y = `clip(pow(max((val/maxval-0.5)*${spec.contrast}+0.5+${spec.brightness},0),1/${spec.gamma})*maxval,0,maxval)`
+        const chroma = `clip((val-maxval/2)*${spec.saturation}+maxval/2,0,maxval)`
+        return `lutyuv=y='${y}':u='${chroma}':v='${chroma}'`
+      }
       case 'unsharp':
         return `unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=${spec.amount}`
       case 'denoise':
@@ -213,7 +245,10 @@ function buildColorFilter(config: ProjectConfig): string {
     parts.push(`zscale=transfer=linear:npl=${color.nominalPeak ?? 100}`)
     parts.push('format=gbrpf32le')
     parts.push(`tonemap=tonemap=${cpuAlgorithm}:desat=${color.desaturation ?? 2}`)
-    if (targetOptions.length > 0) parts.push(`zscale=${targetOptions.join(':')}`)
+    if (targetOptions.length > 0) {
+      const dither = resolveToneMapDither(config)
+      parts.push(`zscale=${[...targetOptions, ...(dither ? [`dither=${dither}`] : [])].join(':')}`)
+    }
     const outputFormat = config.video.pixelFormat && config.video.pixelFormat !== 'auto'
       ? config.video.pixelFormat
       : 'yuv420p'
@@ -223,6 +258,12 @@ function buildColorFilter(config: ProjectConfig): string {
   }
 
   return parts.join(',')
+}
+
+function resolveToneMapDither(config: ProjectConfig): 'ordered' | 'random' | 'error_diffusion' | undefined {
+  const processing = config.frame.filters?.processing
+  if (!processing || processing.mode === 'compatible' || processing.dither === 'none') return undefined
+  return processing.dither === 'auto' ? 'error_diffusion' : processing.dither
 }
 
 function buildDenoiseFilter(filters: AdvancedVideoFiltersConfig['denoise']): string {

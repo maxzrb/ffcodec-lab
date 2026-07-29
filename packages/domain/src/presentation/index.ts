@@ -17,10 +17,13 @@ export {
 export {
   resolveInputSection,
   resolveVideoSection,
+  resolveFilterProcessingSection,
   resolveFrameSection,
   resolveAudioSection,
   resolveSubtitleSection,
   resolveContainerSection,
+  resolveCustomVideoFiltersSection,
+  resolveCustomAudioFiltersSection,
 } from './resolve-section'
 
 export { resolveBuilderView } from './resolve-builder-view'

@@ -403,6 +403,66 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     })
   })
 
+  it('处理格式与具体滤镜使用独立折叠卡片，自定义值跨模式切换完整保留', async () => {
+    const config = createDefaultProjectConfig()
+    config.frame.filters!.crop.enabled = true
+    presetStore(config)
+    render(<TestWrapper />)
+
+    await openPanel('画面与滤镜')
+    const processingCard = screen.getByRole('button', { name: /^滤镜处理格式/ })
+    const filtersCard = screen.getByRole('button', { name: '画面参数与滤镜' })
+    expect(processingCard).toHaveAttribute('aria-expanded', 'true')
+    if (filtersCard.getAttribute('aria-expanded') === 'false') {
+      await userEvent.click(filtersCard)
+    }
+    expect(filtersCard).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(filtersCard)
+    expect(filtersCard).toHaveAttribute('aria-expanded', 'false')
+    expect(processingCard).toHaveAttribute('aria-expanded', 'true')
+
+    expect(dropdownText('处理格式策略')).toContain('自动高精度')
+    await chooseDropdown('处理格式策略', 'custom')
+    await chooseDropdown('工作位深', '12')
+    await chooseDropdown('色度采样', '444')
+    await chooseDropdown('工作色彩家族', 'yuv')
+    await chooseDropdown('最终降位抖动', 'ordered')
+    await chooseDropdown('不兼容滤镜处理', 'warn')
+
+    await waitFor(() => {
+      expect(useBuilderStore.getState().config.frame.filters?.processing).toMatchObject({
+        mode: 'custom',
+        bitDepth: '12',
+        chroma: '444',
+        colorFamily: 'yuv',
+        dither: 'ordered',
+        incompatiblePolicy: 'warn',
+      })
+      const command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
+      expect(command.match(/-vf/g)).toHaveLength(1)
+      expect(command).toContain('format=pix_fmts=yuv444p12le')
+      expect(command).toContain('crop=')
+    })
+
+    await chooseDropdown('处理格式策略', 'high-precision')
+    expect(screen.queryByLabelText('工作位深')).not.toBeInTheDocument()
+    expect(useBuilderStore.getState().config.frame.filters?.processing).toMatchObject({
+      mode: 'high-precision',
+      bitDepth: '12',
+      chroma: '444',
+      colorFamily: 'yuv',
+      dither: 'ordered',
+      incompatiblePolicy: 'warn',
+    })
+
+    await chooseDropdown('处理格式策略', 'custom')
+    expect(dropdownText('工作位深')).toContain('12-bit')
+    expect(dropdownText('色度采样')).toContain('4:4:4')
+    expect(dropdownText('工作色彩家族')).toContain('YUV')
+    expect(dropdownText('最终降位抖动')).toContain('有序抖动')
+    expect(dropdownText('不兼容滤镜处理')).toContain('允许降级并警告')
+  })
+
   it('指定宽高可立即清空为自动偶数尺寸，不产生分辨率错误', async () => {
     const config = createDefaultProjectConfig()
     config.frame.resolution = { mode: 'size', width: 212, height: 212, keepAspect: true }
@@ -754,6 +814,27 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(useBuilderStore.getState().config.customArgs.globalArgs).toEqual(['-benchmark'])
   })
 
+  it('自定义视频和音频滤镜分卡填写，并按行顺序进入唯一滤镜链', async () => {
+    render(<TestWrapper />)
+    await openPanel('自定义参数')
+
+    expect(screen.getByRole('button', { name: /^自定义视频滤镜/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^自定义音频滤镜/ })).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('视频滤镜顺序'), 'hflip{enter}eq=contrast=1.1')
+    await userEvent.type(screen.getByLabelText('音频滤镜顺序'), 'highpass=f=80{enter}volume=0.9')
+
+    await waitFor(() => {
+      const config = useBuilderStore.getState().config
+      expect(config.customArgs.videoFilters).toEqual(['hflip', 'eq=contrast=1.1'])
+      expect(config.customArgs.audioFilters).toEqual(['highpass=f=80', 'volume=0.9'])
+      const command = screen.getByLabelText('命令预览').querySelector('pre')?.textContent ?? ''
+      expect(command.match(/-vf/g)).toHaveLength(1)
+      expect(command).toContain('hflip,eq=contrast=1.1')
+      expect(command.match(/-filter:a/g)).toHaveLength(1)
+      expect(command).toContain('highpass=f=80,volume=0.9')
+    })
+  })
+
   it('默认使用亮色主题，并可切换暗色主题', async () => {
     render(<TestWrapper />)
 
@@ -1073,7 +1154,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases')
-    expect(screen.getByText('FFCodec Lab desktop 1.4.1（9）')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab desktop 1.5.0（10）')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))
@@ -1093,7 +1174,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Web 网页版' }))
       .toHaveAttribute('href', 'https://fflab.loliland.cn')
-    expect(screen.getByText('FFCodec Lab Web 1.4.1（9）')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab Web 1.5.0（10）')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .not.toBeInTheDocument()
   })

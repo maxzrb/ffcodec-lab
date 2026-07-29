@@ -11,6 +11,8 @@ import {
   findOddExplicitResolutionDimensions,
   repairOddExplicitResolution,
 } from '../config/resolution-repair'
+import { buildVideoFilterChain } from '../filters/video-filter-builder'
+import { getSelectedProbePixelFormats, inspectFilterPrecisionIssues } from '../filters/filter-format-resolver'
 
 /**
  * Full validation pipeline — rules + compatibility.
@@ -30,6 +32,7 @@ export function validateConfig(
   const decodeMessages = validateDecodeSettings(config)
   const resolutionMessages = validateResolution(config)
   const targetSizeMessages = calculateTargetSize(config, catalog).diagnostics
+  const filterProcessingMessages = validateFilterProcessing(config)
 
   const placeholderMessages = validatePlaceholderCategory(config)
 
@@ -42,7 +45,64 @@ export function validateConfig(
     ...resolutionMessages,
     ...placeholderMessages,
     ...targetSizeMessages,
+    ...filterProcessingMessages,
   ]
+}
+
+function validateFilterProcessing(config: ProjectConfig): Diagnostic[] {
+  const processing = config.frame.filters?.processing
+  if (!processing || processing.mode === 'compatible' || config.video.mode !== 'encode') return []
+  const issues = inspectFilterPrecisionIssues(config, buildVideoFilterChain(config))
+  const messages: Diagnostic[] = issues.map((issue) => ({
+    code: processing.incompatiblePolicy === 'block'
+      ? 'error.filter.processing.precision'
+      : 'warn.filter.processing.precision',
+    severity: processing.incompatiblePolicy === 'block' ? 'error' : 'warning',
+    category: 'compatibility',
+    message: `${issue.filter}: ${issue.reason}`,
+    originIds: [
+      'frame.filters.processing.mode',
+      'frame.filters.processing.incompatiblePolicy',
+    ],
+    context: {
+      filter: issue.filter,
+      reason: issue.reason,
+      alternatives: issue.alternatives,
+    },
+  }))
+  if (
+    buildVideoFilterChain(config).length > 0
+    && isAbsoluteLocalPath(config.input.path)
+    && getSelectedProbePixelFormats(config).length === 0
+  ) {
+    messages.push({
+      code: 'warn.filter.processing.probeRecommended',
+      severity: 'warning',
+      category: 'configuration',
+      message: 'High-precision filter format negotiation has no matching ffprobe pixel-format information, so the command must use a generic fallback candidate list.',
+      originIds: ['input.path', 'frame.filters.processing.mode'],
+      context: { inputPath: config.input.path },
+    })
+  }
+  if (
+    config.video.encoderId
+    && /_(?:vaapi|vulkan|d3d12)$/.test(config.video.encoderId)
+    && buildVideoFilterChain(config).length > 0
+  ) {
+    messages.push({
+      code: 'error.filter.processing.hardwareUpload',
+      severity: 'error',
+      category: 'compatibility',
+      message: 'The selected encoder requires API-specific hardware frames, but the resolved high-precision pipeline ends in software frames and no safe upload device is configured.',
+      originIds: ['frame.filters.processing.mode', 'video.encoderId'],
+      context: { encoderId: config.video.encoderId },
+    })
+  }
+  return messages
+}
+
+function isAbsoluteLocalPath(path: string): boolean {
+  return /^(?:[A-Za-z]:[\\/]|\\\\|\/)/.test(path.trim())
 }
 
 function validateDecodeSettings(config: ProjectConfig): Diagnostic[] {
@@ -70,9 +130,16 @@ function validateDecodeSettings(config: ProjectConfig): Diagnostic[] {
   }
 
   if (decode.outputFormat === 'd3d11') {
+    const downloadsHardwareFrames = buildVideoFilterChain(config).some((spec) => spec.type === 'hwdownload')
     messages.push({
-      code: 'warn.decode.outputFormat.hardwareFrames', severity: 'warning', category: 'compatibility',
-      message: 'D3D11 hardware frames may be incompatible with CPU filters or software encoders without an explicit download step.',
+      code: downloadsHardwareFrames
+        ? 'info.decode.outputFormat.hardwareFramesDownloaded'
+        : 'warn.decode.outputFormat.hardwareFrames',
+      severity: downloadsHardwareFrames ? 'info' : 'warning',
+      category: 'compatibility',
+      message: downloadsHardwareFrames
+        ? 'D3D11 hardware frames are explicitly downloaded before the CPU high-precision filter pipeline.'
+        : 'D3D11 hardware frames may be incompatible with CPU filters or software encoders without an explicit download step.',
       originIds: ['input.decode.outputFormat'], context: { outputFormat: 'd3d11' },
     })
   }

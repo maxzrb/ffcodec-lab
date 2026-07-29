@@ -69,6 +69,8 @@ describe('成品功能闭环', () => {
   it('六类自定义参数按 AST 阶段输出，tail 位于输出路径之后', () => {
     const config = createDefaultProjectConfig()
     config.customArgs = {
+      videoFilters: [],
+      audioFilters: [],
       globalArgs: ['-benchmark'],
       preInputArgs: ['-thread_queue_size', '1024'],
       videoArgs: ['-tag:v', 'avc1'],
@@ -83,6 +85,23 @@ describe('成品功能闭环', () => {
     expect(tokens).toContain('-metadata:s:a:0')
     expect(tokens).toContain('-movflags')
     expect(tokens.indexOf('-report')).toBeGreaterThan(tokens.indexOf(config.output.path))
+  })
+
+  it('自定义视频和音频滤镜按行排序，并分别合并为唯一滤镜参数', () => {
+    const config = createDefaultProjectConfig()
+    config.frame.filters!.crop.enabled = true
+    config.customArgs.videoFilters = ['hflip', 'eq=contrast=1.1']
+    config.audio.loudnessNormalization.integratedLoudnessEnabled = true
+    config.customArgs.audioFilters = ['highpass=f=80', 'volume=0.9']
+
+    const invocation = buildCommandPlan(config, catalog, []).invocations[0]
+    const tokens = flattenInvocation(invocation).map((item) => item.text)
+    expect(tokens.filter((token) => token === '-vf')).toHaveLength(1)
+    expect(tokens.find((token) => token.includes('crop=') && token.includes('hflip')))
+      .toMatch(/crop=.*hflip,eq=contrast=1\.1/)
+    expect(tokens.filter((token) => token === '-filter:a')).toHaveLength(1)
+    expect(tokens.find((token) => token.startsWith('loudnorm=')))
+      .toMatch(/^loudnorm=.*highpass=f=80,volume=0\.9$/)
   })
 
   it('隐私安全分享保留高级滤镜与编码器专用参数', () => {

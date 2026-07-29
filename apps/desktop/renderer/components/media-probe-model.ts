@@ -62,6 +62,7 @@ export function applyProbeStreamsToConfig(config: ProjectConfig, result: ProbeRe
   const subtitleStreams = buildRelativeStreamMap(result, 'subtitle')
   return {
     ...config,
+    input: applyProbeMetadataToConfig(config, result).input,
     streams: {
       ...config.streams,
       preserveAllVideoStreams: videoStreams.length > 0
@@ -74,6 +75,28 @@ export function applyProbeStreamsToConfig(config: ProjectConfig, result: ProbeRe
       videoStreams: videoStreams.length > 0 ? videoStreams : config.streams.videoStreams,
       audioStreams: audioStreams.length > 0 ? audioStreams : config.streams.audioStreams,
       subtitleStreams,
+    },
+  }
+}
+
+/** 保存轻量视频探测摘要；命令生成器只在路径仍匹配时使用，避免套用过期信息。 */
+export function applyProbeMetadataToConfig(config: ProjectConfig, result: ProbeResult): ProjectConfig {
+  const videoStreams = result.streams
+    .filter((stream) => stream.codecType === 'video')
+    .map((stream, index) => ({
+      index,
+      pixFmt: stream.pixFmt,
+      width: stream.width,
+      height: stream.height,
+    }))
+  return {
+    ...config,
+    input: {
+      ...config.input,
+      probe: {
+        inputPath: config.input.path,
+        videoStreams,
+      },
     },
   }
 }

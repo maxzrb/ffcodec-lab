@@ -40,6 +40,16 @@ describe('Share config — encoding', () => {
     const out = (shareable as Record<string, unknown>).o as Record<string, unknown> | undefined
     expect(out?.path).toBeUndefined()
   })
+
+  it('隐私分享不会携带可能包含本地路径的自定义滤镜表达式', () => {
+    const config = createDefaultProjectConfig()
+    config.customArgs.videoFilters = ["subtitles=filename='D\\:/private/name.ass'"]
+    config.customArgs.audioFilters = ['afir=ir=private.wav']
+    const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
+    expect(decoded.success).toBe(true)
+    expect(decoded.config?.customArgs.videoFilters).toEqual([])
+    expect(decoded.config?.customArgs.audioFilters).toEqual([])
+  })
 })
 
 describe('Share config — decoding', () => {
@@ -56,7 +66,7 @@ describe('Share config — decoding', () => {
     const migrated = migrateConfig(2, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config
     const migratedVideo = migrated.video as Record<string, unknown>
     const migratedFilters = (migrated.frame as Record<string, unknown>).filters as Record<string, unknown>
-    expect(migrated.schemaVersion).toBe(7)
+    expect(migrated.schemaVersion).toBe(8)
     expect((migrated.input as Record<string, unknown>).decode).toEqual({})
     expect(migratedVideo.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
     expect(migratedFilters.denoise).toEqual({ enabled: false, values: {} })
@@ -72,6 +82,22 @@ describe('Share config — decoding', () => {
     expect(decoded.config).toBeDefined()
     expect(decoded.config!.video.encoderId).toBe('libx264')
     expect(decoded.config!.output.containerId).toBe('mp4')
+  })
+
+  it('完整往返自定义滤镜格式、Alpha、抖动和不兼容策略', () => {
+    const config = createDefaultProjectConfig()
+    config.frame.filters!.processing = {
+      mode: 'custom',
+      bitDepth: '16',
+      chroma: '422',
+      colorFamily: 'yuv',
+      preserveAlpha: false,
+      dither: 'ordered',
+      incompatiblePolicy: 'warn',
+    }
+    const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
+    expect(decoded.success).toBe(true)
+    expect(decoded.config?.frame.filters?.processing).toEqual(config.frame.filters!.processing)
   })
 
   it('rejects invalid hash', () => {
@@ -123,7 +149,7 @@ describe('Share config — decoding', () => {
 
     const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
     expect(decoded.success).toBe(true)
-    expect(decoded.config?.schemaVersion).toBe(7)
+    expect(decoded.config?.schemaVersion).toBe(8)
     expect(decoded.config?.video.color?.space).toBe('bt709')
     expect(decoded.config?.video.color?.operation).toBe('convert-and-tag')
     expect(decoded.config?.video.color?.toneMap).toBe('mobius')

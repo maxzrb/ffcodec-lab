@@ -3,6 +3,15 @@ import type { AdvancedVideoFiltersConfig, ProjectConfig } from './project-config
 /** 为新配置或旧配置迁移创建独立的高级滤镜默认值。 */
 export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig {
   return {
+    processing: {
+      mode: 'high-precision',
+      bitDepth: '10',
+      chroma: 'preserve',
+      colorFamily: 'preserve',
+      preserveAlpha: true,
+      dither: 'auto',
+      incompatiblePolicy: 'block',
+    },
     crop: { enabled: false, width: 1920, height: 1080, x: 0, y: 0 },
     transform: { rotate: 'none', horizontalFlip: false, verticalFlip: false },
     adjustment: { enabled: false, brightness: 0, contrast: 1, saturation: 1, gamma: 1 },
@@ -19,7 +28,7 @@ export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig 
  */
 export function createDefaultProjectConfig(): ProjectConfig {
   return {
-    schemaVersion: 7,
+    schemaVersion: 8,
     shell: 'powershell',
     input: {
       path: 'input.mkv',
@@ -95,6 +104,8 @@ export function createDefaultProjectConfig(): ProjectConfig {
       },
     },
     customArgs: {
+      videoFilters: [],
+      audioFilters: [],
       globalArgs: [],
       preInputArgs: [],
       videoArgs: [],
