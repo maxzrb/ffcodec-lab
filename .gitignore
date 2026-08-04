@@ -22,3 +22,4 @@ version/
 **/bin/
 **/obj/
 apps/desktop/native/ffmpeg/
+outdated/

@@ -999,7 +999,7 @@ function buildOutput(
         id: `${group.originId}.${index}`,
         originId: group.originId,
         phase: group.phase,
-        tokens: [token],
+        tokens: splitCustomArgToken(token),
         unsafe: true,
       })
     })
@@ -1203,4 +1203,25 @@ function getControlValue(
     return getByPath(config, ctrl.configBinding.path)
   }
   return undefined
+}
+
+/**
+ * Splits a custom arg token on the first space when it starts with a flag prefix.
+ *
+ *   "-map 0:t?"      → ["-map", "0:t?"]
+ *   "-c:t copy"       → ["-c:t", "copy"]
+ *   "-map_metadata 0" → ["-map_metadata", "0"]
+ *   "-y"              → ["-y"]
+ *
+ * This lets users write readable one-line entries ("-map 0:t?")
+ * while remaining fully compatible with the legacy per-token format.
+ */
+function splitCustomArgToken(token: string): string[] {
+  if (/^-\S/.test(token)) {
+    const spaceIndex = token.indexOf(' ')
+    if (spaceIndex > 0) {
+      return [token.slice(0, spaceIndex), token.slice(spaceIndex + 1)]
+    }
+  }
+  return [token]
 }

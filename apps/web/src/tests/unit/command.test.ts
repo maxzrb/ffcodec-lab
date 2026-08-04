@@ -346,4 +346,47 @@ describe('Command AST — Invariants', () => {
     expect(powerShell).toContain('if ($LASTEXITCODE -eq 0) {')
     expect(powerShell.endsWith(' }')).toBe(true)
   })
+
+  it('自定义参数按第一个空格拆分为参数名和值', () => {
+    const config = makeConfig()
+    config.video.mode = 'copy'
+    config.audio.mode = 'copy'
+    config.streams.preserveAllVideoStreams = true
+    config.streams.preserveAllAudioStreams = true
+    config.streams.preserveAllSubtitleStreams = true
+    config.customArgs.preOutputArgs = [
+      '-map 0:t?',
+      '-c:t copy',
+      '-map_metadata 0',
+      '-map_chapters 0',
+    ]
+    const args = buildCommandPlan(config, catalog, []).invocations[0]
+
+    // 每个自定义行应该拆成 2 个 token（参数名 + 参数值）
+    const customTokens = args.output.customArgs.map((a) => a.tokens)
+    expect(customTokens).toContainEqual(['-map', '0:t?'])
+    expect(customTokens).toContainEqual(['-c:t', 'copy'])
+    expect(customTokens).toContainEqual(['-map_metadata', '0'])
+    expect(customTokens).toContainEqual(['-map_chapters', '0'])
+  })
+
+  it('自定义参数纯 flag 不拆分', () => {
+    const config = makeConfig()
+    config.customArgs.preOutputArgs = ['-y', '-dn']
+    const args = buildCommandPlan(config, catalog, []).invocations[0]
+    const customTokens = args.output.customArgs.map((a) => a.tokens)
+    expect(customTokens).toContainEqual(['-y'])
+    expect(customTokens).toContainEqual(['-dn'])
+  })
+
+  it('自定义参数旧式逐 token 写法仍然兼容', () => {
+    const config = makeConfig()
+    config.customArgs.preOutputArgs = ['-map', '0:t?', '-c:t', 'copy']
+    const args = buildCommandPlan(config, catalog, []).invocations[0]
+    const customTokens = args.output.customArgs.map((a) => a.tokens)
+    expect(customTokens).toContainEqual(['-map'])
+    expect(customTokens).toContainEqual(['0:t?'])
+    expect(customTokens).toContainEqual(['-c:t'])
+    expect(customTokens).toContainEqual(['copy'])
+  })
 })
