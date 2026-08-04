@@ -90,11 +90,16 @@ export interface AdditionalInputConfig {
   purpose: 'subtitle' | 'attachment' | 'concat' | 'other'
 }
 
+/** 输出文件名后缀风格，用于"输出到原目录"自动推导文件名时选用。 */
+export type OutputSuffixStyle = 'ffcodec' | 'timestamp' | 'increment' | 'encoder' | 'random'
+
 export interface OutputConfig {
   path: string
   containerId: string
   overwrite: boolean
   hideBanner: boolean
+  /** 输出文件名后缀风格。 */
+  outputSuffix: OutputSuffixStyle
   /** 自定义元数据；全局作用于整个文件，流级作用于指定流。 */
   metadata?: MetadataConfig
 }

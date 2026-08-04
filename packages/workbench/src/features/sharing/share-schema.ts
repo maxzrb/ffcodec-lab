@@ -152,6 +152,7 @@ export const shareableConfigSchema = z.object({
     containerId: z.string(),
     overwrite: z.boolean(),
     hideBanner: z.boolean().optional(),
+    outputSuffix: z.enum(['ffcodec', 'timestamp', 'increment', 'encoder', 'random']).optional(),
     meta: z.object({
       globalRaw: z.string().default(''),
       streamRaw: z.string().default(''),

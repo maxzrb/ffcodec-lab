@@ -21,18 +21,65 @@ export function isAbsoluteLocalPath(filePath: string): boolean {
   return /^[A-Za-z]:[\\/]/.test(filePath) || filePath.startsWith('\\\\') || filePath.startsWith('/')
 }
 
+// -- 输出文件名后缀生成 ------------------------------------------
+
+let _incrementCounter = 1
+
+/** 为输出文件名生成后缀。encoderId / qualityLabel 仅在 style === 'encoder' 时需要。 */
+export function buildOutputSuffix(
+  style: string,
+  opts?: { encoderId?: string; qualityLabel?: string },
+): string {
+  switch (style) {
+    case 'timestamp': {
+      const d = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+    }
+    case 'increment':
+      return String(_incrementCounter++)
+    case 'encoder': {
+      const id = opts?.encoderId
+      const q = opts?.qualityLabel
+      return id ? `${id}${q ? `-${q}` : ''}` : 'ffcodec'
+    }
+    case 'random':
+      return Math.random().toString(36).slice(2, 8)
+    default:
+      return 'ffcodec'
+  }
+}
+
+/** 重置递增计数器（每次新任务启动时调用）。 */
+export function resetIncrementCounter(): void {
+  _incrementCounter = 1
+}
+
+// -- 输出路径推导 ------------------------------------------------
+
 /** 使用目标目录、输入文件名和容器扩展名生成不会覆盖源文件的默认输出。 */
-export function deriveOutputPath(inputPath: string, directory: string, extension: string): string {
+export function deriveOutputPath(
+  inputPath: string,
+  directory: string,
+  extension: string,
+  suffix?: string,
+): string {
   const normalizedExtension = extension.replace(/^\.+/, '') || 'mp4'
   const separator = directory.includes('\\') || /^[A-Za-z]:/.test(directory) ? '\\' : '/'
   const normalizedDirectory = directory.replace(/[\\/]+$/, '')
   const prefix = normalizedDirectory ? `${normalizedDirectory}${separator}` : ''
-  return `${prefix}${getPathStem(inputPath) || 'output'}-ffcodec.${normalizedExtension}`
+  const stem = getPathStem(inputPath) || 'output'
+  const sfx = suffix || 'ffcodec'
+  return `${prefix}${stem}-${sfx}.${normalizedExtension}`
 }
 
 /** 默认将结果写到原始媒体文件同目录。 */
-export function deriveOutputInSourceDirectory(inputPath: string, extension: string): string {
-  return deriveOutputPath(inputPath, getPathDirectory(inputPath), extension)
+export function deriveOutputInSourceDirectory(
+  inputPath: string,
+  extension: string,
+  suffix?: string,
+): string {
+  return deriveOutputPath(inputPath, getPathDirectory(inputPath), extension, suffix)
 }
 
 /** 为同一队列中的重名输出添加稳定的序号，路径比较忽略 Windows 大小写。 */

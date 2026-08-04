@@ -10,6 +10,7 @@ import { useEncodingJob } from '../components/useEncodingJob'
 import { runBatchQueue } from './batch-queue-runner'
 import { useBatchQueueStore, type BatchQueueItem, type BatchQueueItemStatus } from './batch-queue-store'
 import {
+  buildOutputSuffix,
   deriveOutputInSourceDirectory,
   deriveOutputPath,
   ensureUniqueOutputPath,
@@ -32,7 +33,33 @@ function displayName(filePath: string): string {
   return filePath.slice(slashIndex + 1) || filePath
 }
 
-/** 置于既有“输入与输出”卡片内的单文件输出位置设置。 */
+const SUFFIX_OPTIONS: { value: string; zh: string; en: string }[] = [
+  { value: 'ffcodec', zh: 'ffcodec (默认)', en: 'ffcodec (default)' },
+  { value: 'timestamp', zh: '时间戳', en: 'Timestamp' },
+  { value: 'increment', zh: '递增序号', en: 'Increment' },
+  { value: 'encoder', zh: '编码器与质量参数', en: 'Encoder & quality' },
+  { value: 'random', zh: '随机数字字母', en: 'Random' },
+]
+
+function resolveQualityLabel(config: ReturnType<typeof useBuilderStore.getState>['config']): string {
+  const rc = config.video.rateControl
+  if (!rc) return ''
+  const qv = rc.qualityValue != null ? String(rc.qualityValue) : ''
+  switch (rc.mode) {
+    case 'crf': return `crf${qv}`
+    case 'cqp': return `qp${qv}`
+    case 'twoPass': {
+      const bv = (rc.additionalValues as Record<string, string> | undefined)?.bitrate ?? ''
+      return bv.replace('k', '')
+    }
+    default: {
+      const bv = (rc.additionalValues as Record<string, string> | undefined)?.bitrate ?? ''
+      return bv ? bv : rc.mode
+    }
+  }
+}
+
+/** 置于既有"输入与输出"卡片内的单文件输出位置设置。 */
 export function SingleFileOutputLocationControl() {
   const { locale } = useI18n()
   const isZh = locale === 'zh-CN'
@@ -42,21 +69,26 @@ export function SingleFileOutputLocationControl() {
   const setSingleOutputToSourceDirectory = useBatchQueueStore((state) => state.setSingleOutputToSourceDirectory)
 
   const outputExtension = catalog.containers[config.output.containerId]?.extension ?? 'mp4'
+  const suffixStyle = config.output.outputSuffix ?? 'ffcodec'
 
-  // 只在输入路径、容器扩展名或开关状态变化时自动推导输出路径。
+  // 只在输入路径、容器扩展名、开关状态或后缀风格变化时自动推导输出路径。
   const prevDeriveKey = useRef('')
   useEffect(() => {
     if (!singleOutputToSourceDirectory || !isAbsoluteLocalPath(config.input.path)) {
       if (!singleOutputToSourceDirectory) prevDeriveKey.current = ''
       return
     }
-    const deriveKey = `${config.input.path}|${outputExtension}`
+    const current = useBuilderStore.getState().config
+    const suffix = buildOutputSuffix(suffixStyle, {
+      encoderId: config.video.encoderId,
+      qualityLabel: resolveQualityLabel(current),
+    })
+    const deriveKey = `${config.input.path}|${outputExtension}|${suffix}`
     if (deriveKey === prevDeriveKey.current) return
     prevDeriveKey.current = deriveKey
-    const outputPath = deriveOutputInSourceDirectory(config.input.path, outputExtension)
-    const current = useBuilderStore.getState().config
+    const outputPath = deriveOutputInSourceDirectory(config.input.path, outputExtension, suffix)
     setConfig({ ...current, output: { ...current.output, path: outputPath } })
-  }, [config.input.path, outputExtension, singleOutputToSourceDirectory, setConfig])
+  }, [config.input.path, outputExtension, suffixStyle, singleOutputToSourceDirectory, setConfig])
 
   const singleOutputPreview = singleOutputToSourceDirectory && isAbsoluteLocalPath(config.input.path)
     ? config.output.path
@@ -72,6 +104,22 @@ export function SingleFileOutputLocationControl() {
         />
         <span>{isZh ? '输出到原目录' : 'Output to source directory'}</span>
       </label>
+      {singleOutputToSourceDirectory && (
+        <label className="batch-queue-suffix">
+          <span>{isZh ? '文件名后缀' : 'Filename suffix'}</span>
+          <select
+            value={suffixStyle}
+            onChange={(event) => {
+              const current = useBuilderStore.getState().config
+              setConfig({ ...current, output: { ...current.output, outputSuffix: event.target.value as typeof suffixStyle } })
+            }}
+          >
+            {SUFFIX_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{isZh ? opt.zh : opt.en}</option>
+            ))}
+          </select>
+        </label>
+      )}
       {singleOutputToSourceDirectory && singleOutputPreview && (
         <p className="batch-queue-hint" title={singleOutputPreview}>
           {isZh ? '将生成：' : 'Will create: '}<code>{singleOutputPreview}</code>{isZh ? '；关闭后可手动指定输出位置。' : '; turn this off to choose a custom output location.'}
@@ -117,12 +165,17 @@ export function BatchQueuePanel() {
   const buildQueueConfigs = useCallback((inputPaths: string[]) => {
     const usedOutputs = new Set(items.map((item) => item.outputPath))
     const outputDirectory = effectiveBatchOutputDirectory
+    const currentConfig = useBuilderStore.getState().config
+    const suffix = buildOutputSuffix(currentConfig.output.outputSuffix ?? 'ffcodec', {
+      encoderId: currentConfig.video.encoderId,
+      qualityLabel: resolveQualityLabel(currentConfig),
+    })
 
     return inputPaths.map((inputPath) => {
       const directory = batchOutputToSourceDirectory && isAbsoluteLocalPath(inputPath)
         ? getPathDirectory(inputPath)
         : outputDirectory
-      const desiredOutput = deriveOutputPath(inputPath, directory, outputExtension)
+      const desiredOutput = deriveOutputPath(inputPath, directory, outputExtension, suffix)
       const outputPath = ensureUniqueOutputPath(desiredOutput, usedOutputs)
       usedOutputs.add(outputPath)
       return {

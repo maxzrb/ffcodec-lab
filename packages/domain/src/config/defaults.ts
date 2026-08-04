@@ -40,6 +40,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
       containerId: 'mp4',
       overwrite: false,
       hideBanner: false,
+      outputSuffix: 'ffcodec',
       metadata: { globalRaw: '', streamRaw: '' },
     },
     streams: {

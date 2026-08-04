@@ -3925,6 +3925,24 @@ html.performance-page-open .performance-page {
   accent-color: var(--accent);
 }
 
+.batch-queue-suffix {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: var(--font-body);
+}
+
+.batch-queue-suffix select {
+  min-height: 28px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: var(--font-body);
+}
+
 .batch-queue-hint,
 .batch-queue-notice,
 .batch-queue-empty,

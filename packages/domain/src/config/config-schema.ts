@@ -247,6 +247,7 @@ export const projectConfigSchema = z.object({
     containerId: z.string(),
     overwrite: z.boolean(),
     hideBanner: z.boolean(),
+    outputSuffix: z.enum(['ffcodec', 'timestamp', 'increment', 'encoder', 'random']),
     metadata: metadataConfigSchema.default({ globalRaw: '', streamRaw: '' }),
   }),
   streams: z.object({

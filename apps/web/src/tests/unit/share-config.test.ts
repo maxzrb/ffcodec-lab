@@ -32,7 +32,7 @@ describe('Share config — encoding', () => {
         path: '/home/user/video.mkv',
         additionalInputs: [] as never[],
       },
-      output: { path: '/home/user/output.mp4', containerId: 'mp4', overwrite: false, hideBanner: false },
+      output: { path: '/home/user/output.mp4', containerId: 'mp4', overwrite: false, hideBanner: false, outputSuffix: 'ffcodec' as const },
     }
     const shareable = toShareable(config)
     // Shareable does not have input.path or output.path
