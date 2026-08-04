@@ -351,7 +351,7 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
     },
     {
       name: 'MKV 无损封装',
-      description: 'MKV 容器，保留全部视频/音频/字幕/附件流、章节和全局元数据，不做任何重新编码',
+      description: 'MKV 容器，保留全部视频/音频/字幕流、章节和全局元数据，不做任何重新编码',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
       config: {
         ...createDefaultProjectConfig(),
@@ -371,7 +371,7 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
         audio: { ...createDefaultProjectConfig().audio, mode: 'copy' },
         customArgs: {
           ...createDefaultProjectConfig().customArgs,
-          preOutputArgs: ['-map', '0:t?', '-c:t', 'copy', '-map_metadata', '0', '-map_chapters', '0'],
+          preOutputArgs: ['-map_metadata', '0', '-map_chapters', '0'],
         },
       },
     },
