@@ -59,7 +59,7 @@ export function SingleFileOutputLocationControl() {
   }, [config.input.path, outputExtension, singleOutputToSourceDirectory, setConfig])
 
   const singleOutputPreview = singleOutputToSourceDirectory && isAbsoluteLocalPath(config.input.path)
-    ? deriveOutputInSourceDirectory(config.input.path, outputExtension)
+    ? config.output.path
     : null
 
   return (
