@@ -3899,7 +3899,15 @@ html.performance-page-open .performance-page {
 .input-output-output-location {
   display: grid;
   gap: 6px;
-  padding-bottom: 6px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.input-output-output-location:hover {
+  border-color: rgba(132, 165, 201, 0.16);
+  background: var(--field-hover);
 }
 
 .batch-queue-section .parameter-section__body--expanded .parameter-section__body-inner {
