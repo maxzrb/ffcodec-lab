@@ -2,7 +2,7 @@
 // 输入与输出模块内的 Desktop 批处理入口。
 // ============================================================
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { CollapsibleSection, useBuilderStore, useI18n } from '@ffcodec/workbench'
 import { getPreferredFFmpegPath } from '../ffmpeg-path-selection'
@@ -10,10 +10,10 @@ import { useEncodingJob } from '../components/useEncodingJob'
 import { runBatchQueue } from './batch-queue-runner'
 import { useBatchQueueStore, type BatchQueueItem, type BatchQueueItemStatus } from './batch-queue-store'
 import {
-  deriveOutputInSourceDirectory,
   deriveOutputPath,
   ensureUniqueOutputPath,
   getPathDirectory,
+  getPathStem,
   isAbsoluteLocalPath,
 } from './batch-queue-paths'
 
@@ -43,29 +43,30 @@ export function SingleFileOutputLocationControl() {
 
   const outputExtension = catalog.containers[config.output.containerId]?.extension ?? 'mp4'
 
-  // 只在输入路径、容器扩展名或开关状态变化时自动推导输出路径，
-  // 不再每次 config 变化都覆盖，避免锁死用户手动编辑。
+  // 只在输入路径、容器扩展名或开关状态变化时自动推导输出路径。
+  // 只改目录不改文件名，用户手动编辑的文件名始终保留。
   const prevDeriveKey = useRef('')
   useEffect(() => {
     if (!singleOutputToSourceDirectory || !isAbsoluteLocalPath(config.input.path)) {
-      // 关闭开关时重置跟踪键，确保下次开启能重新推导。
       if (!singleOutputToSourceDirectory) prevDeriveKey.current = ''
       return
     }
     const deriveKey = `${config.input.path}|${outputExtension}`
     if (deriveKey === prevDeriveKey.current) return
     prevDeriveKey.current = deriveKey
-    const outputPath = deriveOutputInSourceDirectory(config.input.path, outputExtension)
-    // 通过 getState() 取当前 config 避免将其加入依赖数组
+
+    const sourceDir = getPathDirectory(config.input.path)
     const current = useBuilderStore.getState().config
-    setConfig({ ...current, output: { ...current.output, path: outputPath } })
+    const currentFileName = (current.output.path ?? '').replace(/^.*[\\/]/, '')
+    // 保留用户设定的文件名；若输出路径为空或仍是默认占位值则用推导文件名。
+    const fileName = currentFileName || `${getPathStem(config.input.path) || 'output'}-ffcodec.${outputExtension}`
+    const separator = sourceDir.includes('\\') || /^[A-Za-z]:/.test(sourceDir) ? '\\' : '/'
+    setConfig({ ...current, output: { ...current.output, path: `${sourceDir}${separator}${fileName}` } })
   }, [config.input.path, outputExtension, singleOutputToSourceDirectory, setConfig])
 
-  const singleOutputPreview = useMemo(() => (
-    isAbsoluteLocalPath(config.input.path)
-      ? deriveOutputInSourceDirectory(config.input.path, outputExtension)
-      : null
-  ), [config.input.path, outputExtension])
+  const singleOutputPreview = singleOutputToSourceDirectory && isAbsoluteLocalPath(config.input.path)
+    ? config.output.path
+    : null
 
   return (
     <div className="input-output-output-location">
