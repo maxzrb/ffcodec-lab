@@ -816,7 +816,7 @@ function buildOutput(
           })
         }
         const sr = ov?.sampleRate ?? config.audio.sampleRate
-        if (sr) {
+        if (sr && Number(sr) !== 0) {
           output.audioArgs.push({
             id: `quality.a.sr.${outIdx}`,
             originId: 'audio.sampleRate',
