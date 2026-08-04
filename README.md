@@ -12,7 +12,7 @@ FFCodec Lab 把主输入解码、视频与音频编码、画面滤镜、字幕�
 
 > 字体声明：本软件使用 HarmonyOS Sans 字体，详见 [`packages/workbench/src/assets/fonts/LICENSE_HarmonyOS_Sans.txt`](packages/workbench/src/assets/fonts/LICENSE_HarmonyOS_Sans.txt)。
 
-当前版本：`1.5.1（11）`
+当前版本：`1.6.0（12）`
 
 版本号采用“语义版本号（版本序号）”格式：小更新或小修复增加修订号，大更新或大修复增加次版本号，重构类型或破坏性变更增加主版本号；版本序号从 1 开始，每次正式发布递增。完整规则见 [VERSIONING.md](VERSIONING.md)。
 
@@ -22,11 +22,11 @@ Windows 10/11 x64 用户请前往 [GitHub Releases](https://github.com/maxzrb/ff
 
 | 包 | 适用场景 | FFmpeg |
 | --- | --- | --- |
-| [Full 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.5.1/FFCodec-Lab-Setup-Full-1.5.1.exe) | 安装后直接使用 | 内置 `ffmpeg`、`ffprobe`、`ffplay` |
-| [Base 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.5.1/FFCodec-Lab-Setup-Base-1.5.1.exe) | 已有 FFmpeg，或自行管理版本 | 不包含 |
-| [Onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.5.1/FFCodec-Lab-Onedir-1.5.1.zip) | 免安装、解压即用 | 不包含 |
+| [Full 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.6.0/FFCodec-Lab-Setup-Full-1.6.0.exe) | 安装后直接使用 | 内置 `ffmpeg`、`ffprobe`、`ffplay` |
+| [Base 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.6.0/FFCodec-Lab-Setup-Base-1.6.0.exe) | 已有 FFmpeg，或自行管理版本 | 不包含 |
+| [Onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.6.0/FFCodec-Lab-Onedir-1.6.0.zip) | 免安装、解压即用 | 不包含 |
 
-下载后可使用 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.5.1/SHA256SUMS.txt) 校验文件完整性。Base 和 Onedir 会自动搜索系统 PATH、同目录和常见目录中的 FFmpeg，也可以在设置中选择自定义文件夹。Full 包会严格确认候选程序的身份，避免把 `ffprobe.exe` 当作 FFmpeg 而显示 `unknown`。
+下载后可使用 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.6.0/SHA256SUMS.txt) 校验文件完整性。Base 和 Onedir 会自动搜索系统 PATH、同目录和常见目录中的 FFmpeg，也可以在设置中选择自定义文件夹。Full 包会严格确认候选程序的身份，避免把 `ffprobe.exe` 当作 FFmpeg 而显示 `unknown`。
 
 > Windows 发布包目前未配置代码签名证书，首次下载或运行时可能出现 SmartScreen 提示。
 
@@ -106,7 +106,7 @@ pnpm check
 pnpm verify:filter-formats
 ```
 
-`pnpm check` 执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`pnpm verify:filter-formats` 优先调用 PATH 中的 FFmpeg，并在 Windows 仓库中交叉检查随附构建，实证验证高精度候选格式、采样/Alpha 保持、字幕、画面调整、降位抖动及已知 8-bit-only 滤镜。`v1.5.1` 发布门禁包括 Web/Desktop 全量测试、目录审计、双端 production build、两套 FFmpeg 高精度格式验证、Windows 三种包型构建、安装器内层资源检查、Onedir ZIP 完整性测试和 SHA-256 校验。
+`pnpm check` 执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`pnpm verify:filter-formats` 优先调用 PATH 中的 FFmpeg，并在 Windows 仓库中交叉检查随附构建，实证验证高精度候选格式、采样/Alpha 保持、字幕、画面调整、降位抖动及已知 8-bit-only 滤镜。`v1.6.0` 发布门禁包括 Web/Desktop 全量测试、目录审计、双端 production build、两套 FFmpeg 高精度格式验证、Windows 三种包型构建、安装器内层资源检查、Onedir ZIP 完整性测试和 SHA-256 校验。
 
 ## 项目结构
 
