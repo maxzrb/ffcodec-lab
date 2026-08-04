@@ -146,13 +146,25 @@ export function resolveInputSection(
       })
       if (entry.codecMode === 'encode' && videoEncMode) {
         const encOpts = Object.keys(catalog.encoders.video).map((id) => ({ value: id, label: id }))
-        const hasOverride = !!entry.video?.encoderId
+        const overrideEncoderId = entry.video?.encoderId
+        const hasOverride = !!overrideEncoderId
+        // 从 catalog 读取该编码器的 preset / profile / tune / pixelFormat 选项
+        const ovEncoder = overrideEncoderId ? catalog.encoders.video[overrideEncoderId] : undefined
+        const presetOpts = ovEncoder?.preset?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
+        const profileOpts = ovEncoder?.profile?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
+        const tuneOpts = ovEncoder?.tune?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
+        const pixFmtOpts = ovEncoder?.pixelFormat?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
+        // 质量控制：取编码器的第一个 quality mode 的 controls 中 label 含 CRF/QP 的项
+        const qMode = ovEncoder?.qualityModes[0]
+        const qCtrlLabel = qMode?.controls?.[0]?.label ?? '质量'
+        const prefix = `视频流 ${entry.index}`
+
         acc.push(
           {
             id: `streams.videoStreams.${i}.video.encoderId`,
-            label: `视频流 ${entry.index} 编码器`,
+            label: `${prefix} 编码器`,
             controlType: 'select' as const,
-            value: entry.video?.encoderId ?? '',
+            value: overrideEncoderId ?? '',
             options: [{ value: '', label: '（使用全局设置）' }, ...encOpts],
             visible: true, disabled: false,
             sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
@@ -160,47 +172,55 @@ export function resolveInputSection(
           },
           {
             id: `streams.videoStreams.${i}.video.crf`,
-            label: `视频流 ${entry.index} CRF`,
-            controlType: 'select' as const,
+            label: `${prefix} ${qCtrlLabel}`,
+            controlType: 'text' as const,
             value: entry.video?.crf != null ? String(entry.video.crf) : '',
-            options: [
-              { value: '', label: '（使用全局设置）' },
-              { value: '0', label: '0（无损）' },
-              { value: '18', label: '18（极高）' },
-              { value: '20', label: '20' },
-              { value: '23', label: '23（默认）' },
-              { value: '26', label: '26' },
-              { value: '30', label: '30' },
-              { value: '36', label: '36（省空间）' },
-              { value: '51', label: '51（最小）' },
-            ],
-            visible: hasOverride, disabled: false,
-            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-            commandOrigins: [], diagnostics: [],
-          },
-          {
-            id: `streams.videoStreams.${i}.video.preset`,
-            label: `视频流 ${entry.index} Preset`,
-            controlType: 'select' as const,
-            value: entry.video?.preset != null ? String(entry.video.preset) : '',
-            options: [
-              { value: '', label: '（使用全局设置）' },
-              { value: 'ultrafast', label: 'ultrafast' },
-              { value: 'superfast', label: 'superfast' },
-              { value: 'veryfast', label: 'veryfast' },
-              { value: 'faster', label: 'faster' },
-              { value: 'fast', label: 'fast' },
-              { value: 'medium', label: 'medium（默认）' },
-              { value: 'slow', label: 'slow' },
-              { value: 'slower', label: 'slower' },
-              { value: 'veryslow', label: 'veryslow' },
-              { value: 'placebo', label: 'placebo' },
-            ],
+            placeholder: '（使用全局设置）',
             visible: hasOverride, disabled: false,
             sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
             commandOrigins: [], diagnostics: [],
           },
         )
+        if (presetOpts.length > 0) acc.push({
+          id: `streams.videoStreams.${i}.video.preset`,
+          label: `${prefix} Preset`,
+          controlType: 'select' as const,
+          value: entry.video?.preset != null ? String(entry.video.preset) : '',
+          options: [{ value: '', label: '（使用全局设置）' }, ...presetOpts],
+          visible: hasOverride, disabled: false,
+          sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+          commandOrigins: [], diagnostics: [],
+        })
+        if (profileOpts.length > 0) acc.push({
+          id: `streams.videoStreams.${i}.video.profile`,
+          label: `${prefix} Profile`,
+          controlType: 'select' as const,
+          value: entry.video?.profile ?? '',
+          options: [{ value: '', label: '（使用全局设置）' }, ...profileOpts],
+          visible: hasOverride, disabled: false,
+          sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+          commandOrigins: [], diagnostics: [],
+        })
+        if (tuneOpts.length > 0) acc.push({
+          id: `streams.videoStreams.${i}.video.tune`,
+          label: `${prefix} Tune`,
+          controlType: 'select' as const,
+          value: entry.video?.tune ?? '',
+          options: [{ value: '', label: '（使用全局设置）' }, ...tuneOpts],
+          visible: hasOverride, disabled: false,
+          sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+          commandOrigins: [], diagnostics: [],
+        })
+        if (pixFmtOpts.length > 0) acc.push({
+          id: `streams.videoStreams.${i}.video.pixelFormat`,
+          label: `${prefix} 像素格式`,
+          controlType: 'select' as const,
+          value: entry.video?.pixelFormat ?? '',
+          options: [{ value: '', label: '（使用全局设置）' }, ...pixFmtOpts],
+          visible: hasOverride, disabled: false,
+          sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+          commandOrigins: [], diagnostics: [],
+        })
       }
       return acc
     }, []) : []),
@@ -242,10 +262,11 @@ export function resolveInputSection(
       if (entry.codecMode === 'encode' && audioEncMode) {
         const aEncOpts = Object.keys(catalog.encoders.audio).map((id) => ({ value: id, label: id }))
         const hasOverride = !!entry.audio?.encoderId
+        const prefix = `音频流 ${entry.index}`
         acc.push(
           {
             id: `streams.audioStreams.${i}.audio.encoderId`,
-            label: `音频流 ${entry.index} 编码器`,
+            label: `${prefix} 编码器`,
             controlType: 'select' as const,
             value: entry.audio?.encoderId ?? '',
             options: [{ value: '', label: '（使用全局设置）' }, ...aEncOpts],
@@ -255,7 +276,7 @@ export function resolveInputSection(
           },
           {
             id: `streams.audioStreams.${i}.audio.bitrate`,
-            label: `音频流 ${entry.index} 比特率`,
+            label: `${prefix} 比特率`,
             controlType: 'select' as const,
             value: entry.audio?.bitrate ?? '',
             options: [
@@ -275,8 +296,24 @@ export function resolveInputSection(
             commandOrigins: [], diagnostics: [],
           },
           {
+            id: `streams.audioStreams.${i}.audio.sampleRate`,
+            label: `${prefix} 采样率`,
+            controlType: 'select' as const,
+            value: entry.audio?.sampleRate != null ? String(entry.audio.sampleRate) : '',
+            options: [
+              { value: '', label: '（使用全局设置）' },
+              { value: '22050', label: '22050 Hz' },
+              { value: '44100', label: '44100 Hz' },
+              { value: '48000', label: '48000 Hz' },
+              { value: '96000', label: '96000 Hz' },
+            ],
+            visible: hasOverride, disabled: false,
+            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+            commandOrigins: [], diagnostics: [],
+          },
+          {
             id: `streams.audioStreams.${i}.audio.channelLayout`,
-            label: `音频流 ${entry.index} 声道`,
+            label: `${prefix} 声道`,
             controlType: 'select' as const,
             value: entry.audio?.channelLayout ?? '',
             options: [
