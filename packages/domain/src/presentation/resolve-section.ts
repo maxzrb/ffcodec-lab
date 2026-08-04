@@ -150,6 +150,7 @@ export function resolveInputSection(
         const hasOverride = !!overrideEncoderId
         // 从 catalog 读取该编码器的 preset / profile / tune / pixelFormat 选项
         const ovEncoder = overrideEncoderId ? catalog.encoders.video[overrideEncoderId] : undefined
+        const presetOpts = ovEncoder?.preset?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
         const profileOpts = ovEncoder?.profile?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
         const tuneOpts = ovEncoder?.tune?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
         const pixFmtOpts = ovEncoder?.pixelFormat?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
@@ -180,12 +181,12 @@ export function resolveInputSection(
             commandOrigins: [], diagnostics: [],
           },
         )
-        if (!ovEncoder || ovEncoder.preset) acc.push({
+        if (presetOpts.length > 0) acc.push({
           id: `streams.videoStreams.${i}.video.preset`,
           label: `${prefix} Preset`,
-          controlType: 'text' as const,
+          controlType: 'select' as const,
           value: entry.video?.preset != null ? String(entry.video.preset) : '',
-          placeholder: '（使用全局设置）',
+          options: [{ value: '', label: '（使用全局设置）' }, ...presetOpts],
           visible: hasOverride, disabled: false,
           sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
           commandOrigins: [], diagnostics: [],
