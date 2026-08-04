@@ -51,6 +51,7 @@ const GENERIC_CODEC_ARG_NAMES = new Set([
 export function resolveInputSection(
   config: ProjectConfig,
   fieldStates: Record<string, FieldState>,
+  catalog: Catalog,
 ): ResolvedSection {
   const streamIndexOptions = Array.from({ length: 16 }, (_, index) => ({
     value: index,
@@ -132,16 +133,54 @@ export function resolveInputSection(
       sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
       commandOrigins: ['streams.videoStreams'], diagnostics: [],
     },
-    ...(!preserveAllVideo ? config.streams.videoStreams.map((entry, i) => ({
-      id: `streams.videoStreams.${i}.codecMode`,
-      label: `视频流 ${entry.index}`,
-      controlType: 'switch' as const,
-      value: entry.codecMode === 'encode',
-      visible: videoEncMode || !videoActive, disabled: !videoEncMode,
-      disabledReason: !videoActive ? '当前不输出视频（-vn）。' : '当前为复制模式（-c:v copy），所有视频流统一复制。',
-      sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-      commandOrigins: [], diagnostics: [],
-    })) : []),
+    ...(!preserveAllVideo ? config.streams.videoStreams.reduce((acc: any[], entry, i) => {
+      acc.push({
+        id: `streams.videoStreams.${i}.codecMode`,
+        label: `视频流 ${entry.index}`,
+        controlType: 'switch' as const,
+        value: entry.codecMode === 'encode',
+        visible: videoEncMode || !videoActive, disabled: !videoEncMode,
+        disabledReason: !videoActive ? '当前不输出视频（-vn）。' : '当前为复制模式（-c:v copy），所有视频流统一复制。',
+        sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+        commandOrigins: [], diagnostics: [],
+      })
+      if (entry.codecMode === 'encode' && videoEncMode) {
+        const encOpts = Object.keys(catalog.encoders.video).map((id) => ({ value: id, label: id }))
+        acc.push(
+          {
+            id: `streams.videoStreams.${i}.video.encoderId`,
+            label: '编码器覆写',
+            controlType: 'select' as const,
+            value: entry.video?.encoderId ?? '',
+            options: [{ value: '', label: '（使用全局设置）' }, ...encOpts],
+            visible: true, disabled: false,
+            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+            commandOrigins: [], diagnostics: [],
+          },
+          {
+            id: `streams.videoStreams.${i}.video.crf`,
+            label: 'CRF 覆写',
+            controlType: 'text' as const,
+            value: entry.video?.crf != null ? String(entry.video.crf) : '',
+            placeholder: '（使用全局设置）',
+            visible: true, disabled: false,
+            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+            commandOrigins: [], diagnostics: [],
+          },
+          {
+            id: `streams.videoStreams.${i}.video.preset`,
+            label: 'Preset 覆写',
+            controlType: 'text' as const,
+            value: entry.video?.preset != null ? String(entry.video.preset) : '',
+            placeholder: '（使用全局设置）',
+            visible: true, disabled: false,
+            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+            commandOrigins: [], diagnostics: [],
+          },
+        )
+      }
+      return acc
+    }, []) : []),
     // -- 保留全部音频流开关 ------------------------------------------------
     {
       ...resolveSwitchField(
@@ -166,16 +205,54 @@ export function resolveInputSection(
       sourceRefs: [], verificationLevel: 'project-derived', needsCrossVerification: false,
       commandOrigins: ['streams.audioStreams'], diagnostics: [],
     },
-    ...(!preserveAllAudio ? config.streams.audioStreams.map((entry, i) => ({
-      id: `streams.audioStreams.${i}.codecMode`,
-      label: `音频流 ${entry.index}`,
-      controlType: 'switch' as const,
-      value: entry.codecMode === 'encode',
-      visible: audioEncMode || !audioActive, disabled: !audioEncMode,
-      disabledReason: !audioActive ? '当前不输出音频（-an）。' : '当前为复制模式（-c:a copy），所有音频流统一复制。',
-      sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-      commandOrigins: [], diagnostics: [],
-    })) : []),
+    ...(!preserveAllAudio ? config.streams.audioStreams.reduce((acc: any[], entry, i) => {
+      acc.push({
+        id: `streams.audioStreams.${i}.codecMode`,
+        label: `音频流 ${entry.index}`,
+        controlType: 'switch' as const,
+        value: entry.codecMode === 'encode',
+        visible: audioEncMode || !audioActive, disabled: !audioEncMode,
+        disabledReason: !audioActive ? '当前不输出音频（-an）。' : '当前为复制模式（-c:a copy），所有音频流统一复制。',
+        sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+        commandOrigins: [], diagnostics: [],
+      })
+      if (entry.codecMode === 'encode' && audioEncMode) {
+        const aEncOpts = Object.keys(catalog.encoders.audio).map((id) => ({ value: id, label: id }))
+        acc.push(
+          {
+            id: `streams.audioStreams.${i}.audio.encoderId`,
+            label: '编码器覆写',
+            controlType: 'select' as const,
+            value: entry.audio?.encoderId ?? '',
+            options: [{ value: '', label: '（使用全局设置）' }, ...aEncOpts],
+            visible: true, disabled: false,
+            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+            commandOrigins: [], diagnostics: [],
+          },
+          {
+            id: `streams.audioStreams.${i}.audio.bitrate`,
+            label: '比特率覆写',
+            controlType: 'text' as const,
+            value: entry.audio?.bitrate ?? '',
+            placeholder: '（使用全局设置）',
+            visible: true, disabled: false,
+            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+            commandOrigins: [], diagnostics: [],
+          },
+          {
+            id: `streams.audioStreams.${i}.audio.channelLayout`,
+            label: '声道覆写',
+            controlType: 'text' as const,
+            value: entry.audio?.channelLayout ?? '',
+            placeholder: '（使用全局设置）',
+            visible: true, disabled: false,
+            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
+            commandOrigins: [], diagnostics: [],
+          },
+        )
+      }
+      return acc
+    }, []) : []),
     // -- 保留全部字幕流开关（默认关闭，不强制保留字幕）----------------------
     resolveSwitchField(
       'streams.preserveAllSubtitleStreams',

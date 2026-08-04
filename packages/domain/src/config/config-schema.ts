@@ -254,10 +254,25 @@ export const projectConfigSchema = z.object({
     videoStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
       codecMode: z.enum(['encode', 'copy']),
+      video: z.object({
+        encoderId: z.string().optional(),
+        preset: z.union([z.string(), z.number()]).optional(),
+        profile: z.string().optional(),
+        tune: z.string().optional(),
+        pixelFormat: z.string().optional(),
+        crf: z.number().optional(),
+        bitrate: z.string().optional(),
+      }).optional(),
     })).default([{ index: 0, codecMode: 'encode' as const }]),
     audioStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
       codecMode: z.enum(['encode', 'copy']),
+      audio: z.object({
+        encoderId: z.string().optional(),
+        bitrate: z.string().optional(),
+        channelLayout: z.string().optional(),
+        sampleRate: z.number().optional(),
+      }).optional(),
     })).default([{ index: 0, codecMode: 'encode' as const }]),
     subtitleStreams: z.array(z.object({
       index: z.number().int().nonnegative(),

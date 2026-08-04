@@ -111,11 +111,33 @@ export interface MetadataConfig {
   streamRaw: string
 }
 
+/** 逐流编码覆写。不填的字段回退到全局 config.video / config.audio。 */
+export interface StreamAudioOverride {
+  encoderId?: string
+  bitrate?: string
+  channelLayout?: string
+  sampleRate?: number
+}
+
+export interface StreamVideoOverride {
+  encoderId?: string
+  preset?: string | number
+  profile?: string
+  tune?: string
+  pixelFormat?: string
+  crf?: number
+  bitrate?: string
+}
+
 export interface StreamMapEntry {
   /** 类型内相对流索引（0=v:0, 1=v:1）。 */
   index: number
   /** 编码模式：encode（参与编码）或 copy（原样复制）。默认 encode。 */
   codecMode: 'encode' | 'copy'
+  /** 逐流音频编码覆写（仅 codecMode === 'encode' 时生效）。 */
+  audio?: StreamAudioOverride
+  /** 逐流视频编码覆写（仅 codecMode === 'encode' 时生效）。 */
+  video?: StreamVideoOverride
 }
 
 export interface StreamSelectionConfig {

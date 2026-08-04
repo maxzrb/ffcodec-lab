@@ -193,7 +193,7 @@ describe('ResolvedField — text and switch fields', () => {
 describe('Resolver — section resolution', () => {
   it('resolves input section with path and overwrite fields', () => {
     const config = makeConfig()
-    const section = resolveInputSection(config, {})
+    const section = resolveInputSection(config, {}, catalog)
 
     expect(section.id).toBe('section.input')
     expect(section.fields.length).toBeGreaterThan(0)

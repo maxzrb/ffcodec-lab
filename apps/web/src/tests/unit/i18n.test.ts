@@ -100,7 +100,7 @@ describe('全局中英文切换', () => {
     const toolsConfig = createDefaultProjectConfig()
     toolsConfig.tools.targetSize.enabled = true
     sections.push(
-      resolveInputSection(base, fieldStates),
+      resolveInputSection(base, fieldStates, catalog),
       resolveDecodeSection(base, fieldStates),
       resolveFrameSection(base, fieldStates),
       resolveContainerSection(base, catalog, fieldStates),

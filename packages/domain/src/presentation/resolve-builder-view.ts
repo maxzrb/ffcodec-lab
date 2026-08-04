@@ -44,7 +44,7 @@ export function resolveBuilderView(
   const fieldStates = evaluationResult.fieldStates
 
   const sections = [
-    resolveInputSection(config, fieldStates),
+    resolveInputSection(config, fieldStates, catalog),
     resolveDecodeSection(config, fieldStates),
     resolveVideoSection(config, catalog, fieldStates),
     resolveGenericCodecSection(config, catalog, fieldStates),
