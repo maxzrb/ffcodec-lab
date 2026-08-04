@@ -146,10 +146,11 @@ export function resolveInputSection(
       })
       if (entry.codecMode === 'encode' && videoEncMode) {
         const encOpts = Object.keys(catalog.encoders.video).map((id) => ({ value: id, label: id }))
+        const hasOverride = !!entry.video?.encoderId
         acc.push(
           {
             id: `streams.videoStreams.${i}.video.encoderId`,
-            label: '编码器覆写',
+            label: `视频流 ${entry.index} 编码器`,
             controlType: 'select' as const,
             value: entry.video?.encoderId ?? '',
             options: [{ value: '', label: '（使用全局设置）' }, ...encOpts],
@@ -159,21 +160,21 @@ export function resolveInputSection(
           },
           {
             id: `streams.videoStreams.${i}.video.crf`,
-            label: 'CRF 覆写',
+            label: `视频流 ${entry.index} CRF`,
             controlType: 'text' as const,
             value: entry.video?.crf != null ? String(entry.video.crf) : '',
             placeholder: '（使用全局设置）',
-            visible: true, disabled: false,
+            visible: hasOverride, disabled: false,
             sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
             commandOrigins: [], diagnostics: [],
           },
           {
             id: `streams.videoStreams.${i}.video.preset`,
-            label: 'Preset 覆写',
+            label: `视频流 ${entry.index} Preset`,
             controlType: 'text' as const,
             value: entry.video?.preset != null ? String(entry.video.preset) : '',
             placeholder: '（使用全局设置）',
-            visible: true, disabled: false,
+            visible: hasOverride, disabled: false,
             sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
             commandOrigins: [], diagnostics: [],
           },
@@ -218,10 +219,11 @@ export function resolveInputSection(
       })
       if (entry.codecMode === 'encode' && audioEncMode) {
         const aEncOpts = Object.keys(catalog.encoders.audio).map((id) => ({ value: id, label: id }))
+        const hasOverride = !!entry.audio?.encoderId
         acc.push(
           {
             id: `streams.audioStreams.${i}.audio.encoderId`,
-            label: '编码器覆写',
+            label: `音频流 ${entry.index} 编码器`,
             controlType: 'select' as const,
             value: entry.audio?.encoderId ?? '',
             options: [{ value: '', label: '（使用全局设置）' }, ...aEncOpts],
@@ -231,21 +233,21 @@ export function resolveInputSection(
           },
           {
             id: `streams.audioStreams.${i}.audio.bitrate`,
-            label: '比特率覆写',
+            label: `音频流 ${entry.index} 比特率`,
             controlType: 'text' as const,
             value: entry.audio?.bitrate ?? '',
             placeholder: '（使用全局设置）',
-            visible: true, disabled: false,
+            visible: hasOverride, disabled: false,
             sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
             commandOrigins: [], diagnostics: [],
           },
           {
             id: `streams.audioStreams.${i}.audio.channelLayout`,
-            label: '声道覆写',
+            label: `音频流 ${entry.index} 声道`,
             controlType: 'text' as const,
             value: entry.audio?.channelLayout ?? '',
             placeholder: '（使用全局设置）',
-            visible: true, disabled: false,
+            visible: hasOverride, disabled: false,
             sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
             commandOrigins: [], diagnostics: [],
           },
