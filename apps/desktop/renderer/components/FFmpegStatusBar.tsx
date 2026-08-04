@@ -352,7 +352,7 @@ function JobStatus({ isZh, jobState }: {
       <StatusMetric label={isZh ? '进度' : 'Progress'} value={frameText} extra={percentText} />
       <StatusMetric label={isZh ? '效率' : 'Efficiency'} value={efficiencyText} />
       <StatusMetric label={isZh ? '大小/预估' : 'Size/Est.'} value={sizeText} />
-      <StatusMetric label={isZh ? '质量比特率' : 'Bitrate'} value={bitrateText} />
+      <StatusMetric label={isZh ? '码率' : 'Bitrate'} value={bitrateText} />
       <StatusMetric label={isZh ? '剩余/已用' : 'Left/Elapsed'} value={timeText} />
       <span className="desktop-job-status__phase">{label}</span>
     </div>
@@ -360,9 +360,10 @@ function JobStatus({ isZh, jobState }: {
 }
 
 function StatusMetric({ label, value, extra }: { label: string; value: string; extra?: string }) {
+  const tooltip = extra ? `${label}: ${value} (${extra})` : `${label}: ${value}`
   return (
-    <span className="desktop-job-status__metric">
-      <small>{label}</small>
+    <span className="desktop-job-status__metric" title={tooltip}>
+      <small aria-hidden="true">{label}</small>
       <strong>{value}</strong>
       {extra && <em>{extra}</em>}
     </span>

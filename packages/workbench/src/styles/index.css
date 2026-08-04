@@ -2450,6 +2450,16 @@ html:has(.desktop-shell) {
   font-weight: 650;
 }
 
+/* 窄窗口下隐藏状态栏指标标签，腾出空间给数值 */
+@media (max-width: 840px) {
+  .desktop-job-status__metric small {
+    display: none;
+  }
+  .desktop-job-status__metric {
+    padding: 0 5px;
+  }
+}
+
 /* ---- Phase 11 编码历史与日志弹窗 ---- */
 .app-dialog-layer {
   position: fixed;
