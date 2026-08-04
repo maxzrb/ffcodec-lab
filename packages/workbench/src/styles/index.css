@@ -3899,6 +3899,7 @@ html.performance-page-open .performance-page {
 .input-output-output-location {
   display: grid;
   gap: 6px;
+  padding-bottom: 6px;
 }
 
 .batch-queue-section .parameter-section__body--expanded .parameter-section__body-inner {
@@ -3932,7 +3933,6 @@ html.performance-page-open .performance-page {
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
 }
 
 .output-suffix-row__label {
