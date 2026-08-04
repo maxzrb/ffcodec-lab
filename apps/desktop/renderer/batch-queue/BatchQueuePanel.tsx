@@ -41,22 +41,30 @@ const SUFFIX_OPTIONS: { value: string; zh: string; en: string }[] = [
   { value: 'random', zh: '随机数字字母', en: 'Random' },
 ]
 
-function resolveQualityLabel(config: ReturnType<typeof useBuilderStore.getState>['config']): string {
+function resolveEncoderSuffixOpts(config: ReturnType<typeof useBuilderStore.getState>['config']): {
+  encoderId?: string; qualityLabel?: string
+} {
+  // 复制模式后缀显示 "copy"，禁用模式无编码器信息回退到默认 ffcodec。
+  if (config.video.mode === 'copy') return { encoderId: 'copy' }
+  if (config.video.mode !== 'encode' || !config.video.encoderId) return {}
   const rc = config.video.rateControl
-  if (!rc) return ''
+  if (!rc) return { encoderId: config.video.encoderId }
   const qv = rc.qualityValue != null ? String(rc.qualityValue) : ''
+  let qualityLabel = ''
   switch (rc.mode) {
-    case 'crf': return `crf${qv}`
-    case 'cqp': return `qp${qv}`
+    case 'crf': qualityLabel = `crf${qv}`; break
+    case 'cqp': qualityLabel = `qp${qv}`; break
     case 'twoPass': {
       const bv = (rc.additionalValues as Record<string, string> | undefined)?.bitrate ?? ''
-      return bv.replace('k', '')
+      qualityLabel = bv.replace('k', '')
+      break
     }
     default: {
       const bv = (rc.additionalValues as Record<string, string> | undefined)?.bitrate ?? ''
-      return bv ? bv : rc.mode
+      qualityLabel = bv || rc.mode
     }
   }
+  return { encoderId: config.video.encoderId, qualityLabel }
 }
 
 /** 置于既有"输入与输出"卡片内的单文件输出位置设置。 */
@@ -79,10 +87,7 @@ export function SingleFileOutputLocationControl() {
       return
     }
     const current = useBuilderStore.getState().config
-    const suffix = buildOutputSuffix(suffixStyle, {
-      encoderId: config.video.encoderId,
-      qualityLabel: resolveQualityLabel(current),
-    })
+    const suffix = buildOutputSuffix(suffixStyle, resolveEncoderSuffixOpts(current))
     const deriveKey = `${config.input.path}|${outputExtension}|${suffix}`
     if (deriveKey === prevDeriveKey.current) return
     prevDeriveKey.current = deriveKey
@@ -165,10 +170,7 @@ export function BatchQueuePanel() {
     const usedOutputs = new Set(items.map((item) => item.outputPath))
     const outputDirectory = effectiveBatchOutputDirectory
     const currentConfig = useBuilderStore.getState().config
-    const suffix = buildOutputSuffix(currentConfig.output.outputSuffix ?? 'ffcodec', {
-      encoderId: currentConfig.video.encoderId,
-      qualityLabel: resolveQualityLabel(currentConfig),
-    })
+    const suffix = buildOutputSuffix(currentConfig.output.outputSuffix ?? 'ffcodec', resolveEncoderSuffixOpts(currentConfig))
 
     return inputPaths.map((inputPath) => {
       const directory = batchOutputToSourceDirectory && isAbsoluteLocalPath(inputPath)
