@@ -350,6 +350,32 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
       },
     },
     {
+      name: 'MKV 无损封装',
+      description: 'MKV 容器，保留全部视频/音频/字幕/附件流、章节和全局元数据，不做任何重新编码',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        output: {
+          ...createDefaultProjectConfig().output,
+          path: 'output.mkv',
+          containerId: 'mkv',
+          overwrite: true,
+        },
+        streams: {
+          ...createDefaultProjectConfig().streams,
+          preserveAllVideoStreams: true,
+          preserveAllAudioStreams: true,
+          preserveAllSubtitleStreams: true,
+        },
+        video: { ...createDefaultProjectConfig().video, mode: 'copy' },
+        audio: { ...createDefaultProjectConfig().audio, mode: 'copy' },
+        customArgs: {
+          ...createDefaultProjectConfig().customArgs,
+          preOutputArgs: ['-map', '0:t?', '-c:t', 'copy', '-map_metadata', '0', '-map_chapters', '0'],
+        },
+      },
+    },
+    {
       name: '仅提取音频',
       description: '禁用视频，仅输出 AAC 音频',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,

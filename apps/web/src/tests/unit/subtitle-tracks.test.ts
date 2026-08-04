@@ -97,6 +97,20 @@ describe('Subtitle tracks — command generation', () => {
     expect(text).not.toContain('-c:s')
   })
 
+  it('preserveAllSubtitle without tracks generates -c:s copy to prevent bitmap→text conversion', () => {
+    const config = createDefaultProjectConfig()
+    // Simulate the remux / keep-all-subtitles scenario the user hit:
+    // -map 0:s? without -c:s copy causes FFmpeg to auto-select SSA text codec
+    // for PGS bitmap subtitles, which fails hard.
+    config.streams.preserveAllSubtitleStreams = true
+    config.subtitle.tracks = []
+    const text = renderBash(buildCommandPlan(config, catalog, [])).text
+
+    expect(text).toContain('-c:s copy')
+    // -map 0:s? may be quoted by shell renderers as -map '0:s?' or -map "0:s?"
+    expect(text).toMatch(/-map ['"]?0:s\?['"]?/)
+  })
+
   it('subtitle burn is unaffected by track changes', () => {
     const config = configWithTracks([makeTrack()])
     config.video.mode = 'encode'

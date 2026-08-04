@@ -908,6 +908,37 @@ function buildOutput(
     }
   }
 
+  // -- subtitle codec fallback ----------------------------------
+  // When subtitle streams are mapped (preserveAll or per-stream) but no
+  // individual subtitle tracks provide a codec, default to -c:s copy.
+  // Otherwise FFmpeg auto-selects a text codec (SSA) for bitmap subtitles
+  // (PGS/VobSub) inside Matroska/MP4, which fails with:
+  //   "Subtitle encoding currently only possible from text to text or
+  //    bitmap to bitmap"
+  if (config.subtitle.tracks.length === 0) {
+    if (preserveAllSubtitle) {
+      output.subtitleArgs.push({
+        id: 'codec.s.copy',
+        originId: 'streams.preserveAllSubtitleStreams',
+        phase: 'SUBTITLE',
+        tokens: ['-c:s', 'copy'],
+      })
+    } else {
+      // Per-stream entries with codecMode; subtitle encode has no global
+      // encoder selection so we only emit explicit -c:s:N copy entries.
+      subtitleEntries.forEach((entry, outIdx) => {
+        if (entry.codecMode === 'copy') {
+          output.subtitleArgs.push({
+            id: `codec.s.copy.${outIdx}`,
+            originId: `streams.subtitleStreams.${outIdx}`,
+            phase: 'SUBTITLE',
+            tokens: [`-c:s:${outIdx}`, 'copy'],
+          })
+        }
+      })
+    }
+  }
+
   // -- 自定义元数据 -------------------------------------------
   // 格式：全局 key=value；流级 stream_type:index:key=value
   const metadata = config.output.metadata
