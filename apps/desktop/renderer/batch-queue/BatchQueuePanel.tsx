@@ -90,9 +90,7 @@ export function SingleFileOutputLocationControl() {
     setConfig({ ...current, output: { ...current.output, path: outputPath } })
   }, [config.input.path, outputExtension, suffixStyle, singleOutputToSourceDirectory, setConfig])
 
-  const singleOutputPreview = singleOutputToSourceDirectory && isAbsoluteLocalPath(config.input.path)
-    ? config.output.path
-    : null
+  const showPreview = singleOutputToSourceDirectory && isAbsoluteLocalPath(config.input.path)
 
   return (
     <div className="input-output-output-location">
@@ -104,25 +102,26 @@ export function SingleFileOutputLocationControl() {
         />
         <span>{isZh ? '输出到原目录' : 'Output to source directory'}</span>
       </label>
-      {singleOutputToSourceDirectory && (
-        <label className="batch-queue-suffix">
-          <span>{isZh ? '文件名后缀' : 'Filename suffix'}</span>
-          <select
-            value={suffixStyle}
-            onChange={(event) => {
-              const current = useBuilderStore.getState().config
-              setConfig({ ...current, output: { ...current.output, outputSuffix: event.target.value as typeof suffixStyle } })
-            }}
-          >
-            {SUFFIX_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{isZh ? opt.zh : opt.en}</option>
-            ))}
-          </select>
+      <div className="output-suffix-field">
+        <label className="output-suffix-field__label">
+          {isZh ? '文件名后缀' : 'Filename suffix'}
         </label>
-      )}
-      {singleOutputToSourceDirectory && singleOutputPreview && (
-        <p className="batch-queue-hint" title={singleOutputPreview}>
-          {isZh ? '将生成：' : 'Will create: '}<code>{singleOutputPreview}</code>{isZh ? '；关闭后可手动指定输出位置。' : '; turn this off to choose a custom output location.'}
+        <select
+          className="output-suffix-field__select"
+          value={suffixStyle}
+          onChange={(event) => {
+            const current = useBuilderStore.getState().config
+            setConfig({ ...current, output: { ...current.output, outputSuffix: event.target.value as typeof suffixStyle } })
+          }}
+        >
+          {SUFFIX_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{isZh ? opt.zh : opt.en}</option>
+          ))}
+        </select>
+      </div>
+      {showPreview && (
+        <p className="batch-queue-hint" title={config.output.path}>
+          {isZh ? '将生成：' : 'Will create: '}<code>{config.output.path}</code>
         </p>
       )}
     </div>
