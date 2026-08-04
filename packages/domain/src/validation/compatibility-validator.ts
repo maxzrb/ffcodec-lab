@@ -36,7 +36,50 @@ export function validateCompatibility(
     pushCompatMessage(messages, entry, config.audio.encoderId, 'audio', container.id)
   }
 
+  // libopus + 5.1(side) 不兼容诊断
+  checkOpusSideChannelLayout(config, messages)
+
   return messages
+}
+
+/**
+ * libopus 不支持 5.1(side) 声道布局，选此组合会直接报错。
+ * 检查全局音频配置和所有逐流覆写。
+ */
+function checkOpusSideChannelLayout(config: ProjectConfig, messages: Diagnostic[]): void {
+  // 全局音频
+  if (
+    config.audio.mode === 'encode'
+    && config.audio.encoderId === 'libopus'
+    && config.audio.channelLayout === '5.1(side)'
+  ) {
+    messages.push({
+      code: 'warn.opus.channelLayout.side',
+      severity: 'warning',
+      category: 'compatibility',
+      message: 'libopus 不支持 5.1(side) 声道布局，请改用 5.1。当前选择会导致编码失败（"Invalid channel layout 5.1(side) for specified mapping family"）。',
+      originIds: ['audio.channelLayout', 'audio.encoderId'],
+      context: { encoderId: 'libopus', channelLayout: '5.1(side)' },
+    })
+  }
+  // 逐流音频覆写
+  for (let i = 0; i < config.streams.audioStreams.length; i++) {
+    const entry = config.streams.audioStreams[i]
+    if (
+      entry.codecMode === 'encode'
+      && entry.audio?.encoderId === 'libopus'
+      && entry.audio?.channelLayout === '5.1(side)'
+    ) {
+      messages.push({
+        code: 'warn.opus.channelLayout.side',
+        severity: 'warning',
+        category: 'compatibility',
+        message: `音频流 ${entry.index} 逐流覆写：libopus 不支持 5.1(side) 声道布局，请改用 5.1。当前选择会导致编码失败。`,
+        originIds: [`streams.audioStreams.${i}.audio.channelLayout`, `streams.audioStreams.${i}.audio.encoderId`],
+        context: { encoderId: 'libopus', channelLayout: '5.1(side)', streamIndex: entry.index },
+      })
+    }
+  }
 }
 
 function pushCompatMessage(
