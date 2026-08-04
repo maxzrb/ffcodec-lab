@@ -2,7 +2,7 @@
 // 输入与输出模块内的 Desktop 批处理入口。
 // ============================================================
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { CollapsibleSection, useBuilderStore, useI18n } from '@ffcodec/workbench'
 import { getPreferredFFmpegPath } from '../ffmpeg-path-selection'
@@ -43,13 +43,23 @@ export function SingleFileOutputLocationControl() {
 
   const outputExtension = catalog.containers[config.output.containerId]?.extension ?? 'mp4'
 
-  // 只有绝对路径才自动改写，避免默认示例值和手工相对路径被意外替换。
+  // 只在输入路径、容器扩展名或开关状态变化时自动推导输出路径，
+  // 不再每次 config 变化都覆盖，避免锁死用户手动编辑。
+  const prevDeriveKey = useRef('')
   useEffect(() => {
-    if (!singleOutputToSourceDirectory || !isAbsoluteLocalPath(config.input.path)) return
+    if (!singleOutputToSourceDirectory || !isAbsoluteLocalPath(config.input.path)) {
+      // 关闭开关时重置跟踪键，确保下次开启能重新推导。
+      if (!singleOutputToSourceDirectory) prevDeriveKey.current = ''
+      return
+    }
+    const deriveKey = `${config.input.path}|${outputExtension}`
+    if (deriveKey === prevDeriveKey.current) return
+    prevDeriveKey.current = deriveKey
     const outputPath = deriveOutputInSourceDirectory(config.input.path, outputExtension)
-    if (config.output.path === outputPath) return
-    setConfig({ ...config, output: { ...config.output, path: outputPath } })
-  }, [config, outputExtension, setConfig, singleOutputToSourceDirectory])
+    // 通过 getState() 取当前 config 避免将其加入依赖数组
+    const current = useBuilderStore.getState().config
+    setConfig({ ...current, output: { ...current.output, path: outputPath } })
+  }, [config.input.path, outputExtension, singleOutputToSourceDirectory, setConfig])
 
   const singleOutputPreview = useMemo(() => (
     isAbsoluteLocalPath(config.input.path)
