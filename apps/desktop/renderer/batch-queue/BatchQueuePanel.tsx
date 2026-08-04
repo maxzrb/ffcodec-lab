@@ -48,23 +48,33 @@ function resolveEncoderSuffixOpts(config: ReturnType<typeof useBuilderStore.getS
   if (config.video.mode === 'copy') return { encoderId: 'copy' }
   if (config.video.mode !== 'encode' || !config.video.encoderId) return {}
   const rc = config.video.rateControl
-  if (!rc) return { encoderId: config.video.encoderId }
-  const qv = rc.qualityValue != null ? String(rc.qualityValue) : ''
-  let qualityLabel = ''
-  switch (rc.mode) {
-    case 'crf': qualityLabel = `crf${qv}`; break
-    case 'cqp': qualityLabel = `qp${qv}`; break
-    case 'twoPass': {
-      const bv = (rc.additionalValues as Record<string, string> | undefined)?.bitrate ?? ''
-      qualityLabel = bv.replace('k', '')
-      break
-    }
-    default: {
-      const bv = (rc.additionalValues as Record<string, string> | undefined)?.bitrate ?? ''
-      qualityLabel = bv || rc.mode
+  const parts: string[] = []
+  // 质量控制
+  if (rc) {
+    const qv = rc.qualityValue != null ? String(rc.qualityValue) : ''
+    switch (rc.mode) {
+      case 'crf': parts.push(`crf${qv}`); break
+      case 'cqp': parts.push(`qp${qv}`); break
+      case 'twoPass': {
+        const bv = (rc.additionalValues as Record<string, string> | undefined)?.bitrate ?? ''
+        if (bv) parts.push(bv.replace('k', ''))
+        break
+      }
+      default: {
+        const bv = (rc.additionalValues as Record<string, string> | undefined)?.bitrate ?? ''
+        parts.push(bv || rc.mode)
+      }
     }
   }
-  return { encoderId: config.video.encoderId, qualityLabel }
+  // preset（非 auto 时追加）
+  if (config.video.preset && config.video.preset !== 'auto') {
+    parts.push(String(config.video.preset))
+  }
+  // profile（非 auto 时追加）
+  if (config.video.profile && config.video.profile !== 'auto') {
+    parts.push(String(config.video.profile))
+  }
+  return { encoderId: config.video.encoderId, qualityLabel: parts.join('-') || undefined }
 }
 
 /** 置于既有"输入与输出"卡片内的单文件输出位置设置。 */
