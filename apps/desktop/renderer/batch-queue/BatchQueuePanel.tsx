@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
-import { CollapsibleSection, useBuilderStore, useI18n } from '@ffcodec/workbench'
+import { CollapsibleSection, Dropdown, useBuilderStore, useI18n } from '@ffcodec/workbench'
 import { getPreferredFFmpegPath } from '../ffmpeg-path-selection'
 import { useEncodingJob } from '../components/useEncodingJob'
 import { runBatchQueue } from './batch-queue-runner'
@@ -90,35 +90,35 @@ export function SingleFileOutputLocationControl() {
     setConfig({ ...current, output: { ...current.output, path: outputPath } })
   }, [config.input.path, outputExtension, suffixStyle, singleOutputToSourceDirectory, setConfig])
 
+  const suffixOptions = SUFFIX_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: isZh ? opt.zh : opt.en,
+  }))
+
   const showPreview = singleOutputToSourceDirectory && isAbsoluteLocalPath(config.input.path)
 
   return (
     <div className="input-output-output-location">
-      <label className="batch-queue-toggle">
+      <label className="switch-control">
         <input
           type="checkbox"
           checked={singleOutputToSourceDirectory}
           onChange={(event) => setSingleOutputToSourceDirectory(event.target.checked)}
         />
+        <span className="switch-control__track" aria-hidden="true" />
         <span>{isZh ? '输出到原目录' : 'Output to source directory'}</span>
       </label>
-      <div className="output-suffix-field">
-        <label className="output-suffix-field__label">
-          {isZh ? '文件名后缀' : 'Filename suffix'}
-        </label>
-        <select
-          className="output-suffix-field__select"
+      <label className="output-suffix-row">
+        <span className="output-suffix-row__label">{isZh ? '文件名后缀' : 'Filename suffix'}</span>
+        <Dropdown
           value={suffixStyle}
-          onChange={(event) => {
+          options={suffixOptions}
+          onChange={(value) => {
             const current = useBuilderStore.getState().config
-            setConfig({ ...current, output: { ...current.output, outputSuffix: event.target.value as typeof suffixStyle } })
+            setConfig({ ...current, output: { ...current.output, outputSuffix: value as typeof suffixStyle } })
           }}
-        >
-          {SUFFIX_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{isZh ? opt.zh : opt.en}</option>
-          ))}
-        </select>
-      </div>
+        />
+      </label>
       {showPreview && (
         <p className="batch-queue-hint" title={config.output.path}>
           {isZh ? '将生成：' : 'Will create: '}<code>{config.output.path}</code>
