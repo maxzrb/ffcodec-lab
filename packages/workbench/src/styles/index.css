@@ -3898,9 +3898,7 @@ html.performance-page-open .performance-page {
 /* Desktop 批处理队列复用参数区的折叠卡片；单文件开关位于既有输入与输出卡片内。 */
 .input-output-output-location {
   display: grid;
-  gap: 7px;
-  padding-top: 7px;
-  border-top: 1px solid var(--border);
+  gap: 6px;
 }
 
 .batch-queue-section .parameter-section__body--expanded .parameter-section__body-inner {
