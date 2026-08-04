@@ -246,6 +246,7 @@ export const projectConfigSchema = z.object({
     path: z.string(),
     containerId: z.string(),
     overwrite: z.boolean(),
+    hideBanner: z.boolean(),
     metadata: metadataConfigSchema.default({ globalRaw: '', streamRaw: '' }),
   }),
   streams: z.object({

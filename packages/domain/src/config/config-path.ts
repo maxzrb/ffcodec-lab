@@ -77,6 +77,7 @@ export const CONFIG_PATHS = {
     path: configPath(['output', 'path']),
     containerId: configPath(['output', 'containerId']),
     overwrite: configPath(['output', 'overwrite']),
+    hideBanner: configPath(['output', 'hideBanner']),
     metadata: configPath(['output', 'metadata']),
     metadataGlobalRaw: configPath(['output', 'metadata', 'globalRaw']),
     metadataStreamRaw: configPath(['output', 'metadata', 'streamRaw']),

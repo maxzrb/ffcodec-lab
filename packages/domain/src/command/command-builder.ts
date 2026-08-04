@@ -122,6 +122,16 @@ function buildFirstPassOutput(output: OutputSpec): OutputSpec {
 function buildGlobalArgs(config: ProjectConfig): CommandArg[] {
   const args: CommandArg[] = []
 
+  if (config.output.hideBanner) {
+    args.push({
+      id: 'global.hideBanner',
+      originId: 'param.hideBanner',
+      phase: 'GLOBAL',
+      tokens: ['-hide_banner'],
+      explanationId: 'expl.param.hideBanner',
+    })
+  }
+
   if (config.output.overwrite) {
     args.push({
       id: 'global.overwrite',

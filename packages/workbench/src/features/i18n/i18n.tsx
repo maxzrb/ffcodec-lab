@@ -200,6 +200,7 @@ const ENGLISH_TEXT: Record<string, string> = {
   '命令环境': 'Shell',
   '输出容器': 'Output container',
   '覆盖已有文件 (-y)': 'Overwrite existing file (-y)',
+  '隐藏启动横幅 (-hide_banner)': 'Hide startup banner (-hide_banner)',
   '视频处理方式': 'Video handling',
   '视频编码器': 'Video encoder',
   'libaom-av1 (AV1/AOMedia)': 'libaom-av1 (AV1/AOMedia)',
@@ -919,6 +920,11 @@ const ENGLISH_EXPLANATIONS: Record<string, { title?: string; short: string; deta
     title: 'Overwrite existing output',
     short: 'Adds -y so FFmpeg replaces an existing output file without asking for confirmation.',
     detail: 'Leave this off when accidental replacement would be costly. Turn it on for repeatable scripts and batch jobs that intentionally regenerate the same path.',
+  },
+  'expl.param.hideBanner': {
+    title: 'Hide startup banner',
+    short: 'Adds -hide_banner to suppress the lengthy FFmpeg version, build info, and configuration banner printed at the start of every run.',
+    detail: 'The banner is useful for debugging but clutters logs and terminal output. Enable this for cleaner progress output and shorter log files.',
   },
   'expl.param.video.mode': {
     title: 'Video handling',

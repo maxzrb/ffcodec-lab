@@ -94,6 +94,7 @@ export interface OutputConfig {
   path: string
   containerId: string
   overwrite: boolean
+  hideBanner: boolean
   /** 自定义元数据；全局作用于整个文件，流级作用于指定流。 */
   metadata?: MetadataConfig
 }

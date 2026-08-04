@@ -39,6 +39,7 @@ export function createDefaultProjectConfig(): ProjectConfig {
       path: 'output.mp4',
       containerId: 'mp4',
       overwrite: false,
+      hideBanner: false,
       metadata: { globalRaw: '', streamRaw: '' },
     },
     streams: {

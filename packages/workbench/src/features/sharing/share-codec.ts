@@ -77,6 +77,7 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
     o: {
       containerId: config.output.containerId,
       overwrite: config.output.overwrite,
+      hideBanner: config.output.hideBanner,
       meta: config.output.metadata ?? { globalRaw: '', streamRaw: '' },
       // path intentionally excluded — privacy
     },
@@ -105,6 +106,7 @@ export function fromShareable(
       path: base?.output?.path ?? 'output.' + shareable.o.containerId,
       containerId: shareable.o.containerId,
       overwrite: shareable.o.overwrite,
+      hideBanner: shareable.o.hideBanner ?? false,
       metadata: shareable.o.meta ?? { globalRaw: '', streamRaw: '' },
     },
     streams: {

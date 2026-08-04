@@ -102,6 +102,12 @@ export function resolveInputSection(
       config.output.overwrite,
       fieldStates,
     ),
+    resolveSwitchField(
+      'output.hideBanner',
+      '隐藏启动横幅 (-hide_banner)',
+      config.output.hideBanner,
+      fieldStates,
+    ),
     // -- 保留全部视频流开关 ------------------------------------------------
     {
       ...resolveSwitchField(
