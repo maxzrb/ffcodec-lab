@@ -108,6 +108,25 @@ export class PresetService {
     return preset
   }
 
+  /** 交换相邻两项的顺序（用户自定义排序用） */
+  moveOrder(id: string, direction: 'up' | 'down'): void {
+    const presets = this.list()
+    const idx = presets.findIndex((p) => p.id === id)
+    if (idx === -1) return
+    const otherIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (otherIdx < 0 || otherIdx >= presets.length) return
+
+    const a = idx, b = otherIdx
+    const orderA = presets[a].order ?? a
+    const orderB = presets[b].order ?? b
+
+    presets[a] = { ...presets[a], order: orderB, updatedAt: nowISO() }
+    presets[b] = { ...presets[b], order: orderA, updatedAt: nowISO() }
+
+    this.storage.setItem(makePresetKey(presets[a].id), JSON.stringify(presets[a]))
+    this.storage.setItem(makePresetKey(presets[b].id), JSON.stringify(presets[b]))
+  }
+
   /** Export a preset as JSON string */
   export(id: string): string | null {
     const preset = this.load(id)
@@ -222,12 +241,157 @@ export function getPresetService(): PresetService {
 
 export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'updatedAt'>[] {
   return [
+    // ── 通用编码 ──
     {
       name: 'H.264 日常均衡',
-      description: 'libx264 CRF 23 + AAC 192k，适合日常压制',
+      description: 'libx264 CRF 23 + AAC 192k，MKV，适合日常压制',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
-      config: createDefaultProjectConfig(),
+      config: {
+        ...createDefaultProjectConfig(),
+        output: { ...createDefaultProjectConfig().output, containerId: 'mkv' },
+      },
     },
+    {
+      name: 'H.265 高质量',
+      description: 'libx265 CRF 24 + Opus 128k，HEVC 高效率编码',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        output: { ...createDefaultProjectConfig().output, containerId: 'mkv' },
+        video: {
+          ...createDefaultProjectConfig().video,
+          encoderId: 'libx265',
+          rateControl: {
+            mode: 'crf',
+            qualityValue: 24,
+            additionalValues: {},
+          },
+        },
+        audio: {
+          ...createDefaultProjectConfig().audio,
+          encoderId: 'libopus',
+          bitrate: '128k',
+        },
+      },
+    },
+    {
+      name: 'H265 RTX UHQ超压',
+      description: 'hevc_nvenc p7/uhq/main10/p010le CQ30 + libopus 112k VBR soxr，适用于 NVIDIA GPU 的高质量 HEVC 硬件转码，输出 MKV',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        output: {
+          ...createDefaultProjectConfig().output,
+          containerId: 'mkv',
+          overwrite: true,
+        },
+        streams: {
+          ...createDefaultProjectConfig().streams,
+          preserveAllVideoStreams: true,
+          preserveAllAudioStreams: true,
+          preserveAllSubtitleStreams: true,
+        },
+        video: {
+          ...createDefaultProjectConfig().video,
+          encoderId: 'hevc_nvenc',
+          preset: 'p7',
+          tune: 'uhq',
+          profile: 'main10',
+          pixelFormat: 'p010le',
+          rateControl: {
+            mode: 'nvenc-cq',
+            qualityValue: 30,
+            additionalValues: {},
+          },
+          specialParameters: {
+            spatialAq: true,
+            aqStrength: 10,
+            bFrames: 5,
+            bRefMode: 'middle',
+          },
+        },
+        audio: {
+          ...createDefaultProjectConfig().audio,
+          encoderId: 'libopus',
+          bitrate: '112k',
+          channelLayout: 'source',
+          sampleRate: 0,
+        },
+        customArgs: {
+          ...createDefaultProjectConfig().customArgs,
+          audioFilters: ['aresample=48000:resampler=soxr:precision=28:cheby=1:out_chlayout=stereo'],
+          audioArgs: ['-compression_level:a', '10'],
+        },
+      },
+    },
+    {
+      name: 'AV1 节省空间',
+      description: 'libsvtav1 CRF36 yuv420p10le film-grain=4 + Opus 128k，适合高压缩效率输出',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        output: {
+          ...createDefaultProjectConfig().output,
+          path: 'output.mkv',
+          containerId: 'mkv',
+          overwrite: true,
+        },
+        video: {
+          ...createDefaultProjectConfig().video,
+          encoderId: 'libsvtav1',
+          preset: 6,
+          profile: 'auto',
+          pixelFormat: 'yuv420p10le',
+          rateControl: {
+            mode: 'crf',
+            qualityValue: 36,
+            additionalValues: {},
+          },
+          specialParameters: {
+            svtav1Params:
+              'tune=0:keyint=10s:enable-variance-boost=1:variance-boost-strength=1:film-grain=4:film-grain-denoise=1:sharpness=1:ac-bias=1:lp=4',
+          },
+        },
+        audio: {
+          ...createDefaultProjectConfig().audio,
+          encoderId: 'libopus',
+          bitrate: '128k',
+        },
+        customArgs: {
+          ...createDefaultProjectConfig().customArgs,
+          audioArgs: ['-compression_level:a:0', '10'],
+        },
+      },
+    },
+    {
+      name: 'AVIF 高压缩图片',
+      description: 'libaom-av1 still-picture CRF18 cpu-used=1 row-mt=1，输出单帧 AVIF 图片（请用「自定义容器」设为 avif）',
+      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
+      config: {
+        ...createDefaultProjectConfig(),
+        output: {
+          ...createDefaultProjectConfig().output,
+          containerId: 'avif',
+          overwrite: true,
+        },
+        video: {
+          ...createDefaultProjectConfig().video,
+          encoderId: 'libaom_av1',
+          rateControl: {
+            mode: 'crf',
+            qualityValue: 18,
+            additionalValues: {},
+          },
+        },
+        audio: { ...createDefaultProjectConfig().audio, mode: 'disabled' },
+        customArgs: {
+          ...createDefaultProjectConfig().customArgs,
+          videoArgs: ['-still-picture', '1', '-row-mt', '1'],
+          audioArgs: [],
+        },
+      },
+    },
+    // ── 特殊用途 ──
     {
       name: '上传材料专用',
       description: 'MP4 + H.264 Main/yuv420p + AAC 128k，目标 1900 MiB；应用后请填写素材实际时长',
@@ -278,73 +442,12 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
       },
     },
     {
-      name: 'H.265 高质量',
-      description: 'libx265 CRF 24 + Opus 128k，HEVC 高效率编码',
+      name: '视频流复制',
+      description: '视频和音频流直接复制，仅更换 MKV 容器',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
       config: {
         ...createDefaultProjectConfig(),
         output: { ...createDefaultProjectConfig().output, containerId: 'mkv' },
-        video: {
-          ...createDefaultProjectConfig().video,
-          encoderId: 'libx265',
-          rateControl: {
-            mode: 'crf',
-            qualityValue: 24,
-            additionalValues: {},
-          },
-        },
-        audio: {
-          ...createDefaultProjectConfig().audio,
-          encoderId: 'libopus',
-          bitrate: '128k',
-        },
-      },
-    },
-    {
-      name: 'AV1 节省空间',
-      description: 'libsvtav1 CRF36 yuv420p10le film-grain=4 + Opus 128k compression_level=10，适合高压缩效率输出',
-      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
-      config: {
-        ...createDefaultProjectConfig(),
-        output: {
-          ...createDefaultProjectConfig().output,
-          path: 'output.mkv',
-          containerId: 'mkv',
-          overwrite: true,
-        },
-        video: {
-          ...createDefaultProjectConfig().video,
-          encoderId: 'libsvtav1',
-          preset: 6,
-          profile: 'auto',
-          pixelFormat: 'yuv420p10le',
-          rateControl: {
-            mode: 'crf',
-            qualityValue: 36,
-            additionalValues: {},
-          },
-          specialParameters: {
-            svtav1Params:
-              'tune=0:keyint=10s:enable-variance-boost=1:variance-boost-strength=1:film-grain=4:film-grain-denoise=1:sharpness=1:ac-bias=1:lp=4',
-          },
-        },
-        audio: {
-          ...createDefaultProjectConfig().audio,
-          encoderId: 'libopus',
-          bitrate: '128k',
-        },
-        customArgs: {
-          ...createDefaultProjectConfig().customArgs,
-          audioArgs: ['-compression_level:a:0', '10'],
-        },
-      },
-    },
-    {
-      name: '视频流复制',
-      description: '视频和音频流直接复制，仅更换容器',
-      schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
-      config: {
-        ...createDefaultProjectConfig(),
         video: { ...createDefaultProjectConfig().video, mode: 'copy' },
         audio: { ...createDefaultProjectConfig().audio, mode: 'copy' },
       },
@@ -377,11 +480,11 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
     },
     {
       name: '仅提取音频',
-      description: '禁用视频，仅输出 AAC 音频',
+      description: '禁用视频，仅输出 AAC 音频，MKV 容器',
       schemaVersion: CURRENT_PRESET_SCHEMA_VERSION,
       config: {
         ...createDefaultProjectConfig(),
-        output: { ...createDefaultProjectConfig().output, containerId: 'mp4' },
+        output: { ...createDefaultProjectConfig().output, containerId: 'mkv' },
         video: { ...createDefaultProjectConfig().video, mode: 'disabled' },
         audio: {
           ...createDefaultProjectConfig().audio,

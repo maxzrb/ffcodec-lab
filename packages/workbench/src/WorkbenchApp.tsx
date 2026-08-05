@@ -38,7 +38,7 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = '1.7.2（15）'
+const APP_VERSION = '1.7.3（16）'
 const RELEASE_URL = `${PROJECT_URL}/releases`
 const WEB_APP_URL = 'https://fflab.loliland.cn'
 
@@ -192,7 +192,8 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
         const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname)
         const useProductionUrl = capabilities.desktop || isLocal
         const baseUrl = useProductionUrl ? WEB_APP_URL : window.location.origin
-        const shareUrl = `${baseUrl}/#${result.value}`
+        const hashValue = result.value.replace(/^#/, '')
+        const shareUrl = `${baseUrl}/#${hashValue}`
         // 跨域时不能 replaceState（History API 安全限制），仅同域时更新地址栏
         if (!useProductionUrl) {
           window.history.replaceState(null, '', shareUrl)

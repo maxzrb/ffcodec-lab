@@ -2062,6 +2062,14 @@ code {
   font-size: 12px;
 }
 
+.import-share-dialog .modal-actions {
+  margin-top: 4px;
+}
+
+.import-share-dialog .button--primary {
+  color: #fff;
+}
+
 .preset-browser__tools {
   position: sticky;
   z-index: 2;
@@ -2113,6 +2121,35 @@ code {
 
 .preset-browser__scope button:last-child { border-right: 0; }
 .preset-browser__scope button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+.preset-browser__sort {
+  min-height: 30px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.preset-card__move-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 26px;
+  text-align: center;
+}
+.preset-card__move-btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--accent);
+}
 
 .preset-browser__empty {
   padding: 28px 12px;

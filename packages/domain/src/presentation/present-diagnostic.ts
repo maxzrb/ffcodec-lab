@@ -336,6 +336,54 @@ const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
       guidance: 'Select an output container again, or restore the default configuration.',
     },
   },
+  'info.compat.customContainer': {
+    'zh-CN': {
+      title: '自定义容器 — 跳过兼容性校验',
+      explanation: '当前使用自定义容器后缀，未受内置目录校验。请自行确认所选编码器与格式（如 AVIF、M4A、WebP）的兼容性。',
+      guidance: '验证 FFmpeg 是否支持该编码器 × 容器的组合后再运行。',
+    },
+    en: {
+      title: 'Custom container — compatibility check skipped',
+      explanation: 'A custom container extension is in use, which is not validated by the built-in catalog. Please verify compatibility manually.',
+      guidance: 'Confirm with FFmpeg that your encoder × container combination is supported before running.',
+    },
+  },
+  'error.container.image.noVideo': {
+    'zh-CN': {
+      title: '图片容器不支持视频编码',
+      explanation: '当前容器为图片格式，无法封装视频轨道。请将视频模式切换为禁用，或选择视频容器。',
+      guidance: '将视频模式设为「禁用」，或改为 MP4/MKV 等视频容器。',
+    },
+    en: {
+      title: 'Image container cannot encode video',
+      explanation: 'The selected container is an image format and cannot hold a video track. Disable video encoding or switch to a video container.',
+      guidance: 'Set video mode to Disabled or choose a video container such as MP4 or MKV.',
+    },
+  },
+  'error.container.image.noAudio': {
+    'zh-CN': {
+      title: '图片容器不支持音频编码',
+      explanation: '当前容器为图片格式，无法封装音频轨道。请将音频模式切换为禁用，或选择视频容器。',
+      guidance: '将音频模式设为「禁用」，或改为视频容器。',
+    },
+    en: {
+      title: 'Image container cannot encode audio',
+      explanation: 'The selected container is an image format and cannot hold an audio track. Disable audio encoding or switch to a video container.',
+      guidance: 'Set audio mode to Disabled or choose a video container.',
+    },
+  },
+  'error.container.audio.noVideo': {
+    'zh-CN': {
+      title: '音频容器不支持视频编码',
+      explanation: '当前容器为纯音频格式，无法封装视频轨道。请将视频模式切换为禁用或流复制。',
+      guidance: '将视频模式设为「禁用」或「流复制」，或改为视频容器。',
+    },
+    en: {
+      title: 'Audio container cannot encode video',
+      explanation: 'The selected container is audio-only and cannot hold a video track. Disable video encoding or switch to a video container.',
+      guidance: 'Set video mode to Disabled or Stream copy, or choose a video container.',
+    },
+  },
   'error.targetSize.video.requiresEncode': {
     'zh-CN': {
       title: '目标大小需要重新编码视频',

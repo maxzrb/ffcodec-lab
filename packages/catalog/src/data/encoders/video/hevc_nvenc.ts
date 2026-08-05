@@ -347,7 +347,7 @@ export const hevcNvenc: EncoderDefinition = {
       control: 'number',
       configBinding: { path: videoSpecialParamPath('bFrames') },
       commandBinding: { argName: '-bf', prefix: '-bf', phase: 'VIDEO_CODEC' },
-      range: { min: 0, max: 4 }, defaultValue: 2,
+      range: { min: 0, max: 5 }, defaultValue: 2,
       explanationId: 'expl.nvenc.bf', sourceRefs: [nvencSource],
     },
     {

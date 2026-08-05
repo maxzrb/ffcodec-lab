@@ -59,7 +59,7 @@ export function PresetImportDialog({ onImport, onClose }: PresetImportDialogProp
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1,
+        zIndex: 5,
       }}
     >
       <div

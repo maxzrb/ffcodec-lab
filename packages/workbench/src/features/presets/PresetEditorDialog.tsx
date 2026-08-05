@@ -49,7 +49,7 @@ export function PresetEditorDialog({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1,
+        zIndex: 5,
       }}
     >
       <div

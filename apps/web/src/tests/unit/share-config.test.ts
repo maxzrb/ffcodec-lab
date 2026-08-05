@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decodeConfigFromShare, encodeConfigToShare, toShareable } from '@ffcodec/workbench/features/sharing/share-codec'
+import { shareableConfigSchema } from '@ffcodec/workbench/features/sharing/share-schema'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 
 describe('Share config — encoding', () => {
@@ -79,5 +80,25 @@ describe('Share config — decoding', () => {
     const decoded = decodeConfigFromShare(result.value)
     expect(decoded.success).toBe(true)
     expect(decoded.config?.video.encoderId).toBe('libx265')
+  })
+
+  it('decodes old-format links without customArgs or per-stream overrides', () => {
+    // 从真实的 createDefaultProjectConfig 出发，encode 一次拿到完整 shareable，
+    // 然后手动删除新增字段 c 和逐流覆写 video/audio，模拟 v1.7.1 旧链接
+    const config = createDefaultProjectConfig()
+    const shareable = toShareable(config)
+    // 删除 v1.7.2 新增的字段
+    delete (shareable as Record<string, unknown>).c
+    const m = shareable.m as Record<string, unknown> | undefined
+    if (m?.videoStreams) (m.videoStreams as Record<string, unknown>[]).forEach((s) => delete s.video)
+    if (m?.audioStreams) (m.audioStreams as Record<string, unknown>[]).forEach((s) => delete s.audio)
+
+    const parsed = shareableConfigSchema.safeParse(shareable)
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.c).toBeDefined()
+      expect(parsed.data.c.videoFilters).toEqual([])
+      expect(parsed.data.m?.videoStreams?.[0].video).toBeUndefined()
+    }
   })
 })

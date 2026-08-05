@@ -51,6 +51,7 @@ export class LocalStorageAdapter implements StorageAdapter {
 /** Prefix for preset keys in storage */
 export const PRESET_KEY_PREFIX = 'ffcodec:preset:'
 export const ACTIVE_CONFIG_KEY = 'ffcodec:active-config'
+export const BUILTIN_ORDER_KEY = 'ffcodec:builtin-preset-order'
 
 export function makePresetKey(id: string): string {
   return `${PRESET_KEY_PREFIX}${id}`

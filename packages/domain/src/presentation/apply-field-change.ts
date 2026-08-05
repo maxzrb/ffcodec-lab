@@ -194,11 +194,25 @@ export function applyFieldChangeToConfig(
     change.path = 'streams.audioStreams' as unknown as ConfigPath
   }
 
-  // 从“保持原分辨率”切到“指定宽高”时补齐 size 模式的稳定默认结构。
+  // 从”保持原分辨率”切到”指定宽高”时补齐 size 模式的稳定默认结构。
   // 宽高刻意保留为空，对应 FFmpeg 的 scale=-2:-2 自动偶数尺寸。
   let next = fieldId === 'frame.resolution.mode' && effectiveValue === 'size'
     ? switchToAutomaticSizeResolution(previous)
     : setByPath(previous, change.path, effectiveValue)
+
+  // 容器改变时同步更新输出路径的文件扩展名
+  if (fieldId === 'output.containerId' || fieldId === 'output.containerId.custom') {
+    const newId = effectiveValue !== '__custom__' ? String(effectiveValue) : previous.output.containerId
+    const oldExt = previous.output.path.replace(/^.*\./, '')
+    const newExt = catalog.containers[newId]?.extension || (newId !== '__custom__' ? newId : oldExt)
+    if (newExt && newExt !== oldExt && previous.output.path) {
+      const newPath = previous.output.path.replace(/\.[^./\\]+$/, `.${newExt}`)
+      if (newPath !== previous.output.path) {
+        next = setByPath(next, CONFIG_PATHS.output.path, newPath)
+      }
+    }
+  }
+
   if (fieldId === 'input.decode.device.parameter' && effectiveValue === undefined) {
     // 参数名清空后设备值不再有语义，避免留下隐藏且无法直接清理的孤立值。
     next = setByPath(next, CONFIG_PATHS.input.decode.deviceValue, undefined)

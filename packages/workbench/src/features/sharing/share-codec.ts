@@ -230,8 +230,8 @@ export function decodeConfigFromShare(input: string): DecodeResult {
   const warnings: string[] = []
 
   try {
-    // Remove leading # if present
-    const encoded = input.replace(/^#/, '')
+    // Remove leading # if present (handle double-hash from browser fragment + our prefix)
+    const encoded = input.replace(/^#+/, '')
     let raw: Record<string, unknown>
 
     // Try JSON first (for file import), then base64url (for hash)

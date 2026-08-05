@@ -86,7 +86,7 @@ export function SingleFileOutputLocationControl() {
   const singleOutputToSourceDirectory = useBatchQueueStore((state) => state.singleOutputToSourceDirectory)
   const setSingleOutputToSourceDirectory = useBatchQueueStore((state) => state.setSingleOutputToSourceDirectory)
 
-  const outputExtension = catalog.containers[config.output.containerId]?.extension ?? 'mp4'
+  const outputExtension = (catalog.containers[config.output.containerId]?.extension || (config.output.containerId !== '__custom__' ? config.output.containerId : 'mp4'))
   const suffixStyle = config.output.outputSuffix ?? 'ffcodec'
 
   // 只在输入路径、容器扩展名、开关状态或后缀风格变化时自动推导输出路径。
@@ -169,7 +169,7 @@ export function BatchQueuePanel() {
   const [notice, setNotice] = useState<string | null>(null)
   const [browsingOutputDirectory, setBrowsingOutputDirectory] = useState(false)
 
-  const outputExtension = catalog.containers[config.output.containerId]?.extension ?? 'mp4'
+  const outputExtension = (catalog.containers[config.output.containerId]?.extension || (config.output.containerId !== '__custom__' ? config.output.containerId : 'mp4'))
   const fallbackOutputDirectory = getPathDirectory(config.output.path)
   const effectiveBatchOutputDirectory = batchOutputDirectory || fallbackOutputDirectory
   const activeEncoding = jobState.phase === 'preparing' || jobState.phase === 'running' || jobState.phase === 'cancelling'

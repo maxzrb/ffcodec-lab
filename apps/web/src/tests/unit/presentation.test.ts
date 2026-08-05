@@ -321,9 +321,10 @@ describe('Resolver — section resolution', () => {
 
     const containerField = section.fields.find((f) => f.id === 'param.container')
     expect(containerField).toBeDefined()
-    expect(containerField!.options!.length).toBeGreaterThanOrEqual(4) // mp4, mkv, webm, mov
+    expect(containerField!.options!.length).toBeGreaterThanOrEqual(20) // expanded catalog
     expect(containerField!.options!.find((option) => option.value === 'mp4')?.badge).toBe('视频 / 音频')
     expect(containerField!.options!.find((option) => option.value === 'wav')?.badge).toBe('音频')
+    expect(containerField!.options!.find((option) => option.value === 'avif')?.badge).toBe('图片')
   })
 })
 

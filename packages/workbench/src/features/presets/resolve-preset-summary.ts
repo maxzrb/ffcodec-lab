@@ -69,7 +69,8 @@ function resolveAudioSummary(config: ProjectConfig, catalog: Catalog, locale: Lo
 
 function resolveContainerSummary(config: ProjectConfig, catalog: Catalog): string {
   const container = catalog.containers[config.output.containerId]
-  return container ? `.${container.extension}` : config.output.containerId
+  const ext = container?.extension || (config.output.containerId !== '__custom__' ? config.output.containerId : '?')
+  return `.${ext}`
 }
 
 function resolveSubtitleSummary(config: ProjectConfig, locale: Locale): string {

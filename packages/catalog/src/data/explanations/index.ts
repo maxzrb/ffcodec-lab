@@ -1634,9 +1634,9 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.nvenc.bf': {
     id: 'expl.nvenc.bf',
     title: 'NVENC 最大 B 帧数 (-bf)',
-    short: '限制 NVENC 硬件 GOP 中连续 B 帧的最大数量，范围 0–4。B 帧使用双向预测，压缩效率比 P 帧高约 30%，但更多 B 帧意味着更深的参考链和编码延迟。',
-    detail: 'NVENC 的 B 帧支持取决于 GPU 架构——Turing 及更新架构（RTX 20xx+）支持全部 4 个 B 帧；Pascal（GTX 10xx）HEVC 编码限制 0 个 B 帧，H.264 支持 2 个。对离线转码，充分利用 4 个 B 帧可获得最佳压缩比；对直播和游戏串流，减少到 0–1 个以降低延迟。与 b_ref_mode 联动控制这些 B 帧是否可被后续帧参考。',
-    commandExample: '-bf 4',
+    short: '限制 NVENC 硬件 GOP 中连续 B 帧的最大数量，范围 0–5。B 帧使用双向预测，压缩效率比 P 帧高约 30%，但更多 B 帧意味着更深的参考链和编码延迟。',
+    detail: 'NVENC 的 B 帧支持取决于 GPU 架构——Turing 及更新架构（RTX 20xx+）支持最多 5 个 B 帧；Pascal（GTX 10xx）HEVC 编码限制 0 个 B 帧，H.264 支持 2 个。对离线转码，充分利用 5 个 B 帧可获得最佳压缩比；对直播和游戏串流，减少到 0–1 个以降低延迟。与 b_ref_mode 联动控制这些 B 帧是否可被后续帧参考。',
+    commandExample: '-bf 5',
     effects: { quality: 1, fileSize: 3, speed: 2, compatibility: 3 },
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/nvenc.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/nvenc.c' }],
   },

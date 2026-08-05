@@ -5,7 +5,7 @@
 
 import type { ProjectConfig } from '../config/project-config'
 import { createDefaultAdvancedVideoFilters } from '../config/defaults'
-import type { Catalog, ControlDefinition, SourceRef } from '../catalog/catalog-types'
+import type { Catalog, ContainerDefinition, ControlDefinition, SourceRef } from '../catalog/catalog-types'
 import { CODEC_CATEGORIES, FALLBACK_CATEGORY_ID } from '../catalog/catalog-types'
 import type { FieldState } from '../rules/rule-types'
 import type { ResolvedField, ResolvedSection } from './resolved-field'
@@ -1813,16 +1813,52 @@ export function resolveContainerSection(
   if (containerParam) {
     const field = resolveParameterField(containerParam, config, 'output.containerId', fieldStates)
     // Override with dynamic options from catalog
-    field.options = Object.values(catalog.containers).map((c) => {
-      const supportsVideo = Object.values(c.videoCodecs).some((level) => level !== 'unsupported')
-      const supportsAudio = Object.values(c.audioCodecs).some((level) => level !== 'unsupported')
-      return {
-        value: c.id,
-        label: c.label,
-        badge: supportsVideo && supportsAudio ? '视频 / 音频' : supportsVideo ? '视频' : '音频',
-      }
-    })
+    const categoryGroup = (cat: string | undefined) => {
+      if (cat === 'video') return '视频容器'
+      if (cat === 'audio') return '音频容器'
+      if (cat === 'image') return '图片容器'
+      return ''
+    }
+    const categoryBadge = (c: ContainerDefinition) => {
+      if (c.category === 'image') return '图片'
+      const supportsVideo = Object.values(c.videoCodecs).some((l) => l !== 'unsupported')
+      const supportsAudio = Object.values(c.audioCodecs).some((l) => l !== 'unsupported')
+      if (supportsVideo && supportsAudio) return '视频 / 音频'
+      if (supportsVideo) return '视频'
+      if (supportsAudio) return '音频'
+      return ''
+    }
+    const containerOptions = Object.values(catalog.containers).map((c) => ({
+      value: c.id,
+      label: c.label,
+      badge: categoryBadge(c),
+      group: categoryGroup(c.category),
+    }))
+    const groupOrder: Record<string, number> = { '视频容器': 1, '音频容器': 2, '图片容器': 3 }
+    containerOptions.sort((a, b) => (groupOrder[a.group] ?? 99) - (groupOrder[b.group] ?? 99))
+    field.options = [
+      ...containerOptions,
+      { value: '__custom__', label: '自定义容器…', badge: '' },
+    ]
     fields.push(field)
+
+    // 自定义容器文本输入
+    const isCustom = !catalog.containers[config.output.containerId]
+    fields.push({
+      id: 'output.containerId.custom',
+      label: '自定义容器后缀',
+      description: '直接输入文件扩展名（如 avif、m4a、webp 等），将作为输出文件的后缀',
+      controlType: 'text',
+      value: isCustom ? config.output.containerId : '',
+      visible: isCustom,
+      disabled: false,
+      configBinding: { path: CONFIG_PATHS.output.containerId },
+      sourceRefs: [],
+      verificationLevel: 'project-derived',
+      needsCrossVerification: false,
+      commandOrigins: ['output.containerId'],
+      diagnostics: [],
+    })
   }
 
   return { id: 'section.container', label: '封装设置', fields }

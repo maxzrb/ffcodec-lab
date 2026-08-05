@@ -1,5 +1,5 @@
 import type { ProjectConfig } from '../config/project-config'
-import type { Catalog } from '../catalog/catalog-types'
+import type { Catalog, ContainerDefinition } from '../catalog/catalog-types'
 import type { Diagnostic } from '../rules/rule-types'
 
 /**
@@ -13,14 +13,17 @@ export function validateCompatibility(
   const messages: Diagnostic[] = []
   const container = catalog.containers[config.output.containerId]
   if (!container) {
-    messages.push({
-      code: 'error.unknown.container',
-      severity: 'error',
-      category: 'compatibility',
-      message: `Unknown container: ${config.output.containerId}`,
-      originIds: ['output.containerId'],
-      context: { containerId: config.output.containerId },
-    })
+    // 自定义容器（如 avif、m4a）跳过兼容性检查
+    if (config.output.containerId !== '__custom__') {
+      messages.push({
+        code: 'info.compat.customContainer',
+        severity: 'info',
+        category: 'compatibility',
+        message: `自定义容器 "${config.output.containerId}"，跳过容器兼容性校验。请自行确认编码器与该容器的兼容性。`,
+        originIds: ['output.containerId'],
+        context: { containerId: config.output.containerId },
+      })
+    }
     return messages
   }
 
@@ -36,6 +39,9 @@ export function validateCompatibility(
     pushCompatMessage(messages, entry, config.audio.encoderId, 'audio', container.id)
   }
 
+  // 容器类别能力边界检查
+  checkContainerCategory(config, container!, messages)
+
   // libopus + 5.1(side) 不兼容诊断
   checkOpusSideChannelLayout(config, messages)
 
@@ -43,6 +49,53 @@ export function validateCompatibility(
   checkOpusNeedsChannelLayout(config, messages)
 
   return messages
+}
+
+/** 容器类别能力边界：图片容器不支持音视频编码，音频容器不支持视频编码 */
+function checkContainerCategory(config: ProjectConfig, container: ContainerDefinition, messages: Diagnostic[]): void {
+  const cat = container.category
+
+  if (cat === 'image') {
+    if (config.video.mode === 'encode') {
+      messages.push({
+        code: 'error.container.image.noVideo',
+        severity: 'error', category: 'compatibility',
+        message: '图片容器不支持视频编码。请将视频模式设为"禁用"或切换为视频容器。',
+        originIds: ['video.mode', 'output.containerId'],
+        context: { containerId: container.id },
+      })
+    }
+    if (config.audio.mode === 'encode') {
+      messages.push({
+        code: 'error.container.image.noAudio',
+        severity: 'error', category: 'compatibility',
+        message: '图片容器不支持音频编码。请将音频模式设为"禁用"或切换为视频容器。',
+        originIds: ['audio.mode', 'output.containerId'],
+        context: { containerId: container.id },
+      })
+    }
+  }
+
+  if (cat === 'audio') {
+    if (config.video.mode === 'encode') {
+      messages.push({
+        code: 'error.container.audio.noVideo',
+        severity: 'error', category: 'compatibility',
+        message: '纯音频容器不支持视频编码。请将视频模式设为"禁用"，或切换为视频容器。',
+        originIds: ['video.mode', 'output.containerId'],
+        context: { containerId: container.id },
+      })
+    }
+    if (config.video.mode === 'copy') {
+      messages.push({
+        code: 'warn.container.audio.videoCopy',
+        severity: 'warning', category: 'compatibility',
+        message: '纯音频容器通常无法容纳视频流，视频流复制可能导致 muxer 报错。建议将视频模式设为"禁用"。',
+        originIds: ['video.mode', 'output.containerId'],
+        context: { containerId: container.id },
+      })
+    }
+  }
 }
 
 /**
@@ -101,7 +154,7 @@ function checkOpusNeedsChannelLayout(config: ProjectConfig, messages: Diagnostic
       code: 'warn.opus.channelLayout.needed',
       severity: 'warning',
       category: 'compatibility',
-      message: 'libopus 编码环绕声（>2 声道）时必须显式指定声道布局，否则 FFmpeg 会报错。请将"声道布局"从"跟随输入"改为与源匹配的具体值（如 5.1）。',
+      message: 'libopus 编码多声道音频时需要确定明确且受支持的声道布局。为避免源文件声道布局缺失或异常导致编码失败，使用 3 个及以上声道时，建议将"声道布局"设置为与源音频匹配的具体布局，如 5.1 或 7.1。',
       originIds: ['audio.channelLayout', 'audio.encoderId'],
       context: { encoderId: 'libopus', channelLayout: 'source' },
     })
@@ -119,7 +172,7 @@ function checkOpusNeedsChannelLayout(config: ProjectConfig, messages: Diagnostic
         code: 'warn.opus.channelLayout.needed',
         severity: 'warning',
         category: 'compatibility',
-        message: `音频流 ${entry.index} 逐流覆写：libopus 编码环绕声（>2 声道）时必须显式指定声道布局。`,
+        message: `音频流 ${entry.index} 逐流覆写：libopus 编码多声道音频时建议显式指定声道布局，避免源文件声道信息缺失导致编码失败。`,
         originIds: [`streams.audioStreams.${i}.audio.channelLayout`, `streams.audioStreams.${i}.audio.encoderId`],
         context: { encoderId: 'libopus', channelLayout: 'source', streamIndex: entry.index },
       })

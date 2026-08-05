@@ -17,6 +17,8 @@ export interface UserPreset {
   schemaVersion: number
   createdAt: string
   updatedAt: string
+  /** 用户自定义排序位置，越小越靠前 */
+  order?: number
   config: ProjectConfig
 }
 
@@ -28,6 +30,7 @@ export const userPresetSchema = z.object({
   schemaVersion: z.number().int().positive(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  order: z.number().int().optional(),
   config: projectConfigSchema,
 })
 
@@ -39,6 +42,7 @@ export const userPresetImportSchema = z.object({
   schemaVersion: z.number().int().positive().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
+  order: z.number().int().optional(),
   config: projectConfigSchema,
 })
 

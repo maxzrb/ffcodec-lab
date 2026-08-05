@@ -11,6 +11,7 @@ import { useI18n } from '../i18n/i18n'
 interface PresetListProps {
   builtinPresets: Array<Omit<UserPreset, 'id' | 'createdAt' | 'updatedAt'>>
   userPresets: UserPreset[]
+  builtinOrder: number[]
   catalog: Catalog
   onApplyBuiltin: (index: number) => void
   onApply: (preset: UserPreset) => void
@@ -19,6 +20,10 @@ interface PresetListProps {
   onOverwrite: (id: string) => void
   onRename: (id: string, name: string) => void
   onExport: (id: string) => void
+  onMoveUp: (id: string) => void
+  onMoveDown: (id: string) => void
+  onMoveBuiltinUp: (index: number) => void
+  onMoveBuiltinDown: (index: number) => void
 }
 
 type BuiltinPreset = Omit<UserPreset, 'id' | 'createdAt' | 'updatedAt'>
@@ -32,6 +37,7 @@ const PRESETS_PER_PAGE = 12
 export function PresetList({
   builtinPresets,
   userPresets,
+  builtinOrder,
   catalog,
   onApplyBuiltin,
   onApply,
@@ -39,22 +45,58 @@ export function PresetList({
   onDelete,
   onOverwrite,
   onExport,
+  onMoveUp,
+  onMoveDown,
+  onMoveBuiltinUp,
+  onMoveBuiltinDown,
 }: PresetListProps) {
   const { locale, text } = useI18n()
   const isZh = locale === 'zh-CN'
   const [query, setQuery] = useState('')
   const [scope, setScope] = useState<PresetScope>('all')
   const [page, setPage] = useState(1)
+  const [sortBy, setSortBy] = useState<'updated-desc' | 'updated-asc' | 'name-asc' | 'name-desc' | 'custom'>('custom')
   const normalizedQuery = query.trim().toLocaleLowerCase(locale)
 
-  const matchingBuiltins = useMemo(() => builtinPresets
-    .map((preset, index) => ({ kind: 'builtin' as const, index, preset }))
-    .filter(({ preset }) => matchesQuery(text(preset.name), preset.description ? text(preset.description) : '', normalizedQuery)),
-  [builtinPresets, normalizedQuery, text])
-  const matchingUsers = useMemo(() => userPresets
-    .filter((preset) => matchesQuery(preset.name, preset.description ?? '', normalizedQuery))
-    .map((preset) => ({ kind: 'user' as const, preset })),
-  [normalizedQuery, userPresets])
+  const sortOptions: { value: typeof sortBy; labelZh: string; labelEn: string }[] = [
+    { value: 'custom', labelZh: '自定义顺序', labelEn: 'Custom' },
+    { value: 'updated-desc', labelZh: '最近更新', labelEn: 'Newest' },
+    { value: 'updated-asc', labelZh: '最早更新', labelEn: 'Oldest' },
+    { value: 'name-asc', labelZh: '名称 A-Z', labelEn: 'Name A-Z' },
+    { value: 'name-desc', labelZh: '名称 Z-A', labelEn: 'Name Z-A' },
+  ]
+
+  const matchingBuiltins = useMemo(() => {
+    const orderToUse = sortBy === 'custom' && builtinOrder.length === builtinPresets.length ? builtinOrder : builtinPresets.map((_, i) => i)
+    const builtins = orderToUse.map((origIdx) => {
+      const preset = builtinPresets[origIdx]
+      if (!preset) return null
+      if (!matchesQuery(text(preset.name), preset.description ? text(preset.description) : '', normalizedQuery)) return null
+      return { kind: 'builtin' as const, index: origIdx, preset }
+    }).filter(Boolean) as { kind: 'builtin'; index: number; preset: typeof builtinPresets[number] }[]
+    return builtins
+  }, [builtinPresets, builtinOrder, sortBy, normalizedQuery, text])
+  const matchingUsers = useMemo(() => {
+    let sorted = [...userPresets].filter((preset) => matchesQuery(preset.name, preset.description ?? '', normalizedQuery))
+    switch (sortBy) {
+      case 'custom':
+        sorted.sort((a, b) => ((a as any).order ?? 0) - ((b as any).order ?? 0) || a.name.localeCompare(b.name))
+        break
+      case 'updated-desc':
+        sorted.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        break
+      case 'updated-asc':
+        sorted.sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime())
+        break
+      case 'name-asc':
+        sorted.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+        break
+      case 'name-desc':
+        sorted.sort((a, b) => b.name < a.name ? -1 : b.name > a.name ? 1 : 0)
+        break
+    }
+    return sorted.map((preset) => ({ kind: 'user' as const, preset }))
+  }, [normalizedQuery, userPresets, sortBy])
   const entries: PresetEntry[] = [
     ...(scope === 'user' ? [] : matchingBuiltins),
     ...(scope === 'builtin' ? [] : matchingUsers),
@@ -92,6 +134,16 @@ export function PresetList({
           <ScopeButton active={scope === 'builtin'} label={isZh ? '内置' : 'Built-in'} onClick={() => changeScope('builtin')} />
           <ScopeButton active={scope === 'user'} label={isZh ? '用户' : 'User'} onClick={() => changeScope('user')} />
         </div>
+        <select
+          className="preset-browser__sort"
+          value={sortBy}
+          onChange={(e) => { setSortBy(e.target.value as typeof sortBy); setPage(1) }}
+          aria-label={isZh ? '排序方式' : 'Sort order'}
+        >
+          {sortOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>{isZh ? opt.labelZh : opt.labelEn}</option>
+          ))}
+        </select>
       </div>
 
       {/* Built-in presets */}
@@ -113,6 +165,8 @@ export function PresetList({
             summary={summary}
             actions={
               <>
+                <button type="button" className="preset-card__move-btn" onClick={() => onMoveBuiltinUp(index)} title={isZh ? '上移' : 'Move up'} aria-label={isZh ? '上移' : 'Move up'}>▲</button>
+                <button type="button" className="preset-card__move-btn" onClick={() => onMoveBuiltinDown(index)} title={isZh ? '下移' : 'Move down'} aria-label={isZh ? '下移' : 'Move down'}>▼</button>
                 <CardButton label={isZh ? '应用' : 'Apply'} onClick={() => onApplyBuiltin(index)} primary />
               </>
             }
@@ -144,6 +198,20 @@ export function PresetList({
             meta={`${isZh ? '更新于' : 'Updated'} ${new Date(preset.updatedAt).toLocaleString(isZh ? 'zh-CN' : 'en')}`}
             actions={
               <>
+                <button
+                  type="button"
+                  className="preset-card__move-btn"
+                  onClick={() => onMoveUp(preset.id)}
+                  title={isZh ? '上移' : 'Move up'}
+                  aria-label={isZh ? '上移' : 'Move up'}
+                >▲</button>
+                <button
+                  type="button"
+                  className="preset-card__move-btn"
+                  onClick={() => onMoveDown(preset.id)}
+                  title={isZh ? '下移' : 'Move down'}
+                  aria-label={isZh ? '下移' : 'Move down'}
+                >▼</button>
                 <CardButton label={isZh ? '应用' : 'Apply'} onClick={() => onApply(preset)} primary />
                 <CardButton label={isZh ? '编辑' : 'Edit'} onClick={() => onEdit(preset)} />
                 <CardButton label={isZh ? '覆盖' : 'Overwrite'} onClick={() => onOverwrite(preset.id)} />
@@ -243,7 +311,7 @@ function PresetCard({
       }}
     >
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+        <div style={{ flex: '1 1 240px', minWidth: 0, paddingTop: 2 }}>
           <strong style={{ fontSize: 13 }}>{name}</strong>
           {description && (
             <span style={{ color: 'var(--text-dim)', marginLeft: 8, fontSize: 11 }}>

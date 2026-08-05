@@ -58,7 +58,7 @@ export function Dropdown({
   const lastValueRef = useRef(value)
 
   const selectedOption = options.find((opt) => String(opt.value) === value)
-  const displayText = selectedOption?.label ?? placeholder ?? ''
+  const displayText = selectedOption?.label ?? (value ? `${placeholder ? placeholder + ' ' : ''}「${value}」` : (placeholder ?? ''))
 
   // Compute panel position from trigger bounding rect
   const updatePanelRect = useCallback(() => {

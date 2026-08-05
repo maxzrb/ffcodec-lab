@@ -393,6 +393,8 @@ export interface ContainerDefinition {
   id: string
   label: string
   extension: string
+  /** 容器类别：video / audio / image */
+  category?: 'video' | 'audio' | 'image'
   videoCodecs: Record<string, CompatibilityLevel>
   audioCodecs: Record<string, CompatibilityLevel>
   subtitleCodecs: Record<string, CompatibilityLevel>

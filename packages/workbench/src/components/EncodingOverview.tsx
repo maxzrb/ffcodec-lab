@@ -31,7 +31,7 @@ export function EncodingOverview({ config, catalog, locale, invocationCount }: E
       <OverviewSection title={isZh ? '输入与输出' : 'Input and output'} rows={[
         [isZh ? '输入' : 'Input', inputName],
         [isZh ? '输出' : 'Output', outputName],
-        [isZh ? '容器' : 'Container', container ? `${translateText(container.label, locale)} (.${container.extension})` : config.output.containerId],
+        [isZh ? '容器' : 'Container', container ? `${translateText(container.label, locale)} (.${container.extension})` : (config.output.containerId !== '__custom__' ? `.${config.output.containerId}` : '—')],
         [isZh ? '覆盖' : 'Overwrite', config.output.overwrite ? (isZh ? '是' : 'Yes') : (isZh ? '否' : 'No')],
         [isZh ? '隐藏横幅' : 'Hide banner', config.output.hideBanner ? (isZh ? '是' : 'Yes') : (isZh ? '否' : 'No')],
       ]} />

@@ -8,6 +8,7 @@ import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import type { UserPreset } from './preset-types'
 import { getPresetService, getBuiltinPresets } from './preset-service'
+import { BUILTIN_ORDER_KEY } from './preset-storage'
 import { PresetList } from './PresetList'
 import { PresetEditorDialog } from './PresetEditorDialog'
 import { PresetImportDialog } from './PresetImportDialog'
@@ -40,6 +41,38 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
   const [notices, setNotices] = useState<string[]>([])
 
   const builtinPresets = getBuiltinPresets()
+
+  const [builtinOrder, setBuiltinOrder] = useState<number[]>(() => {
+    try {
+      const raw = localStorage.getItem(BUILTIN_ORDER_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length === builtinPresets.length) return parsed
+      }
+    } catch { /* ignore */ }
+    return builtinPresets.map((_, i) => i)
+  })
+
+  const saveBuiltinOrder = (order: number[]) => {
+    try { localStorage.setItem(BUILTIN_ORDER_KEY, JSON.stringify(order)) } catch { /* ignore */ }
+    setBuiltinOrder(order)
+  }
+
+  const handleMoveBuiltinUp = useCallback((index: number) => {
+    const idx = builtinOrder.indexOf(index)
+    if (idx <= 0) return
+    const next = [...builtinOrder]
+    ;[next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]
+    saveBuiltinOrder(next)
+  }, [builtinOrder])
+
+  const handleMoveBuiltinDown = useCallback((index: number) => {
+    const idx = builtinOrder.indexOf(index)
+    if (idx < 0 || idx >= builtinOrder.length - 1) return
+    const next = [...builtinOrder]
+    ;[next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]
+    saveBuiltinOrder(next)
+  }, [builtinOrder])
 
   const refreshList = useCallback(() => {
     setUserPresets(presetService.list())
@@ -276,6 +309,7 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
           <PresetList
             builtinPresets={builtinPresets}
             userPresets={userPresets}
+            builtinOrder={builtinOrder}
             catalog={catalog}
             onApplyBuiltin={handleApplyBuiltin}
             onApply={handleApply}
@@ -284,6 +318,10 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
             onOverwrite={handleOverwrite}
             onRename={handleRename}
             onExport={handleExport}
+            onMoveUp={(id) => { presetService.moveOrder(id, 'up'); refreshList() }}
+            onMoveDown={(id) => { presetService.moveOrder(id, 'down'); refreshList() }}
+            onMoveBuiltinUp={handleMoveBuiltinUp}
+            onMoveBuiltinDown={handleMoveBuiltinDown}
           />
         </div>
 
