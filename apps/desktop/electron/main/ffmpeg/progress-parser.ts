@@ -96,7 +96,7 @@ export function progressFrameToSnapshot(
     const n = parseFloat(frame.fps)
     if (!Number.isNaN(n)) update.fps = n
   }
-  if (frame.bitrate !== undefined) {
+  if (frame.bitrate !== undefined && frame.bitrate !== 'N/A') {
     update.bitrate = frame.bitrate
   }
   if (frame.speed !== undefined) {

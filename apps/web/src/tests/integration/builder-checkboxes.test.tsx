@@ -1154,7 +1154,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases')
-    expect(screen.getByText('FFCodec Lab desktop 1.7.0（13）')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab desktop 1.7.1（14）')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))
@@ -1174,7 +1174,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Web 网页版' }))
       .toHaveAttribute('href', 'https://fflab.loliland.cn')
-    expect(screen.getByText('FFCodec Lab Web 1.7.0（13）')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab Web 1.7.1（14）')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .not.toBeInTheDocument()
   })

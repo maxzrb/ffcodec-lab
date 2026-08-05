@@ -39,6 +39,9 @@ export function validateCompatibility(
   // libopus + 5.1(side) 不兼容诊断
   checkOpusSideChannelLayout(config, messages)
 
+  // libopus + 未显式指定声道布局时提醒
+  checkOpusNeedsChannelLayout(config, messages)
+
   return messages
 }
 
@@ -77,6 +80,48 @@ function checkOpusSideChannelLayout(config: ProjectConfig, messages: Diagnostic[
         message: `音频流 ${entry.index} 逐流覆写：libopus 不支持 5.1(side) 声道布局，请改用 5.1。当前选择会导致编码失败。`,
         originIds: [`streams.audioStreams.${i}.audio.channelLayout`, `streams.audioStreams.${i}.audio.encoderId`],
         context: { encoderId: 'libopus', channelLayout: '5.1(side)', streamIndex: entry.index },
+      })
+    }
+  }
+}
+
+/**
+ * Opus 编码多声道（>2）时需显式指定声道布局。
+ * 若用户在全局或逐流中选了 libopus 但声道布局保持"跟随输入"，
+ * 则当源为环绕声时 FFmpeg 会直接报错。
+ */
+function checkOpusNeedsChannelLayout(config: ProjectConfig, messages: Diagnostic[]): void {
+  // 全局音频
+  if (
+    config.audio.mode === 'encode'
+    && config.audio.encoderId === 'libopus'
+    && (!config.audio.channelLayout || config.audio.channelLayout === 'source')
+  ) {
+    messages.push({
+      code: 'warn.opus.channelLayout.needed',
+      severity: 'warning',
+      category: 'compatibility',
+      message: 'libopus 编码环绕声（>2 声道）时必须显式指定声道布局，否则 FFmpeg 会报错。请将"声道布局"从"跟随输入"改为与源匹配的具体值（如 5.1）。',
+      originIds: ['audio.channelLayout', 'audio.encoderId'],
+      context: { encoderId: 'libopus', channelLayout: 'source' },
+    })
+  }
+  // 逐流音频覆写
+  for (let i = 0; i < config.streams.audioStreams.length; i++) {
+    const entry = config.streams.audioStreams[i]
+    const ch = entry.audio?.channelLayout
+    if (
+      entry.codecMode === 'encode'
+      && entry.audio?.encoderId === 'libopus'
+      && (!ch || ch === 'source')
+    ) {
+      messages.push({
+        code: 'warn.opus.channelLayout.needed',
+        severity: 'warning',
+        category: 'compatibility',
+        message: `音频流 ${entry.index} 逐流覆写：libopus 编码环绕声（>2 声道）时必须显式指定声道布局。`,
+        originIds: [`streams.audioStreams.${i}.audio.channelLayout`, `streams.audioStreams.${i}.audio.encoderId`],
+        context: { encoderId: 'libopus', channelLayout: 'source', streamIndex: entry.index },
       })
     }
   }
