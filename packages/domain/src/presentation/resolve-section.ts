@@ -2103,13 +2103,13 @@ function resolveCustomFilterSection(
   return {
     id: `section.custom-${kind}-filters`,
     label,
-    description: `每行填写一个完整滤镜表达式；从上到下即执行顺序，系统只负责合并为唯一 ${option}，不修改或校验表达式。`,
+    description: `添加滤镜表达式到表格中，用 ▲▼ 调整执行顺序。系统只负责合并为唯一 ${option}，不修改或校验表达式。`,
     fields: [{
       id: `customArgs.${key}`,
       label: video ? '视频滤镜顺序' : '音频滤镜顺序',
-      description: `一行一个表达式。可直接移动整行调整顺序；不要填写 ${option} 参数名或外层引号。`,
-      controlType: 'textarea',
-      value: (config.customArgs[key] ?? []).join('\n'),
+      description: `滤镜之间默认用逗号串联为同一条滤镜链。如需分隔为多条独立滤镜链，请使用分号 ;。不要填写 ${option} 参数名或外层引号。`,
+      controlType: 'filter-chain',
+      value: config.customArgs[key] ?? [],
       visible: true,
       disabled: video ? config.video.mode !== 'encode' : config.audio.mode !== 'encode',
       disabledReason: video

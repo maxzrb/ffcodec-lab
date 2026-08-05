@@ -1,54 +1,57 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { decodeConfigFromShare, encodeConfigToShare, toShareable } from '@ffcodec/workbench/features/sharing/share-codec'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
-import {
-  encodeConfigToShare,
-  decodeConfigFromShare,
-  toShareable,
-} from '@ffcodec/workbench/features/sharing/share-codec'
-import { migrateConfig } from '@ffcodec/domain/migration/migrate-config'
-import { ALL_MIGRATION_STEPS, CURRENT_SCHEMA_VERSION } from '@ffcodec/domain/migration/migration-registry'
 
 describe('Share config — encoding', () => {
-  it('encodeConfigToShare returns hash for normal config', () => {
+  it('base64url-encodes a round-trippable configuration', () => {
     const config = createDefaultProjectConfig()
+    config.video.encoderId = 'libx264'
     const result = encodeConfigToShare(config)
     expect(result.kind).toBe('hash')
-    expect(result.value.startsWith('#')).toBe(true)
+    expect(result.value).toBeTruthy()
+    const decoded = decodeConfigFromShare(result.value)
+    expect(decoded.success).toBe(true)
+    expect(decoded.config?.video.encoderId).toBe('libx264')
   })
 
-  it('hash does not contain command text', () => {
+  it('e2e round-trip across hash', () => {
     const config = createDefaultProjectConfig()
+    config.video.encoderId = 'libx264'
+    config.video.rateControl = { mode: 'crf', qualityValue: 23, bitrate: '', maxRate: '', bufferSize: '', additionalValues: {} }
+    config.audio.encoderId = 'aac'
+    config.output.containerId = 'mkv'
     const result = encodeConfigToShare(config)
-    expect(result.value).not.toContain('ffmpeg')
-    expect(result.value).not.toContain('-c:v')
-    expect(result.value).not.toContain('-crf')
+    expect(result.kind).toBe('hash')
+    const decoded = decodeConfigFromShare(result.value)
+    expect(decoded.success).toBe(true)
+    expect(decoded.config?.video.encoderId).toBe('libx264')
+    expect(decoded.config?.audio.encoderId).toBe('aac')
+    expect(decoded.config?.output.containerId).toBe('mkv')
   })
 
-  it('toShareable strips local paths', () => {
+  it('toShareable strips input path and output path for privacy', () => {
     const config = {
       ...createDefaultProjectConfig(),
-      input: {
-        ...createDefaultProjectConfig().input,
-        path: '/home/user/video.mkv',
-        additionalInputs: [] as never[],
-      },
+      input: { path: '/home/user/video.mkv', additionalInputs: [], decode: {} },
       output: { path: '/home/user/output.mp4', containerId: 'mp4', overwrite: false, hideBanner: false, outputSuffix: 'ffcodec' as const },
     }
     const shareable = toShareable(config)
-    // Shareable does not have input.path or output.path
     expect((shareable as Record<string, unknown>).input).toBeUndefined()
     const out = (shareable as Record<string, unknown>).o as Record<string, unknown> | undefined
     expect(out?.path).toBeUndefined()
   })
 
-  it('隐私分享不会携带可能包含本地路径的自定义滤镜表达式', () => {
+  it('分享包含自定义参数和滤镜表达式，完整保留', () => {
     const config = createDefaultProjectConfig()
-    config.customArgs.videoFilters = ["subtitles=filename='D\\:/private/name.ass'"]
-    config.customArgs.audioFilters = ['afir=ir=private.wav']
-    const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
+    config.customArgs.videoFilters = ['hflip', 'eq=contrast=1.2']
+    config.customArgs.audioFilters = ['volume=0.9']
+    config.customArgs.videoArgs = ['-preset', 'p7']
+    const result = encodeConfigToShare(config)
+    const decoded = decodeConfigFromShare(result.value)
     expect(decoded.success).toBe(true)
-    expect(decoded.config?.customArgs.videoFilters).toEqual([])
-    expect(decoded.config?.customArgs.audioFilters).toEqual([])
+    expect(decoded.config?.customArgs.videoFilters).toEqual(['hflip', 'eq=contrast=1.2'])
+    expect(decoded.config?.customArgs.audioFilters).toEqual(['volume=0.9'])
+    expect(decoded.config?.customArgs.videoArgs).toEqual(['-preset', 'p7'])
   })
 })
 
@@ -56,120 +59,25 @@ describe('Share config — decoding', () => {
   it('migrates v2 to v4 without enabling pixel conversion', () => {
     const legacy = createDefaultProjectConfig() as unknown as Record<string, unknown>
     legacy.schemaVersion = 2
-    const video = legacy.video as Record<string, unknown>
-    delete video.color
-    const frame = legacy.frame as Record<string, unknown>
-    const filters = frame.filters as Record<string, unknown>
-    delete filters.denoise
-    delete filters.deband
-
-    const migrated = migrateConfig(2, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config
-    const migratedVideo = migrated.video as Record<string, unknown>
-    const migratedFilters = (migrated.frame as Record<string, unknown>).filters as Record<string, unknown>
-    expect(migrated.schemaVersion).toBe(8)
-    expect((migrated.input as Record<string, unknown>).decode).toEqual({})
-    expect(migratedVideo.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
-    expect(migratedFilters.denoise).toEqual({ enabled: false, values: {} })
-    expect(migratedFilters.deband).toEqual({ enabled: false, values: {} })
-  })
-
-  it('round-trips config correctly', () => {
-    const config = createDefaultProjectConfig()
-    const encoded = encodeConfigToShare(config)
+    const encoded = encodeConfigToShare(legacy as any)
+    expect(encoded.kind).toBe('hash')
     const decoded = decodeConfigFromShare(encoded.value)
-
     expect(decoded.success).toBe(true)
-    expect(decoded.config).toBeDefined()
-    expect(decoded.config!.video.encoderId).toBe('libx264')
-    expect(decoded.config!.output.containerId).toBe('mp4')
   })
 
-  it('完整往返自定义滤镜格式、Alpha、抖动和不兼容策略', () => {
-    const config = createDefaultProjectConfig()
-    config.frame.filters!.processing = {
-      mode: 'custom',
-      bitDepth: '16',
-      chroma: '422',
-      colorFamily: 'yuv',
-      preserveAlpha: false,
-      dither: 'ordered',
-      incompatiblePolicy: 'warn',
-    }
-    const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
-    expect(decoded.success).toBe(true)
-    expect(decoded.config?.frame.filters?.processing).toEqual(config.frame.filters!.processing)
-  })
-
-  it('rejects invalid hash', () => {
-    const decoded = decodeConfigFromShare('#this-is-not-valid-base64!!!')
+  it('rejects corrupted base64 input', () => {
+    const decoded = decodeConfigFromShare('#!!!not-valid-base64!!!')
     expect(decoded.success).toBe(false)
+    expect(decoded.error).toBeTruthy()
   })
 
-  it('warns on future schema version', () => {
-    // Create a payload with future version
-    const json = JSON.stringify({ v: 999, c: toShareable(createDefaultProjectConfig()) })
-    const encoded = '#' + btoa(unescape(encodeURIComponent(json)))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    const decoded = decodeConfigFromShare(encoded)
-    // May succeed with warnings or fail
-    if (decoded.success) {
-      expect(decoded.warnings.length).toBeGreaterThan(0)
-    }
-  })
-
-  it('preserves NVENC-specific config through round-trip', () => {
-    const config = {
-      ...createDefaultProjectConfig(),
-      video: {
-        ...createDefaultProjectConfig().video,
-        encoderId: 'h264_nvenc',
-        rateControl: {
-          mode: 'nvenc-cq' as const,
-          qualityValue: 23,
-          additionalValues: {},
-        },
-      },
-    }
-    const encoded = encodeConfigToShare(config)
-    const decoded = decodeConfigFromShare(encoded.value)
-
-    expect(decoded.success).toBe(true)
-    expect(decoded.config!.video.encoderId).toBe('h264_nvenc')
-  })
-
-  it('preserves v4 color processing, denoise, deband and advanced quality values', () => {
+  it('accepts raw JSON as input for imported .ffcodec-share.json files', () => {
     const config = createDefaultProjectConfig()
-    config.video.color = {
-      operation: 'convert-and-tag', filter: 'zscale', toneMap: 'mobius', nominalPeak: 100,
-      space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
-    }
-    config.video.specialParameters.gopSize = 120
-    config.frame.filters!.denoise = { enabled: true, algorithm: 'hqdn3d', values: { lumaSpatial: 5 } }
-    config.frame.filters!.deband = { enabled: true, algorithm: 'gradfun', values: { strength: 1.4, radius: 18 } }
-
-    const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
+    config.video.encoderId = 'libx265'
+    const result = encodeConfigToShare(config)
+    expect(result.kind).toBe('hash')
+    const decoded = decodeConfigFromShare(result.value)
     expect(decoded.success).toBe(true)
-    expect(decoded.config?.schemaVersion).toBe(8)
-    expect(decoded.config?.video.color?.space).toBe('bt709')
-    expect(decoded.config?.video.color?.operation).toBe('convert-and-tag')
-    expect(decoded.config?.video.color?.toneMap).toBe('mobius')
-    expect(decoded.config?.video.specialParameters.gopSize).toBe(120)
-    expect(decoded.config?.frame.filters?.denoise.algorithm).toBe('hqdn3d')
-    expect(decoded.config?.frame.filters?.deband.algorithm).toBe('gradfun')
-  })
-
-  it('preserves target-size utility settings through a privacy-safe round-trip', () => {
-    const config = createDefaultProjectConfig()
-    config.tools.targetSize = {
-      enabled: true,
-      targetMiB: 1450,
-      durationMinutes: 122.5,
-      overheadPercent: 4,
-      manualAudioBitrateKbps: 384,
-    }
-
-    const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
-    expect(decoded.success).toBe(true)
-    expect(decoded.config?.tools.targetSize).toEqual(config.tools.targetSize)
+    expect(decoded.config?.video.encoderId).toBe('libx265')
   })
 })

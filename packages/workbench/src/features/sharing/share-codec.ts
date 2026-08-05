@@ -32,6 +32,7 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       color: config.video.color,
       specialParameters: config.video.specialParameters,
     },
+    c: config.customArgs,
     f: {
       resolution: config.frame.resolution,
       frameRate: config.frame.frameRate,
@@ -83,8 +84,8 @@ export function toShareable(config: ProjectConfig): ShareableProjectConfig {
       // path intentionally excluded — privacy
     },
     m: {
-      videoStreams: config.streams.videoStreams,
-      audioStreams: config.streams.audioStreams,
+      videoStreams: config.streams.videoStreams as any,
+      audioStreams: config.streams.audioStreams as any,
       subtitleStreams: config.streams.subtitleStreams,
       pav: config.streams.preserveAllVideoStreams,
       paa: config.streams.preserveAllAudioStreams,
@@ -112,8 +113,8 @@ export function fromShareable(
       metadata: shareable.o.meta ?? { globalRaw: '', streamRaw: '' },
     },
     streams: {
-      videoStreams: shareable.m?.videoStreams ?? [{ index: 0, codecMode: 'encode' as const }],
-      audioStreams: shareable.m?.audioStreams ?? [{ index: 0, codecMode: 'encode' as const }],
+      videoStreams: (shareable.m?.videoStreams ?? [{ index: 0, codecMode: 'encode' as const }]) as any,
+      audioStreams: (shareable.m?.audioStreams ?? [{ index: 0, codecMode: 'encode' as const }]) as any,
       subtitleStreams: shareable.m?.subtitleStreams ?? [],
       preserveAllVideoStreams: shareable.m?.pav ?? true,
       preserveAllAudioStreams: shareable.m?.paa ?? true,
@@ -172,7 +173,7 @@ export function fromShareable(
       },
     },
     tools: shareable.u,
-    customArgs: {
+    customArgs: shareable.c ?? {
       videoFilters: [],
       audioFilters: [],
       globalArgs: [],

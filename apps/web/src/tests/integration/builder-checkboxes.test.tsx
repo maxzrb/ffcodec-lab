@@ -820,8 +820,27 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     expect(screen.getByRole('button', { name: /^自定义视频滤镜/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^自定义音频滤镜/ })).toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText('视频滤镜顺序'), 'hflip{enter}eq=contrast=1.1')
-    await userEvent.type(screen.getByLabelText('音频滤镜顺序'), 'highpass=f=80{enter}volume=0.9')
+    // 视频滤镜：在第一行输入 hflip，添加第二行并输入 eq=contrast=1.1
+    const placeholder = '滤镜表达式，如 crop=1920:1080'
+    const addLabel = '+ 添加滤镜'
+    const allInputs = () => screen.getAllByPlaceholderText(placeholder)
+    const addBtns = () => screen.getAllByRole('button', { name: addLabel })
+
+    // 确认视频和音频各有一个初始空行（总计 2 行，且 add 按钮也有两个）
+    expect(allInputs()).toHaveLength(2)
+    expect(addBtns()).toHaveLength(2)
+
+    // 视频区域在 DOM 中排在音频之前：inputs[0] 是视频行，inputs[1] 是音频行
+    await userEvent.type(allInputs()[0], 'hflip')
+    await userEvent.click(addBtns()[0]) // 视频的「+ 添加滤镜」
+    // 现在有 3 行：视频行0、视频行1、音频行0
+    await userEvent.type(allInputs()[1], 'eq=contrast=1.1')
+
+    // 音频滤镜同理
+    await userEvent.type(allInputs()[2], 'highpass=f=80')
+    await userEvent.click(addBtns()[1]) // 音频的「+ 添加滤镜」
+    // 现在有 4 行：视频行0、视频行1、音频行0、音频行1
+    await userEvent.type(allInputs()[3], 'volume=0.9')
 
     await waitFor(() => {
       const config = useBuilderStore.getState().config
@@ -1154,7 +1173,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab')
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .toHaveAttribute('href', 'https://github.com/maxzrb/ffcodec-lab/releases')
-    expect(screen.getByText('FFCodec Lab desktop 1.7.1（14）')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab desktop 1.7.2（15）')).toBeInTheDocument()
     await openPanel('视频编码')
 
     await userEvent.click(screen.getByRole('button', { name: '查看视频编码器说明' }))
@@ -1174,7 +1193,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
 
     expect(screen.getByRole('link', { name: '打开 FFCodec Lab Web 网页版' }))
       .toHaveAttribute('href', 'https://fflab.loliland.cn')
-    expect(screen.getByText('FFCodec Lab Web 1.7.1（14）')).toBeInTheDocument()
+    expect(screen.getByText('FFCodec Lab Web 1.7.2（15）')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '打开 FFCodec Lab Releases 页面' }))
       .not.toBeInTheDocument()
   })

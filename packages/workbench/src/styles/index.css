@@ -376,6 +376,75 @@ input[type="number"]:hover {
   font-size: 11px;
 }
 
+/* ---- Filter Chain Table ---- */
+
+.filter-chain-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-chain-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.filter-chain-row__input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.filter-chain-row__buttons {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.filter-chain-row__btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-border, #ccc);
+  border-radius: 4px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #333);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 28px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-chain-row__btn:hover:not(:disabled) {
+  background: var(--color-hover, #f0f0f0);
+}
+
+.filter-chain-row__btn--delete:hover:not(:disabled) {
+  background: #fdd;
+  border-color: #e88;
+  color: #c33;
+}
+
+.filter-chain-add {
+  width: 100%;
+  padding: 6px 0;
+  border: 1px dashed var(--color-border, #ccc);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-secondary, #666);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.filter-chain-add:hover:not(:disabled) {
+  background: var(--color-hover, #f0f0f0);
+  color: var(--color-text, #333);
+}
+
 .multiselect-grid {
   display: grid;
   grid-template-columns: repeat(8, minmax(34px, 1fr));
@@ -1969,6 +2038,28 @@ code {
   min-height: 0;
   flex: 1;
   overflow: auto;
+}
+
+/* ---- Import Share Dialog ---- */
+
+.import-share-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: 360px;
+}
+
+.import-share-dialog__hint {
+  margin: 0 0 10px;
+  color: var(--text-dim);
+  font-size: var(--font-small);
+}
+
+.import-share-dialog__input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 64px;
+  resize: vertical;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 12px;
 }
 
 .preset-browser__tools {

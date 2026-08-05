@@ -38,7 +38,7 @@ const catalogIndex = new CatalogIndex(catalog)
 type ThemeKind = 'light' | 'dark'
 
 const PROJECT_URL = 'https://github.com/maxzrb/ffcodec-lab'
-const APP_VERSION = '1.7.1（14）'
+const APP_VERSION = '1.7.2（15）'
 const RELEASE_URL = `${PROJECT_URL}/releases`
 const WEB_APP_URL = 'https://fflab.loliland.cn'
 
@@ -107,6 +107,8 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
   // Preset manager
   const [showPresetManager, setShowPresetManager] = useState(false)
   const [shareNotice, setShareNotice] = useState<string | null>(null)
+  const [showImportShare, setShowImportShare] = useState(false)
+  const [importShareInput, setImportShareInput] = useState('')
   const [inspectorTab, setInspectorTab] = useState<string>('command')
 
   const handleOpenInspectorTab = useCallback((tabId: string) => {
@@ -182,29 +184,62 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
     setConfig(removeSubtitleTrack(config, trackId))
   }, [config, setConfig])
 
-  const handleShare = useCallback(async () => {
-    const result = encodeConfigToShare(config)
-    if (result.kind === 'hash') {
-      const url = new URL(window.location.href)
-      url.hash = result.value
-      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
-      try {
-        await navigator.clipboard.writeText(window.location.href)
-        setShareNotice(isZh ? '共享链接已复制；本地文件路径不会写入链接' : 'Share link copied; local file paths are excluded')
-      } catch {
-        setShareNotice(isZh ? '共享链接已写入地址栏，可直接复制' : 'The share link is in the address bar and ready to copy')
+  const handleShare = useCallback(() => {
+    try {
+      const result = encodeConfigToShare(config)
+      if (result.kind === 'hash') {
+        // Desktop / localhost 环境使用生产域名，确保分享链接可被他人打开
+        const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+        const useProductionUrl = capabilities.desktop || isLocal
+        const baseUrl = useProductionUrl ? WEB_APP_URL : window.location.origin
+        const shareUrl = `${baseUrl}/#${result.value}`
+        // 跨域时不能 replaceState（History API 安全限制），仅同域时更新地址栏
+        if (!useProductionUrl) {
+          window.history.replaceState(null, '', shareUrl)
+        }
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          setShareNotice(isZh ? '共享链接已复制；本地文件路径不会写入链接' : 'Share link copied; local file paths are excluded')
+        }).catch(() => {
+          // 剪贴板不可用时至少让用户能看到链接
+          setShareNotice(isZh ? `共享链接：${shareUrl}` : `Share link: ${shareUrl}`)
+        })
+        return
       }
+      const blob = new Blob([result.value], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'ffcodec-share.json'
+      anchor.click()
+      URL.revokeObjectURL(url)
+      setShareNotice(isZh ? '配置较长，已改为下载隐私安全的 JSON' : 'The configuration is too long for a link, so a privacy-safe JSON file was created')
+    } catch (err) {
+      setShareNotice(isZh
+        ? `分享失败：${err instanceof Error ? err.message : '未知错误'}`
+        : `Share failed: ${err instanceof Error ? err.message : 'unknown error'}`)
+    }
+  }, [config, isZh, capabilities.desktop])
+
+  const handleImportShare = useCallback(() => {
+    const input = importShareInput.trim()
+    if (!input) {
+      setShareNotice(isZh ? '请粘贴分享链接或哈希值' : 'Please paste a share link or hash value')
       return
     }
-    const blob = new Blob([result.value], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = 'ffcodec-share.json'
-    anchor.click()
-    URL.revokeObjectURL(url)
-    setShareNotice(isZh ? '配置较长，已改为下载隐私安全的 JSON' : 'The configuration is too long for a link, so a privacy-safe JSON file was created')
-  }, [config, isZh])
+    // 提取 URL 中的 hash 部分，也支持直接粘贴纯 hash
+    const hashMatch = input.match(/#([^#]*)$/)
+    const hashOrRaw = hashMatch ? `#${hashMatch[1]}` : input
+    const decoded = decodeConfigFromShare(hashOrRaw.startsWith('#') ? hashOrRaw : `#${hashOrRaw}`)
+    if (decoded.success && decoded.config) {
+      setConfig(decoded.config)
+      setShowImportShare(false)
+      setImportShareInput('')
+      setShareNotice(isZh ? '已导入共享配置' : 'Shared configuration imported')
+    } else {
+      setShareNotice(decoded.error
+        ?? (isZh ? '无法解析分享链接' : 'Could not decode the share link'))
+    }
+  }, [importShareInput, isZh, setConfig])
 
   const handleApplyDiagnosticFix = useCallback((fix: DiagnosticFix) => {
     const result = applyFix(config, fix, catalog)
@@ -356,6 +391,9 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
           </button>
           <button type="button" onClick={handleShare} className="button">
             {isZh ? '分享配置' : 'Share'}
+          </button>
+          <button type="button" onClick={() => setShowImportShare(true)} className="button">
+            {isZh ? '导入配置' : 'Import'}
           </button>
           <button
             type="button"
@@ -559,6 +597,42 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
           currentConfig={config}
           onClose={() => setShowPresetManager(false)}
         />
+      )}
+
+      {showImportShare && (
+        <div className="modal-layer" onClick={() => setShowImportShare(false)}>
+          <div className="modal-backdrop" />
+          <div className="modal-card import-share-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-card__header">
+              <h2>{isZh ? '导入分享配置' : 'Import Shared Config'}</h2>
+            </div>
+            <div className="modal-card__content">
+              <p className="import-share-dialog__hint">
+                {isZh
+                  ? '粘贴完整的分享链接或 # 开头的哈希值'
+                  : 'Paste a share link or hash fragment starting with #'}
+              </p>
+              <textarea
+                className="import-share-dialog__input"
+                value={importShareInput}
+                onChange={(e) => setImportShareInput(e.target.value)}
+                placeholder={isZh ? 'https://fflab.loliland.cn/#…' : 'https://fflab.loliland.cn/#…'}
+                rows={3}
+                spellCheck={false}
+                autoFocus
+              />
+            </div>
+            <div className="modal-actions">
+              <div />
+              <button type="button" className="button button--primary" onClick={handleImportShare}>
+                {isZh ? '导入' : 'Import'}
+              </button>
+              <button type="button" className="button" onClick={() => setShowImportShare(false)}>
+                {isZh ? '取消' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </main>

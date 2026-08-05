@@ -1,6 +1,6 @@
 // ============================================================
 // ShareableProjectConfig — a privacy-safe subset of ProjectConfig
-// for URL hash sharing. Strips local paths by default.
+// for URL hash sharing. Strips local file paths by default.
 // ============================================================
 
 import { z } from 'zod'
@@ -22,6 +22,17 @@ export const shareableConfigSchema = z.object({
       value: z.string().optional(),
     }).optional(),
   }).default({}),
+  // 自定义参数：不含本地路径，用户显式要求纳入分享
+  c: z.object({
+    globalArgs: z.array(z.string()).default([]),
+    preInputArgs: z.array(z.string()).default([]),
+    videoArgs: z.array(z.string()).default([]),
+    audioArgs: z.array(z.string()).default([]),
+    preOutputArgs: z.array(z.string()).default([]),
+    tailArgs: z.array(z.string()).default([]),
+    videoFilters: z.array(z.string()).default([]),
+    audioFilters: z.array(z.string()).default([]),
+  }).default({ globalArgs: [], preInputArgs: [], videoArgs: [], audioArgs: [], preOutputArgs: [], tailArgs: [], videoFilters: [], audioFilters: [] }),
   v: z.object({
     mode: z.enum(['encode', 'copy', 'disabled']),
     encoderId: z.string().optional(),
@@ -162,10 +173,25 @@ export const shareableConfigSchema = z.object({
     videoStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
       codecMode: z.enum(['encode', 'copy']),
+      video: z.object({
+        encoderId: z.string().optional(),
+        crf: z.number().optional(),
+        preset: z.union([z.string(), z.number()]).optional(),
+        profile: z.string().optional(),
+        tune: z.string().optional(),
+        pixelFormat: z.string().optional(),
+        bitrate: z.string().optional(),
+      }).optional(),
     })).optional(),
     audioStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
       codecMode: z.enum(['encode', 'copy']),
+      audio: z.object({
+        encoderId: z.string().optional(),
+        bitrate: z.string().optional(),
+        channelLayout: z.string().optional(),
+        sampleRate: z.number().optional(),
+      }).optional(),
     })).optional(),
     subtitleStreams: z.array(z.object({
       index: z.number().int().nonnegative(),

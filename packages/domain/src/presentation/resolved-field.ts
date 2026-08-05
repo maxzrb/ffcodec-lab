@@ -35,7 +35,7 @@ export interface ResolvedField {
   /** Optional help text */
   description?: string
   /** Control type for rendering */
-  controlType: 'select' | 'number' | 'text' | 'textarea' | 'switch' | 'multiselect' | 'color' | 'bitrate' | 'section'
+  controlType: 'select' | 'number' | 'text' | 'textarea' | 'switch' | 'multiselect' | 'color' | 'bitrate' | 'section' | 'filter-chain'
   /** When set, this text field represents a file/directory path.
    *  Used by ParameterField to delegate rendering to the platform's pathFieldRenderer. */
   pathKind?: 'open-file' | 'open-files' | 'save-file' | 'directory'

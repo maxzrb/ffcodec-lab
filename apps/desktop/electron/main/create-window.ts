@@ -32,8 +32,12 @@ export function createMainWindow(): BrowserWindow {
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
+      spellcheck: false,
     },
   })
+
+  // 关闭 Chromium 内置拼写检查
+  mainWindow.webContents.session.setSpellCheckerEnabled(false)
 
   // 窗口准备好后再显示
   mainWindow.on('ready-to-show', () => {

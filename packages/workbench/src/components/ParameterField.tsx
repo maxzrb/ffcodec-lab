@@ -10,6 +10,7 @@ import { Dropdown } from './Dropdown'
 import type { PathFieldRenderer } from '@ffcodec/platform-api'
 import { useEffect, useState, type ReactNode } from 'react'
 import { AacCoderPicker, AudioEncoderPicker } from './AudioEncoderPicker'
+import { FilterChainField } from './FilterChainField'
 
 interface ParameterFieldProps {
   field: ResolvedField
@@ -262,6 +263,16 @@ function renderControl(
           value={field.value}
           disabled={disabled}
           onChange={onChange}
+        />
+      )
+
+    case 'filter-chain':
+      return (
+        <FilterChainField
+          id={controlId}
+          value={Array.isArray(field.value) ? field.value : []}
+          onChange={onChange}
+          disabled={disabled}
         />
       )
 

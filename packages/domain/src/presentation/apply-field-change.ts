@@ -302,6 +302,9 @@ function coerceValue(
   field: ResolvedField,
 ): { value: unknown; notice?: FieldChangeNotice } {
   switch (field.controlType) {
+    case 'filter-chain':
+      return { value: Array.isArray(value) ? (value as unknown[]).filter((v) => typeof v === 'string') : [] }
+
     case 'textarea':
       // Metadata fields store raw text; command builder parses lines
       if (field.id.startsWith('output.metadata.')) {
