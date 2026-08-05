@@ -323,17 +323,27 @@ export const h264Nvenc: EncoderDefinition = {
     },
     // -- 自适应量化 ----------------------------------------------
     {
-      id: 'h264_nvenc.spatialaq', label: '空间 AQ (-spatial_aq)',
+      id: 'h264_nvenc.spatialaq', label: '空间 AQ (-spatial-aq)',
       control: 'switch',
       configBinding: { path: videoSpecialParamPath('spatialAq') },
-      commandBinding: { argName: '-spatial_aq', prefix: '-spatial_aq', phase: 'VIDEO_CODEC' },
+      commandBinding: { argName: '-spatial-aq', prefix: '-spatial-aq', phase: 'VIDEO_CODEC' },
       defaultValue: 1, explanationId: 'expl.nvenc.spatialaq', sourceRefs: [nvencSource],
     },
     {
-      id: 'h264_nvenc.temporalaq', label: '时间 AQ (-temporal_aq)',
+      id: 'h264_nvenc.aqStrength', label: '空间 AQ 强度 (-aq-strength)',
+      control: 'number',
+      configBinding: { path: videoSpecialParamPath('aqStrength') },
+      commandBinding: { argName: '-aq-strength', prefix: '-aq-strength', phase: 'VIDEO_CODEC' },
+      range: { min: 1, max: 15, step: 1 }, defaultValue: 8,
+      optional: true,
+      activeWhen: { path: 'video.specialParameters.spatialAq', equals: true },
+      explanationId: 'expl.nvenc.aqStrength', sourceRefs: [nvencSource],
+    },
+    {
+      id: 'h264_nvenc.temporalaq', label: '时间 AQ (-temporal-aq)',
       control: 'switch',
       configBinding: { path: videoSpecialParamPath('temporalAq') },
-      commandBinding: { argName: '-temporal_aq', prefix: '-temporal_aq', phase: 'VIDEO_CODEC' },
+      commandBinding: { argName: '-temporal-aq', prefix: '-temporal-aq', phase: 'VIDEO_CODEC' },
       defaultValue: 0, explanationId: 'expl.nvenc.temporalaq', sourceRefs: [nvencSource],
     },
     // -- B 帧 / GOP 控制 -----------------------------------------

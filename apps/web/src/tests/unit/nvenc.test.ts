@@ -86,14 +86,14 @@ describe('NVENC command generation', () => {
     const enabled = nvencCqConfig()
     enabled.video.specialParameters = { spatialAq: true }
     const enabledText = renderBash(buildCommandPlan(enabled, catalog, [])).text
-    expect(enabledText).toContain('-spatial_aq 1')
-    expect(enabledText.split('-spatial_aq').length - 1).toBe(1)
+    expect(enabledText).toContain('-spatial-aq 1')
+    expect(enabledText.split('-spatial-aq').length - 1).toBe(1)
 
     const disabled = nvencCqConfig()
     disabled.video.specialParameters = { spatialAq: false, temporalAq: true }
     const disabledText = renderBash(buildCommandPlan(disabled, catalog, [])).text
-    expect(disabledText).toContain('-spatial_aq 0')
-    expect(disabledText).toContain('-temporal_aq 1')
+    expect(disabledText).toContain('-spatial-aq 0')
+    expect(disabledText).toContain('-temporal-aq 1')
   })
 
   it('h264_nvenc CQP mode generates -rc:0 constqp -qp N', () => {

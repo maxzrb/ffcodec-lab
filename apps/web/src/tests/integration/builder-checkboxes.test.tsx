@@ -579,8 +579,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    expect(dropdownText('空间 AQ (-spatial_aq)')).toContain('不设置')
-    await chooseDropdown('空间 AQ (-spatial_aq)', 'false')
+    expect(dropdownText('空间 AQ (-spatial-aq)')).toContain('不设置')
+    await chooseDropdown('空间 AQ (-spatial-aq)', 'false')
 
     // 再验证 ProjectConfig 已同步；修复前 applyFieldChange 会拒绝此变更。
     const config = useBuilderStore.getState().config
@@ -590,7 +590,7 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     const value = sp['spatialAq'] ?? sp['h264_nvenc.spatialaq']
     expect(value).toBe(false)
 
-    await chooseDropdown('空间 AQ (-spatial_aq)', 'true')
+    await chooseDropdown('空间 AQ (-spatial-aq)', 'true')
 
     const config2 = useBuilderStore.getState().config
     const sp2 = config2.video.specialParameters
@@ -605,8 +605,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    expect(dropdownText('时间 AQ (-temporal_aq)')).toContain('不设置')
-    await chooseDropdown('时间 AQ (-temporal_aq)', 'true')
+    expect(dropdownText('时间 AQ (-temporal-aq)')).toContain('不设置')
+    await chooseDropdown('时间 AQ (-temporal-aq)', 'true')
 
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters
@@ -641,8 +641,8 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     await openPanel('质量控制')
     await expandEncoderAdvanced()
 
-    expect(dropdownText('空间 AQ (-spatial_aq)')).toContain('不设置')
-    await chooseDropdown('空间 AQ (-spatial_aq)', 'false')
+    expect(dropdownText('空间 AQ (-spatial-aq)')).toContain('不设置')
+    await chooseDropdown('空间 AQ (-spatial-aq)', 'false')
 
     const config = useBuilderStore.getState().config
     const sp = config.video.specialParameters

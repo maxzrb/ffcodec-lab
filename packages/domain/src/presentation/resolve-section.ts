@@ -41,7 +41,6 @@ const GENERIC_CODEC_ARG_NAMES = new Set([
   '-refs',           // 参考帧数
   '-level',          // 编码级别
   '-rc-lookahead',   // 码率控制前瞻帧数
-  '-aq-strength',    // 自适应量化强度
   '-sc_threshold',   // 场景切换检测阈值
   '-threads',        // 编码线程数
 ])
@@ -626,6 +625,7 @@ export function resolveVideoAdvancedSection(
   const fields = encoder.specialParameters
     .filter((control) => !isRawParameterDictionary(control))
     .filter((control) => !GENERIC_CODEC_ARG_NAMES.has(control.commandBinding?.argName ?? ''))
+    .filter((control) => isControlActive(control, config))
     .map((control) => {
       // EncoderDefinition.specialParameters 中的默认值只描述编码器行为，
       // 不代表项目应主动发射；界面必须允许保持空值。

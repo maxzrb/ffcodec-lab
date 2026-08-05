@@ -6,11 +6,12 @@ import { resolveVideoAdvancedSection } from '@ffcodec/domain/presentation/resolv
 import { resolveVideoSection } from '@ffcodec/domain/presentation/resolve-section'
 import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
 import { isRawParameterDictionary, synchronizeVideoParameterDictionary } from '@ffcodec/domain/catalog/parameter-dictionary'
+import { isControlActive } from '@ffcodec/domain/catalog/control-condition'
 
 // 与 resolve-section.ts 中的 GENERIC_CODEC_ARG_NAMES 保持一致
 const GENERIC_CODEC_ARG_NAMES = new Set([
   '-g', '-bf', '-keyint_min', '-qmin', '-qmax', '-qcomp',
-  '-refs', '-level', '-rc-lookahead', '-aq-strength', '-sc_threshold', '-threads',
+  '-refs', '-level', '-rc-lookahead', '-sc_threshold', '-threads',
 ])
 
 const catalog = loadCatalog()
@@ -55,6 +56,7 @@ describe('视频编码器高级参数统一契约', () => {
       const advancedControls = encoder.specialParameters
         .filter((control) => !isRawParameterDictionary(control))
         .filter((control) => !GENERIC_CODEC_ARG_NAMES.has(control.commandBinding?.argName ?? ''))
+        .filter((control) => isControlActive(control, config))
       expect(section.fields.length, encoder.id).toBe(advancedControls.length)
       expect(section.fields.every((field) => field.optional && field.value === '')).toBe(true)
       expect(plan.invocations[0].output.codecArgs.some((arg) => arg.id.startsWith('codec.special.'))).toBe(false)

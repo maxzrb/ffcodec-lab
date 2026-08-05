@@ -114,9 +114,8 @@ export function withAdvancedQualityControls(encoder: EncoderDefinition): Encoder
     controls.push(advancedText(encoder.id, 'level', '编码级别 (-level)', '-level'))
   }
 
-  if (encoder.id === 'h264_nvenc' || encoder.id === 'hevc_nvenc') {
+  if (encoder.id === 'h264_nvenc' || encoder.id === 'hevc_nvenc' || encoder.id === 'av1_nvenc') {
     controls.push(
-      advancedNumber(encoder.id, 'aqStrength', '空间 AQ 强度 (-aq-strength)', '-aq-strength', { min: 1, max: 15, step: 1 }),
       advancedNumber(encoder.id, 'lookaheadLevel', '前瞻等级 (-lookahead_level)', '-lookahead_level', { min: 0, max: 15, step: 1 }),
     )
   }
