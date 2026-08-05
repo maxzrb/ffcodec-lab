@@ -36,8 +36,8 @@ export function createDefaultProjectConfig(): ProjectConfig {
       decode: {},
     },
     output: {
-      path: 'output.mp4',
-      containerId: 'mp4',
+      path: 'output.mkv',
+      containerId: 'mkv',
       overwrite: false,
       hideBanner: false,
       outputSuffix: 'ffcodec',

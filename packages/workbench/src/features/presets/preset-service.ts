@@ -372,6 +372,7 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
         ...createDefaultProjectConfig(),
         output: {
           ...createDefaultProjectConfig().output,
+          path: 'output.avif',
           containerId: 'avif',
           overwrite: true,
         },

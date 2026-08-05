@@ -99,6 +99,7 @@ describe('Normalizer', () => {
 
   it('切换输出容器时同步替换输出文件扩展名', () => {
     const previous = createDefaultProjectConfig()
+    previous.output.containerId = 'mp4'
     previous.output.path = 'D:\\Exports\\demo.final.mp4'
     const next = structuredClone(previous)
     next.output.containerId = 'mkv'
