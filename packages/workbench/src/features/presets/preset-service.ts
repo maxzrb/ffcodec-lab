@@ -282,6 +282,7 @@ export function getBuiltinPresets(): Omit<UserPreset, 'id' | 'createdAt' | 'upda
         ...createDefaultProjectConfig(),
         output: {
           ...createDefaultProjectConfig().output,
+          path: 'output.mkv',
           containerId: 'mkv',
           overwrite: true,
         },
