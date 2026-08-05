@@ -56,13 +56,16 @@ function checkContainerCategory(config: ProjectConfig, container: ContainerDefin
   const cat = container.category
 
   if (cat === 'image') {
-    if (config.video.mode === 'encode') {
+    const encoderId = config.video.encoderId
+    const codecCompat = encoderId ? (container.videoCodecs[encoderId] ?? 'unsupported') : 'unsupported'
+    const videoOk = codecCompat === 'supported' || codecCompat === 'supported-with-caveat'
+    if (config.video.mode === 'encode' && !videoOk) {
       messages.push({
         code: 'error.container.image.noVideo',
         severity: 'error', category: 'compatibility',
-        message: '图片容器不支持视频编码。请将视频模式设为"禁用"或切换为视频容器。',
-        originIds: ['video.mode', 'output.containerId'],
-        context: { containerId: container.id },
+        message: '图片容器不支持当前视频编码器。请更换为兼容编码器（如 AVIF 用 AV1 编码器，WebP 用 VP8 编码器），或将视频模式设为"禁用"。',
+        originIds: ['video.encoderId', 'output.containerId'],
+        context: { containerId: container.id, encoderId },
       })
     }
     if (config.audio.mode === 'encode') {
