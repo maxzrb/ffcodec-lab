@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Dropdown } from '@ffcodec/workbench'
 
 describe('Dropdown scroll behavior', () => {
@@ -26,5 +26,26 @@ describe('Dropdown scroll behavior', () => {
     })
 
     expect(panel.scrollTop).toBe(200)
+  })
+
+  it('运行时标记为不可用的选项保持可见但不能选择', async () => {
+    const onChange = vi.fn()
+    render(
+      <Dropdown
+        value="available"
+        options={[
+          { value: 'available', label: 'Available' },
+          { value: 'missing', label: 'Missing', disabled: true },
+        ]}
+        onChange={onChange}
+        ariaLabel="Capability options"
+      />,
+    )
+
+    await userEvent.click(screen.getByLabelText('Capability options'))
+    const missing = screen.getByRole('option', { name: 'Missing' })
+    expect(missing).toBeDisabled()
+    await userEvent.click(missing)
+    expect(onChange).not.toHaveBeenCalled()
   })
 })

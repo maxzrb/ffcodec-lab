@@ -8,7 +8,11 @@ import { buildExecutionPlans, type ExecutionPlan } from '@ffcodec/command-plan'
 import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
 import { repairOddExplicitResolution } from '@ffcodec/domain/config/resolution-repair'
 import { normalizeConfig } from '@ffcodec/domain/normalization'
-import { validateConfig } from '@ffcodec/domain/validation'
+import {
+  collectConfiguredVideoEncoderOptionGroups,
+  collectRequiredVideoEncoders,
+  validateConfig,
+} from '@ffcodec/domain/validation'
 import { RuleIndex } from '@ffcodec/catalog/rule-index'
 import { collectRequiredVideoFilterNames } from '@ffcodec/domain/filters/video-filter-builder'
 import { canRunExecutionPlans } from '../components/execution-plan-guards'
@@ -31,15 +35,41 @@ async function prepareQueueItem(item: BatchQueueItem, customFfmpegPath?: string)
   }
 
   const requiredFilters = collectRequiredVideoFilterNames(normalized)
-  if (requiredFilters.length > 0) {
-    const capabilities = await window.electronAPI?.getFilterCapabilities(customFfmpegPath)
+  const requiredEncoders = collectRequiredVideoEncoders(normalized, catalog)
+  if (requiredFilters.length > 0 || requiredEncoders.length > 0) {
+    const capabilities = await window.electronAPI?.getFFmpegCapabilities(customFfmpegPath)
     if (!capabilities) {
-      return { plans: [], error: '无法检查当前 FFmpeg 的滤镜能力。' }
+      return { plans: [], error: '无法检查当前 FFmpeg 的编码器与滤镜能力。' }
     }
-    const available = new Set(capabilities.filters)
-    const unavailable = requiredFilters.filter((name) => !available.has(name))
-    if (unavailable.length > 0) {
-      return { plans: [], error: `当前 FFmpeg 不提供所需滤镜：${unavailable.join(', ')}。` }
+
+    const availableEncoders = new Set(capabilities.encoders)
+    const unavailableEncoders = requiredEncoders.filter(({ ffmpegName }) => !availableEncoders.has(ffmpegName))
+    if (unavailableEncoders.length > 0) {
+      return { plans: [], error: `当前 FFmpeg 不提供所需编码器：${unavailableEncoders.map(({ ffmpegName }) => ffmpegName).join(', ')}。` }
+    }
+
+    const availableFilters = new Set(capabilities.filters)
+    const unavailableFilters = requiredFilters.filter((name) => !availableFilters.has(name))
+    if (unavailableFilters.length > 0) {
+      return { plans: [], error: `当前 FFmpeg 不提供所需滤镜：${unavailableFilters.join(', ')}。` }
+    }
+
+    for (const group of collectConfiguredVideoEncoderOptionGroups(normalized, catalog)) {
+      if (group.requirements.length === 0) continue
+      const encoderCapabilities = await window.electronAPI?.getFFmpegEncoderCapabilities(
+        group.ffmpegName,
+        customFfmpegPath,
+      )
+      if (!encoderCapabilities) {
+        return { plans: [], error: `无法检查编码器 ${group.ffmpegName} 的私有选项。` }
+      }
+      const availableOptions = new Set(encoderCapabilities.options)
+      const unavailableOptions = [...new Set(
+        group.requirements.filter(({ option }) => !availableOptions.has(option)).map(({ option }) => option),
+      )]
+      if (unavailableOptions.length > 0) {
+        return { plans: [], error: `编码器 ${group.ffmpegName} 不提供所需选项：${unavailableOptions.join(', ')}。` }
+      }
     }
   }
 

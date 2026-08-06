@@ -15,6 +15,7 @@ export interface DropdownOption {
   description?: string
   group?: string
   badge?: string
+  disabled?: boolean
 }
 
 interface DropdownProps {
@@ -167,7 +168,7 @@ export function Dropdown({
             setOpen(true)
           } else if (focusIndex >= 0) {
             const opt = options[focusIndex]
-            if (opt) selectOption(String(opt.value))
+            if (opt && !opt.disabled) selectOption(String(opt.value))
           }
           break
         case 'ArrowDown':
@@ -257,6 +258,8 @@ export function Dropdown({
                 } ${isFocused ? 'custom-select-panel__option--focused' : ''}`}
                 role="option"
                 aria-selected={isSelected}
+                aria-disabled={opt.disabled || undefined}
+                disabled={opt.disabled}
                 onClick={() => selectOption(String(opt.value))}
                 onMouseEnter={() => setFocusIndex(optIndex)}
               >

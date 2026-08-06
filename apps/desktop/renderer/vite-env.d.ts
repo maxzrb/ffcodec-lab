@@ -121,6 +121,8 @@ interface Window {
       detectFFmpeg: (customPath?: string) => Promise<FFmpegInfo>
       getAudioEncoderCapabilities: (customPath?: string) => Promise<{ encoders: string[]; aacOptions: string[] } | null>
       getFilterCapabilities: (customPath?: string) => Promise<{ filters: string[] } | null>
+      getFFmpegCapabilities: (customPath?: string) => Promise<{ encoders: string[]; filters: string[] } | null>
+      getFFmpegEncoderCapabilities: (encoder: string, customPath?: string) => Promise<{ encoder: string; options: string[] } | null>
 
       // Phase 9: FFmpeg job execution
       startFFmpegJob: (request: FFmpegJobStartRequest) => Promise<JobStartResult>

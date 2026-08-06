@@ -3355,12 +3355,12 @@ export const explanations: Record<string, ExplanationDefinition> = {
     effects: { quality: 1, fileSize: 3, speed: 1, compatibility: 1 },
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/nvenc.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/nvenc.c' }],
   },
-  'expl.nvenc.twopass': {
-    id: 'expl.nvenc.twopass',
-    title: 'NVENC 2-pass 编码 (-2pass)',
-    short: '启用 NVENC 硬件两遍编码。第一遍分析帧复杂度和运动分布，第二遍利用数据优化码率分配。仅在 VBR/CBR 模式下有效。对质量有明显改善但编码延迟翻倍。',
-    detail: 'NVENC 的硬件 2-pass 不同于软件 x264 的两遍编码——它不生成中间统计文件，而是在硬件内部缓冲帧并执行两遍编码流水线。第一遍收集帧内复杂度和运动分析数据，第二遍据此优化 QP 分配。对复杂混合内容（交替静态和高速运动），质量改善在 5–15% BD-Rate。但编码延迟约翻倍，不适合实时应用。',
-    commandExample: '-2pass 1',
+  'expl.nvenc.multipass': {
+    id: 'expl.nvenc.multipass',
+    title: 'NVENC 多遍分析 (-multipass)',
+    short: '控制 NVENC 单次编码调用内的多遍分析：qres 使用四分之一分辨率首遍，fullres 使用完整分辨率首遍，disabled 为单遍。FFmpeg 8.0 与 9.0 均支持。',
+    detail: 'NVENC multipass 不生成传统 -pass 1/-pass 2 的统计文件，也不会让 FFCodec Lab 创建两个执行步骤。编码器在一次 FFmpeg 调用内部完成首遍分析和最终编码。qres 更快、资源占用较低；fullres 分析更充分但延迟和 GPU 负载更高。',
+    commandExample: '-multipass fullres',
     effects: { quality: 4, fileSize: 3, speed: 4, compatibility: 1 },
     warnings: ['仅在 VBR 和 CBR 模式下可用；CQ/QP 模式忽略此参数。'],
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/nvenc.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/nvenc.c' }],
@@ -4304,10 +4304,10 @@ export const explanations: Record<string, ExplanationDefinition> = {
     effects: { quality: 0, fileSize: 0, speed: 0, compatibility: 1 },
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/nvenc_av1.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/nvenc_av1.c' }],
   },
-  'expl.av1_nvenc.twopass': {
-    id: 'expl.av1_nvenc.twopass',
-    title: 'av1_nvenc 2-pass 编码',
-    short: '启用 NVENC 内置两遍编码模式——首次遍历收集统计信息，第二遍优化码率分配。提升画质但增加编码时间。',
+  'expl.av1_nvenc.multipass': {
+    id: 'expl.av1_nvenc.multipass',
+    title: 'av1_nvenc 多遍分析',
+    short: '在一次 FFmpeg 调用内选择 disabled、qres 或 fullres 多遍分析；不是传统 passlog 双遍编码。',
     effects: { quality: 3, fileSize: 2, speed: 3, compatibility: 0 },
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-20', file: 'libavcodec/nvenc_av1.c', sourceType: 'ffmpeg-official', url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/nvenc_av1.c' }],
   },

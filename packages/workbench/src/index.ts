@@ -3,8 +3,8 @@
 // ============================================================
 
 export { WorkbenchApp } from './WorkbenchApp'
-export { useBuilderStore, usePipeline, useRuntimeFilterDiagnostics } from './hooks'
-export type { PipelineOutput } from './hooks'
+export { applyRuntimeFFmpegCapabilities, useBuilderStore, usePipeline, useRuntimeFFmpegCapabilities, useRuntimeFilterDiagnostics } from './hooks'
+export type { PipelineOutput, RuntimeFFmpegState } from './hooks'
 export { I18nProvider, useI18n, translateText, localizeExplanation } from './features/i18n/i18n'
 export type { Locale } from './features/i18n/i18n'
 export { Dropdown } from './components/Dropdown'

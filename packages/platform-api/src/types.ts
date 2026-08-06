@@ -117,6 +117,16 @@ export interface WorkbenchExtensions {
   getFilterCapabilities?: () => Promise<{
     filters: string[]
   } | null>
+  /** 查询当前 FFmpeg 实际注册的编码器和滤镜。 */
+  getFFmpegCapabilities?: () => Promise<{
+    encoders: string[]
+    filters: string[]
+  } | null>
+  /** 按需查询指定编码器实际公开的私有 AVOption。 */
+  getFFmpegEncoderCapabilities?: (encoder: string) => Promise<{
+    encoder: string
+    options: string[]
+  } | null>
   /** 订阅 Desktop 当前 FFmpeg 选择变化。 */
   onFFmpegSelectionChange?: (listener: () => void) => () => void
   getAudioCapabilityOverride?: () => boolean

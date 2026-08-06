@@ -5,7 +5,7 @@
 
 import { useCallback, useMemo, type MouseEvent } from 'react'
 import type { CommandActionExtension } from '@ffcodec/platform-api'
-import { useAppDialog, useI18n, useBuilderStore, usePipeline, useRuntimeFilterDiagnostics } from '@ffcodec/workbench'
+import { useAppDialog, useI18n, useBuilderStore, usePipeline, useRuntimeFFmpegCapabilities } from '@ffcodec/workbench'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { buildExecutionPlans } from '@ffcodec/command-plan'
 import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
@@ -24,13 +24,13 @@ function RunButton() {
   const isZh = locale === 'zh-CN'
   const config = useBuilderStore((s) => s.config)
   const setConfig = useBuilderStore((s) => s.setConfig)
-  const runtimeFilterDiagnostics = useRuntimeFilterDiagnostics(config)
+  const runtimeFFmpeg = useRuntimeFFmpegCapabilities(config, catalog)
   const batchQueueRunning = useBatchQueueStore((state) => state.running)
 
   // Mini-pipeline to get the command plan (shared pipeline runs in WorkbenchApp,
   // but we need the plan here for execution; re-running is cheap and guarantees
   // we use the latest config).
-  const pipeline = usePipeline(config, catalog, runtimeFilterDiagnostics)
+  const pipeline = usePipeline(config, catalog, runtimeFFmpeg.diagnostics)
   const { jobState, start } = useEncodingJob()
 
   const plans = useMemo(() => buildExecutionPlans(pipeline.commandPlan), [pipeline.commandPlan])

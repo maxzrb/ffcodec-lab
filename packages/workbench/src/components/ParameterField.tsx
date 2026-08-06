@@ -183,6 +183,7 @@ function renderControl(
             description: opt.description ? text(opt.description) : undefined,
             group: opt.group ? text(opt.group) : undefined,
             badge: opt.badge ? text(opt.badge) : undefined,
+            disabled: opt.disabled,
           })) ?? []}
           onChange={(v) => onChange(v)}
           disabled={disabled}

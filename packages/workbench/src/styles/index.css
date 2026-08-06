@@ -343,6 +343,15 @@ input[type="number"]:hover {
   font-weight: 600;
 }
 
+.custom-select-panel__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.custom-select-panel__option:disabled:hover {
+  background: transparent;
+}
+
 .custom-select-panel__label {
   display: flex;
   min-width: 0;

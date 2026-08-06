@@ -20,6 +20,8 @@ export interface ResolvedOption {
   recommended?: boolean
   compatibility?: 'supported' | 'unsupported' | 'unknown'
   availabilityNote?: string
+  /** 当前运行时不可用，但仍保留展示以解释能力差异。 */
+  disabled?: boolean
 }
 
 /**

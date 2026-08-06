@@ -97,6 +97,29 @@ describe('Normalizer', () => {
     expect(result.notices.some((n) => n.fieldId === 'video.specialParameters')).toBe(true)
   })
 
+  it('把旧 NVENC -2pass 开关迁移为 -multipass 枚举', () => {
+    const previous = createDefaultProjectConfig()
+    previous.video.encoderId = 'h264_nvenc'
+    previous.video.specialParameters = { twopass: true }
+    const next = structuredClone(previous)
+
+    const result = normalizeConfig(previous, next, catalog)
+
+    expect(result.config.video.specialParameters).toEqual({ multipass: 'fullres' })
+    expect(result.notices.some((notice) => notice.fieldId === 'video.specialParameters.multipass')).toBe(true)
+  })
+
+  it('保留旧 NVENC 明确关闭双遍的语义', () => {
+    const previous = createDefaultProjectConfig()
+    previous.video.encoderId = 'av1_nvenc'
+    previous.video.specialParameters = { twopass: false }
+    const next = structuredClone(previous)
+
+    const result = normalizeConfig(previous, next, catalog)
+
+    expect(result.config.video.specialParameters).toEqual({ multipass: 'disabled' })
+  })
+
   it('切换输出容器时同步替换输出文件扩展名', () => {
     const previous = createDefaultProjectConfig()
     previous.output.containerId = 'mp4'

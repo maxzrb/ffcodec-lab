@@ -358,11 +358,16 @@ export const av1Nvenc: EncoderDefinition = {
     },
     // -- 编码器内部 ----------------------------------------------
     {
-      id: 'av1_nvenc.twopass', label: '2-pass 编码 (-2pass)',
-      control: 'switch',
-      configBinding: { path: videoSpecialParamPath('twopass') },
-      commandBinding: { argName: '-2pass', prefix: '-2pass', phase: 'VIDEO_CODEC' },
-      optional: true, explanationId: 'expl.av1_nvenc.twopass', sourceRefs: [nvencAv1Source],
+      id: 'av1_nvenc.multipass', label: '多遍分析 (-multipass)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('multipass') },
+      commandBinding: { argName: '-multipass', prefix: '-multipass', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: 'disabled', label: 'disabled — 单遍' },
+        { value: 'qres', label: 'qres — 首遍四分之一分辨率' },
+        { value: 'fullres', label: 'fullres — 首遍完整分辨率' },
+      ],
+      optional: true, explanationId: 'expl.av1_nvenc.multipass', sourceRefs: [nvencAv1Source],
     },
     {
       id: 'av1_nvenc.surfaces', label: '内部 Surface 数 (-surfaces)',

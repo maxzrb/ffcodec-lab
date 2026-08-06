@@ -6,7 +6,7 @@ const src = { repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026
   url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/d3d12va_encode_av1.c' }
 
 export const av1D3d12: EncoderDefinition = {
-  id: 'av1_d3d12', label: 'av1_d3d12 (AV1 — D3D12)', ffmpegName: 'av1_d3d12',
+  id: 'av1_d3d12', label: 'av1_d3d12va (AV1 — D3D12)', ffmpegName: 'av1_d3d12va',
   mediaType: 'video', family: 'av1' as const, implementation: 'other' as const,
   availabilityClass: 'platform-dependent',
   capabilityScope: {

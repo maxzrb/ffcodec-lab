@@ -7,7 +7,15 @@
 import { ipcMain, dialog, shell, BrowserWindow, net, app } from 'electron'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { detectAllFFmpegVersions, detectAudioEncoderCapabilities, detectFFmpeg, detectFFmpegTools, detectFilterCapabilities } from './ffmpeg-detect'
+import {
+  detectAllFFmpegVersions,
+  detectAudioEncoderCapabilities,
+  detectFFmpeg,
+  detectFFmpegEncoderCapabilities,
+  detectFFmpegRuntimeCapabilities,
+  detectFFmpegTools,
+  detectFilterCapabilities,
+} from './ffmpeg-detect'
 import {
   initStore,
   getItem as storageGetItem,
@@ -361,6 +369,13 @@ function registerUsageStatsHandler(): void {
   })
   ipcMain.handle('ffmpeg:filterCapabilities', async (_event, customPath?: string) => {
     return detectFilterCapabilities(customPath)
+  })
+  ipcMain.handle('ffmpeg:capabilities', async (_event, customPath?: string) => {
+    return detectFFmpegRuntimeCapabilities(customPath)
+  })
+  ipcMain.handle('ffmpeg:encoderCapabilities', async (_event, encoder: string, customPath?: string) => {
+    if (typeof encoder !== 'string') return null
+    return detectFFmpegEncoderCapabilities(encoder, customPath)
   })
 }
 

@@ -71,7 +71,7 @@ export function normalizeConfig(
             fieldId: 'video.codecCategory',
             from: next.video.encoderId,
             to: '<none>',
-            reason: category.placeholderNote ?? `"${category.label}" 在 FFmpeg 8.1.2 发行版中暂无编码器实现`,
+            reason: category.placeholderNote ?? `"${category.label}" 在 FFmpeg 9.0 发行版中暂无编码器实现`,
           })
           config = {
             ...config,
@@ -129,6 +129,32 @@ export function normalizeConfig(
         }
       }
     }
+  }
+
+  // FFmpeg 9.0 删除了 NVENC 的废弃 -2pass 别名；8.0 与 9.0 均支持 -multipass。
+  // 在命令生成前迁移旧快照/预设，避免陈旧字段继续停留在持久化配置中。
+  if (
+    config.video.mode === 'encode'
+    && ['h264_nvenc', 'hevc_nvenc', 'av1_nvenc'].includes(config.video.encoderId ?? '')
+    && Object.prototype.hasOwnProperty.call(config.video.specialParameters, 'twopass')
+  ) {
+    const previousSpecial = config.video.specialParameters
+    const migratedSpecial = { ...previousSpecial }
+    const legacyValue = migratedSpecial.twopass
+    delete migratedSpecial.twopass
+    if (migratedSpecial.multipass === undefined && typeof legacyValue === 'boolean') {
+      migratedSpecial.multipass = legacyValue ? 'fullres' : 'disabled'
+    }
+    config = {
+      ...config,
+      video: { ...config.video, specialParameters: migratedSpecial },
+    }
+    notices.push({
+      fieldId: 'video.specialParameters.multipass',
+      from: legacyValue,
+      to: migratedSpecial.multipass,
+      reason: '旧 NVENC -2pass 已迁移为 FFmpeg 8/9 均支持的 -multipass',
+    })
   }
 
   // Only normalize when video mode is 'encode' and encoder changed

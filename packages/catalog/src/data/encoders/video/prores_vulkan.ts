@@ -6,7 +6,7 @@ const src = { repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026
   url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/vulkan_prores.c' }
 
 export const proresVulkan: EncoderDefinition = {
-  id: 'prores_vulkan', label: 'prores_vulkan (ProRes — Vulkan Compute)', ffmpegName: 'prores_vulkan',
+  id: 'prores_vulkan', label: 'prores_ks_vulkan (ProRes — Vulkan Compute)', ffmpegName: 'prores_ks_vulkan',
   mediaType: 'video', family: 'prores' as const, implementation: 'other' as const,
   availabilityClass: 'experimental',
   capabilityScope: {

@@ -140,6 +140,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
       filters: string[]
     } | null>,
 
+  getFFmpegCapabilities: (customPath?: string) =>
+    ipcRenderer.invoke('ffmpeg:capabilities', customPath) as Promise<{
+      encoders: string[]
+      filters: string[]
+    } | null>,
+
+  getFFmpegEncoderCapabilities: (encoder: string, customPath?: string) =>
+    ipcRenderer.invoke('ffmpeg:encoderCapabilities', encoder, customPath) as Promise<{
+      encoder: string
+      options: string[]
+    } | null>,
+
   // FFmpeg job execution (Phase 9)
   startFFmpegJob: (request: FFmpegJobStartRequest) =>
     ipcRenderer.invoke('ffmpeg:startJob', request) as Promise<JobStartResult>,
@@ -298,6 +310,8 @@ declare global {
       listFFmpegVersions: (customPath?: string) => Promise<FFmpegInfo[]>
       getAudioEncoderCapabilities: (customPath?: string) => Promise<{ encoders: string[]; aacOptions: string[] } | null>
       getFilterCapabilities: (customPath?: string) => Promise<{ filters: string[] } | null>
+      getFFmpegCapabilities: (customPath?: string) => Promise<{ encoders: string[]; filters: string[] } | null>
+      getFFmpegEncoderCapabilities: (encoder: string, customPath?: string) => Promise<{ encoder: string; options: string[] } | null>
 
       // Phase 9: FFmpeg job execution
       startFFmpegJob: (request: FFmpegJobStartRequest) => Promise<JobStartResult>

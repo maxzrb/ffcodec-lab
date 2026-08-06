@@ -38,6 +38,18 @@ export interface FilterCapabilities {
   filters: string[]
 }
 
+/** 当前 FFmpeg 二进制实际注册的基础能力。 */
+export interface FFmpegRuntimeCapabilities {
+  encoders: string[]
+  filters: string[]
+}
+
+/** 指定编码器实际公开的 AVOption 名称。 */
+export interface FFmpegEncoderCapabilities {
+  encoder: string
+  options: string[]
+}
+
 // ---- Constants ----
 
 /** Timeout for ffmpeg -version (ms). */
@@ -45,6 +57,9 @@ const VERSION_TIMEOUT = 10_000
 
 /** Base-level subdirectories to search directly. */
 const BUNDLED_SUBDIRS = ['', 'ffmpeg', 'bin', 'tools', 'resources/ffmpeg']
+
+const runtimeCapabilitiesCache = new Map<string, FFmpegRuntimeCapabilities>()
+const encoderCapabilitiesCache = new Map<string, FFmpegEncoderCapabilities>()
 
 // ---- Version parsing ----
 
@@ -304,10 +319,10 @@ export async function detectAudioEncoderCapabilities(customPath?: string): Promi
       runExecFile(info.path, ['-hide_banner', '-encoders']),
       runExecFile(info.path, ['-hide_banner', '-h', 'encoder=aac']),
     ])
-    const encoders = encoderOutput
-      .split(/\r?\n/)
-      .map((line) => line.match(/^\s*A[.A-Z]{5}\s+(\S+)/)?.[1])
-      .filter((name): name is string => Boolean(name))
+    const encoders = uniqueMatches(
+      encoderOutput,
+      /^\s*A[.A-Z]{5}\s+([A-Za-z0-9][A-Za-z0-9_.-]*)/,
+    )
     const aacOptions = ['twoloop', 'fast', 'nmr']
       .filter((option) => new RegExp(`^\\s+${option}\\s+`, 'm').test(aacHelp))
     return { encoders, aacOptions }
@@ -318,17 +333,84 @@ export async function detectAudioEncoderCapabilities(customPath?: string): Promi
 
 /** 读取当前 FFmpeg 已注册的滤镜名称；不从 configure 文本推断实际可用性。 */
 export async function detectFilterCapabilities(customPath?: string): Promise<FilterCapabilities | null> {
+  const capabilities = await detectFFmpegRuntimeCapabilities(customPath)
+  return capabilities ? { filters: capabilities.filters } : null
+}
+
+/**
+ * 读取当前 FFmpeg 实际注册的编码器和滤镜。
+ * 缓存键包含可执行文件路径与自报版本，切换二进制后不会复用旧能力。
+ */
+export async function detectFFmpegRuntimeCapabilities(
+  customPath?: string,
+): Promise<FFmpegRuntimeCapabilities | null> {
   const info = await detectFFmpeg(customPath)
   if (!info.found || !info.path) return null
 
+  const cacheKey = `${info.path}\u0000${info.fullVersion ?? info.version ?? ''}`
+  const cached = runtimeCapabilitiesCache.get(cacheKey)
+  if (cached) return cached
+
   try {
-    const { stdout } = await runExecFile(info.path, ['-hide_banner', '-filters'])
-    const filters = stdout
-      .split(/\r?\n/)
-      .map((line) => line.match(/^\s*[.A-Z]{2,3}\s+(\S+)\s+/)?.[1])
-      .filter((name): name is string => Boolean(name))
-    return { filters }
+    const [{ stdout: encoderOutput }, { stdout: filterOutput }] = await Promise.all([
+      runExecFile(info.path, ['-hide_banner', '-encoders']),
+      runExecFile(info.path, ['-hide_banner', '-filters']),
+    ])
+    const capabilities = {
+      encoders: parseEncoderNames(encoderOutput),
+      filters: parseFilterNames(filterOutput),
+    }
+    runtimeCapabilitiesCache.set(cacheKey, capabilities)
+    return capabilities
   } catch {
     return null
   }
+}
+
+/** 按需读取指定编码器的私有 AVOption；不初始化 GPU 或实际编码。 */
+export async function detectFFmpegEncoderCapabilities(
+  encoder: string,
+  customPath?: string,
+): Promise<FFmpegEncoderCapabilities | null> {
+  if (!/^[A-Za-z0-9_.-]+$/.test(encoder)) return null
+  const info = await detectFFmpeg(customPath)
+  if (!info.found || !info.path) return null
+
+  const cacheKey = `${info.path}\u0000${info.fullVersion ?? info.version ?? ''}\u0000${encoder}`
+  const cached = encoderCapabilitiesCache.get(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { stdout } = await runExecFile(info.path, ['-hide_banner', '-h', `encoder=${encoder}`])
+    if (/is not recognized|Unknown encoder|Codec '.+?' is not recognized/i.test(stdout)) return null
+    const capabilities = { encoder, options: parseEncoderOptionNames(stdout) }
+    encoderCapabilitiesCache.set(cacheKey, capabilities)
+    return capabilities
+  } catch {
+    return null
+  }
+}
+
+export function parseEncoderNames(output: string): string[] {
+  return uniqueMatches(output, /^\s*[VAS][.A-Z]{5}\s+([A-Za-z0-9][A-Za-z0-9_.-]*)/)
+}
+
+export function parseFilterNames(output: string): string[] {
+  return uniqueMatches(output, /^\s*[.A-Z]{2,3}\s+([A-Za-z0-9][A-Za-z0-9_.-]*)\s+/)
+}
+
+export function parseEncoderOptionNames(output: string): string[] {
+  return uniqueMatches(output, /^\s+(-[A-Za-z0-9_:-]+)\s+/)
+}
+
+function uniqueMatches(output: string, pattern: RegExp): string[] {
+  const values: string[] = []
+  const seen = new Set<string>()
+  for (const line of output.split(/\r?\n/)) {
+    const value = line.match(pattern)?.[1]
+    if (!value || seen.has(value)) continue
+    seen.add(value)
+    values.push(value)
+  }
+  return values
 }

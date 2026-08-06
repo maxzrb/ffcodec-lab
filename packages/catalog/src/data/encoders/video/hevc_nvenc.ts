@@ -396,11 +396,16 @@ export const hevcNvenc: EncoderDefinition = {
       optional: true, explanationId: 'expl.nvenc.coder', sourceRefs: [nvencSource],
     },
     {
-      id: 'hevc_nvenc.twopass', label: '2-pass 编码 (-2pass)',
-      control: 'switch',
-      configBinding: { path: videoSpecialParamPath('twopass') },
-      commandBinding: { argName: '-2pass', prefix: '-2pass', phase: 'VIDEO_CODEC' },
-      optional: true, explanationId: 'expl.nvenc.twopass', sourceRefs: [nvencSource],
+      id: 'hevc_nvenc.multipass', label: '多遍分析 (-multipass)',
+      control: 'select',
+      configBinding: { path: videoSpecialParamPath('multipass') },
+      commandBinding: { argName: '-multipass', prefix: '-multipass', phase: 'VIDEO_CODEC' },
+      options: [
+        { value: 'disabled', label: 'disabled — 单遍' },
+        { value: 'qres', label: 'qres — 首遍四分之一分辨率' },
+        { value: 'fullres', label: 'fullres — 首遍完整分辨率' },
+      ],
+      optional: true, explanationId: 'expl.nvenc.multipass', sourceRefs: [nvencSource],
     },
     {
       id: 'hevc_nvenc.surfaces', label: '内部 Surface 数 (-surfaces)',

@@ -22,7 +22,13 @@ vi.mock('child_process', () => ({
   execFile: mocks.execFile,
 }))
 
-import { detectFilterCapabilities, tryFFmpegPath } from './ffmpeg-detect'
+import {
+  detectFilterCapabilities,
+  parseEncoderNames,
+  parseEncoderOptionNames,
+  parseFilterNames,
+  tryFFmpegPath,
+} from './ffmpeg-detect'
 
 describe('FFmpeg executable detection', () => {
   beforeEach(() => {
@@ -80,6 +86,34 @@ describe('FFmpeg executable detection', () => {
     const result = await detectFilterCapabilities('C:\\FFmpeg\\ffmpeg.exe')
 
     expect(result?.filters).toEqual(['zscale', 'libplacebo'])
+  })
+
+  it('parses component tables without treating legend rows as components', () => {
+    expect(parseEncoderNames([
+      'Encoders:',
+      ' V..... = Video',
+      ' V....D h264_nvenc          NVIDIA NVENC H.264 encoder',
+      ' A..... aac                 AAC (Advanced Audio Coding)',
+    ].join('\n'))).toEqual(['h264_nvenc', 'aac'])
+
+    expect(parseFilterNames([
+      'Filters:',
+      '  T.. = Timeline support',
+      ' ..C zscale            V->V       Apply resizing.',
+      ' .S. libplacebo        N->V       Apply GPU filters.',
+    ].join('\n'))).toEqual(['zscale', 'libplacebo'])
+  })
+
+  it('parses encoder AVOptions but excludes enum value rows', () => {
+    const result = parseEncoderOptionNames([
+      'h264_nvenc AVOptions:',
+      '  -preset            <int>        E..V....... Set the encoding preset',
+      '     p1              12           E..V....... fastest',
+      '  -multipass         <int>        E..V....... Set multipass mode',
+      '     disabled        0            E..V....... Single pass',
+    ].join('\n'))
+
+    expect(result).toEqual(['-preset', '-multipass'])
   })
 })
 

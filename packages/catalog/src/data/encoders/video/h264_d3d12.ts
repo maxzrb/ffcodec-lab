@@ -6,7 +6,7 @@ const src = { repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026
   url: 'https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/d3d12va_encode_h264.c' }
 
 export const h264D3d12: EncoderDefinition = {
-  id: 'h264_d3d12', label: 'h264_d3d12 (H.264 — D3D12)', ffmpegName: 'h264_d3d12',
+  id: 'h264_d3d12', label: 'h264_d3d12va (H.264 — D3D12)', ffmpegName: 'h264_d3d12va',
   mediaType: 'video', family: 'h264' as const, implementation: 'other' as const,
   availabilityClass: 'platform-dependent',
   capabilityScope: {

@@ -1,4 +1,6 @@
 export { useBuilderStore } from './useBuilderStore'
 export { usePipeline } from './usePipeline'
 export { useRuntimeFilterDiagnostics } from './useRuntimeFilterDiagnostics'
+export { applyRuntimeFFmpegCapabilities, useRuntimeFFmpegCapabilities } from './useRuntimeFFmpegCapabilities'
+export type { RuntimeFFmpegState } from './useRuntimeFFmpegCapabilities'
 export type { PipelineOutput } from './usePipeline'

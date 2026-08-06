@@ -68,6 +68,15 @@ describe('NVENC encoder catalog', () => {
     expect(modes).toContain('cbr')
     expect(modes).not.toContain('crf')
   })
+
+  it('all NVENC encoders use -multipass instead of removed -2pass', () => {
+    for (const encoderId of ['h264_nvenc', 'hevc_nvenc', 'av1_nvenc']) {
+      const bindings = videoEncoders[encoderId].specialParameters
+        .map((control) => control.commandBinding?.argName)
+      expect(bindings).toContain('-multipass')
+      expect(bindings).not.toContain('-2pass')
+    }
+  })
 })
 
 describe('NVENC command generation', () => {
@@ -94,6 +103,15 @@ describe('NVENC command generation', () => {
     const disabledText = renderBash(buildCommandPlan(disabled, catalog, [])).text
     expect(disabledText).toContain('-spatial-aq 0')
     expect(disabledText).toContain('-temporal-aq 1')
+  })
+
+  it('NVENC multipass emits the FFmpeg 8/9 compatible option', () => {
+    const config = nvencCqConfig()
+    config.video.specialParameters = { multipass: 'fullres' }
+    const text = renderBash(buildCommandPlan(config, catalog, [])).text
+
+    expect(text).toContain('-multipass fullres')
+    expect(text).not.toContain('-2pass')
   })
 
   it('h264_nvenc CQP mode generates -rc:0 constqp -qp N', () => {

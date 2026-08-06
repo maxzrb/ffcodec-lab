@@ -5,7 +5,7 @@
 // ============================================================
 
 import { useMemo, useCallback, useEffect, useState, Fragment, type ReactNode } from 'react'
-import { useBuilderStore, useRuntimeFilterDiagnostics } from './hooks'
+import { applyRuntimeFFmpegCapabilities, useBuilderStore, useRuntimeFFmpegCapabilities } from './hooks'
 import { usePipeline } from './hooks/usePipeline'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { CatalogIndex } from '@ffcodec/catalog/catalog-index'
@@ -79,26 +79,26 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
     window.dispatchEvent(new CustomEvent('ffcodec:locale-change', { detail: locale }))
   }, [locale, storage])
 
-  const runtimeFilterDiagnostics = useRuntimeFilterDiagnostics(config)
-  const pipeline = usePipeline(config, catalog, runtimeFilterDiagnostics)
+  const runtimeFFmpeg = useRuntimeFFmpegCapabilities(config, catalog)
+  const pipeline = usePipeline(config, catalog, runtimeFFmpeg.diagnostics)
   const commandPreviewOverride = useMemo(
     () => extensions?.getCommandPreviewOverride?.() ?? null,
     [extensions, commandPreviewRevision],
   )
   const commandPreviewConfig = commandPreviewOverride?.config ?? config
-  const commandPreviewRuntimeFilterDiagnostics = useRuntimeFilterDiagnostics(commandPreviewConfig)
-  const commandPreviewPipeline = usePipeline(commandPreviewConfig, catalog, commandPreviewRuntimeFilterDiagnostics)
+  const commandPreviewRuntimeFFmpeg = useRuntimeFFmpegCapabilities(commandPreviewConfig, catalog)
+  const commandPreviewPipeline = usePipeline(commandPreviewConfig, catalog, commandPreviewRuntimeFFmpeg.diagnostics)
 
   // Resolve the builder view from pipeline output
   const view = useMemo(
     () =>
-      resolveBuilderView(
+      applyRuntimeFFmpegCapabilities(resolveBuilderView(
         pipeline.normalizedConfig,
         catalog,
         pipeline.evaluationResult,
         pipeline.commandPlan,
-      ),
-    [pipeline.normalizedConfig, pipeline.evaluationResult, pipeline.commandPlan],
+      ), catalog, runtimeFFmpeg),
+    [pipeline.normalizedConfig, pipeline.evaluationResult, pipeline.commandPlan, runtimeFFmpeg],
   )
 
   // Track highlighted field from command token click

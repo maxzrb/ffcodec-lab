@@ -444,7 +444,7 @@ export function resolveVideoSection(
     encField.visible = config.video.mode === 'encode'
     encField.disabled = filteredEncoders.length === 0
     encField.disabledReason = filteredEncoders.length === 0
-      ? (selectedCategory?.placeholderNote ?? '截至 FFmpeg 8.1.2 发行版，此编解码标准暂无编码器实现')
+      ? (selectedCategory?.placeholderNote ?? '截至 FFmpeg 9.0 发行版，此编解码标准暂无编码器实现')
       : undefined
     fields.push(encField)
 
@@ -454,7 +454,7 @@ export function resolveVideoSection(
         id: 'video.codecCategory.emptyHint',
         label: selectedCategory?.label ?? '当前分类',
         controlType: 'section',
-        value: selectedCategory?.placeholderNote ?? '截至 FFmpeg 8.1.2 发行版，此编解码标准暂无编码器实现。',
+        value: selectedCategory?.placeholderNote ?? '截至 FFmpeg 9.0 发行版，此编解码标准暂无编码器实现。',
         visible: true,
         disabled: false,
         sourceRefs: [],
@@ -475,7 +475,7 @@ export function resolveVideoSection(
   // 占位分类：无编码器时显示质量控制不可用提示
   if (!encoder && config.video.mode === 'encode') {
     const selCat = CODEC_CATEGORIES.find((c) => c.id === config.video.codecCategory)
-    const note = selCat?.placeholderNote ?? '截至 FFmpeg 8.1.2 发行版，此编解码标准暂无编码器实现。'
+    const note = selCat?.placeholderNote ?? '截至 FFmpeg 9.0 发行版，此编解码标准暂无编码器实现。'
     fields.push({
       id: 'video.rateControl.mode',
       label: '质量控制模式',
