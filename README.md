@@ -121,7 +121,7 @@ packages/workbench/     共享 React 参数工作台
 scripts/                构建、审计和同步脚本
 ```
 
-更多资料： [用户指南](docs/user-guide.md) · [架构说明](docs/architecture.md) · [编码器可用性](docs/encoder-availability.md) · [版本变化](CHANGELOG.md)
+更多资料： [用户指南](docs/user-guide.md) · [架构说明](docs/architecture.md) · [编码器可用性](docs/encoder-availability.md) · [版本规则](VERSIONING.md) · [标准发布流程](docs/release-process.md) · [版本变化](CHANGELOG.md)
 
 ## 第三方组件
 
