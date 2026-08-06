@@ -165,8 +165,19 @@ export function resolveFilterFormatPlan(
   const issues = inspectFilterPrecisionIssues(config, sourceChain)
   const chain: VideoFilterSpec[] = []
   const usesHardwareDownload = config.input.decode.outputFormat === 'd3d11'
+    || config.input.decode.outputFormat === 'cuda'
+  const hardwareDownloadFormat = usesHardwareDownload
+    ? resolveHardwareFrameDownloadFormat(config)
+    : undefined
 
-  if (usesHardwareDownload) chain.push({ type: 'hwdownload' })
+  if (usesHardwareDownload) {
+    chain.push({ type: 'hwdownload' })
+    // D3D11/CUDA 的硬件帧必须先按实际底层半平面格式下载；
+    // 例如 10-bit 4:2:0 先落为 p010le，再转换到 CPU 工作格式 yuv420p10le。
+    if (hardwareDownloadFormat) {
+      chain.push({ type: 'format', pixelFormats: [hardwareDownloadFormat] })
+    }
+  }
   if (workingFormats.length > 0) chain.push({ type: 'format', pixelFormats: workingFormats })
 
   for (const spec of sourceChain) {
@@ -262,6 +273,28 @@ export function getSelectedProbePixelFormats(config: ProjectConfig): string[] {
     .filter((stream) => selectedIndexes === undefined || selectedIndexes.has(stream.index))
     .map((stream) => stream.pixFmt)
     .filter((format): format is string => Boolean(format))
+}
+
+/**
+ * 根据匹配的媒体探针推导 hwdownload 必须使用的底层软件格式。
+ * 多条参与编码的视频流只有在底层格式一致时才能共用同一条全局滤镜链。
+ */
+export function resolveHardwareFrameDownloadFormat(config: ProjectConfig): string | undefined {
+  const sourceFormats = getSelectedProbePixelFormats(config)
+  if (sourceFormats.length === 0) return undefined
+  const mapped = sourceFormats.map(mapHardwareFrameDownloadFormat)
+  if (mapped.some((format) => format === undefined)) return undefined
+  const unique = new Set(mapped)
+  return unique.size === 1 ? mapped[0] : undefined
+}
+
+function mapHardwareFrameDownloadFormat(sourceFormat: string): string | undefined {
+  const normalized = sourceFormat.toLowerCase()
+  if (/^(?:yuvj?420p|nv12)$/.test(normalized)) return 'nv12'
+  if (/^(?:yuv420p10le|p010le|p010)$/.test(normalized)) return 'p010le'
+  if (/^(?:yuv420p12le|p012le|p012)$/.test(normalized)) return 'p012le'
+  if (/^(?:yuv444p|yuvj444p)$/.test(normalized)) return 'yuv444p'
+  return undefined
 }
 
 function resolveProbedWorkingFormat(

@@ -20,8 +20,8 @@ export const explanations: Record<string, ExplanationDefinition> = {
   'expl.decode.outputFormat': {
     id: 'expl.decode.outputFormat', title: '解码输出格式 (-hwaccel_output_format)',
     short: '约束硬件解码器向后续滤镜或编码器交出的帧格式；通常应保持自动协商。',
-    detail: 'nv12、yuv420p、p010 等软件格式通常意味着帧进入系统内存；d3d11 等硬件格式会让帧留在设备内存，可能减少复制，但要求后续滤镜和编码器接受同一类硬件帧。当前工作台没有自动补 hwdownload/hwupload，错误组合可能在滤镜初始化阶段失败。',
-    warnings: ['没有选择 -hwaccel 时通常不要单独设置本参数。', '使用 d3d11 硬件帧前必须验证缩放、调色、字幕等滤镜链。'],
+    detail: 'nv12、yuv420p、p010 等软件格式通常意味着帧进入系统内存；d3d11、cuda 等硬件格式会让帧留在设备内存，可能减少复制，但要求后续滤镜和编码器接受同一类硬件帧。高精度 CPU 链会在有匹配媒体探针时按实际底层格式生成 hwdownload；纯 GPU 自定义链仍需用户明确维护设备与格式边界。',
+    warnings: ['没有选择 -hwaccel 时通常不要单独设置本参数。', '使用 d3d11/cuda 硬件帧前必须探测媒体，并验证滤镜、编码器与设备选择。'],
     sourceRefs: [{ repository: 'FFmpeg/FFmpeg', branch: 'master', snapshotDate: '2026-07-24', file: 'doc/ffmpeg.texi', symbol: '-hwaccel_output_format', sourceType: 'ffmpeg-official', url: 'https://ffmpeg.org/ffmpeg.html' }],
   },
   'expl.decode.device': {

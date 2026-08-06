@@ -1912,6 +1912,7 @@ export function resolveDecodeSection(
         { value: 'yuv420p', label: 'yuv420p', description: '8-bit 4:2:0 平面软件格式，兼容性较广。' },
         { value: 'p010', label: 'p010', description: '10-bit 4:2:0 半平面格式；实际名称和支持取决于解码路径。' },
         { value: 'd3d11', label: 'd3d11', description: 'Direct3D 11 硬件帧；CPU 滤镜通常不能直接处理。' },
+        { value: 'cuda', label: 'cuda', description: 'NVIDIA CUDA 硬件帧；适合 NVDEC、CUDA 滤镜与 NVENC 的同设备链。' },
       ],
       explanationId: 'expl.decode.outputFormat', commandOrigins: ['input.decode.outputFormat'],
       configBinding: { path: CONFIG_PATHS.input.decode.outputFormat }, groupId: 'decode-format', tier: 'advanced',

@@ -116,8 +116,8 @@ describe('主输入解码设置', () => {
   it('分享配置保留解码设置，v6 迁移后保持默认命令不变', () => {
     const config = createDefaultProjectConfig()
     config.input.decode = {
-      hwaccel: 'd3d11va', threads: 3, outputFormat: 'nv12',
-      device: { parameter: 'hwaccel_device', value: '1' },
+      hwaccel: 'cuda', threads: 3, outputFormat: 'cuda',
+      device: { parameter: 'hwaccel_device', value: '0' },
     }
     const decoded = decodeConfigFromShare(encodeConfigToShare(config).value)
     expect(decoded.success).toBe(true)

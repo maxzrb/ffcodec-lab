@@ -86,26 +86,62 @@ const COPY: Record<string, { 'zh-CN': Copy; en: Copy }> = {
   },
   'warn.decode.outputFormat.hardwareFrames': {
     'zh-CN': {
-      title: 'D3D11 硬件帧可能与当前处理链不兼容',
-      explanation: 'd3d11 会让解码帧留在 GPU 设备内存。当前工作台的缩放、调色、降噪、字幕等多数滤镜以及软件编码器通常需要系统内存帧，没有显式 hwdownload/format 时可能报错。',
-      guidance: '只有在确认后续滤镜和硬件编码器支持同一设备帧时使用；否则留空，或选择 nv12/yuv420p/p010 并用短样片验证。',
+      title: '硬件帧可能与当前处理链不兼容',
+      explanation: 'd3d11/cuda 会让解码帧留在 GPU 设备内存。多数 CPU 滤镜和软件编码器需要系统内存帧，没有显式 hwdownload/format 时可能报错。',
+      guidance: '纯 GPU 链应确认滤镜与编码器消费同一设备帧；CPU 链请使用自动高精度处理、先探测媒体，并用短样片验证。',
     },
     en: {
-      title: 'D3D11 hardware frames may not match the processing chain',
-      explanation: 'd3d11 keeps decoded frames in GPU memory. Most CPU filters and software encoders need system-memory frames and may fail without hwdownload/format.',
+      title: 'Hardware frames may not match the processing chain',
+      explanation: 'd3d11/cuda keeps decoded frames in GPU memory. Most CPU filters and software encoders need system-memory frames and may fail without hwdownload/format.',
       guidance: 'Use it only with a verified compatible filter and hardware encoder chain; otherwise leave it unset or test a software format.',
     },
   },
   'info.decode.outputFormat.hardwareFramesDownloaded': {
     'zh-CN': {
       title: '硬件帧将在 CPU 滤镜前显式下载',
-      explanation: '当前高精度处理链会生成 hwdownload，并紧接软件像素格式候选，避免把 D3D11 设备帧直接交给 CPU 滤镜。',
+      explanation: '当前高精度处理链会先按探针推导的 nv12/p010le 等底层格式生成 hwdownload，再转换到 CPU 工作格式，避免把设备帧直接交给 CPU 滤镜。',
       guidance: '仍需用目标 GPU 和短样片验证硬件解码；如果后续改成纯 GPU 滤镜链，应重新评估是否需要下载和上传。',
     },
     en: {
       title: 'Hardware frames are downloaded before CPU filters',
-      explanation: 'The high-precision pipeline emits hwdownload followed by software pixel-format candidates instead of feeding D3D11 frames directly to CPU filters.',
+      explanation: 'The high-precision pipeline downloads through the probed nv12/p010le-style backing format before converting to the CPU working format.',
       guidance: 'Verify hardware decoding with the target GPU and a short sample. Re-evaluate the boundary if the pipeline later becomes GPU-only.',
+    },
+  },
+  'error.decode.outputFormat.hardwareDownloadFormatUnknown': {
+    'zh-CN': {
+      title: '无法安全确定硬件帧下载格式',
+      explanation: 'hwdownload 必须先使用硬件帧真实的底层软件格式；10-bit 4:2:0 通常是 p010le，8-bit 通常是 nv12。缺少匹配探针或多流格式不一致时不能可靠猜测。',
+      guidance: '先在 Desktop 探测当前媒体并选择明确的视频流；若多条流格式不同，请分别建立逐流快照或改用软件解码输出格式。',
+    },
+    en: {
+      title: 'Hardware-frame download format is unknown',
+      explanation: 'hwdownload must first use the real backing software format, such as p010le for 10-bit 4:2:0 or nv12 for 8-bit. Guessing is unsafe without a matching probe.',
+      guidance: 'Probe the current media and select explicit video streams, or use a software decoder output format.',
+    },
+  },
+  'error.decode.outputFormat.hardwareFramesExplicitPixelFormat': {
+    'zh-CN': {
+      title: '硬件帧链不能强制软件像素格式',
+      explanation: '滤镜链仍输出 d3d11/cuda 硬件帧时，-pix_fmt p010le/yuv420p 等软件格式会触发无法完成的自动格式转换。',
+      guidance: '将输出像素格式设为 auto，并在 CUDA/D3D11 滤镜内明确硬件帧的底层格式；或先 hwdownload 到 CPU 链后再设置软件像素格式。',
+    },
+    en: {
+      title: 'Hardware-frame pipeline cannot force a software pixel format',
+      explanation: 'Forcing p010le/yuv420p with -pix_fmt while filters still output d3d11/cuda frames can insert an impossible automatic conversion.',
+      guidance: 'Use pixel format auto and set the backing format in the GPU filter, or download to a CPU pipeline first.',
+    },
+  },
+  'error.decode.outputFormat.hardwareFramesCpuFilter': {
+    'zh-CN': {
+      title: 'CPU 滤镜不能直接处理硬件帧',
+      explanation: '当前兼容模式保留了 d3d11/cuda 设备帧，但受控的裁剪、缩放、调色、降噪或字幕滤镜需要系统内存帧，直接连接会在滤镜初始化时失败。',
+      guidance: '改用自动高精度处理并先探测媒体，让产品生成 hwdownload；若目标是纯 GPU 链，请关闭受控 CPU 滤镜并使用经过验证的自定义 GPU 滤镜。',
+    },
+    en: {
+      title: 'CPU filters cannot consume hardware frames directly',
+      explanation: 'Compatible mode keeps d3d11/cuda device frames, while controlled crop, scale, color, denoise, or subtitle filters require system-memory frames.',
+      guidance: 'Use high-precision processing with a media probe to generate hwdownload, or disable controlled CPU filters for a verified GPU-only custom chain.',
     },
   },
   'info.decode.threads.hwaccel': {

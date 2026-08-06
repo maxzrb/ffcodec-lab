@@ -81,7 +81,7 @@ export interface DecodeConfig {
   hwaccel?: HardwareAccelerationMethod
   /** 输入侧 -threads，与编码器的线程设置相互独立。 */
   threads?: number
-  outputFormat?: 'nv12' | 'yuv420p' | 'p010' | 'd3d11'
+  outputFormat?: 'nv12' | 'yuv420p' | 'p010' | 'd3d11' | 'cuda'
   device?: {
     parameter?: HardwareDeviceParameter
     value?: string

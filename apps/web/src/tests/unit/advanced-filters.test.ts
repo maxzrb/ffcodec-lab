@@ -108,10 +108,66 @@ describe('高级视频滤镜', () => {
 
   it('D3D11 硬件帧进入 CPU 高精度链时显式下载', () => {
     const config = createBaseProjectConfig()
+    config.input.path = 'D:\\media\\hdr10.mkv'
     config.input.decode = { hwaccel: 'd3d11va', outputFormat: 'd3d11' }
+    config.input.probe = {
+      inputPath: config.input.path,
+      videoStreams: [{ index: 0, pixFmt: 'yuv420p10le', width: 3840, height: 2160 }],
+    }
     config.frame.filters!.crop.enabled = true
     const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
-    expect(vf).toMatch(/^hwdownload,format=pix_fmts=/)
+    expect(vf).toMatch(/^hwdownload,format=pix_fmts=p010le,format=pix_fmts=yuv420p10le/)
+  })
+
+  it('CUDA 硬件帧按探针底层格式下载后再进入 CPU 工作格式', () => {
+    const config = createBaseProjectConfig()
+    config.input.path = 'D:\\media\\sdr.mkv'
+    config.input.decode = { hwaccel: 'cuda', outputFormat: 'cuda' }
+    config.input.probe = {
+      inputPath: config.input.path,
+      videoStreams: [{ index: 0, pixFmt: 'yuv420p', width: 1920, height: 1080 }],
+    }
+    config.frame.filters!.crop.enabled = true
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+    expect(vf).toMatch(/^hwdownload,format=pix_fmts=nv12,format=pix_fmts=yuv420p10le/)
+  })
+
+  it('硬件帧 CPU 链缺少匹配探针时阻止执行', () => {
+    const config = createBaseProjectConfig()
+    config.input.decode = { hwaccel: 'cuda', outputFormat: 'cuda' }
+    config.frame.filters!.crop.enabled = true
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'error.decode.outputFormat.hardwareDownloadFormatUnknown',
+    )).toBe(true)
+  })
+
+  it('兼容模式不会把受控 CPU 滤镜直接连接到 CUDA 硬件帧', () => {
+    const config = createBaseProjectConfig()
+    config.input.decode = { hwaccel: 'cuda', outputFormat: 'cuda' }
+    config.frame.filters!.processing.mode = 'compatible'
+    config.frame.filters!.crop.enabled = true
+    config.video.pixelFormat = 'auto'
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'error.decode.outputFormat.hardwareFramesCpuFilter',
+    )).toBe(true)
+  })
+
+  it('纯 CUDA 自定义链保留硬件帧并要求输出像素格式为 auto', () => {
+    const config = createBaseProjectConfig()
+    config.input.decode = { hwaccel: 'cuda', outputFormat: 'cuda' }
+    config.frame.filters!.processing.mode = 'compatible'
+    config.customArgs.videoFilters = ['scale_cuda=1280:720:format=p010le']
+    config.video.pixelFormat = 'yuv420p10le'
+    const explicitCodes = validateConfig(config, loadCatalog(), new RuleIndex())
+      .map((message) => message.code)
+    expect(explicitCodes).toContain('error.decode.outputFormat.hardwareFramesExplicitPixelFormat')
+
+    config.video.pixelFormat = 'auto'
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+    expect(vf).toBe('scale_cuda=1280:720:format=p010le')
+    expect(validateConfig(config, loadCatalog(), new RuleIndex()).some(
+      (message) => message.code === 'error.decode.outputFormat.hardwareFramesExplicitPixelFormat',
+    )).toBe(false)
   })
 
   it('硬件帧专用编码器在缺少设备上传上下文时阻止 CPU 高精度链', () => {

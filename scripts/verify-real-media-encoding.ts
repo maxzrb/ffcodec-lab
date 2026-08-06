@@ -23,6 +23,7 @@ import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
 import type {
   AudioEncodingSnapshot,
+  InputProbeSummary,
   ProjectConfig,
   VideoEncodingSnapshot,
 } from '@ffcodec/domain/config/project-config'
@@ -59,6 +60,8 @@ interface MediaFixtures {
   tsu: string
   theater: string
   rough: string
+  complex: string
+  complexFull: string
   multi: string
   subtitleAss: string
 }
@@ -70,6 +73,10 @@ interface MatrixCase {
   extension: string
   expectedInvocationCount?: number
   expectedArgSequences: string[][]
+  hardwareRequirement?: {
+    runtime: 'nvidia-encode' | 'nvidia-cuda' | 'nvidia-d3d11-device1'
+    filters?: string[]
+  }
   verify: (probe: ProbeResult, plans: ExecutionPlan[]) => void
 }
 
@@ -88,6 +95,7 @@ const sourcePaths = {
   tsu: join(assetsDir, 'TSU_1920x1080.mp4'),
   theater: join(assetsDir, 'TheaterSquare_1280x720.mp4'),
   rough: join(assetsDir, 'rough_cut_30s.mkv'),
+  complex: join(assetsDir, '00006.MKV'),
 }
 
 for (const path of Object.values(sourcePaths)) {
@@ -104,6 +112,8 @@ let failed = false
 let passed = 0
 let skipped = 0
 let total = 0
+const hardwarePreflightCache = new Map<string, string | undefined>()
+const filterCapabilityCache = new Map<string, string>()
 
 try {
   const fixtureFfmpeg = ffmpegExecutables[0]
@@ -128,6 +138,14 @@ try {
 
     for (const testCase of matrix) {
       total += 1
+      const hardwareSkipReason = testCase.hardwareRequirement
+        ? resolveHardwareCaseSkipReason(ffmpeg, fixtures, testCase.hardwareRequirement)
+        : undefined
+      if (hardwareSkipReason) {
+        skipped += 1
+        console.log(`SKIP ${testCase.id} — 硬件环境不可用：${hardwareSkipReason}`)
+        continue
+      }
       const outputPath = join(buildDir, `${testCase.id}.${testCase.extension}`)
       let plans: ExecutionPlan[] = []
       try {
@@ -656,6 +674,270 @@ function createMatrix(): MatrixCase[] {
       },
     },
     {
+      id: 'cuda-hwdecode-cpu-high-precision-hdr10',
+      description: 'CUDA 硬解 HDR10，按 p010le 下载后执行多段 CPU 高精度滤镜并以 HEVC NVENC 输出',
+      extension: 'mkv',
+      hardwareRequirement: { runtime: 'nvidia-cuda' },
+      expectedArgSequences: [
+        ['-hwaccel', 'cuda'], ['-hwaccel_output_format', 'cuda'], ['-hwaccel_device', '0'],
+        ['-c:v:0', 'hevc_nvenc'], ['-multipass:v:0', 'qres'], ['-pix_fmt:v:0', 'yuv420p10le'], ['-filter:v:0'],
+      ],
+      makeConfig: (fixtures, outputPath) => {
+        const config = baseConfig(fixtures.complex, outputPath, 'mkv')
+        configureNvenc(config, 'hevc_nvenc', 'main10', 'qres', 'yuv420p10le', '6000k')
+        config.input.decode = {
+          hwaccel: 'cuda', outputFormat: 'cuda',
+          device: { parameter: 'hwaccel_device', value: '0' },
+        }
+        config.input.probe = hdr10ComplexProbe(config.input.path)
+        config.streams.preserveAllVideoStreams = false
+        config.streams.videoStreams = [{ index: 0, codecMode: 'encode' }]
+        config.frame.resolution = { mode: 'width', width: 1280 }
+        config.frame.filters!.processing.mode = 'high-precision'
+        config.frame.filters!.adjustment = {
+          enabled: true, brightness: 0.01, contrast: 1.01, saturation: 1.01, gamma: 1,
+        }
+        config.frame.filters!.sharpen = { enabled: true, amount: 0.25 }
+        config.customArgs.videoFilters = ['hflip']
+        disableAudioAndSubtitles(config)
+        return config
+      },
+      verify: (probe, plans) => {
+        const vf = argumentValue(plans, '-filter:v:0')
+        assert(vf?.startsWith('hwdownload,format=pix_fmts=p010le,format=pix_fmts=yuv420p10le') ?? false,
+          `cuda-hwdecode-cpu-high-precision-hdr10: 硬件下载边界错误 ${vf}`)
+        assertHdr10Video(probe, 1280, 720, 'cuda-hwdecode-cpu-high-precision-hdr10')
+      },
+    },
+    {
+      id: 'd3d11-device1-cpu-high-precision-hdr10',
+      description: 'D3D11VA 明确选择 RTX 3060 适配器 1，下载 HDR10 硬件帧后执行 CPU 滤镜',
+      extension: 'mkv',
+      hardwareRequirement: { runtime: 'nvidia-d3d11-device1' },
+      expectedArgSequences: [
+        ['-hwaccel', 'd3d11va'], ['-hwaccel_output_format', 'd3d11'], ['-hwaccel_device', '1'],
+        ['-c:v:0', 'hevc_nvenc'], ['-multipass:v:0', 'fullres'], ['-filter:v:0'],
+      ],
+      makeConfig: (fixtures, outputPath) => {
+        const config = baseConfig(fixtures.complex, outputPath, 'mkv')
+        configureNvenc(config, 'hevc_nvenc', 'main10', 'fullres', 'yuv420p10le', '6000k')
+        config.input.decode = {
+          hwaccel: 'd3d11va', outputFormat: 'd3d11',
+          device: { parameter: 'hwaccel_device', value: '1' },
+        }
+        config.input.probe = hdr10ComplexProbe(config.input.path)
+        config.streams.preserveAllVideoStreams = false
+        config.streams.videoStreams = [{ index: 0, codecMode: 'encode' }]
+        config.frame.resolution = { mode: 'width', width: 1280 }
+        config.frame.filters!.processing.mode = 'high-precision'
+        config.frame.filters!.transform.horizontalFlip = true
+        config.customArgs.videoFilters = ['unsharp=5:5:0.2']
+        disableAudioAndSubtitles(config)
+        return config
+      },
+      verify: (probe, plans) => {
+        const vf = argumentValue(plans, '-filter:v:0')
+        assert(vf?.startsWith('hwdownload,format=pix_fmts=p010le,format=pix_fmts=yuv420p10le') ?? false,
+          `d3d11-device1-cpu-high-precision-hdr10: 硬件下载边界错误 ${vf}`)
+        assertHdr10Video(probe, 1280, 720, 'd3d11-device1-cpu-high-precision-hdr10')
+      },
+    },
+    {
+      id: 'cuda-zero-copy-multi-filter-hdr10',
+      description: 'CUDA 硬解后保持 10-bit 设备帧，连续执行两级 scale_cuda 并交给 NVENC',
+      extension: 'mkv',
+      hardwareRequirement: { runtime: 'nvidia-cuda', filters: ['scale_cuda'] },
+      expectedArgSequences: [
+        ['-hwaccel', 'cuda'], ['-hwaccel_output_format', 'cuda'], ['-hwaccel_device', '0'],
+        ['-c:v:0', 'hevc_nvenc'], ['-multipass:v:0', 'qres'], ['-filter:v:0'],
+      ],
+      makeConfig: (fixtures, outputPath) => {
+        const config = baseConfig(fixtures.complex, outputPath, 'mkv')
+        configureNvenc(config, 'hevc_nvenc', 'main10', 'qres', 'auto', '6000k')
+        config.input.decode = {
+          hwaccel: 'cuda', outputFormat: 'cuda',
+          device: { parameter: 'hwaccel_device', value: '0' },
+        }
+        config.input.probe = hdr10ComplexProbe(config.input.path)
+        config.streams.preserveAllVideoStreams = false
+        config.streams.videoStreams = [{ index: 0, codecMode: 'encode' }]
+        config.frame.filters!.processing.mode = 'compatible'
+        config.customArgs.videoFilters = [
+          'scale_cuda=1920:1080:format=p010le:interp_algo=lanczos:passthrough=0',
+          'scale_cuda=1280:720:format=p010le:interp_algo=lanczos:passthrough=0',
+        ]
+        disableAudioAndSubtitles(config)
+        return config
+      },
+      verify: (probe, plans) => {
+        const vf = argumentValue(plans, '-filter:v:0')
+        assertEqual(
+          vf,
+          'scale_cuda=1920:1080:format=p010le:interp_algo=lanczos:passthrough=0,scale_cuda=1280:720:format=p010le:interp_algo=lanczos:passthrough=0',
+          'cuda-zero-copy-multi-filter-hdr10: CUDA 滤镜顺序',
+        )
+        assertHdr10Video(probe, 1280, 720, 'cuda-zero-copy-multi-filter-hdr10')
+      },
+    },
+    {
+      id: 'cuda-zero-copy-bilateral-8bit-aligned',
+      description: 'CUDA 硬解 8-bit NV12，按 32 像素对齐高度连续执行缩放、双边降噪与范围处理',
+      extension: 'mkv',
+      hardwareRequirement: {
+        runtime: 'nvidia-cuda',
+        filters: ['scale_cuda', 'bilateral_cuda', 'colorspace_cuda'],
+      },
+      expectedArgSequences: [
+        ['-hwaccel', 'cuda'], ['-hwaccel_output_format', 'cuda'], ['-hwaccel_device', '0'],
+        ['-c:v', 'h264_nvenc'], ['-multipass', 'qres'], ['-vf'],
+      ],
+      makeConfig: (fixtures, outputPath) => {
+        const config = baseConfig(fixtures.theater, outputPath, 'mkv')
+        configureNvenc(config, 'h264_nvenc', 'high', 'qres', 'auto', '3000k')
+        config.input.decode = {
+          hwaccel: 'cuda', outputFormat: 'cuda',
+          device: { parameter: 'hwaccel_device', value: '0' },
+        }
+        config.frame.filters!.processing.mode = 'compatible'
+        config.customArgs.videoFilters = [
+          'scale_cuda=640:352:format=nv12:interp_algo=lanczos',
+          'bilateral_cuda=sigmaS=1:sigmaR=0.1:window_size=3',
+          'colorspace_cuda=range=tv',
+        ]
+        disableAudioAndSubtitles(config)
+        return config
+      },
+      verify: (probe, plans) => {
+        const vf = argumentValue(plans, '-vf')
+        assertEqual(
+          vf,
+          'scale_cuda=640:352:format=nv12:interp_algo=lanczos,bilateral_cuda=sigmaS=1:sigmaR=0.1:window_size=3,colorspace_cuda=range=tv',
+          'cuda-zero-copy-bilateral-8bit-aligned: CUDA 滤镜顺序',
+        )
+        const video = streamsOf(probe, 'video')[0]
+        assertEqual(video.codec_name, 'h264', 'cuda-zero-copy-bilateral-8bit-aligned: 视频编码')
+        assertEqual(video.width, 640, 'cuda-zero-copy-bilateral-8bit-aligned: 宽度')
+        assertEqual(video.height, 352, 'cuda-zero-copy-bilateral-8bit-aligned: 高度')
+        assertEqual(video.pix_fmt, 'yuv420p', 'cuda-zero-copy-bilateral-8bit-aligned: 像素格式')
+      },
+    },
+    {
+      id: 'cpu-to-cuda-mixed-filter-chain',
+      description: '软件帧先执行受控 CPU 裁剪/翻转，再上传 CUDA、缩放与降噪后交给 H.264 NVENC',
+      extension: 'mkv',
+      hardwareRequirement: { runtime: 'nvidia-cuda', filters: ['hwupload_cuda', 'scale_cuda'] },
+      expectedArgSequences: [['-c:v', 'h264_nvenc'], ['-multipass', 'disabled'], ['-vf']],
+      makeConfig: (fixtures, outputPath) => {
+        const config = baseConfig(fixtures.theater, outputPath, 'mkv')
+        configureNvenc(config, 'h264_nvenc', 'high', 'disabled', 'auto', '3000k')
+        config.frame.filters!.processing.mode = 'compatible'
+        config.frame.filters!.crop = { enabled: true, width: 1278, height: 718, x: 0, y: 0 }
+        config.frame.filters!.transform.horizontalFlip = true
+        config.customArgs.videoFilters = [
+          'hwupload_cuda',
+          'scale_cuda=640:360:format=nv12:interp_algo=lanczos',
+        ]
+        disableAudioAndSubtitles(config)
+        return config
+      },
+      verify: (probe, plans) => {
+        const vf = argumentValue(plans, '-vf')
+        assertEqual(
+          vf,
+          'crop=1278:718:0:0,hflip,hwupload_cuda,scale_cuda=640:360:format=nv12:interp_algo=lanczos',
+          'cpu-to-cuda-mixed-filter-chain: CPU/CUDA 滤镜顺序',
+        )
+        const video = streamsOf(probe, 'video')[0]
+        assertEqual(video.codec_name, 'h264', 'cpu-to-cuda-mixed-filter-chain: 视频编码')
+        assertEqual(video.width, 640, 'cpu-to-cuda-mixed-filter-chain: 宽度')
+        assertEqual(video.height, 360, 'cpu-to-cuda-mixed-filter-chain: 高度')
+        assertEqual(video.pix_fmt, 'yuv420p', 'cpu-to-cuda-mixed-filter-chain: 像素格式')
+      },
+    },
+    {
+      id: 'cuda-4k60-hdr10-fullres-stress',
+      description: '原始 4K60 HDR10 取 10 秒，CUDA 硬解与双级 4K CUDA 处理后使用 HEVC NVENC fullres',
+      extension: 'mkv',
+      hardwareRequirement: { runtime: 'nvidia-cuda', filters: ['scale_cuda'] },
+      expectedArgSequences: [
+        ['-hwaccel', 'cuda'], ['-hwaccel_output_format', 'cuda'], ['-hwaccel_device', '0'],
+        ['-c:v:0', 'hevc_nvenc'], ['-multipass:v:0', 'fullres'], ['-filter:v:0'], ['-t', '10'],
+      ],
+      makeConfig: (fixtures, outputPath) => {
+        const config = baseConfig(fixtures.complexFull, outputPath, 'mkv')
+        configureNvenc(config, 'hevc_nvenc', 'main10', 'fullres', 'auto', '16000k')
+        config.input.decode = {
+          hwaccel: 'cuda', outputFormat: 'cuda',
+          device: { parameter: 'hwaccel_device', value: '0' },
+        }
+        config.input.probe = hdr10ComplexProbe(config.input.path)
+        config.streams.preserveAllVideoStreams = false
+        config.streams.videoStreams = [{ index: 0, codecMode: 'encode' }]
+        config.frame.filters!.processing.mode = 'compatible'
+        config.customArgs.videoFilters = [
+          'scale_cuda=3840:2160:format=p010le:interp_algo=lanczos:passthrough=0',
+          'scale_cuda=3840:2160:format=p010le:interp_algo=lanczos:passthrough=0',
+        ]
+        config.customArgs.preOutputArgs = ['-t 10']
+        disableAudioAndSubtitles(config)
+        return config
+      },
+      verify: (probe) => {
+        assertHdr10Video(probe, 3840, 2160, 'cuda-4k60-hdr10-fullres-stress')
+        const duration = Number(probe.format?.duration)
+        assert(duration >= 9.5 && duration <= 10.5, `cuda-4k60-hdr10-fullres-stress: 时长异常 ${duration}`)
+      },
+    },
+    {
+      id: 'complex-2v-3a-mixed-encode-copy',
+      description: '4K HDR10 视频转码、1080p 视频复制，并保留 TrueHD/AC-3/E-AC-3 三音轨',
+      extension: 'mkv',
+      hardwareRequirement: { runtime: 'nvidia-encode' },
+      expectedArgSequences: [
+        ['-map', '0:v:0'], ['-map', '0:v:1'], ['-c:v:0', 'hevc_nvenc'], ['-c:v:1', 'copy'],
+        ['-map', '0:a:0'], ['-map', '0:a:1'], ['-map', '0:a:2'],
+        ['-c:a:0', 'copy'], ['-c:a:1', 'copy'], ['-c:a:2', 'copy'],
+      ],
+      makeConfig: (fixtures, outputPath) => {
+        const config = baseConfig(fixtures.complex, outputPath, 'mkv')
+        configureNvenc(config, 'hevc_nvenc', 'main10', 'qres', 'yuv420p10le', '6000k')
+        config.input.probe = hdr10ComplexProbe(config.input.path)
+        config.streams.preserveAllVideoStreams = false
+        config.streams.videoStreams = [
+          { index: 0, codecMode: 'encode' },
+          { index: 1, codecMode: 'copy' },
+        ]
+        config.streams.preserveAllAudioStreams = false
+        config.streams.audioStreams = [
+          { index: 0, codecMode: 'copy' },
+          { index: 1, codecMode: 'copy' },
+          { index: 2, codecMode: 'copy' },
+        ]
+        config.audio.mode = 'copy'
+        config.streams.preserveAllSubtitleStreams = false
+        config.streams.subtitleStreams = []
+        config.subtitle.tracks = []
+        config.frame.resolution = { mode: 'width', width: 1280 }
+        config.frame.filters!.processing.mode = 'high-precision'
+        return config
+      },
+      verify: (probe) => {
+        assertStreams(probe, { video: 2, audio: 3, subtitle: 0 })
+        const videos = streamsOf(probe, 'video')
+        assertEqual(videos[0]?.codec_name, 'hevc', 'complex-2v-3a: 编码视频格式')
+        assertEqual(videos[0]?.width, 1280, 'complex-2v-3a: 编码视频宽度')
+        assertEqual(videos[0]?.height, 720, 'complex-2v-3a: 编码视频高度')
+        assert(videos[0]?.pix_fmt?.includes('10') ?? false, `complex-2v-3a: 编码视频非 10-bit ${videos[0]?.pix_fmt}`)
+        assertEqual(videos[1]?.width, 1920, 'complex-2v-3a: 复制视频宽度')
+        assertEqual(videos[1]?.height, 1080, 'complex-2v-3a: 复制视频高度')
+        assertEqual(
+          streamsOf(probe, 'audio').map((stream) => stream.codec_name).join(','),
+          'truehd,ac3,eac3',
+          'complex-2v-3a: 音频编码顺序',
+        )
+      },
+    },
+    {
       id: 'preserve-all-partial-subtitle-config',
       description: 'preserve-all 配置单条字幕时其余 PGS 仍以 copy 兜底',
       extension: 'mkv',
@@ -741,6 +1023,37 @@ function runProductSafetyAudits(fixtures: MediaFixtures): number {
         assertArgSequences(plans, [['-c:s', 'copy'], ['-c:s:0', 'copy']], 'subtitle-fallback')
       },
     },
+    {
+      name: 'hardware-frame CPU pipeline without a matching probe is blocked',
+      run: () => {
+        const config = baseConfig(fixtures.complex, join(temporaryRoot, 'blocked-hwdownload-format.mkv'), 'mkv')
+        config.input.decode = { hwaccel: 'cuda', outputFormat: 'cuda' }
+        config.frame.filters!.crop.enabled = true
+        assertDiagnostic(config, 'error.decode.outputFormat.hardwareDownloadFormatUnknown')
+      },
+    },
+    {
+      name: 'hardware-frame GPU pipeline with a forced software pixel format is blocked',
+      run: () => {
+        const config = baseConfig(fixtures.complex, join(temporaryRoot, 'blocked-hardware-pixfmt.mkv'), 'mkv')
+        config.input.decode = { hwaccel: 'cuda', outputFormat: 'cuda' }
+        config.frame.filters!.processing.mode = 'compatible'
+        config.customArgs.videoFilters = ['scale_cuda=1280:720:format=p010le']
+        config.video.pixelFormat = 'yuv420p10le'
+        assertDiagnostic(config, 'error.decode.outputFormat.hardwareFramesExplicitPixelFormat')
+      },
+    },
+    {
+      name: 'controlled CPU filters cannot consume hardware frames in compatible mode',
+      run: () => {
+        const config = baseConfig(fixtures.complex, join(temporaryRoot, 'blocked-hardware-cpu-filter.mkv'), 'mkv')
+        config.input.decode = { hwaccel: 'cuda', outputFormat: 'cuda' }
+        config.frame.filters!.processing.mode = 'compatible'
+        config.frame.filters!.crop.enabled = true
+        config.video.pixelFormat = 'auto'
+        assertDiagnostic(config, 'error.decode.outputFormat.hardwareFramesCpuFilter')
+      },
+    },
   ]
 
   for (const audit of audits) {
@@ -786,6 +1099,46 @@ function configureVideo(
     pixelFormat,
     rateControl: { mode, qualityValue: quality, additionalValues: {} },
     specialParameters: {},
+  }
+}
+
+function configureNvenc(
+  config: ProjectConfig,
+  encoderId: 'h264_nvenc' | 'hevc_nvenc',
+  profile: string,
+  multipass: 'disabled' | 'qres' | 'fullres',
+  pixelFormat: string,
+  bitrate: string,
+): void {
+  config.video = {
+    ...config.video,
+    mode: 'encode',
+    encoderId,
+    preset: 'p4',
+    profile,
+    tune: 'hq',
+    pixelFormat,
+    rateControl: {
+      mode: 'vbr', bitrate, maxRate: bitrate,
+      bufferSize: `${Number.parseInt(bitrate, 10) * 2}k`, additionalValues: {},
+    },
+    specialParameters: { multipass },
+  }
+}
+
+function hdr10ComplexProbe(inputPath: string): InputProbeSummary {
+  return {
+    inputPath,
+    videoStreams: [
+      {
+        index: 0, pixFmt: 'yuv420p10le', width: 3840, height: 2160,
+        colorRange: 'tv', colorSpace: 'bt2020nc', colorPrimaries: 'bt2020', colorTransfer: 'smpte2084',
+      },
+      {
+        index: 1, pixFmt: 'yuv420p10le', width: 1920, height: 1080,
+        colorRange: 'tv', colorSpace: 'bt2020nc', colorPrimaries: 'bt2020', colorTransfer: 'smpte2084',
+      },
+    ],
   }
 }
 
@@ -901,7 +1254,7 @@ function decodeCheck(ffmpeg: string, path: string): void {
 
 function prepareFixtures(
   ffmpeg: string,
-  sources: { tsu: string; theater: string; rough: string },
+  sources: { tsu: string; theater: string; rough: string; complex: string },
   root: string,
 ): MediaFixtures {
   const fixtureDir = join(root, 'fixtures')
@@ -909,12 +1262,14 @@ function prepareFixtures(
   const tsu = join(fixtureDir, 'tsu-short.mkv')
   const theater = join(fixtureDir, 'theater-short.mkv')
   const rough = join(fixtureDir, 'rough-short.mkv')
+  const complex = join(fixtureDir, 'complex-4k60-hdr10-2v-3a.mkv')
   const multi = join(fixtureDir, 'multi-2v-2a-4s.mkv')
   const subtitleAss = join(fixtureDir, 'overlay.ass')
 
   trimFixture(ffmpeg, sources.tsu, tsu, ['-map', '0:v:0'])
   trimFixture(ffmpeg, sources.theater, theater, ['-map', '0:v:0'])
   trimFixture(ffmpeg, sources.rough, rough, ['-map', '0'])
+  trimFixture(ffmpeg, sources.complex, complex, ['-map', '0'])
 
   const multiResult = run(ffmpeg, [
     '-hide_banner', '-loglevel', 'error', '-y',
@@ -940,7 +1295,7 @@ function prepareFixtures(
     '',
   ].join('\n'), 'utf8')
 
-  return { tsu, theater, rough, multi, subtitleAss }
+  return { tsu, theater, rough, complex, complexFull: sources.complex, multi, subtitleAss }
 }
 
 function trimFixture(ffmpeg: string, input: string, output: string, maps: string[]): void {
@@ -949,6 +1304,50 @@ function trimFixture(ffmpeg: string, input: string, output: string, maps: string
     ...maps, '-t', '3', '-c', 'copy', '-avoid_negative_ts', 'make_zero', output,
   ], 120_000)
   if (result.status !== 0) throw new Error(`无法裁剪夹具 ${basename(input)}：${tail(result.stderr, 20)}`)
+}
+
+function resolveHardwareCaseSkipReason(
+  ffmpeg: string,
+  fixtures: MediaFixtures,
+  requirement: NonNullable<MatrixCase['hardwareRequirement']>,
+): string | undefined {
+  if (requirement.filters?.length) {
+    let registeredFilters = filterCapabilityCache.get(ffmpeg)
+    if (registeredFilters === undefined) {
+      const result = run(ffmpeg, ['-hide_banner', '-filters'])
+      registeredFilters = result.status === 0 ? result.stdout + result.stderr : ''
+      filterCapabilityCache.set(ffmpeg, registeredFilters)
+    }
+    const missing = requirement.filters.filter((filter) => !new RegExp(`\\b${filter}\\b`).test(registeredFilters))
+    if (missing.length > 0) return `当前构建未注册滤镜：${missing.join(', ')}`
+  }
+
+  const cacheKey = `${ffmpeg}\u0000${requirement.runtime}`
+  if (hardwarePreflightCache.has(cacheKey)) return hardwarePreflightCache.get(cacheKey)
+
+  const preflightArgs = requirement.runtime === 'nvidia-encode'
+    ? [
+        '-hide_banner', '-loglevel', 'error',
+        '-f', 'lavfi', '-i', 'color=size=64x64:rate=1',
+        '-frames:v', '1', '-c:v', 'hevc_nvenc', '-f', 'null', '-',
+      ]
+    : requirement.runtime === 'nvidia-cuda'
+      ? [
+          '-hide_banner', '-loglevel', 'error',
+          '-hwaccel', 'cuda', '-hwaccel_output_format', 'cuda', '-hwaccel_device', '0',
+          '-i', fixtures.theater, '-map', '0:v:0', '-frames:v', '1',
+          '-c:v', 'h264_nvenc', '-f', 'null', '-',
+        ]
+      : [
+          '-hide_banner', '-loglevel', 'error',
+          '-hwaccel', 'd3d11va', '-hwaccel_output_format', 'd3d11', '-hwaccel_device', '1',
+          '-i', fixtures.complex, '-map', '0:v:0', '-frames:v', '1',
+          '-vf', 'hwdownload,format=p010le', '-c:v', 'hevc_nvenc', '-f', 'null', '-',
+        ]
+  const result = run(ffmpeg, preflightArgs, 30_000)
+  const reason = result.status === 0 ? undefined : firstErrorLine(result.stderr || result.stdout)
+  hardwarePreflightCache.set(cacheKey, reason)
+  return reason
 }
 
 function runHardwareMatrix(
@@ -971,12 +1370,20 @@ function runHardwareMatrix(
   let passed = 0
   let skipped = 0
   let failed = 0
+  let total = 0
 
   for (const encoder of encoders) {
+    const multipassModes = ['h264_nvenc', 'hevc_nvenc'].includes(encoder.id)
+      ? ['disabled', 'qres', 'fullres'] as const
+      : [undefined] as const
+    total += multipassModes.length
     const registration = run(ffmpeg, ['-hide_banner', '-h', `encoder=${encoder.id}`])
     if (registration.status !== 0 || /Unknown encoder|not recognized/i.test(registration.stdout + registration.stderr)) {
-      skipped += 1
-      console.log(`SKIP hardware-${encoder.id} — 当前构建未注册`)
+      skipped += multipassModes.length
+      for (const multipass of multipassModes) {
+        const caseId = `hardware-${encoder.id}${multipass ? `-${multipass}` : ''}`
+        console.log(`SKIP ${caseId} — 当前构建未注册`)
+      }
       continue
     }
     const preflight = run(ffmpeg, [
@@ -984,41 +1391,48 @@ function runHardwareMatrix(
       '-frames:v', '1', '-c:v', encoder.id, '-f', 'null', '-',
     ], 30_000)
     if (preflight.status !== 0) {
-      skipped += 1
-      console.log(`SKIP hardware-${encoder.id} — 本机 GPU/驱动会话不可用：${firstErrorLine(preflight.stderr)}`)
+      skipped += multipassModes.length
+      for (const multipass of multipassModes) {
+        const caseId = `hardware-${encoder.id}${multipass ? `-${multipass}` : ''}`
+        console.log(`SKIP ${caseId} — 本机 GPU/驱动会话不可用：${firstErrorLine(preflight.stderr)}`)
+      }
       continue
     }
 
-    const outputPath = join(outputDir, `hardware-${encoder.id}.mkv`)
-    try {
-      const config = baseConfig(inputPath, outputPath, 'mkv')
-      config.video = {
-        ...config.video,
-        mode: 'encode',
-        encoderId: encoder.id,
-        preset: undefined,
-        profile: 'auto',
-        tune: 'auto',
-        pixelFormat: 'yuv420p',
-        rateControl: { mode: 'vbr', bitrate: '1200k', additionalValues: {} },
-        specialParameters: {},
+    for (const multipass of multipassModes) {
+      const caseId = `hardware-${encoder.id}${multipass ? `-${multipass}` : ''}`
+      const outputPath = join(outputDir, `${caseId}.mkv`)
+      try {
+        const config = baseConfig(inputPath, outputPath, 'mkv')
+        config.video = {
+          ...config.video,
+          mode: 'encode',
+          encoderId: encoder.id,
+          preset: undefined,
+          profile: 'auto',
+          tune: 'auto',
+          pixelFormat: 'yuv420p',
+          rateControl: { mode: 'vbr', bitrate: '1200k', additionalValues: {} },
+          specialParameters: multipass ? { multipass } : {},
+        }
+        config.frame.resolution = { mode: 'width', width: 640 }
+        config.frame.filters!.processing.mode = 'compatible'
+        disableAudioAndSubtitles(config)
+        const plans = buildProductPlans(config)
+        if (multipass) assertArgSequences(plans, [['-multipass', multipass]], caseId)
+        executePlans(ffmpeg, plans, caseId)
+        const probe = probeFile(ffprobe, outputPath)
+        assertEqual(streamsOf(probe, 'video')[0]?.codec_name, encoder.codec, `${caseId}: 编码格式`)
+        decodeCheck(ffmpeg, outputPath)
+        passed += 1
+        console.log(`PASS ${caseId} — 产品命令硬件实跑${multipass ? `，multipass=${multipass}` : ''}`)
+      } catch (error) {
+        failed += 1
+        console.error(`FAIL ${caseId} — ${formatError(error)}`)
       }
-      config.frame.resolution = { mode: 'width', width: 640 }
-      config.frame.filters!.processing.mode = 'compatible'
-      disableAudioAndSubtitles(config)
-      const plans = buildProductPlans(config)
-      executePlans(ffmpeg, plans, `hardware-${encoder.id}`)
-      const probe = probeFile(ffprobe, outputPath)
-      assertEqual(streamsOf(probe, 'video')[0]?.codec_name, encoder.codec, `hardware-${encoder.id}: 编码格式`)
-      decodeCheck(ffmpeg, outputPath)
-      passed += 1
-      console.log(`PASS hardware-${encoder.id} — 产品命令硬件实跑`)
-    } catch (error) {
-      failed += 1
-      console.error(`FAIL hardware-${encoder.id} — ${formatError(error)}`)
     }
   }
-  return { total: encoders.length, passed, skipped, failed }
+  return { total, passed, skipped, failed }
 }
 
 function assertArgSequences(plans: ExecutionPlan[], sequences: string[][], caseId: string): void {
@@ -1026,6 +1440,26 @@ function assertArgSequences(plans: ExecutionPlan[], sequences: string[][], caseI
     const found = plans.some((plan) => containsSequence(plan.args, sequence))
     assert(found, `${caseId}: 命令缺少连续参数 ${sequence.join(' ')}`)
   }
+}
+
+function argumentValue(plans: ExecutionPlan[], option: string): string | undefined {
+  for (const plan of plans) {
+    const index = plan.args.indexOf(option)
+    if (index >= 0) return plan.args[index + 1]
+  }
+  return undefined
+}
+
+function assertHdr10Video(probe: ProbeResult, width: number, height: number, caseId: string): void {
+  const video = streamsOf(probe, 'video')[0]
+  assertEqual(video?.codec_name, 'hevc', `${caseId}: 视频编码`)
+  assertEqual(video?.width, width, `${caseId}: 宽度`)
+  assertEqual(video?.height, height, `${caseId}: 高度`)
+  assert(video?.pix_fmt?.includes('10') ?? false, `${caseId}: 非 10-bit 像素格式 ${video?.pix_fmt}`)
+  assertEqual(video?.color_range, 'tv', `${caseId}: 色彩范围`)
+  assertEqual(video?.color_space, 'bt2020nc', `${caseId}: 色彩矩阵`)
+  assertEqual(video?.color_primaries, 'bt2020', `${caseId}: 主色`)
+  assertEqual(video?.color_transfer, 'smpte2084', `${caseId}: 传递函数`)
 }
 
 function containsSequence(values: string[], expected: string[]): boolean {

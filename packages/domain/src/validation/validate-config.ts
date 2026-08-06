@@ -12,7 +12,11 @@ import {
   repairOddExplicitResolution,
 } from '../config/resolution-repair'
 import { buildVideoFilterChain } from '../filters/video-filter-builder'
-import { getSelectedProbePixelFormats, inspectFilterPrecisionIssues } from '../filters/filter-format-resolver'
+import {
+  getSelectedProbePixelFormats,
+  inspectFilterPrecisionIssues,
+  resolveHardwareFrameDownloadFormat,
+} from '../filters/filter-format-resolver'
 import {
   projectConfigForVideoStream,
   resolveEffectiveVideoStreamPlans,
@@ -183,19 +187,57 @@ function validateDecodeSettings(config: ProjectConfig): Diagnostic[] {
     })
   }
 
-  if (decode.outputFormat === 'd3d11') {
-    const downloadsHardwareFrames = buildVideoFilterChain(config).some((spec) => spec.type === 'hwdownload')
-    messages.push({
-      code: downloadsHardwareFrames
-        ? 'info.decode.outputFormat.hardwareFramesDownloaded'
-        : 'warn.decode.outputFormat.hardwareFrames',
-      severity: downloadsHardwareFrames ? 'info' : 'warning',
-      category: 'compatibility',
-      message: downloadsHardwareFrames
-        ? 'D3D11 hardware frames are explicitly downloaded before the CPU high-precision filter pipeline.'
-        : 'D3D11 hardware frames may be incompatible with CPU filters or software encoders without an explicit download step.',
-      originIds: ['input.decode.outputFormat'], context: { outputFormat: 'd3d11' },
-    })
+  if (decode.outputFormat === 'd3d11' || decode.outputFormat === 'cuda') {
+    const resolvedFilterChain = buildVideoFilterChain(config)
+    const downloadsHardwareFrames = resolvedFilterChain.some((spec) => spec.type === 'hwdownload')
+    const hasControlledCpuFilterWithoutDownload = !downloadsHardwareFrames
+      && resolvedFilterChain.some((spec) => spec.type !== 'custom')
+    const hardwareDownloadFormat = resolveHardwareFrameDownloadFormat(config)
+    if (downloadsHardwareFrames && !hardwareDownloadFormat) {
+      messages.push({
+        code: 'error.decode.outputFormat.hardwareDownloadFormatUnknown',
+        severity: 'error',
+        category: 'compatibility',
+        message: 'The hardware-frame download format cannot be derived safely from the selected probed video streams.',
+        originIds: ['input.decode.outputFormat', 'input.path'],
+        context: { outputFormat: decode.outputFormat },
+      })
+    } else {
+      messages.push({
+        code: downloadsHardwareFrames
+          ? 'info.decode.outputFormat.hardwareFramesDownloaded'
+          : 'warn.decode.outputFormat.hardwareFrames',
+        severity: downloadsHardwareFrames ? 'info' : 'warning',
+        category: 'compatibility',
+        message: downloadsHardwareFrames
+          ? 'Hardware frames are explicitly downloaded in their probed software format before the CPU high-precision filter pipeline.'
+          : 'Hardware frames may be incompatible with CPU filters or software encoders without an explicit download step.',
+        originIds: ['input.decode.outputFormat'],
+        context: { outputFormat: decode.outputFormat, hardwareDownloadFormat },
+      })
+    }
+
+    if (!downloadsHardwareFrames && config.video.pixelFormat && config.video.pixelFormat !== 'auto') {
+      messages.push({
+        code: 'error.decode.outputFormat.hardwareFramesExplicitPixelFormat',
+        severity: 'error',
+        category: 'compatibility',
+        message: 'An explicit software pixel format cannot be forced while the filter chain still outputs hardware frames.',
+        originIds: ['input.decode.outputFormat', 'video.pixelFormat'],
+        context: { outputFormat: decode.outputFormat, pixelFormat: config.video.pixelFormat },
+      })
+    }
+
+    if (hasControlledCpuFilterWithoutDownload) {
+      messages.push({
+        code: 'error.decode.outputFormat.hardwareFramesCpuFilter',
+        severity: 'error',
+        category: 'compatibility',
+        message: 'Controlled CPU filters cannot consume hardware frames without an explicit download boundary.',
+        originIds: ['input.decode.outputFormat', 'frame.filters.processing.mode'],
+        context: { outputFormat: decode.outputFormat },
+      })
+    }
   }
 
   if (decode.threads !== undefined && decode.hwaccel) {

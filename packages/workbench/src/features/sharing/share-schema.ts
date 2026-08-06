@@ -20,7 +20,7 @@ export const shareableConfigSchema = z.object({
       'd3d11va', 'd3d12va', 'cuda', 'qsv', 'amf', 'vulkan', 'dxva2', 'vaapi', 'opencl',
     ]).optional(),
     threads: z.number().int().positive().optional(),
-    outputFormat: z.enum(['nv12', 'yuv420p', 'p010', 'd3d11']).optional(),
+    outputFormat: z.enum(['nv12', 'yuv420p', 'p010', 'd3d11', 'cuda']).optional(),
     device: z.object({
       parameter: z.enum(['hwaccel_device', 'init_hw_device', 'qsv_device']).optional(),
       value: z.string().optional(),
