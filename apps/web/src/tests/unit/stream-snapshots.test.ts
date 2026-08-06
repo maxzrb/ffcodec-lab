@@ -15,6 +15,8 @@ import { decodeConfigFromShare, encodeConfigToShare } from '@ffcodec/workbench/f
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
 import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
+import { validateConfig } from '@ffcodec/domain/validation'
+import { RuleIndex } from '@ffcodec/catalog/rule-index'
 
 const catalog = loadCatalog()
 
@@ -154,5 +156,19 @@ describe('stream encoding snapshots', () => {
     const after = renderBash(buildCommandPlan(migrated, catalog, [])).text
 
     expect(after).toBe(before)
+  })
+
+  it('blocks traditional two-pass when multiple video streams would be encoded', () => {
+    const config = createDefaultProjectConfig()
+    config.streams.preserveAllVideoStreams = false
+    config.streams.videoStreams = [
+      { index: 0, codecMode: 'encode' },
+      { index: 1, codecMode: 'encode' },
+    ]
+    config.video.rateControl = { mode: 'twoPass', bitrate: '2000k', additionalValues: {} }
+
+    const diagnostics = validateConfig(config, catalog, new RuleIndex())
+
+    expect(diagnostics.some((message) => message.code === 'error.twopass.multipleVideoStreams')).toBe(true)
   })
 })

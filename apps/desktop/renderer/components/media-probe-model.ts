@@ -8,6 +8,10 @@ export interface ProbeStreamInfo {
   width?: number
   height?: number
   pixFmt?: string
+  colorRange?: string
+  colorSpace?: string
+  colorPrimaries?: string
+  colorTransfer?: string
   rFrameRate?: string
   avgFrameRate?: string
   sampleRate?: number
@@ -88,6 +92,10 @@ export function applyProbeMetadataToConfig(config: ProjectConfig, result: ProbeR
       pixFmt: stream.pixFmt,
       width: stream.width,
       height: stream.height,
+      colorRange: stream.colorRange,
+      colorSpace: stream.colorSpace,
+      colorPrimaries: stream.colorPrimaries,
+      colorTransfer: stream.colorTransfer,
     }))
   return {
     ...config,

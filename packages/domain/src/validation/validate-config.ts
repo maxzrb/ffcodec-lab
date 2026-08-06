@@ -38,6 +38,7 @@ export function validateConfig(
   const targetSizeMessages = calculateTargetSize(config, catalog).diagnostics
   const filterProcessingMessages = validateFilterProcessing(config)
   const streamSnapshotMessages = validateStreamSnapshots(config)
+  const multiVideoTwoPassMessages = validateMultiVideoTwoPass(config, catalog)
 
   const placeholderMessages = validatePlaceholderCategory(config)
 
@@ -52,6 +53,7 @@ export function validateConfig(
     ...targetSizeMessages,
     ...filterProcessingMessages,
     ...streamSnapshotMessages,
+    ...multiVideoTwoPassMessages,
   ]
 }
 
@@ -305,6 +307,41 @@ function validateColorProcessing(config: ProjectConfig): Diagnostic[] {
       originIds: ['video.color.filter'], context: { filter: 'libplacebo' },
     })
   }
+  if ((color.filter ?? 'zscale') === 'zscale') {
+    const probe = config.input.probe?.inputPath === config.input.path ? config.input.probe : undefined
+    const selectedIndexes = config.streams.preserveAllVideoStreams
+      ? undefined
+      : new Set(config.streams.videoStreams.filter((stream) => stream.codecMode === 'encode').map((stream) => stream.index))
+    const selectedStreams = probe?.videoStreams.filter(
+      (stream) => selectedIndexes === undefined || selectedIndexes.has(stream.index),
+    ) ?? []
+    const missingFields = new Set<string>()
+    for (const stream of selectedStreams) {
+      if (color.space && !stream.colorSpace) missingFields.add('color_space')
+      if (color.primaries && !stream.colorPrimaries) missingFields.add('color_primaries')
+      if ((color.transfer || (color.toneMap && color.toneMap !== 'none')) && !stream.colorTransfer) missingFields.add('color_transfer')
+      if (color.range && !stream.colorRange) missingFields.add('color_range')
+    }
+    if (probe && selectedStreams.length > 0 && missingFields.size > 0) {
+      messages.push({
+        code: 'error.color.zscale.sourceMetadata',
+        severity: 'error',
+        category: 'compatibility',
+        message: `zscale color conversion requires source color metadata, but ffprobe did not report: ${[...missingFields].join(', ')}.`,
+        originIds: ['input.probe', 'video.color.filter', 'video.color.operation'],
+        context: { missingFields: [...missingFields] },
+      })
+    } else if (!probe && isAbsoluteLocalPath(config.input.path)) {
+      messages.push({
+        code: 'warn.color.zscale.sourceMetadataUnknown',
+        severity: 'warning',
+        category: 'configuration',
+        message: 'zscale source color metadata has not been probed; untagged input may fail color conversion. Probe the input or use libplacebo.',
+        originIds: ['input.path', 'video.color.filter', 'video.color.operation'],
+        context: { inputPath: config.input.path },
+      })
+    }
+  }
   return messages
 }
 
@@ -312,18 +349,79 @@ function validateSubtitleTracks(config: ProjectConfig): Diagnostic[] {
   const unknownCopyTracks = config.subtitle.tracks.filter(
     (track) => track.codecMode === 'copy' && !track.sourceCodecKnown,
   )
-  if (unknownCopyTracks.length === 0) return []
+  const messages: Diagnostic[] = []
+  if (unknownCopyTracks.length > 0) {
+    messages.push({
+      code: 'warn.subtitle.copy.unknown.sourcecodec',
+      severity: 'warning',
+      category: 'compatibility',
+      message: 'Subtitle stream copy compatibility cannot be confirmed because the source codec is unknown.',
+      originIds: unknownCopyTracks.map((track) => `subtitle.tracks.${track.id}.codecMode`),
+      context: {
+        trackIds: unknownCopyTracks.map((track) => track.id),
+        containerId: config.output.containerId,
+      },
+    })
+  }
 
+  const bitmapCodecs = new Set(['hdmv_pgs_subtitle', 'dvd_subtitle', 'dvb_subtitle', 'xsub'])
+  const textCodecs = new Set(['mov_text', 'srt', 'subrip', 'ass', 'ssa', 'webvtt', 'text'])
+  const invalidTranscodes = config.subtitle.tracks.filter((track) => (
+    track.codecMode === 'transcode'
+    && track.sourceCodecKnown
+    && bitmapCodecs.has(track.sourceCodec ?? '')
+    && textCodecs.has(track.codec ?? '')
+  ))
+  if (invalidTranscodes.length > 0) {
+    messages.push({
+      code: 'error.subtitle.transcode.mediaType',
+      severity: 'error',
+      category: 'compatibility',
+      message: 'FFmpeg cannot transcode bitmap subtitles such as PGS into a text subtitle codec.',
+      originIds: invalidTranscodes.map((track) => `subtitle.tracks.${track.id}.codec`),
+      context: {
+        trackIds: invalidTranscodes.map((track) => track.id),
+        sourceCodecs: invalidTranscodes.map((track) => track.sourceCodec),
+        targetCodecs: invalidTranscodes.map((track) => track.codec),
+      },
+    })
+  }
+  const externalWithPreserveAll = config.streams.preserveAllSubtitleStreams
+    ? config.subtitle.tracks.filter((track) => track.source === 'external')
+    : []
+  if (externalWithPreserveAll.length > 0) {
+    messages.push({
+      code: 'error.subtitle.preserveAll.externalIndex',
+      severity: 'error',
+      category: 'configuration',
+      message: 'External subtitle tracks require explicit subtitle mapping so their output stream indices remain deterministic.',
+      originIds: externalWithPreserveAll.map((track) => `subtitle.tracks.${track.id}.source`),
+      context: { trackIds: externalWithPreserveAll.map((track) => track.id) },
+    })
+  }
+  return messages
+}
+
+function validateMultiVideoTwoPass(config: ProjectConfig, catalog: Catalog): Diagnostic[] {
+  if (config.video.mode !== 'encode') return []
+  const targetSize = calculateTargetSize(config, catalog)
+  const usesTwoPass = config.video.rateControl?.mode === 'twoPass'
+    || (targetSize.enabled && targetSize.videoBitrateKbps !== undefined)
+  if (!usesTwoPass) return []
+
+  const encodeCount = config.streams.preserveAllVideoStreams
+    ? config.input.probe?.inputPath === config.input.path
+      ? config.input.probe.videoStreams.length
+      : 1
+    : config.streams.videoStreams.filter((stream) => stream.codecMode === 'encode').length
+  if (encodeCount <= 1) return []
   return [{
-    code: 'warn.subtitle.copy.unknown.sourcecodec',
-    severity: 'warning',
-    category: 'compatibility',
-    message: 'Subtitle stream copy compatibility cannot be confirmed because the source codec is unknown.',
-    originIds: unknownCopyTracks.map((track) => `subtitle.tracks.${track.id}.codecMode`),
-    context: {
-      trackIds: unknownCopyTracks.map((track) => track.id),
-      containerId: config.output.containerId,
-    },
+    code: 'error.twopass.multipleVideoStreams',
+    severity: 'error',
+    category: 'configuration',
+    message: 'Traditional passlog two-pass encoding currently supports only one encoded video stream per task.',
+    originIds: ['video.rateControl.mode', 'streams.videoStreams'],
+    context: { encodeCount },
   }]
 }
 

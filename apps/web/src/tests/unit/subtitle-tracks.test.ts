@@ -111,6 +111,31 @@ describe('Subtitle tracks — command generation', () => {
     expect(text).toMatch(/-map ['"]?0:s\?['"]?/)
   })
 
+  it('preserveAllSubtitle keeps a global copy fallback when one track is configured', () => {
+    const config = configWithTracks([makeTrack({ mainStreamRelIndex: 0, codecMode: 'copy' })])
+    config.streams.preserveAllSubtitleStreams = true
+
+    const text = renderBash(buildCommandPlan(config, catalog, [])).text
+
+    expect(text).toContain('-c:s copy')
+    expect(text).toContain('-c:s:0 copy')
+    expect(text.match(/0:s:0/g)).toBeNull()
+  })
+
+  it('places the preserve-all copy fallback before a stream-specific transcode override', () => {
+    const config = configWithTracks([makeTrack({
+      mainStreamRelIndex: 0,
+      codecMode: 'transcode',
+      sourceCodec: 'ass',
+      codec: 'srt',
+    })])
+    config.streams.preserveAllSubtitleStreams = true
+
+    const text = renderBash(buildCommandPlan(config, catalog, [])).text
+
+    expect(text.indexOf('-c:s copy')).toBeLessThan(text.indexOf('-c:s:0 srt'))
+  })
+
   it('subtitle burn is unaffected by track changes', () => {
     const config = configWithTracks([makeTrack()])
     config.video.mode = 'encode'
@@ -125,6 +150,40 @@ describe('Subtitle tracks — command generation', () => {
 
     expect(text).toContain('-vf')
     expect(text).toContain('subs.ass')
+  })
+
+  it('escapes Windows drive paths for external subtitle filtergraphs', () => {
+    const config = createDefaultProjectConfig()
+    config.subtitle.burn = {
+      enabled: true,
+      source: 'external',
+      externalPath: "C:\\Media Files\\导演版's.ass",
+      filterKind: 'ass',
+      style: {},
+    }
+
+    const plan = buildCommandPlan(config, catalog, [])
+    const filter = plan.invocations[0].output.filterArgs.find((arg) => arg.tokens[0] === '-vf')?.tokens[1]
+
+    expect(filter).toContain("ass=filename='C\\:/Media Files/导演版\\'s.ass'")
+  })
+
+  it('does not emit unsupported force_style for the ass filter', () => {
+    const config = createDefaultProjectConfig()
+    config.subtitle.burn = {
+      enabled: true,
+      source: 'external',
+      externalPath: 'subtitle.ass',
+      filterKind: 'ass',
+      style: { fontSize: 32, outline: 2 },
+      customForceStyle: 'FontSize=40',
+    }
+
+    const plan = buildCommandPlan(config, catalog, [])
+    const filter = plan.invocations[0].output.filterArgs.find((arg) => arg.tokens[0] === '-vf')?.tokens[1]
+
+    expect(filter).toContain("ass=filename='subtitle.ass'")
+    expect(filter).not.toContain('force_style')
   })
 
   it('mux subtitle tracks do not generate -vf', () => {
@@ -153,5 +212,31 @@ describe('Subtitle tracks — diagnostics', () => {
 
     expect(warning?.originIds).toEqual(['subtitle.tracks.unknown.codecMode'])
     expect(warning?.context.trackIds).toEqual(['unknown'])
+  })
+
+  it('blocks bitmap PGS to text subtitle transcoding', () => {
+    const config = configWithTracks([makeTrack({
+      codecMode: 'transcode',
+      sourceCodecKnown: true,
+      sourceCodec: 'hdmv_pgs_subtitle',
+      codec: 'mov_text',
+    })])
+
+    const messages = validateConfig(config, catalog, new RuleIndex())
+
+    expect(messages.some((message) => message.code === 'error.subtitle.transcode.mediaType')).toBe(true)
+  })
+
+  it('blocks external subtitle tracks while preserve-all makes output indices ambiguous', () => {
+    const config = configWithTracks([makeTrack({
+      source: 'external',
+      path: 'external.ass',
+      mainStreamRelIndex: undefined,
+    })])
+    config.streams.preserveAllSubtitleStreams = true
+
+    const messages = validateConfig(config, catalog, new RuleIndex())
+
+    expect(messages.some((message) => message.code === 'error.subtitle.preserveAll.externalIndex')).toBe(true)
   })
 })

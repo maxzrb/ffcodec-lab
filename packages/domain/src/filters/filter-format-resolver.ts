@@ -193,7 +193,7 @@ export function resolveFilterFormatPlan(
     && (config.video.color.operation ?? 'metadata-only') !== 'metadata-only'
     && (config.video.color.filter ?? 'zscale') === 'zscale'
   if (outputFormat && outputFormat !== 'auto' && !toneMapOwnsOutputFormat) {
-    if (shouldDither(processing, outputFormat)) {
+    if (shouldDither(processing, outputFormat, workingFormats)) {
       const algorithm = processing.dither === 'auto'
         ? 'error_diffusion'
         : processing.dither as 'ordered' | 'random' | 'error_diffusion'
@@ -329,18 +329,26 @@ function matchesChroma(format: string, chroma: '420' | '422' | '444'): boolean {
   return format.includes(chroma)
 }
 
-function shouldDither(processing: VideoFilterProcessingConfig, outputFormat: string): boolean {
+function shouldDither(
+  processing: VideoFilterProcessingConfig,
+  outputFormat: string,
+  workingFormats: readonly string[],
+): boolean {
   if (processing.dither === 'none') return false
   const outputDepth = pixelFormatDepth(outputFormat)
-  const workingDepth = processing.mode === 'high-precision'
-    ? 32
-    : processing.bitDepth === 'float'
+  const exactWorkingDepth = workingFormats.length === 1
+    ? pixelFormatDepth(workingFormats[0])
+    : undefined
+  const configuredWorkingDepth = processing.mode === 'custom'
+    ? processing.bitDepth === 'float'
       ? 32
-      : processing.bitDepth === 'preserve'
-        ? undefined
-        : Number(processing.bitDepth)
+      : processing.bitDepth === 'preserve' ? undefined : Number(processing.bitDepth)
+    : undefined
+  const workingDepth = exactWorkingDepth ?? configuredWorkingDepth
   if (outputDepth === undefined) return false
-  if (workingDepth === undefined) return true
+  // 自动高精度但缺少输入探针时无法证明发生了降位；此时插入 zscale
+  // 不仅无法保证有效抖动，还会让无色彩标签输入触发 zimg no-path 错误。
+  if (workingDepth === undefined) return false
   return outputDepth < workingDepth
 }
 

@@ -799,10 +799,15 @@ function buildOutput(
 
   for (let i = 0; i < config.subtitle.tracks.length; i++) {
     const track = config.subtitle.tracks[i]
-    const outputIndex = i // subtitle stream index in output
+    // preserve-all 下内部字幕已经由 0:s? 映射，输出序号与输入类型内序号一致。
+    const outputIndex = preserveAllSubtitle
+      && track.source === 'input'
+      && track.mainStreamRelIndex !== undefined
+      ? track.mainStreamRelIndex
+      : i
 
     // -map
-    if (track.source === 'input') {
+    if (track.source === 'input' && !preserveAllSubtitle) {
       const spec = track.mainStreamRelIndex !== undefined
         ? `0:s:${track.mainStreamRelIndex}`
         : '0:s'
@@ -881,28 +886,28 @@ function buildOutput(
   // (PGS/VobSub) inside Matroska/MP4, which fails with:
   //   "Subtitle encoding currently only possible from text to text or
   //    bitmap to bitmap"
-  if (config.subtitle.tracks.length === 0) {
-    if (preserveAllSubtitle) {
-      output.subtitleArgs.push({
-        id: 'codec.s.copy',
-        originId: 'streams.preserveAllSubtitleStreams',
-        phase: 'SUBTITLE',
-        tokens: ['-c:s', 'copy'],
-      })
-    } else {
-      // Per-stream entries with codecMode; subtitle encode has no global
-      // encoder selection so we only emit explicit -c:s:N copy entries.
-      subtitleEntries.forEach((entry, outIdx) => {
-        if (entry.codecMode === 'copy') {
-          output.subtitleArgs.push({
-            id: `codec.s.copy.${outIdx}`,
-            originId: `streams.subtitleStreams.${outIdx}`,
-            phase: 'SUBTITLE',
-            tokens: [`-c:s:${outIdx}`, 'copy'],
-          })
-        }
-      })
-    }
+  if (preserveAllSubtitle) {
+    // 全局 copy 作为所有字幕流的安全兜底；-c:s:N 仍可覆写已配置轨道。
+    // 放在逐流 -c:s:N 之前，保证后续更具体的流选项可以覆盖全局兜底。
+    output.subtitleArgs.unshift({
+      id: 'codec.s.copy',
+      originId: 'streams.preserveAllSubtitleStreams',
+      phase: 'SUBTITLE',
+      tokens: ['-c:s', 'copy'],
+    })
+  } else if (config.subtitle.tracks.length === 0) {
+    // Per-stream entries with codecMode; subtitle encode has no global
+    // encoder selection so we only emit explicit -c:s:N copy entries.
+    subtitleEntries.forEach((entry, outIdx) => {
+      if (entry.codecMode === 'copy') {
+        output.subtitleArgs.push({
+          id: `codec.s.copy.${outIdx}`,
+          originId: `streams.subtitleStreams.${outIdx}`,
+          phase: 'SUBTITLE',
+          tokens: [`-c:s:${outIdx}`, 'copy'],
+        })
+      }
+    })
   }
 
   // -- 自定义元数据 -------------------------------------------

@@ -75,6 +75,17 @@ describe('高级视频滤镜', () => {
     expect(vf).toContain('|')
   })
 
+  it('自动高精度缺少输入探针时不插入无法证明必要的 zscale 抖动', () => {
+    const config = createBaseProjectConfig()
+    config.frame.filters!.sharpen.enabled = true
+    config.video.pixelFormat = 'yuv420p10le'
+
+    const vf = renderFilterChain(buildVideoFilterChain(config), 'filter.chain')?.tokens[1] ?? ''
+
+    expect(vf).not.toContain('zscale=dither=')
+    expect(vf).toContain('format=pix_fmts=yuv420p10le')
+  })
+
   it('自定义 12-bit YUV 4:4:4 可丢弃 alpha，并为显式 8-bit 输出执行误差扩散降位', () => {
     const config = createBaseProjectConfig()
     config.frame.filters!.processing = {
@@ -268,6 +279,51 @@ describe('高级视频滤镜', () => {
     expect(vf).toContain('zscale=transfer=linear:npl=100,format=gbrpf32le')
     expect(vf).toContain('tonemap=tonemap=mobius:desat=1.5')
     expect(vf).toContain('zscale=matrix=bt709:primaries=bt709:transfer=bt709:range=tv,format=yuv420p')
+  })
+
+  it('已探测到输入缺少色彩标签时阻止 zscale 转换', () => {
+    const config = createDefaultProjectConfig()
+    config.input.path = 'D:\\media\\untagged.mp4'
+    config.input.probe = {
+      inputPath: config.input.path,
+      videoStreams: [{ index: 0, pixFmt: 'yuv420p', width: 1280, height: 720, colorRange: 'tv' }],
+    }
+    config.video.color = {
+      operation: 'convert-and-tag', filter: 'zscale', toneMap: 'none',
+      space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
+    }
+
+    const diagnostics = validateConfig(config, loadCatalog(), new RuleIndex())
+    const error = diagnostics.find((message) => message.code === 'error.color.zscale.sourceMetadata')
+
+    expect(error?.severity).toBe('error')
+    expect(error?.context.missingFields).toEqual(['color_space', 'color_primaries', 'color_transfer'])
+  })
+
+  it('输入色彩标签完整时允许 zscale 转换', () => {
+    const config = createDefaultProjectConfig()
+    config.input.path = 'D:\\media\\tagged.mkv'
+    config.input.probe = {
+      inputPath: config.input.path,
+      videoStreams: [{
+        index: 0,
+        pixFmt: 'yuv420p',
+        width: 1920,
+        height: 1080,
+        colorRange: 'tv',
+        colorSpace: 'bt709',
+        colorPrimaries: 'bt709',
+        colorTransfer: 'bt709',
+      }],
+    }
+    config.video.color = {
+      operation: 'convert-and-tag', filter: 'zscale', toneMap: 'none',
+      space: 'bt709', primaries: 'bt709', transfer: 'bt709', range: 'tv',
+    }
+
+    const diagnostics = validateConfig(config, loadCatalog(), new RuleIndex())
+
+    expect(diagnostics.some((message) => message.code === 'error.color.zscale.sourceMetadata')).toBe(false)
   })
 
   it('自动高精度 CPU HDR tone-map 在浮点降位阶段应用所选抖动且不重复链尾转换', () => {

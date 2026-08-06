@@ -25,6 +25,11 @@ export interface ProbeStreamInfo {
   height?: number
   /** 视频像素格式 */
   pixFmt?: string
+  /** 视频色彩范围、矩阵、主色和传递函数。 */
+  colorRange?: string
+  colorSpace?: string
+  colorPrimaries?: string
+  colorTransfer?: string
   /** 视频帧率字符串（如 "24000/1001"） */
   rFrameRate?: string
   /** 视频平均帧率字符串 */
@@ -153,7 +158,7 @@ export async function probeMedia(ffmpegPath: string, inputPath: string, timeoutM
     const stdout = await runProbe(ffprobePath, [
       '-v', 'error',
       '-show_entries',
-      'stream=index,codec_type,codec_name,codec_long_name,width,height,pix_fmt,r_frame_rate,avg_frame_rate,sample_rate,channels,channel_layout,sample_fmt,duration,tags,profile:format',
+      'stream=index,codec_type,codec_name,codec_long_name,width,height,pix_fmt,color_range,color_space,color_primaries,color_transfer,r_frame_rate,avg_frame_rate,sample_rate,channels,channel_layout,sample_fmt,duration,tags,profile:format',
       '-of', 'json',
       inputPath,
     ], timeoutMs)
@@ -176,6 +181,10 @@ function parseProbePayload(payload: FullProbePayload): ProbeResult {
       width: positiveInteger(String(raw.width ?? '')),
       height: positiveInteger(String(raw.height ?? '')),
       pixFmt: raw.pix_fmt ? String(raw.pix_fmt) : undefined,
+      colorRange: raw.color_range ? String(raw.color_range) : undefined,
+      colorSpace: raw.color_space ? String(raw.color_space) : undefined,
+      colorPrimaries: raw.color_primaries ? String(raw.color_primaries) : undefined,
+      colorTransfer: raw.color_transfer ? String(raw.color_transfer) : undefined,
       rFrameRate: raw.r_frame_rate ? String(raw.r_frame_rate) : undefined,
       avgFrameRate: raw.avg_frame_rate ? String(raw.avg_frame_rate) : undefined,
       sampleRate: positiveInteger(String(raw.sample_rate ?? '')),

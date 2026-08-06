@@ -57,6 +57,10 @@ export interface InputProbeSummary {
     pixFmt?: string
     width?: number
     height?: number
+    colorRange?: string
+    colorSpace?: string
+    colorPrimaries?: string
+    colorTransfer?: string
   }>
 }
 

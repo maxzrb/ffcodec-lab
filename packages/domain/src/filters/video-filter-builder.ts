@@ -298,14 +298,16 @@ function buildSubtitleBurnFilter(config: ProjectConfig): string {
   if (burn.source === 'internal' && burn.streamIndex !== undefined) {
     source = `si=${burn.streamIndex}`
   } else if (burn.source === 'external' && burn.externalPath) {
-    source = `filename='${burn.externalPath}'`
+    source = `filename='${escapeFilterPath(burn.externalPath)}'`
   }
 
   let filterString = `${burn.filterKind}=${source}`
+  if (burn.customFilter) return burn.customFilter
+  // FFmpeg 的 ass 滤镜不提供 force_style；样式覆写只属于 subtitles 滤镜。
+  if (burn.filterKind === 'ass') return filterString
   if (burn.customForceStyle) {
     return `${filterString}:force_style='${burn.customForceStyle}'`
   }
-  if (burn.customFilter) return burn.customFilter
 
   const style: string[] = []
   const value = burn.style
@@ -329,4 +331,15 @@ function buildSubtitleBurnFilter(config: ProjectConfig): string {
   if (value.spacing !== undefined) style.push(`Spacing=${value.spacing}`)
   if (style.length > 0) filterString += `:force_style='${style.join(',')}'`
   return filterString
+}
+
+/**
+ * filtergraph 内的文件路径不是 shell 参数：Windows 盘符冒号必须单独转义，
+ * 反斜杠改成正斜杠，避免被滤镜解析器当作转义符吞掉。
+ */
+function escapeFilterPath(path: string): string {
+  return path
+    .replace(/\\/g, '/')
+    .replace(/:/g, '\\:')
+    .replace(/'/g, "\\'")
 }

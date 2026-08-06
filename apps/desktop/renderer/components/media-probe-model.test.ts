@@ -9,7 +9,18 @@ import {
 
 const probeResult: ProbeResult = {
   streams: [
-    { index: 0, codecType: 'video', duration: 121.5, width: 1920, height: 1080, pixFmt: 'yuv420p10le' },
+    {
+      index: 0,
+      codecType: 'video',
+      duration: 121.5,
+      width: 1920,
+      height: 1080,
+      pixFmt: 'yuv420p10le',
+      colorRange: 'tv',
+      colorSpace: 'bt709',
+      colorPrimaries: 'bt709',
+      colorTransfer: 'bt709',
+    },
     { index: 1, codecType: 'audio', duration: 121.4 },
     { index: 2, codecType: 'audio', duration: 121.4 },
     { index: 3, codecType: 'subtitle' },
@@ -57,7 +68,16 @@ describe('media probe config reuse', () => {
     expect(next.tools.targetSize.durationMinutes).toBe(90)
     expect(next.input.probe).toEqual({
       inputPath: 'D:\\media\\input.mkv',
-      videoStreams: [{ index: 0, pixFmt: 'yuv420p10le', width: 1920, height: 1080 }],
+      videoStreams: [{
+        index: 0,
+        pixFmt: 'yuv420p10le',
+        width: 1920,
+        height: 1080,
+        colorRange: 'tv',
+        colorSpace: 'bt709',
+        colorPrimaries: 'bt709',
+        colorTransfer: 'bt709',
+      }],
     })
   })
 
