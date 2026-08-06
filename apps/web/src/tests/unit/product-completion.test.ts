@@ -10,6 +10,15 @@ import { decodeConfigFromShare, encodeConfigToShare } from '@ffcodec/workbench/f
 const catalog = loadCatalog()
 
 describe('成品功能闭环', () => {
+  it('命令预览与自由编辑使用统一的命令字号令牌', () => {
+    const css = readFileSync('../../packages/workbench/src/styles/index.css', 'utf8')
+    const editorRule = css.match(/\.command-editor textarea\s*\{([^}]*)\}/s)?.[1]
+    const previewRule = css.match(/\.command-body\s*\{([^}]*)\}/s)?.[1]
+
+    expect(editorRule).toMatch(/font-size:\s*var\(--font-small\);/)
+    expect(previewRule).toMatch(/font-size:\s*var\(--font-small\);/)
+  })
+
   it('为高内容量字幕面板预留滚动条槽位，切换模块时工作台不会横向偏移', () => {
     const css = readFileSync('../../packages/workbench/src/styles/index.css', 'utf8')
     expect(css).toMatch(/html\s*\{[^}]*scrollbar-gutter:\s*stable;/s)

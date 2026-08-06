@@ -1802,7 +1802,7 @@ code {
   color: var(--command-text);
   padding: 0.85rem;
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  font-size: 0.82rem;
+  font-size: var(--font-small);
   line-height: 1.55;
 }
 
@@ -1946,7 +1946,9 @@ code {
   padding: 12px;
   background: var(--command-surface);
   color: var(--command-text);
-  font: 12px/1.85 "Cascadia Code", Consolas, monospace;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: var(--font-small);
+  line-height: 1.85;
 }
 
 .command-body pre {
