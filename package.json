@@ -17,6 +17,7 @@
     "test": "pnpm -r --if-present test",
     "lint": "pnpm -r --if-present lint",
     "audit:catalog": "pnpm --filter @ffcodec/web run audit:catalog",
+    "verify:real-media": "pnpm --filter @ffcodec/web exec tsx ../../scripts/verify-real-media-encoding.ts",
     "check:web": "pnpm --filter @ffcodec/web check",
     "check:desktop": "pnpm --filter @ffcodec/desktop check",
     "verify:filter-formats": "node scripts/verify-filter-formats.mjs",
