@@ -28,7 +28,7 @@ export function createDefaultAdvancedVideoFilters(): AdvancedVideoFiltersConfig 
  */
 export function createDefaultProjectConfig(): ProjectConfig {
   return {
-    schemaVersion: 8,
+    schemaVersion: 9,
     shell: 'powershell',
     input: {
       path: 'input.mkv',

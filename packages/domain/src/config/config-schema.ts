@@ -77,6 +77,12 @@ const advancedVideoFiltersSchema = z.object({
   }).default({ enabled: false, values: {} }),
 })
 
+const frameConfigSchema = z.object({
+  resolution: resolutionSchema,
+  frameRate: frameRateSchema,
+  filters: advancedVideoFiltersSchema,
+})
+
 const rateControlSchema = z.object({
   mode: z.enum([
     'crf', 'vbr', 'cqp', 'cbr', 'twoPass', 'nvenc-cq',
@@ -202,6 +208,19 @@ const audioConfigSchema = z.object({
   }),
 })
 
+export const videoEncodingSnapshotSchema = z.object({
+  snapshotVersion: z.literal(1),
+  video: videoConfigSchema.omit({ mode: true }),
+  frame: frameConfigSchema,
+  customVideoFilters: z.array(z.string()).default([]),
+})
+
+export const audioEncodingSnapshotSchema = z.object({
+  snapshotVersion: z.literal(1),
+  audio: audioConfigSchema.omit({ mode: true }),
+  customAudioFilters: z.array(z.string()).default([]),
+})
+
 const metadataConfigSchema = z.object({
   globalRaw: z.string().default(''),
   streamRaw: z.string().default(''),
@@ -210,7 +229,7 @@ const metadataConfigSchema = z.object({
 // -- top-level schema -----------------------------------------
 
 export const projectConfigSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9)]),
   shell: z.enum(['bash', 'powershell', 'cmd']),
   input: z.object({
     path: z.string(),
@@ -263,6 +282,7 @@ export const projectConfigSchema = z.object({
         crf: z.number().optional(),
         bitrate: z.string().optional(),
       }).optional(),
+      videoSnapshot: videoEncodingSnapshotSchema.optional(),
     })).default([{ index: 0, codecMode: 'encode' as const }]),
     audioStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
@@ -273,6 +293,7 @@ export const projectConfigSchema = z.object({
         channelLayout: z.string().optional(),
         sampleRate: z.number().optional(),
       }).optional(),
+      audioSnapshot: audioEncodingSnapshotSchema.optional(),
     })).default([{ index: 0, codecMode: 'encode' as const }]),
     subtitleStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
@@ -294,9 +315,7 @@ export const projectConfigSchema = z.object({
     preserveOtherSubtitleStreams: z.boolean().optional(),
   }),
   video: videoConfigSchema,
-  frame: z.object({
-    resolution: resolutionSchema,
-    frameRate: frameRateSchema,
+  frame: frameConfigSchema.extend({
     filters: advancedVideoFiltersSchema.default({
       processing: {
         mode: 'compatible',

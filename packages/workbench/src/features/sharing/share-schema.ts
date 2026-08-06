@@ -4,8 +4,12 @@
 // ============================================================
 
 import { z } from 'zod'
+import {
+  audioEncodingSnapshotSchema,
+  videoEncodingSnapshotSchema,
+} from '@ffcodec/domain/config/config-schema'
 
-export const SHARE_PAYLOAD_VERSION = 8
+export const SHARE_PAYLOAD_VERSION = 9
 
 /** Privacy-safe config subset: no input path, output path, or external subtitle paths */
 export const shareableConfigSchema = z.object({
@@ -182,6 +186,7 @@ export const shareableConfigSchema = z.object({
         pixelFormat: z.string().optional(),
         bitrate: z.string().optional(),
       }).optional(),
+      videoSnapshot: videoEncodingSnapshotSchema.optional(),
     })).optional(),
     audioStreams: z.array(z.object({
       index: z.number().int().nonnegative(),
@@ -192,6 +197,7 @@ export const shareableConfigSchema = z.object({
         channelLayout: z.string().optional(),
         sampleRate: z.number().optional(),
       }).optional(),
+      audioSnapshot: audioEncodingSnapshotSchema.optional(),
     })).optional(),
     subtitleStreams: z.array(z.object({
       index: z.number().int().nonnegative(),

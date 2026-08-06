@@ -129,6 +129,21 @@ export interface StreamVideoOverride {
   bitrate?: string
 }
 
+/** 冻结的视频编码方案；只包含视频局部设置，不复制输入、封装或任务级工具。 */
+export interface VideoEncodingSnapshot {
+  snapshotVersion: 1
+  video: Omit<VideoConfig, 'mode'>
+  frame: FrameConfig
+  customVideoFilters: string[]
+}
+
+/** 冻结的音频编码方案；只包含音频局部设置。 */
+export interface AudioEncodingSnapshot {
+  snapshotVersion: 1
+  audio: Omit<AudioConfig, 'mode'>
+  customAudioFilters: string[]
+}
+
 export interface StreamMapEntry {
   /** 类型内相对流索引（0=v:0, 1=v:1）。 */
   index: number
@@ -138,6 +153,10 @@ export interface StreamMapEntry {
   audio?: StreamAudioOverride
   /** 逐流视频编码覆写（仅 codecMode === 'encode' 时生效）。 */
   video?: StreamVideoOverride
+  /** 独立视频方案快照；存在时优先于旧稀疏覆写和全局视频模板。 */
+  videoSnapshot?: VideoEncodingSnapshot
+  /** 独立音频方案快照；存在时优先于旧稀疏覆写和全局音频模板。 */
+  audioSnapshot?: AudioEncodingSnapshot
 }
 
 export interface StreamSelectionConfig {
