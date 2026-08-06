@@ -259,6 +259,17 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(dropdownText('Film Grain 去噪')).toContain('关闭')
   })
 
+  it('媒体参数面板不显示固定不变的全局模板编辑范围条', async () => {
+    render(<TestWrapper />)
+    await openPanel('视频编码')
+
+    expect(screen.queryByText('当前编辑范围')).not.toBeInTheDocument()
+    expect(screen.queryByText('全局视频模板')).not.toBeInTheDocument()
+
+    await openPanel('音频')
+    expect(screen.queryByText('全局音频模板')).not.toBeInTheDocument()
+  })
+
   it('复制或禁用媒体流时解释参数缺失原因，并允许从空质量页返回视频编码', async () => {
     render(<TestWrapper />)
     await openPanel('视频编码')

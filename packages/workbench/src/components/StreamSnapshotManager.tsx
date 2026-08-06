@@ -1,5 +1,5 @@
 import type { ProjectConfig, StreamMapEntry } from '@ffcodec/domain/config/project-config'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   applyAudioSnapshotToStreams,
   applyVideoSnapshotToStreams,
@@ -12,6 +12,7 @@ import {
 } from '@ffcodec/domain/streams'
 import { useAppDialog } from '../features/dialog/AppDialogProvider'
 import { useI18n } from '../features/i18n/i18n'
+import { CollapsibleSection } from './CollapsibleSection'
 
 interface StreamSnapshotManagerProps {
   config: ProjectConfig
@@ -23,6 +24,7 @@ export function StreamSnapshotManager({ config, onChange, onOpenPanel }: StreamS
   const { locale } = useI18n()
   const dialog = useAppDialog()
   const zh = locale === 'zh-CN'
+  const [expanded, setExpanded] = useState(true)
 
   const copyVideoToOthers = async (entry: StreamMapEntry) => {
     const targets = config.streams.videoStreams.filter((candidate) => candidate.index !== entry.index).map((candidate) => candidate.index)
@@ -51,73 +53,70 @@ export function StreamSnapshotManager({ config, onChange, onOpenPanel }: StreamS
   }
 
   return (
-    <section className="stream-snapshot-manager" aria-label={zh ? '逐流参数快照' : 'Per-stream parameter snapshots'}>
-      <div className="stream-snapshot-manager__header">
-        <div>
-          <span className="stream-snapshot-manager__eyebrow">{zh ? '快照式流管理' : 'Snapshot stream management'}</span>
-          <h3>{zh ? '把调好的媒体方案应用到指定流' : 'Apply tuned media settings to individual streams'}</h3>
-        </div>
-        <p>{zh
-          ? '快照应用后独立于全局模板；重新应用才会更新。首次应用会退出“保留全部流”并使用显式映射。'
-          : 'Snapshots stay independent from global templates. Applying one switches preserve-all to explicit mapping.'}</p>
+    <CollapsibleSection
+      title={zh ? '快照式流管理' : 'Snapshot stream management'}
+      expanded={expanded}
+      onToggle={() => setExpanded((value) => !value)}
+      className="stream-snapshot-section"
+    >
+      <div className="stream-snapshot-manager" aria-label={zh ? '逐流参数快照' : 'Per-stream parameter snapshots'}>
+        <SnapshotGroup
+          title={zh ? '视频流' : 'Video streams'}
+          accent="video"
+          empty={zh ? '没有可管理的视频流；请先探测输入或手动选择视频流。' : 'No manageable video streams. Probe or select streams first.'}
+          entries={config.streams.videoStreams}
+          render={(entry) => {
+            const snapshot = entry.videoSnapshot
+            return (
+              <SnapshotCard
+                key={`video-${entry.index}`}
+                streamLabel={`v:${entry.index}`}
+                mode={entry.codecMode}
+                status={snapshot ? (zh ? '独立快照' : 'Snapshot') : (zh ? '继承全局' : 'Inherits global')}
+                summary={snapshot
+                  ? [snapshot.video.encoderId, snapshot.video.rateControl?.mode, snapshot.video.preset].filter(Boolean).join(' · ')
+                  : [config.video.encoderId, config.video.rateControl?.mode, config.video.preset].filter(Boolean).join(' · ')}
+                primaryLabel={snapshot ? (zh ? '从全局重新应用' : 'Reapply global') : (zh ? '应用当前视频方案' : 'Apply video template')}
+                onPrimary={() => onChange(applyVideoSnapshotToStreams(config, [entry.index]))}
+                actions={snapshot ? [
+                  { label: zh ? '载入工作台' : 'Load into workbench', onClick: () => { onChange(loadVideoSnapshotIntoTemplate(config, entry.index)); onOpenPanel('video') } },
+                  { label: zh ? '复制到其他流' : 'Copy to others', onClick: () => { void copyVideoToOthers(entry) } },
+                  { label: zh ? '恢复继承' : 'Restore inheritance', onClick: () => onChange(restoreVideoStreamInheritance(config, entry.index)) },
+                ] : []}
+              />
+            )
+          }}
+        />
+
+        <SnapshotGroup
+          title={zh ? '音频流' : 'Audio streams'}
+          accent="audio"
+          empty={zh ? '没有可管理的音频流；请先探测输入或手动选择音频流。' : 'No manageable audio streams. Probe or select streams first.'}
+          entries={config.streams.audioStreams}
+          render={(entry) => {
+            const snapshot = entry.audioSnapshot
+            return (
+              <SnapshotCard
+                key={`audio-${entry.index}`}
+                streamLabel={`a:${entry.index}`}
+                mode={entry.codecMode}
+                status={snapshot ? (zh ? '独立快照' : 'Snapshot') : (zh ? '继承全局' : 'Inherits global')}
+                summary={snapshot
+                  ? [snapshot.audio.encoderId, snapshot.audio.bitrate, snapshot.audio.channelLayout].filter(Boolean).join(' · ')
+                  : [config.audio.encoderId, config.audio.bitrate, config.audio.channelLayout].filter(Boolean).join(' · ')}
+                primaryLabel={snapshot ? (zh ? '从全局重新应用' : 'Reapply global') : (zh ? '应用当前音频方案' : 'Apply audio template')}
+                onPrimary={() => onChange(applyAudioSnapshotToStreams(config, [entry.index]))}
+                actions={snapshot ? [
+                  { label: zh ? '载入工作台' : 'Load into workbench', onClick: () => { onChange(loadAudioSnapshotIntoTemplate(config, entry.index)); onOpenPanel('audio') } },
+                  { label: zh ? '复制到其他流' : 'Copy to others', onClick: () => { void copyAudioToOthers(entry) } },
+                  { label: zh ? '恢复继承' : 'Restore inheritance', onClick: () => onChange(restoreAudioStreamInheritance(config, entry.index)) },
+                ] : []}
+              />
+            )
+          }}
+        />
       </div>
-
-      <SnapshotGroup
-        title={zh ? '视频流' : 'Video streams'}
-        accent="video"
-        empty={zh ? '没有可管理的视频流；请先探测输入或手动选择视频流。' : 'No manageable video streams. Probe or select streams first.'}
-        entries={config.streams.videoStreams}
-        render={(entry) => {
-          const snapshot = entry.videoSnapshot
-          return (
-            <SnapshotCard
-              key={`video-${entry.index}`}
-              streamLabel={`v:${entry.index}`}
-              mode={entry.codecMode}
-              status={snapshot ? (zh ? '独立快照' : 'Snapshot') : (zh ? '继承全局' : 'Inherits global')}
-              summary={snapshot
-                ? [snapshot.video.encoderId, snapshot.video.rateControl?.mode, snapshot.video.preset].filter(Boolean).join(' · ')
-                : [config.video.encoderId, config.video.rateControl?.mode, config.video.preset].filter(Boolean).join(' · ')}
-              primaryLabel={snapshot ? (zh ? '从全局重新应用' : 'Reapply global') : (zh ? '应用当前视频方案' : 'Apply video template')}
-              onPrimary={() => onChange(applyVideoSnapshotToStreams(config, [entry.index]))}
-              actions={snapshot ? [
-                { label: zh ? '载入工作台' : 'Load into workbench', onClick: () => { onChange(loadVideoSnapshotIntoTemplate(config, entry.index)); onOpenPanel('video') } },
-                { label: zh ? '复制到其他流' : 'Copy to others', onClick: () => { void copyVideoToOthers(entry) } },
-                { label: zh ? '恢复继承' : 'Restore inheritance', onClick: () => onChange(restoreVideoStreamInheritance(config, entry.index)) },
-              ] : []}
-            />
-          )
-        }}
-      />
-
-      <SnapshotGroup
-        title={zh ? '音频流' : 'Audio streams'}
-        accent="audio"
-        empty={zh ? '没有可管理的音频流；请先探测输入或手动选择音频流。' : 'No manageable audio streams. Probe or select streams first.'}
-        entries={config.streams.audioStreams}
-        render={(entry) => {
-          const snapshot = entry.audioSnapshot
-          return (
-            <SnapshotCard
-              key={`audio-${entry.index}`}
-              streamLabel={`a:${entry.index}`}
-              mode={entry.codecMode}
-              status={snapshot ? (zh ? '独立快照' : 'Snapshot') : (zh ? '继承全局' : 'Inherits global')}
-              summary={snapshot
-                ? [snapshot.audio.encoderId, snapshot.audio.bitrate, snapshot.audio.channelLayout].filter(Boolean).join(' · ')
-                : [config.audio.encoderId, config.audio.bitrate, config.audio.channelLayout].filter(Boolean).join(' · ')}
-              primaryLabel={snapshot ? (zh ? '从全局重新应用' : 'Reapply global') : (zh ? '应用当前音频方案' : 'Apply audio template')}
-              onPrimary={() => onChange(applyAudioSnapshotToStreams(config, [entry.index]))}
-              actions={snapshot ? [
-                { label: zh ? '载入工作台' : 'Load into workbench', onClick: () => { onChange(loadAudioSnapshotIntoTemplate(config, entry.index)); onOpenPanel('audio') } },
-                { label: zh ? '复制到其他流' : 'Copy to others', onClick: () => { void copyAudioToOthers(entry) } },
-                { label: zh ? '恢复继承' : 'Restore inheritance', onClick: () => onChange(restoreAudioStreamInheritance(config, entry.index)) },
-              ] : []}
-            />
-          )
-        }}
-      />
-    </section>
+    </CollapsibleSection>
   )
 }
 
@@ -167,7 +166,7 @@ function SnapshotCard({
       </div>
       <p>{mode === 'copy' ? 'Stream copy' : (summary || '—')}</p>
       <div className="stream-snapshot-card__actions">
-        <button type="button" className="button button--primary" onClick={onPrimary}>{primaryLabel}</button>
+        <button type="button" className="button button--primary stream-snapshot-card__primary" onClick={onPrimary}>{primaryLabel}</button>
         {actions.map((action) => <button key={action.label} type="button" className="button" onClick={action.onClick}>{action.label}</button>)}
       </div>
     </article>

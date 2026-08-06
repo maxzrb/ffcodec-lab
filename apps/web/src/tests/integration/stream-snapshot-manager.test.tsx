@@ -11,6 +11,24 @@ import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
 const catalog = loadCatalog()
 
 describe('StreamSnapshotManager', () => {
+  it('uses the standard collapsible card title without redundant snapshot instructions', async () => {
+    const config = createDefaultProjectConfig()
+
+    render(
+      <AppDialogProvider>
+        <StreamSnapshotManager config={config} onChange={() => undefined} onOpenPanel={() => undefined} />
+      </AppDialogProvider>,
+    )
+
+    const toggle = screen.getByRole('button', { name: '快照式流管理' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByText('把调好的媒体方案应用到指定流')).not.toBeInTheDocument()
+    expect(screen.queryByText(/快照应用后独立于全局模板/)).not.toBeInTheDocument()
+
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  })
+
   it('applies the current video template as a frozen stream snapshot', async () => {
     const config = createDefaultProjectConfig()
     config.streams.videoStreams = [
@@ -25,7 +43,9 @@ describe('StreamSnapshotManager', () => {
         <StreamSnapshotManager config={config} onChange={onChange} onOpenPanel={() => undefined} />
       </AppDialogProvider>,
     )
-    await userEvent.click(screen.getAllByRole('button', { name: '应用当前视频方案' })[1])
+    const applyButtons = screen.getAllByRole('button', { name: '应用当前视频方案' })
+    expect(applyButtons[1]).toHaveClass('stream-snapshot-card__primary')
+    await userEvent.click(applyButtons[1])
 
     const next = onChange.mock.calls[0][0]
     expect(next.streams.preserveAllVideoStreams).toBe(false)

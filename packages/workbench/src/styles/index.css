@@ -987,68 +987,17 @@ code {
   animation: panel-slide-in 220ms ease-out;
 }
 
-.workbench-scope-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, #3b82f6 38%, var(--border));
-  border-radius: 14px;
-  background: color-mix(in srgb, #3b82f6 7%, var(--surface));
-}
-
-.workbench-scope-bar--audio {
-  border-color: color-mix(in srgb, #a855f7 38%, var(--border));
-  background: color-mix(in srgb, #a855f7 7%, var(--surface));
-}
-
-.workbench-scope-bar > div {
-  display: grid;
-  gap: 2px;
-}
-
-.workbench-scope-bar span,
-.stream-snapshot-manager__eyebrow {
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.workbench-scope-bar small {
-  color: var(--text-soft);
-}
-
 .stream-snapshot-manager {
   display: grid;
   gap: 14px;
-  margin-bottom: 14px;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
 }
 
-.stream-snapshot-manager__header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.85fr);
-  gap: 18px;
-  align-items: end;
-}
-
-.stream-snapshot-manager__header h3,
-.stream-snapshot-manager__header p,
 .stream-snapshot-group h4,
 .stream-snapshot-group > p,
 .stream-snapshot-card p {
   margin: 0;
 }
 
-.stream-snapshot-manager__header p,
 .stream-snapshot-card p,
 .stream-snapshot-group > p {
   color: var(--text-soft);
@@ -1058,12 +1007,16 @@ code {
 .stream-snapshot-group {
   display: grid;
   gap: 9px;
-  padding-top: 12px;
-  border-top: 2px solid color-mix(in srgb, #3b82f6 42%, var(--border));
 }
 
-.stream-snapshot-group--audio {
-  border-top-color: color-mix(in srgb, #a855f7 42%, var(--border));
+.stream-snapshot-group + .stream-snapshot-group {
+  padding-top: 12px;
+  border-top: 2px solid color-mix(in srgb, #a855f7 42%, var(--border));
+}
+
+.stream-snapshot-section .parameter-section__body--expanded .parameter-section__body-inner {
+  gap: 0;
+  padding: 14px;
 }
 
 .stream-snapshot-group h4 {
@@ -1113,6 +1066,11 @@ code {
   min-height: 31px;
   padding: 5px 9px;
   font-size: 12px;
+}
+
+.stream-snapshot-card__primary,
+.stream-snapshot-card__primary:hover {
+  color: #fff;
 }
 
 .workbench-inspector {
