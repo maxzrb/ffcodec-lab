@@ -59,25 +59,30 @@ async function prepareQueueItem(item: BatchQueueItem, customFfmpegPath?: string)
       return { plans: [], error: `当前 FFmpeg 不提供所需滤镜：${unavailableFilters.join(', ')}。` }
     }
 
-    const optionGroups = [
-      ...collectConfiguredVideoEncoderOptionGroups(normalized, catalog),
-      ...collectConfiguredAudioEncoderOptionGroups(normalized, catalog),
+    const optionGroupSets = [
+      { groups: collectConfiguredVideoEncoderOptionGroups(normalized, catalog), includeVideoCodecOptions: true },
+      { groups: collectConfiguredAudioEncoderOptionGroups(normalized, catalog), includeVideoCodecOptions: false },
     ]
-    for (const group of optionGroups) {
-      if (group.requirements.length === 0) continue
-      const encoderCapabilities = await window.electronAPI?.getFFmpegEncoderCapabilities(
-        group.ffmpegName,
-        customFfmpegPath,
-      )
-      if (!encoderCapabilities) {
-        return { plans: [], error: `无法检查编码器 ${group.ffmpegName} 的私有选项。` }
-      }
-      const availableOptions = new Set(encoderCapabilities.options)
-      const unavailableOptions = [...new Set(
-        group.requirements.filter(({ option }) => !availableOptions.has(option)).map(({ option }) => option),
-      )]
-      if (unavailableOptions.length > 0) {
-        return { plans: [], error: `编码器 ${group.ffmpegName} 不提供所需选项：${unavailableOptions.join(', ')}。` }
+    for (const { groups, includeVideoCodecOptions } of optionGroupSets) {
+      for (const group of groups) {
+        if (group.requirements.length === 0) continue
+        const encoderCapabilities = await window.electronAPI?.getFFmpegEncoderCapabilities(
+          group.ffmpegName,
+          customFfmpegPath,
+        )
+        if (!encoderCapabilities) {
+          return { plans: [], error: `无法检查编码器 ${group.ffmpegName} 的选项。` }
+        }
+        const availableOptions = new Set([
+          ...encoderCapabilities.options,
+          ...(includeVideoCodecOptions ? encoderCapabilities.videoCodecOptions ?? [] : []),
+        ])
+        const unavailableOptions = [...new Set(
+          group.requirements.filter(({ option }) => !availableOptions.has(option)).map(({ option }) => option),
+        )]
+        if (unavailableOptions.length > 0) {
+          return { plans: [], error: `编码器 ${group.ffmpegName} 不提供所需选项：${unavailableOptions.join(', ')}。` }
+        }
       }
     }
   }

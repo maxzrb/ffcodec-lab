@@ -22,6 +22,7 @@ export interface RuntimeFFmpegCapabilities {
 export interface RuntimeEncoderCapabilities {
   encoder: string
   options: string[]
+  videoCodecOptions: string[]
 }
 
 export interface RuntimeFFmpegState {
@@ -171,44 +172,52 @@ export function useRuntimeFFmpegCapabilities(
       }
     }
 
-    const optionGroups = [
-      ...collectConfiguredVideoEncoderOptionGroups(config, catalog),
-      ...collectConfiguredAudioEncoderOptionGroups(config, catalog),
+    const optionGroupSets = [
+      { groups: collectConfiguredVideoEncoderOptionGroups(config, catalog), includeVideoCodecOptions: true },
+      { groups: collectConfiguredAudioEncoderOptionGroups(config, catalog), includeVideoCodecOptions: false },
     ]
-    for (const group of optionGroups) {
-      if (!capabilities?.encoders.includes(group.ffmpegName)) continue
-      const groupCapabilities = encoderCapabilitiesByName[group.ffmpegName]
-      if (groupCapabilities === undefined) {
-        diagnostics.push(diagnostic(
-          'error.encoder.options.pending',
-          `Checking ${group.ffmpegName} options.`,
-          group.requirements.map(({ originId }) => originId).length > 0
-            ? group.requirements.map(({ originId }) => originId)
-            : ['param.video.encoder'],
-        ))
-      } else if (groupCapabilities === null) {
-        diagnostics.push(diagnostic(
-          'error.encoder.options.unknown',
-          `Unable to inspect ${group.ffmpegName} options.`,
-          ['param.video.encoder'],
-        ))
-      } else {
-        const availableOptions = new Set(groupCapabilities.options)
-        const missingConfigured = group.requirements.filter(({ option }) => !availableOptions.has(option))
-        if (missingConfigured.length > 0) {
+    for (const { groups, includeVideoCodecOptions } of optionGroupSets) {
+      for (const group of groups) {
+        if (!capabilities?.encoders.includes(group.ffmpegName)) continue
+        const groupCapabilities = encoderCapabilitiesByName[group.ffmpegName]
+        if (groupCapabilities === undefined) {
           diagnostics.push(diagnostic(
-            'error.encoder.options.unavailable',
-            `${group.ffmpegName} does not provide: ${[...new Set(missingConfigured.map(({ option }) => option))].join(', ')}.`,
-            missingConfigured.map(({ originId }) => originId),
-            { encoder: group.ffmpegName, options: missingConfigured.map(({ option }) => option) },
+            'error.encoder.options.pending',
+            `Checking ${group.ffmpegName} options.`,
+            group.requirements.map(({ originId }) => originId).length > 0
+              ? group.requirements.map(({ originId }) => originId)
+              : ['param.video.encoder'],
           ))
+        } else if (groupCapabilities === null) {
+          diagnostics.push(diagnostic(
+            'error.encoder.options.unknown',
+            `Unable to inspect ${group.ffmpegName} options.`,
+            ['param.video.encoder'],
+          ))
+        } else {
+          const availableOptions = new Set([
+            ...groupCapabilities.options,
+            ...(includeVideoCodecOptions ? groupCapabilities.videoCodecOptions ?? [] : []),
+          ])
+          const missingConfigured = group.requirements.filter(({ option }) => !availableOptions.has(option))
+          if (missingConfigured.length > 0) {
+            diagnostics.push(diagnostic(
+              'error.encoder.options.unavailable',
+              `${group.ffmpegName} does not provide: ${[...new Set(missingConfigured.map(({ option }) => option))].join(', ')}.`,
+              missingConfigured.map(({ originId }) => originId),
+              { encoder: group.ffmpegName, options: missingConfigured.map(({ option }) => option) },
+            ))
+          }
         }
       }
     }
 
     const encoder = config.video.encoderId ? catalog.encoders.video[config.video.encoderId] : undefined
     if (encoder && encoderCapabilities) {
-      const availableOptions = new Set(encoderCapabilities.options)
+      const availableOptions = new Set([
+        ...encoderCapabilities.options,
+        ...(encoderCapabilities.videoCodecOptions ?? []),
+      ])
       for (const requirement of collectVideoEncoderControlOptions(encoder, config)) {
         if (!availableOptions.has(requirement.option)) unavailableControlIds.add(requirement.originId)
       }

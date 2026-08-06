@@ -122,10 +122,11 @@ export interface WorkbenchExtensions {
     encoders: string[]
     filters: string[]
   } | null>
-  /** 按需查询指定编码器实际公开的私有 AVOption。 */
+  /** 按需查询编码器私有选项及 FFmpeg 通用视频编码 AVOptions。 */
   getFFmpegEncoderCapabilities?: (encoder: string) => Promise<{
     encoder: string
     options: string[]
+    videoCodecOptions: string[]
   } | null>
   /** 订阅 Desktop 当前 FFmpeg 选择变化。 */
   onFFmpegSelectionChange?: (listener: () => void) => () => void

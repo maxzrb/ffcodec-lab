@@ -47,7 +47,10 @@ export interface FFmpegRuntimeCapabilities {
 /** 指定编码器实际公开的 AVOption 名称。 */
 export interface FFmpegEncoderCapabilities {
   encoder: string
+  /** 编码器私有帮助页公开的选项。 */
   options: string[]
+  /** AVCodecContext 公开的通用视频编码选项。 */
+  videoCodecOptions: string[]
 }
 
 // ---- Constants ----
@@ -55,11 +58,15 @@ export interface FFmpegEncoderCapabilities {
 /** Timeout for ffmpeg -version (ms). */
 const VERSION_TIMEOUT = 10_000
 
+/** `-h full` 在完整构建中通常超过 Node 默认的 1 MiB 输出上限。 */
+const HELP_MAX_BUFFER = 4 * 1024 * 1024
+
 /** Base-level subdirectories to search directly. */
 const BUNDLED_SUBDIRS = ['', 'ffmpeg', 'bin', 'tools', 'resources/ffmpeg']
 
 const runtimeCapabilitiesCache = new Map<string, FFmpegRuntimeCapabilities>()
 const encoderCapabilitiesCache = new Map<string, FFmpegEncoderCapabilities>()
+const videoCodecOptionsCache = new Map<string, Promise<string[]>>()
 
 // ---- Version parsing ----
 
@@ -102,7 +109,11 @@ export async function tryFFmpegPath(ffmpegPath: string, source: FFmpegInfo['sour
 
 function runExecFile(file: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    execFile(file, args, { timeout: VERSION_TIMEOUT, windowsHide: true }, (error, stdout, stderr) => {
+    execFile(file, args, {
+      timeout: VERSION_TIMEOUT,
+      windowsHide: true,
+      maxBuffer: HELP_MAX_BUFFER,
+    }, (error, stdout, stderr) => {
       if (error) return reject(error)
       const output = stdout + stderr
       resolve({ stdout: output, stderr })
@@ -367,7 +378,10 @@ export async function detectFFmpegRuntimeCapabilities(
   }
 }
 
-/** 按需读取指定编码器的私有 AVOption；不初始化 GPU 或实际编码。 */
+/**
+ * 按需读取指定编码器可接受的 AVOption；包含编码器私有选项和
+ * AVCodecContext 通用视频编码选项，不初始化 GPU 或实际编码。
+ */
 export async function detectFFmpegEncoderCapabilities(
   encoder: string,
   customPath?: string,
@@ -376,14 +390,22 @@ export async function detectFFmpegEncoderCapabilities(
   const info = await detectFFmpeg(customPath)
   if (!info.found || !info.path) return null
 
-  const cacheKey = `${info.path}\u0000${info.fullVersion ?? info.version ?? ''}\u0000${encoder}`
+  const binaryCacheKey = `${info.path}\u0000${info.fullVersion ?? info.version ?? ''}`
+  const cacheKey = `${binaryCacheKey}\u0000${encoder}`
   const cached = encoderCapabilitiesCache.get(cacheKey)
   if (cached) return cached
 
   try {
-    const { stdout } = await runExecFile(info.path, ['-hide_banner', '-h', `encoder=${encoder}`])
+    const [{ stdout }, videoCodecOptions] = await Promise.all([
+      runExecFile(info.path, ['-hide_banner', '-h', `encoder=${encoder}`]),
+      getVideoCodecOptions(info.path, binaryCacheKey),
+    ])
     if (/is not recognized|Unknown encoder|Codec '.+?' is not recognized/i.test(stdout)) return null
-    const capabilities = { encoder, options: parseEncoderOptionNames(stdout) }
+    const capabilities = {
+      encoder,
+      options: parseEncoderOptionNames(stdout),
+      videoCodecOptions,
+    }
     encoderCapabilitiesCache.set(cacheKey, capabilities)
     return capabilities
   } catch {
@@ -401,6 +423,48 @@ export function parseFilterNames(output: string): string[] {
 
 export function parseEncoderOptionNames(output: string): string[] {
   return uniqueMatches(output, /^\s+(-[A-Za-z0-9_:-]+)\s+/)
+}
+
+/**
+ * 只解析 `-h full` 的 AVCodecContext 段，避免把其他编码器的私有同名选项
+ * 错当成所有编码器都支持的通用能力。标记同时包含 E 和 V 才属于视频编码。
+ */
+export function parseVideoCodecOptionNames(output: string): string[] {
+  const values: string[] = []
+  const seen = new Set<string>()
+  let inCodecContext = false
+
+  for (const line of output.split(/\r?\n/)) {
+    if (line.trim() === 'AVCodecContext AVOptions:') {
+      inCodecContext = true
+      continue
+    }
+    if (!inCodecContext) continue
+    if (/^\S.*AVOptions:\s*$/.test(line)) break
+
+    const match = line.match(/^\s+(-[A-Za-z0-9_:-]+)\s+.*?\s([A-Z.]{11})\s+/)
+    const option = match?.[1]
+    const flags = match?.[2]
+    if (!option || !flags || flags[0] !== 'E' || flags[3] !== 'V' || seen.has(option)) continue
+    seen.add(option)
+    values.push(option)
+  }
+
+  return values
+}
+
+function getVideoCodecOptions(ffmpegPath: string, binaryCacheKey: string): Promise<string[]> {
+  const cached = videoCodecOptionsCache.get(binaryCacheKey)
+  if (cached) return cached
+
+  const pending = runExecFile(ffmpegPath, ['-hide_banner', '-h', 'full'])
+    .then(({ stdout }) => parseVideoCodecOptionNames(stdout))
+    .catch((error: unknown) => {
+      videoCodecOptionsCache.delete(binaryCacheKey)
+      throw error
+    })
+  videoCodecOptionsCache.set(binaryCacheKey, pending)
+  return pending
 }
 
 function uniqueMatches(output: string, pattern: RegExp): string[] {

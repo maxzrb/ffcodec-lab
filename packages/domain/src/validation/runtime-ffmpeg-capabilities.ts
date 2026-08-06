@@ -111,7 +111,7 @@ export function collectVideoEncoderControlOptions(
   return [...result.values()]
 }
 
-/** 返回当前配置确实会发射的编码器私有 AVOptions，用于运行前阻塞。 */
+/** 返回当前配置确实会发射且可由 FFmpeg 帮助探测的 AVOptions，用于运行前阻塞。 */
 export function collectConfiguredVideoEncoderOptions(
   config: ProjectConfig,
   catalog: Catalog,
@@ -146,7 +146,7 @@ export function collectConfiguredVideoEncoderOptions(
 }
 
 /**
- * 按实际输出流使用的编码器分组收集私有选项，供批处理逐项复检。
+ * 按实际输出流使用的编码器分组收集可探测选项，供批处理逐项复检。
  * 逐流覆写可能同时使用多个编码器，不能只检查全局 encoderId。
  */
 export function collectConfiguredVideoEncoderOptionGroups(

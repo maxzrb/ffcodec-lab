@@ -150,6 +150,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('ffmpeg:encoderCapabilities', encoder, customPath) as Promise<{
       encoder: string
       options: string[]
+      videoCodecOptions: string[]
     } | null>,
 
   // FFmpeg job execution (Phase 9)
@@ -311,7 +312,7 @@ declare global {
       getAudioEncoderCapabilities: (customPath?: string) => Promise<{ encoders: string[]; aacOptions: string[] } | null>
       getFilterCapabilities: (customPath?: string) => Promise<{ filters: string[] } | null>
       getFFmpegCapabilities: (customPath?: string) => Promise<{ encoders: string[]; filters: string[] } | null>
-      getFFmpegEncoderCapabilities: (encoder: string, customPath?: string) => Promise<{ encoder: string; options: string[] } | null>
+      getFFmpegEncoderCapabilities: (encoder: string, customPath?: string) => Promise<{ encoder: string; options: string[]; videoCodecOptions: string[] } | null>
 
       // Phase 9: FFmpeg job execution
       startFFmpegJob: (request: FFmpegJobStartRequest) => Promise<JobStartResult>

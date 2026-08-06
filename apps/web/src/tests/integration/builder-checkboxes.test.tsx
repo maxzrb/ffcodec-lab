@@ -1087,6 +1087,32 @@ describe('BuilderPage Checkbox Interaction (v0.4.1 hotfix)', () => {
     expect(lame).toHaveTextContent('当前 FFmpeg 不可用')
   })
 
+  it('Desktop 接受 FFmpeg 汇报的通用视频编码选项，不会误禁用 -bf', async () => {
+    presetStore(makeConfig('h264_nvenc'))
+    testPlatform = {
+      ...testPlatform,
+      capabilities: { ...testPlatform.capabilities, desktop: true, ffmpegDetect: true },
+      extensions: {
+        getFFmpegCapabilities: async () => ({
+          encoders: ['h264_nvenc', 'aac'],
+          filters: [],
+        }),
+        getFFmpegEncoderCapabilities: async (encoder) => ({
+          encoder,
+          options: encoder === 'h264_nvenc' ? ['-preset', '-rc', '-cq'] : [],
+          videoCodecOptions: encoder === 'h264_nvenc' ? ['-bf'] : [],
+        }),
+      },
+    }
+    render(<TestWrapper />)
+    await openPanel('质量控制')
+
+    const gopSize = await screen.findByLabelText('关键帧间隔 (-g)')
+    const bFrames = screen.getByLabelText('最大 B 帧数 (-bf)')
+    await waitFor(() => expect(gopSize).toBeDisabled())
+    expect(bFrames).toBeEnabled()
+  })
+
   it('Desktop 切换 FFmpeg 后重新核验当前版本的编码器与 AAC 能力', async () => {
     const capabilityListeners = new Set<() => void>()
     let currentCapabilities = {
