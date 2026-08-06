@@ -7,6 +7,7 @@ release-staging/
 *.local
 .DS_Store
 ffmpeg-full.7z
+OPENCODEX_DEEPSEEK_V4_FLASH_接入教程.md
 
 # pnpm
 .pnpm-store/
