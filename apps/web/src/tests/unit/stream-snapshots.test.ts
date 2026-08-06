@@ -12,6 +12,11 @@ import {
   restoreVideoStreamInheritance,
 } from '@ffcodec/domain/streams'
 import { decodeConfigFromShare, encodeConfigToShare } from '@ffcodec/workbench/features/sharing/share-codec'
+import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
+import { renderBash } from '@ffcodec/domain/shell/bash-renderer'
+
+const catalog = loadCatalog()
 
 describe('stream encoding snapshots', () => {
   it('freezes the current video template and exits preserve-all mode', () => {
@@ -92,5 +97,62 @@ describe('stream encoding snapshots', () => {
 
     expect(decoded.success).toBe(true)
     expect(decoded.config?.streams.videoStreams[0].videoSnapshot?.video.encoderId).toBe('libx264')
+  })
+
+  it('emits stream-scoped encoder, private options and filters from video snapshots', () => {
+    const config = createDefaultProjectConfig()
+    config.streams.videoStreams = [
+      { index: 0, codecMode: 'encode' },
+      { index: 1, codecMode: 'encode' },
+    ]
+    config.video.encoderId = 'h264_nvenc'
+    config.video.rateControl = { mode: 'nvenc-cq', qualityValue: 20, additionalValues: {} }
+    config.video.specialParameters = { multipass: 'fullres' }
+    config.customArgs.videoFilters = ['scale=1280:720']
+    const applied = applyVideoSnapshotToStreams(config, [1])
+    applied.video.encoderId = 'libx264'
+    applied.video.rateControl = { mode: 'crf', qualityValue: 28, additionalValues: {} }
+    applied.video.specialParameters = {}
+    applied.customArgs.videoFilters = []
+
+    const text = renderBash(buildCommandPlan(applied, catalog, [])).text
+    expect(text).toContain('-c:v:0 libx264')
+    expect(text).toContain('-c:v:1 h264_nvenc')
+    expect(text).toContain('-cq:v:1 20')
+    expect(text).toContain('-multipass:v:1 fullres')
+    expect(text).toContain('-filter:v:1')
+    expect(text).toContain('scale=1280:720')
+  })
+
+  it('emits stream-scoped audio processing from audio snapshots', () => {
+    const config = createDefaultProjectConfig()
+    config.audio.encoderId = 'libopus'
+    config.audio.bitrate = '384k'
+    config.customArgs.audioFilters = ['volume=0.8']
+    const applied = applyAudioSnapshotToStreams(config, [0])
+    applied.audio.encoderId = 'aac'
+    applied.audio.bitrate = '128k'
+    applied.customArgs.audioFilters = []
+
+    const text = renderBash(buildCommandPlan(applied, catalog, [])).text
+    expect(text).toContain('-c:a:0 libopus')
+    expect(text).toContain('-b:a:0 384k')
+    expect(text).toContain("-filter:a:0 'volume=0.8'")
+  })
+
+  it('keeps the command equivalent while migrating legacy sparse overrides', () => {
+    const legacy = createDefaultProjectConfig() as any
+    legacy.schemaVersion = 8
+    legacy.streams.preserveAllVideoStreams = false
+    legacy.streams.videoStreams = [{
+      index: 0,
+      codecMode: 'encode',
+      video: { encoderId: 'h264_nvenc', crf: 19, preset: 'p6' },
+    }]
+    const before = renderBash(buildCommandPlan(legacy, catalog, [])).text
+    const migrated = migrateConfig(8, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config as any
+    const after = renderBash(buildCommandPlan(migrated, catalog, [])).text
+
+    expect(after).toBe(before)
   })
 })

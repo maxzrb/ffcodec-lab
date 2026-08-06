@@ -227,9 +227,13 @@ function applySnapshot<T extends VideoEncodingSnapshot | AudioEncodingSnapshot>(
   snapshot: T,
 ): StreamMapEntry[] {
   const targets = new Set(inputIndices)
-  const result = entries.map((entry) => targets.has(entry.index)
-    ? { ...entry, codecMode: 'encode' as const, [key]: structuredClone(snapshot) }
-    : entry)
+  const result = entries.map((entry) => {
+    if (!targets.has(entry.index)) return entry
+    const cleared = key === 'videoSnapshot'
+      ? { ...entry, video: undefined }
+      : { ...entry, audio: undefined }
+    return { ...cleared, codecMode: 'encode' as const, [key]: structuredClone(snapshot) }
+  })
   for (const index of targets) {
     if (!result.some((entry) => entry.index === index)) {
       result.push({ index, codecMode: 'encode', [key]: structuredClone(snapshot) })

@@ -9,7 +9,9 @@ import { buildCommandPlan } from '@ffcodec/domain/command/command-builder'
 import { repairOddExplicitResolution } from '@ffcodec/domain/config/resolution-repair'
 import { normalizeConfig } from '@ffcodec/domain/normalization'
 import {
+  collectConfiguredAudioEncoderOptionGroups,
   collectConfiguredVideoEncoderOptionGroups,
+  collectRequiredAudioEncoders,
   collectRequiredVideoEncoders,
   validateConfig,
 } from '@ffcodec/domain/validation'
@@ -35,7 +37,10 @@ async function prepareQueueItem(item: BatchQueueItem, customFfmpegPath?: string)
   }
 
   const requiredFilters = collectRequiredVideoFilterNames(normalized)
-  const requiredEncoders = collectRequiredVideoEncoders(normalized, catalog)
+  const requiredEncoders = [
+    ...collectRequiredVideoEncoders(normalized, catalog),
+    ...collectRequiredAudioEncoders(normalized, catalog),
+  ]
   if (requiredFilters.length > 0 || requiredEncoders.length > 0) {
     const capabilities = await window.electronAPI?.getFFmpegCapabilities(customFfmpegPath)
     if (!capabilities) {
@@ -54,7 +59,11 @@ async function prepareQueueItem(item: BatchQueueItem, customFfmpegPath?: string)
       return { plans: [], error: `当前 FFmpeg 不提供所需滤镜：${unavailableFilters.join(', ')}。` }
     }
 
-    for (const group of collectConfiguredVideoEncoderOptionGroups(normalized, catalog)) {
+    const optionGroups = [
+      ...collectConfiguredVideoEncoderOptionGroups(normalized, catalog),
+      ...collectConfiguredAudioEncoderOptionGroups(normalized, catalog),
+    ]
+    for (const group of optionGroups) {
       if (group.requirements.length === 0) continue
       const encoderCapabilities = await window.electronAPI?.getFFmpegEncoderCapabilities(
         group.ffmpegName,

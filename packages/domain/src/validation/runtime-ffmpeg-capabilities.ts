@@ -6,6 +6,12 @@ import type {
 import { isControlActive } from '../catalog/control-condition'
 import type { ProjectConfig } from '../config/project-config'
 import { getByPath } from '../utils/object-path'
+import {
+  projectConfigForAudioStream,
+  projectConfigForVideoStream,
+  resolveEffectiveAudioStreamPlans,
+  resolveEffectiveVideoStreamPlans,
+} from '../streams'
 
 export interface RequiredVideoEncoder {
   encoderId: string
@@ -23,6 +29,8 @@ export interface VideoEncoderOptionGroup {
   ffmpegName: string
   requirements: VideoEncoderOptionRequirement[]
 }
+
+export type AudioEncoderOptionGroup = VideoEncoderOptionGroup
 
 /** 将 -profile:v:0 等命令写法归一化为 encoder AVOptions 中汇报的 -profile。 */
 export function normalizeEncoderOptionName(argName: string): string {
@@ -46,12 +54,33 @@ export function collectRequiredVideoEncoders(
     result.set(encoder.ffmpegName, { encoderId, ffmpegName: encoder.ffmpegName, originId })
   }
 
-  add(config.video.encoderId, 'param.video.encoder')
-  if (!config.streams.preserveAllVideoStreams) {
-    for (const stream of config.streams.videoStreams) {
-      if (stream.codecMode === 'encode') {
-        add(stream.video?.encoderId, `streams.video.${stream.index}.encoder`)
-      }
+  if (config.streams.preserveAllVideoStreams) {
+    add(config.video.encoderId, 'param.video.encoder')
+  } else {
+    for (const plan of resolveEffectiveVideoStreamPlans(config)) {
+      if (plan.codecMode === 'encode') add(plan.video.encoderId, `streams.video.${plan.inputIndex}.encoder`)
+    }
+  }
+  return [...result.values()]
+}
+
+/** 收集全局或逐流快照实际使用的音频编码器。 */
+export function collectRequiredAudioEncoders(
+  config: ProjectConfig,
+  catalog: Catalog,
+): RequiredVideoEncoder[] {
+  if (config.audio.mode !== 'encode') return []
+  const result = new Map<string, RequiredVideoEncoder>()
+  const add = (encoderId: string | undefined, originId: string) => {
+    if (!encoderId) return
+    const encoder = catalog.encoders.audio[encoderId]
+    if (encoder) result.set(encoder.ffmpegName, { encoderId, ffmpegName: encoder.ffmpegName, originId })
+  }
+  if (config.streams.preserveAllAudioStreams) {
+    add(config.audio.encoderId, 'param.audio.encoder')
+  } else {
+    for (const plan of resolveEffectiveAudioStreamPlans(config)) {
+      if (plan.codecMode === 'encode') add(plan.audio.encoderId, `streams.audio.${plan.inputIndex}.encoder`)
     }
   }
   return [...result.values()]
@@ -158,9 +187,11 @@ export function collectConfiguredVideoEncoderOptionGroups(
     add(encoder, control.commandBinding.prefix ?? control.commandBinding.argName, originId ?? control.id)
   }
 
-  for (const stream of config.streams.videoStreams) {
-    if (stream.codecMode !== 'encode') continue
-    const encoderId = stream.video?.encoderId ?? config.video.encoderId
+  const plans = resolveEffectiveVideoStreamPlans(config)
+  for (const plan of plans) {
+    if (plan.codecMode !== 'encode') continue
+    const streamConfig = projectConfigForVideoStream(config, plan)
+    const encoderId = streamConfig.video.encoderId
     const encoder = encoderId ? catalog.encoders.video[encoderId] : undefined
     if (!encoder) continue
     const group = groups.get(encoder.ffmpegName) ?? {
@@ -170,34 +201,66 @@ export function collectConfiguredVideoEncoderOptionGroups(
     }
     groups.set(encoder.ffmpegName, group)
 
-    addControl(encoder, encoder.preset, stream.video?.preset ?? config.video.preset, `streams.video.${stream.index}.preset`)
-    addControl(encoder, encoder.profile, stream.video?.profile ?? config.video.profile, `streams.video.${stream.index}.profile`)
-    addControl(encoder, encoder.tune, stream.video?.tune ?? config.video.tune, `streams.video.${stream.index}.tune`)
+    addControl(encoder, encoder.preset, streamConfig.video.preset, `streams.video.${plan.inputIndex}.preset`)
+    addControl(encoder, encoder.profile, streamConfig.video.profile, `streams.video.${plan.inputIndex}.profile`)
+    addControl(encoder, encoder.tune, streamConfig.video.tune, `streams.video.${plan.inputIndex}.tune`)
 
-    if (stream.video?.crf == null && !stream.video?.bitrate && config.video.rateControl) {
-      const mode = encoder.qualityModes.find((candidate) => candidate.id === config.video.rateControl?.mode)
+    const legacy = config.streams.videoStreams[plan.outputIndex]?.video
+    if (legacy?.crf == null && !legacy?.bitrate && streamConfig.video.rateControl) {
+      const mode = encoder.qualityModes.find((candidate) => candidate.id === streamConfig.video.rateControl?.mode)
+      for (const argument of mode?.modeArguments ?? []) {
+        add(encoder, argument.argName, `streams.video.${plan.inputIndex}.rateMode`)
+      }
       for (const control of mode?.controls ?? []) {
-        const value = control.configBinding?.path ? getByPath(config, control.configBinding.path) : undefined
+        const value = control.configBinding?.path ? getByPath(streamConfig, control.configBinding.path) : undefined
         addControl(encoder, control, value ?? control.defaultValue)
       }
     }
-  }
-
-  const globalEncoder = config.video.encoderId ? catalog.encoders.video[config.video.encoderId] : undefined
-  if (globalEncoder) {
-    const mode = globalEncoder.qualityModes.find((candidate) => candidate.id === config.video.rateControl?.mode)
-    for (const argument of mode?.modeArguments ?? []) {
-      add(globalEncoder, argument.argName, `param.video.rateMode.${mode!.id}`)
-    }
-    for (const control of globalEncoder.specialParameters) {
-      const value = control.configBinding?.path ? getByPath(config, control.configBinding.path) : undefined
-      addControl(globalEncoder, control, value)
+    for (const control of encoder.specialParameters) {
+      const value = control.configBinding?.path ? getByPath(streamConfig, control.configBinding.path) : undefined
+      addControl(encoder, control, value, `streams.video.${plan.inputIndex}.${control.id}`)
     }
   }
 
   return [...groups.values()]
 }
 
+/** 按有效音频流方案分组收集实际会发射的私有 AVOptions。 */
+export function collectConfiguredAudioEncoderOptionGroups(
+  config: ProjectConfig,
+  catalog: Catalog,
+): AudioEncoderOptionGroup[] {
+  if (config.audio.mode !== 'encode') return []
+  const plans = resolveEffectiveAudioStreamPlans(config)
+  const groups = new Map<string, AudioEncoderOptionGroup>()
+  for (const plan of plans) {
+    if (plan.codecMode !== 'encode') continue
+    const streamConfig = projectConfigForAudioStream(config, plan)
+    const encoderId = streamConfig.audio.encoderId
+    const encoder = encoderId ? catalog.encoders.audio[encoderId] : undefined
+    if (!encoder) continue
+    const group = groups.get(encoder.ffmpegName) ?? {
+      encoderId: encoder.id,
+      ffmpegName: encoder.ffmpegName,
+      requirements: [],
+    }
+    for (const control of encoder.specialParameters) {
+      if (!control.commandBinding || !isControlActive(control, streamConfig)) continue
+      const value = control.configBinding?.path ? getByPath(streamConfig, control.configBinding.path) : undefined
+      const effectiveValue = value ?? (control.optional ? undefined : control.defaultValue)
+      if (effectiveValue === undefined || effectiveValue === null || effectiveValue === '' || effectiveValue === 'auto') continue
+      const option = normalizeEncoderOptionName(control.commandBinding.prefix ?? control.commandBinding.argName)
+      if (!GENERIC_AUDIO_OPTIONS.has(option) && !group.requirements.some((entry) => entry.option === option)) {
+        group.requirements.push({ option, originId: `streams.audio.${plan.inputIndex}.${control.id}` })
+      }
+    }
+    groups.set(encoder.ffmpegName, group)
+  }
+  return [...groups.values()]
+}
+
 const GENERIC_VIDEO_OPTIONS = new Set([
   '-b', '-minrate', '-maxrate', '-bufsize', '-q', '-qscale', '-pix_fmt', '-threads',
 ])
+
+const GENERIC_AUDIO_OPTIONS = new Set(['-b', '-ar', '-channel_layout', '-sample_fmt'])

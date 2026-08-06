@@ -13,6 +13,12 @@ import { getByPath } from '@ffcodec/domain/utils/object-path'
 import { extractConfigKey } from '../config/config-path'
 import { calculateTargetSize, type TargetSizeCalculation } from '../tools/target-size'
 import { isControlActive } from '../catalog/control-condition'
+import {
+  projectConfigForAudioStream,
+  projectConfigForVideoStream,
+  resolveEffectiveAudioStreamPlans,
+  resolveEffectiveVideoStreamPlans,
+} from '../streams'
 
 /**
  * Builds the CommandPlan from ProjectConfig + Catalog.
@@ -317,6 +323,18 @@ function buildOutput(
   const subtitleEntries = preserveAllSubtitle ? [] : config.streams.subtitleStreams.length > 0
     ? config.streams.subtitleStreams
     : migrateLegacyStreams(config.streams.subtitleStreamIndexes, config.streams.subtitleStreamIndex, config.streams.preserveOtherSubtitleStreams, undefined)
+  const explicitStreamConfig: ProjectConfig = {
+    ...config,
+    streams: {
+      ...config.streams,
+      preserveAllVideoStreams: false,
+      preserveAllAudioStreams: false,
+      videoStreams: videoEntries,
+      audioStreams: audioEntries,
+    },
+  }
+  const effectiveVideoPlans = preserveAllVideo ? [] : resolveEffectiveVideoStreamPlans(explicitStreamConfig)
+  const effectiveAudioPlans = preserveAllAudio ? [] : resolveEffectiveAudioStreamPlans(explicitStreamConfig)
 
   // 为每条 entry 生成 -map，记录输出流索引
   const videoOutputIndices: number[] = []
@@ -523,158 +541,67 @@ function buildOutput(
         tokens: [`-c:v:${outIdx}`, 'copy'],
       })
     })
-    // Encode streams — 逐流支持覆写
     if (videoEncodeIndices.length > 0) {
-      const colorArgs: CommandArg[] = []
-      const colorArguments: Array<[keyof NonNullable<ProjectConfig['video']['color']>, string]> = [
-        ['space', '-colorspace'],
-        ['primaries', '-color_primaries'],
-        ['transfer', '-color_trc'],
-        ['range', '-color_range'],
-      ]
-      if ((config.video.color?.operation ?? 'metadata-only') !== 'convert-only') {
-        for (const [key, argName] of colorArguments) {
-          const value = config.video.color?.[key]
-          if (typeof value !== 'string' || !value) continue
-          colorArgs.push({
-            id: `color.${key}`,
-            originId: `video.color.${key}`,
-            phase: 'VIDEO_COLOR',
-            tokens: [argName, value],
-          })
-        }
-      }
-
       videoEncodeIndices.forEach((outIdx) => {
         const entry = videoEntries[outIdx]
-        const ov = entry.video // 逐流覆写
-        // 编码器：逐流覆写优先，否则全局
-        const encoderId = ov?.encoderId || config.video.encoderId
+        const plan = effectiveVideoPlans[outIdx]
+        if (!entry || !plan) return
+        const streamConfig = projectConfigForVideoStream(config, plan)
+        const encoderId = streamConfig.video.encoderId
         const encoder = encoderId ? catalog.encoders.video[encoderId] : undefined
         if (!encoder) return
 
         output.codecArgs.push({
           id: `codec.v.encoder.${outIdx}`,
-          originId: 'param.video.encoder',
+          originId: `streams.videoStreams.${outIdx}`,
           phase: 'VIDEO_CODEC',
           tokens: [`-c:v:${outIdx}`, encoder.ffmpegName],
           explanationId: encoder.explanationId,
         })
-        const preset = ov?.preset ?? config.video.preset
-        if (preset && preset !== 'auto' && encoder.preset) {
-          output.codecArgs.push({
-            id: `codec.preset.${outIdx}`,
-            originId: 'video.preset',
-            phase: 'VIDEO_CODEC',
-            tokens: [`-preset:v:${outIdx}`, String(preset)],
-            explanationId: encoder.preset.explanationId,
-          })
-        }
-        const profile = ov?.profile ?? config.video.profile
-        if (profile && profile !== 'auto' && encoder.profile) {
-          output.codecArgs.push({
-            id: `codec.profile.${outIdx}`,
-            originId: 'video.profile',
-            phase: 'VIDEO_PROFILE',
-            tokens: [`-profile:v:${outIdx}`, String(profile)],
-            explanationId: encoder.profile.explanationId,
-          })
-        }
-        const tune = ov?.tune ?? config.video.tune
-        if (tune && tune !== 'auto' && encoder.tune) {
-          output.codecArgs.push({
-            id: `codec.tune.${outIdx}`,
-            originId: 'video.tune',
-            phase: 'VIDEO_CODEC',
-            tokens: [`-tune:v:${outIdx}`, String(tune)],
-            explanationId: encoder.tune.explanationId,
-          })
-        }
-        const pixFmt = ov?.pixelFormat ?? config.video.pixelFormat
-        if (pixFmt && pixFmt !== 'auto' && encoder.pixelFormat) {
-          output.codecArgs.push({
-            id: `codec.pixfmt.${outIdx}`,
-            originId: 'video.pixelFormat',
-            phase: 'VIDEO_CODEC',
-            tokens: [`-pix_fmt:${outIdx}`, String(pixFmt)],
-            explanationId: encoder.pixelFormat.explanationId,
-          })
-        }
+        addVideoIdentityArgs(output, streamConfig, encoder, outIdx)
+        addVideoColorArgs(output, streamConfig, outIdx)
 
-        // 质量控制：逐流 crf/bitrate > 全局 rateControl
-        if (ov?.crf != null) {
+        // v8 稀疏覆写迁移后暂留旧字段，以保证首次迁移的命令完全等价。
+        if (entry.video?.crf != null) {
           output.qualityArgs.push({
             id: `quality.crf.${outIdx}`,
             originId: `streams.videoStreams.${outIdx}.video.crf`,
             phase: 'VIDEO_RATE_CONTROL',
-            tokens: [`-crf:${outIdx}`, String(ov.crf)],
+            tokens: [`-crf:v:${outIdx}`, String(entry.video.crf)],
           })
-        } else if (ov?.bitrate) {
+        } else if (entry.video?.bitrate) {
           output.qualityArgs.push({
             id: `quality.bitrate.${outIdx}`,
             originId: `streams.videoStreams.${outIdx}.video.bitrate`,
             phase: 'VIDEO_RATE_CONTROL',
-            tokens: [`-b:v:${outIdx}`, ov.bitrate],
+            tokens: [`-b:v:${outIdx}`, entry.video.bitrate],
           })
-        } else if (targetSize.enabled && targetSize.videoBitrateKbps !== undefined) {
+        } else if (plan.source !== 'snapshot' && targetSize.enabled && targetSize.videoBitrateKbps !== undefined) {
           output.qualityArgs.push({
             id: `quality.targetSize.bitrate.${outIdx}`,
             originId: 'tools.targetSize.targetMiB',
             phase: 'VIDEO_RATE_CONTROL',
             tokens: [`-b:v:${outIdx}`, `${targetSize.videoBitrateKbps}k`],
           })
-        } else if (config.video.rateControl) {
-          const qMode = encoder.qualityModes.find((m) => m.id === config.video.rateControl!.mode)
-          if (qMode) {
-            for (const ctrl of qMode.controls) {
-              if (ctrl.commandBinding) {
-                const val = getControlValue(config, ctrl) ?? ctrl.defaultValue
-                if (val !== undefined && val !== null) {
-                  const streamPrefix = `${ctrl.commandBinding.prefix!}:${outIdx}`
-                  output.qualityArgs.push({
-                    id: `quality.${ctrl.id}.${outIdx}`,
-                    originId: `video.rateControl.controls.${ctrl.id}`,
-                    phase: ctrl.commandBinding.phase,
-                    tokens: ctrl.commandBinding.compact
-                      ? [streamPrefix]
-                      : [streamPrefix, String(val)],
-                    explanationId: ctrl.explanationId,
-                  })
-                }
-              }
-            }
-          }
+        } else {
+          addVideoRateControlArgs(output, streamConfig, encoder, outIdx)
+        }
+
+        output.codecArgs.push(...buildVideoSpecialParameterArgs(streamConfig, encoder, outIdx))
+        const streamFilter = renderFilterChain(buildVideoFilterChain(streamConfig), `filter.chain.${outIdx}`)
+        if (streamFilter) {
+          streamFilter.tokens[0] = `-filter:v:${outIdx}`
+          output.filterArgs.push(streamFilter)
         }
       })
-
-      // 全局参数（颜色、mode-level 质量控制、私有参数）仍然整体发射一次
-      output.codecArgs.push(...colorArgs)
-      if (!targetSize.enabled && config.video.rateControl) {
-        const globalEncoder = catalog.encoders.video[config.video.encoderId ?? '']
-        const qMode = globalEncoder?.qualityModes.find((m) => m.id === config.video.rateControl!.mode)
-        if (qMode) {
-          for (const tpl of qMode.modeArguments ?? []) {
-            output.qualityArgs.push({
-              id: `quality.mode.${tpl.argName}`,
-              originId: `qualityMode.${qMode.id}.args.${tpl.argName}`,
-              phase: tpl.phase,
-              tokens: tpl.value !== undefined ? [tpl.argName, String(tpl.value)] : [tpl.argName],
-            })
-          }
-        }
-      }
-      const globalEncoder2 = catalog.encoders.video[config.video.encoderId ?? '']
-      if (globalEncoder2) {
-        output.codecArgs.push(...buildVideoSpecialParameterArgs(config, globalEncoder2))
-      }
     }
   }
 
   // -- video filters ------------------------------------------
-  const filterChain = buildVideoFilterChain(config)
-  const vfArg = renderFilterChain(filterChain, 'filter.chain')
-  if (vfArg) {
-    output.filterArgs.push(vfArg)
+  if (preserveAllVideo && config.video.mode === 'encode') {
+    const filterChain = buildVideoFilterChain(config)
+    const vfArg = renderFilterChain(filterChain, 'filter.chain')
+    if (vfArg) output.filterArgs.push(vfArg)
   }
 
   // -- audio --------------------------------------------------
@@ -781,12 +708,13 @@ function buildOutput(
         tokens: [`-c:a:${outIdx}`, 'copy'],
       })
     })
-    // Encode streams — 逐流支持覆写
+    // Encode streams — 每条流消费冻结快照或全局模板。
     if (audioEncodeIndices.length > 0) {
       audioEncodeIndices.forEach((outIdx) => {
-        const entry = audioEntries[outIdx]
-        const ov = entry.audio // 逐流覆写
-        const encoderId = ov?.encoderId || config.audio.encoderId
+        const plan = effectiveAudioPlans[outIdx]
+        if (!plan) return
+        const streamConfig = projectConfigForAudioStream(config, plan)
+        const encoderId = streamConfig.audio.encoderId
         const aEncoder = encoderId ? catalog.encoders.audio[encoderId] : undefined
         if (!aEncoder) return
 
@@ -797,7 +725,7 @@ function buildOutput(
           tokens: [`-c:a:${outIdx}`, aEncoder.ffmpegName],
           explanationId: aEncoder.explanationId,
         })
-        const bitrate = ov?.bitrate ?? config.audio.bitrate
+        const bitrate = streamConfig.audio.bitrate
         if (bitrate && aEncoder.qualityModes.length > 0) {
           output.audioArgs.push({
             id: `quality.a.bitrate.${outIdx}`,
@@ -806,7 +734,7 @@ function buildOutput(
             tokens: [`-b:a:${outIdx}`, bitrate],
           })
         }
-        const ch = ov?.channelLayout ?? config.audio.channelLayout
+        const ch = streamConfig.audio.channelLayout
         if (ch && ch !== 'source') {
           output.audioArgs.push({
             id: `quality.a.ch.${outIdx}`,
@@ -815,57 +743,52 @@ function buildOutput(
             tokens: [`-channel_layout:a:${outIdx}`, ch],
           })
         }
-        const sr = ov?.sampleRate ?? config.audio.sampleRate
+        const sr = streamConfig.audio.sampleRate
         if (sr && Number(sr) !== 0) {
           output.audioArgs.push({
             id: `quality.a.sr.${outIdx}`,
             originId: 'audio.sampleRate',
             phase: 'AUDIO_QUALITY',
-            tokens: [`-ar:${outIdx}`, String(sr)],
+            tokens: [`-ar:a:${outIdx}`, String(sr)],
           })
         }
-      })
 
-      // 全局音频参数（滤镜、特殊参数）仍整体发射
-      const audioFilter = buildAudioFilterExpression(config)
-      if (audioFilter) {
-        const hasLoudnorm = hasEnabledLoudnessTarget(config)
-        audioEncodeIndices.forEach((outIdx) => {
+        const audioFilter = buildAudioFilterExpression(streamConfig)
+        if (audioFilter) {
+          const hasLoudnorm = hasEnabledLoudnessTarget(streamConfig)
           output.audioArgs.push({
             id: `filter.audio.chain.${outIdx}`,
             originId: hasLoudnorm
-              ? resolveLoudnessOriginId(config)
+              ? resolveLoudnessOriginId(streamConfig)
               : 'customArgs.audioFilters',
             phase: 'AUDIO_QUALITY',
             tokens: [`-filter:a:${outIdx}`, audioFilter],
             explanationId: hasLoudnorm ? 'expl.audio.loudnorm' : undefined,
-            unsafe: (config.customArgs.audioFilters?.length ?? 0) > 0,
+            unsafe: (streamConfig.customArgs.audioFilters?.length ?? 0) > 0,
           })
-        })
-      }
-      const globalAEncoder = config.audio.encoderId ? catalog.encoders.audio[config.audio.encoderId] : undefined
-      if (globalAEncoder) {
-        for (const sp of globalAEncoder.specialParameters) {
+        }
+        for (const sp of aEncoder.specialParameters) {
           if (!sp.commandBinding) continue
-          if (!isControlActive(sp, config)) continue
+          if (!isControlActive(sp, streamConfig)) continue
           const configKey = sp.configBinding?.path
             ? extractConfigKey(sp.configBinding.path)
             : sp.id
-          const storedValue = config.audio.qualityValues[configKey]
+          const storedValue = streamConfig.audio.qualityValues[configKey]
           const val = storedValue !== undefined ? storedValue : (sp.optional ? undefined : sp.defaultValue)
           if (val === undefined || val === null || val === '') continue
           if (val === 'auto') continue
           const tokens = buildSpecialParameterTokens(sp, val)
           if (!tokens) continue
+          tokens[0] = withStreamSpecifier(tokens[0], 'a', outIdx)
           output.audioArgs.push({
-            id: `audio.special.${configKey}`,
+            id: `audio.special.${configKey}.${outIdx}`,
             originId: sp.id,
             phase: sp.commandBinding.phase,
             tokens,
             explanationId: sp.explanationId,
           })
         }
-      }
+      })
     }
   }
 
@@ -1103,6 +1026,92 @@ function resolveLoudnessOriginId(config: ProjectConfig): string {
  * 将目录控件值转换成 FFmpeg 参数。布尔开关需要恢复为编码器接受的
  * on/off 或 1/0，避免把界面布尔值直接输出成 true/false。
  */
+function addVideoIdentityArgs(
+  output: OutputSpec,
+  config: ProjectConfig,
+  encoder: EncoderDefinition,
+  streamIndex: number,
+): void {
+  const controls: Array<[unknown, ControlDefinition | undefined, string, string]> = [
+    [config.video.preset, encoder.preset, '-preset', 'preset'],
+    [config.video.profile, encoder.profile, '-profile', 'profile'],
+    [config.video.tune, encoder.tune, '-tune', 'tune'],
+    [config.video.pixelFormat, encoder.pixelFormat, '-pix_fmt', 'pixfmt'],
+  ]
+  for (const [value, control, option, id] of controls) {
+    if (value === undefined || value === null || value === '' || value === 'auto' || !control) continue
+    output.codecArgs.push({
+      id: `codec.${id}.${streamIndex}`,
+      originId: control.id,
+      phase: control.commandBinding?.phase ?? 'VIDEO_CODEC',
+      tokens: [withStreamSpecifier(option, 'v', streamIndex), String(value)],
+      explanationId: control.explanationId,
+    })
+  }
+}
+
+function addVideoColorArgs(output: OutputSpec, config: ProjectConfig, streamIndex: number): void {
+  if ((config.video.color?.operation ?? 'metadata-only') === 'convert-only') return
+  const colorArguments: Array<[keyof NonNullable<ProjectConfig['video']['color']>, string]> = [
+    ['space', '-colorspace'],
+    ['primaries', '-color_primaries'],
+    ['transfer', '-color_trc'],
+    ['range', '-color_range'],
+  ]
+  for (const [key, argName] of colorArguments) {
+    const value = config.video.color?.[key]
+    if (typeof value !== 'string' || !value) continue
+    output.codecArgs.push({
+      id: `color.${key}.${streamIndex}`,
+      originId: `video.color.${key}`,
+      phase: 'VIDEO_COLOR',
+      tokens: [withStreamSpecifier(argName, 'v', streamIndex), value],
+    })
+  }
+}
+
+function addVideoRateControlArgs(
+  output: OutputSpec,
+  config: ProjectConfig,
+  encoder: EncoderDefinition,
+  streamIndex: number,
+): void {
+  const rateControl = config.video.rateControl
+  if (!rateControl) return
+  const mode = encoder.qualityModes.find((candidate) => candidate.id === rateControl.mode)
+  if (!mode) return
+  for (const argument of mode.modeArguments ?? []) {
+    output.qualityArgs.push({
+      id: `quality.mode.${argument.argName}.${streamIndex}`,
+      originId: `qualityMode.${mode.id}.args.${argument.argName}`,
+      phase: argument.phase,
+      tokens: argument.value !== undefined
+        ? [withStreamSpecifier(argument.argName, 'v', streamIndex), String(argument.value)]
+        : [withStreamSpecifier(argument.argName, 'v', streamIndex)],
+    })
+  }
+  for (const control of mode.controls) {
+    if (!control.commandBinding) continue
+    const value = getControlValue(config, control) ?? control.defaultValue
+    if (value === undefined || value === null) continue
+    const option = control.commandBinding.prefix ?? control.commandBinding.argName
+    output.qualityArgs.push({
+      id: `quality.${control.id}.${streamIndex}`,
+      originId: control.id,
+      phase: control.commandBinding.phase,
+      tokens: control.commandBinding.compact
+        ? [withStreamSpecifier(option, 'v', streamIndex)]
+        : [withStreamSpecifier(option, 'v', streamIndex), String(value)],
+      explanationId: control.explanationId,
+    })
+  }
+}
+
+function withStreamSpecifier(option: string, media: 'v' | 'a', streamIndex: number): string {
+  const base = option.replace(/:[vas](?::\d+)?$/, '')
+  return `${base}:${media}:${streamIndex}`
+}
+
 function buildSpecialParameterTokens(
   control: ControlDefinition,
   value: unknown,
@@ -1152,6 +1161,7 @@ interface DictionaryParameterGroup {
 function buildVideoSpecialParameterArgs(
   config: ProjectConfig,
   encoder: EncoderDefinition,
+  streamIndex?: number,
 ): CommandArg[] {
   const args: CommandArg[] = []
   const dictionaryGroups = new Map<string, DictionaryParameterGroup>()
@@ -1191,6 +1201,7 @@ function buildVideoSpecialParameterArgs(
 
     const tokens = buildSpecialParameterTokens(control, storedValue)
     if (!tokens) continue
+    if (streamIndex !== undefined) tokens[0] = withStreamSpecifier(tokens[0], 'v', streamIndex)
     args.push({
       id: `codec.special.${configKey}`,
       originId: control.id,
@@ -1220,7 +1231,10 @@ function buildVideoSpecialParameterArgs(
       id: `codec.special.dictionary.${groupId.replace(/[^a-zA-Z0-9_-]/g, '.')}`,
       originId: originControl.id,
       phase: group.phase,
-      tokens: [group.prefix, parts.join(group.separator)],
+      tokens: [
+        streamIndex === undefined ? group.prefix : withStreamSpecifier(group.prefix, 'v', streamIndex),
+        parts.join(group.separator),
+      ],
       explanationId: originControl.explanationId,
     })
   }

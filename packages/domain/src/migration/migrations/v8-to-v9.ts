@@ -24,9 +24,8 @@ export const v8ToV9: MigrationStep = {
         ...(override.bitrate !== undefined ? { bitrate: override.bitrate } : {}),
       }
       const { mode: _mode, ...videoSettings } = video
-      const { video: _legacy, ...rest } = entry
       return {
-        ...rest,
+        ...entry,
         videoSnapshot: {
           snapshotVersion: 1,
           video: {
@@ -46,9 +45,8 @@ export const v8ToV9: MigrationStep = {
       if (!override || entry.audioSnapshot) return entry
       migratedAudio += 1
       const { mode: _mode, ...audioSettings } = audio
-      const { audio: _legacy, ...rest } = entry
       return {
-        ...rest,
+        ...entry,
         audioSnapshot: {
           snapshotVersion: 1,
           audio: {

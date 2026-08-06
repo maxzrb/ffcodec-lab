@@ -13,6 +13,10 @@ import {
 } from '../config/resolution-repair'
 import { buildVideoFilterChain } from '../filters/video-filter-builder'
 import { getSelectedProbePixelFormats, inspectFilterPrecisionIssues } from '../filters/filter-format-resolver'
+import {
+  projectConfigForVideoStream,
+  resolveEffectiveVideoStreamPlans,
+} from '../streams'
 
 /**
  * Full validation pipeline — rules + compatibility.
@@ -33,6 +37,7 @@ export function validateConfig(
   const resolutionMessages = validateResolution(config)
   const targetSizeMessages = calculateTargetSize(config, catalog).diagnostics
   const filterProcessingMessages = validateFilterProcessing(config)
+  const streamSnapshotMessages = validateStreamSnapshots(config)
 
   const placeholderMessages = validatePlaceholderCategory(config)
 
@@ -46,7 +51,54 @@ export function validateConfig(
     ...placeholderMessages,
     ...targetSizeMessages,
     ...filterProcessingMessages,
+    ...streamSnapshotMessages,
   ]
+}
+
+function validateStreamSnapshots(config: ProjectConfig): Diagnostic[] {
+  const snapshots = resolveEffectiveVideoStreamPlans(config).filter(
+    (plan) => plan.codecMode === 'encode' && plan.source === 'snapshot',
+  )
+  if (snapshots.length === 0) return []
+  const messages: Diagnostic[] = []
+  for (const plan of snapshots) {
+    const originId = `streams.video.${plan.inputIndex}.snapshot`
+    if (plan.video.rateControl?.mode === 'twoPass') {
+      messages.push({
+        code: 'error.stream.snapshot.twopass',
+        severity: 'error',
+        category: 'configuration',
+        message: 'Traditional passlog two-pass encoding is not supported inside a per-stream snapshot.',
+        originIds: [originId],
+        context: { inputIndex: plan.inputIndex },
+      })
+    }
+    const streamConfig = projectConfigForVideoStream(config, plan)
+    const processing = streamConfig.frame.filters?.processing
+    for (const issue of inspectFilterPrecisionIssues(streamConfig, buildVideoFilterChain(streamConfig))) {
+      messages.push({
+        code: processing?.incompatiblePolicy === 'warn'
+          ? 'warn.stream.snapshot.filter.precision'
+          : 'error.stream.snapshot.filter.precision',
+        severity: processing?.incompatiblePolicy === 'warn' ? 'warning' : 'error',
+        category: 'compatibility',
+        message: `${issue.filter}: ${issue.reason}`,
+        originIds: [originId],
+        context: { inputIndex: plan.inputIndex, filter: issue.filter },
+      })
+    }
+  }
+  if (config.tools.targetSize.enabled) {
+    messages.push({
+      code: 'warn.stream.snapshot.targetSize',
+      severity: 'warning',
+      category: 'configuration',
+      message: 'Target-size bitrate allocation does not override frozen video stream snapshots.',
+      originIds: ['tools.targetSize.targetMiB', ...snapshots.map((plan) => `streams.video.${plan.inputIndex}.snapshot`)],
+      context: { snapshotCount: snapshots.length },
+    })
+  }
+  return messages
 }
 
 function validateFilterProcessing(config: ProjectConfig): Diagnostic[] {

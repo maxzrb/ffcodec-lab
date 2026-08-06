@@ -5,8 +5,10 @@ import { collectRequiredVideoFilterNames } from '@ffcodec/domain/filters/video-f
 import type { ResolvedBuilderView, ResolvedField } from '@ffcodec/domain/presentation/resolved-field'
 import type { Diagnostic } from '@ffcodec/domain/rules/rule-types'
 import {
+  collectConfiguredAudioEncoderOptionGroups,
   collectConfiguredVideoEncoderOptionGroups,
   collectConfiguredVideoEncoderOptions,
+  collectRequiredAudioEncoders,
   collectRequiredVideoEncoders,
   collectVideoEncoderControlOptions,
 } from '@ffcodec/domain/validation'
@@ -49,7 +51,10 @@ export function useRuntimeFFmpegCapabilities(
     loadCapabilities ? undefined : null,
   )
   const requiredEncoderNames = useMemo(() => {
-    const names = collectRequiredVideoEncoders(config, catalog).map(({ ffmpegName }) => ffmpegName)
+    const names = [
+      ...collectRequiredVideoEncoders(config, catalog),
+      ...collectRequiredAudioEncoders(config, catalog),
+    ].map(({ ffmpegName }) => ffmpegName)
     if (selectedEncoderName) names.push(selectedEncoderName)
     return [...new Set(names)]
   }, [catalog, config, selectedEncoderName])
@@ -125,7 +130,10 @@ export function useRuntimeFFmpegCapabilities(
     const diagnostics: Diagnostic[] = []
     const unavailableControlIds = new Set<string>()
     const requiredFilters = collectRequiredVideoFilterNames(config)
-    const requiredEncoders = collectRequiredVideoEncoders(config, catalog)
+    const requiredEncoders = [
+      ...collectRequiredVideoEncoders(config, catalog),
+      ...collectRequiredAudioEncoders(config, catalog),
+    ]
 
     if (capabilities === undefined) {
       diagnostics.push(diagnostic(
@@ -163,7 +171,11 @@ export function useRuntimeFFmpegCapabilities(
       }
     }
 
-    for (const group of collectConfiguredVideoEncoderOptionGroups(config, catalog)) {
+    const optionGroups = [
+      ...collectConfiguredVideoEncoderOptionGroups(config, catalog),
+      ...collectConfiguredAudioEncoderOptionGroups(config, catalog),
+    ]
+    for (const group of optionGroups) {
       if (!capabilities?.encoders.includes(group.ffmpegName)) continue
       const groupCapabilities = encoderCapabilitiesByName[group.ffmpegName]
       if (groupCapabilities === undefined) {
