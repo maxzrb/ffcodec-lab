@@ -32,6 +32,7 @@ import { Dropdown } from './components/Dropdown'
 import { usePlatform } from '@ffcodec/platform-api'
 import { useAppDialog } from './features/dialog/AppDialogProvider'
 import { EncodingOverview } from './components/EncodingOverview'
+import { StreamSnapshotManager } from './components/StreamSnapshotManager'
 
 const catalog = loadCatalog()
 const catalogIndex = new CatalogIndex(catalog)
@@ -461,6 +462,23 @@ export function WorkbenchApp({ footerItems, commandInspectorFooter }: { footerIt
           ? activeCustomPanel.render()
           : (
           <>
+            {['decode', 'video', 'quality', 'color', 'filters', 'audio'].includes(activePanel.id) && (
+              <div className={`workbench-scope-bar ${activePanel.id === 'audio' ? 'workbench-scope-bar--audio' : 'workbench-scope-bar--video'}`}>
+                <div>
+                  <span>{isZh ? '当前编辑范围' : 'Editing scope'}</span>
+                  <strong>{activePanel.id === 'audio'
+                    ? (isZh ? '全局音频模板' : 'Global audio template')
+                    : (isZh ? '全局视频模板' : 'Global video template')}</strong>
+                  <small>{isZh ? '调好后可冻结到指定流，已有快照不会随全局变化。' : 'Tune here, then freeze the settings onto selected streams.'}</small>
+                </div>
+                <button type="button" className="button" onClick={() => handlePanelChange('streams-container')}>
+                  {isZh ? '前往逐流应用' : 'Apply to streams'}
+                </button>
+              </div>
+            )}
+            {activePanel.id === 'streams-container' && (
+              <StreamSnapshotManager config={config} onChange={setConfig} onOpenPanel={handlePanelChange} />
+            )}
             {activePanel.sections.map((section) => (
               <Fragment key={section.id}>
                 {/** 输入区在包含流选择字段时会拆分为 section.input.input-output。 */}

@@ -36,6 +36,14 @@ const PANEL_SHORT_LABELS: Record<string, { zh: string; en: string }> = {
   custom: { zh: '自', en: '+' },
 }
 
+const PANEL_GROUPS = [
+  { id: 'task', zh: '任务', en: 'Task', panels: ['input-output'] },
+  { id: 'video', zh: '视频', en: 'Video', panels: ['decode', 'video', 'quality', 'color', 'filters'] },
+  { id: 'audio', zh: '音频', en: 'Audio', panels: ['audio'] },
+  { id: 'streams', zh: '流与输出', en: 'Streams & output', panels: ['subtitle', 'streams-container'] },
+  { id: 'tools', zh: '工具', en: 'Tools', panels: ['tools', 'custom'] },
+] as const
+
 export function WorkbenchShell({
   panels,
   activePanelId,
@@ -95,7 +103,36 @@ export function WorkbenchShell({
             <span aria-hidden="true">{sidebarCollapsed ? '›' : '‹'}</span>
           </button>
         </div>
-        {panels.map((panel) => (
+        {PANEL_GROUPS.map((group) => {
+          const groupPanels = panels.filter((panel) => (group.panels as readonly string[]).includes(panel.id))
+          if (groupPanels.length === 0) return null
+          return (
+            <div key={group.id} className={`workbench-nav__group workbench-nav__group--${group.id}`}>
+              <p className="workbench-nav__group-label">{locale === 'zh-CN' ? group.zh : group.en}</p>
+              {groupPanels.map((panel) => (
+                <button
+                  key={panel.id}
+                  type="button"
+                  className={`workbench-nav__item ${panel.id === activePanelId ? 'workbench-nav__item--active' : ''}`}
+                  aria-current={panel.id === activePanelId ? 'page' : undefined}
+                  aria-label={text(panel.label)}
+                  title={sidebarCollapsed ? text(panel.label) : undefined}
+                  onClick={() => onPanelChange(panel.id)}
+                >
+                  <span className="workbench-nav__short" aria-hidden="true">
+                    {PANEL_SHORT_LABELS[panel.id]?.[locale === 'zh-CN' ? 'zh' : 'en'] ?? text(panel.label).slice(0, 1)}
+                  </span>
+                  <span className="workbench-nav__label">{text(panel.label)}</span>
+                  <span className="workbench-nav__badges">
+                    {panel.enabledAdvancedCount > 0 && <span title={locale === 'zh-CN' ? '已设置高级参数' : 'Advanced settings'}>{panel.enabledAdvancedCount}</span>}
+                    {panel.diagnosticCount > 0 && <span title={locale === 'zh-CN' ? '诊断信息' : 'Diagnostics'}>{panel.diagnosticCount}</span>}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )
+        })}
+        {panels.filter((panel) => !PANEL_GROUPS.some((group) => (group.panels as readonly string[]).includes(panel.id))).map((panel) => (
           <button
             key={panel.id}
             type="button"
@@ -105,14 +142,8 @@ export function WorkbenchShell({
             title={sidebarCollapsed ? text(panel.label) : undefined}
             onClick={() => onPanelChange(panel.id)}
           >
-            <span className="workbench-nav__short" aria-hidden="true">
-              {PANEL_SHORT_LABELS[panel.id]?.[locale === 'zh-CN' ? 'zh' : 'en'] ?? text(panel.label).slice(0, 1)}
-            </span>
+            <span className="workbench-nav__short" aria-hidden="true">{text(panel.label).slice(0, 1)}</span>
             <span className="workbench-nav__label">{text(panel.label)}</span>
-            <span className="workbench-nav__badges">
-              {panel.enabledAdvancedCount > 0 && <span title={locale === 'zh-CN' ? '已设置高级参数' : 'Advanced settings'}>{panel.enabledAdvancedCount}</span>}
-              {panel.diagnosticCount > 0 && <span title={locale === 'zh-CN' ? '诊断信息' : 'Diagnostics'}>{panel.diagnosticCount}</span>}
-            </span>
           </button>
         ))}
         {settingsSections && settingsSections.length > 0 && (

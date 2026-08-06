@@ -220,7 +220,7 @@ describe('高级视频滤镜', () => {
 
     const migrated = migrateConfig(7, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config
     const parsed = projectConfigSchema.parse(migrated)
-    expect(parsed.schemaVersion).toBe(8)
+    expect(parsed.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
     expect(parsed.frame.filters.processing.mode).toBe('compatible')
     expect(renderFilterChain(buildVideoFilterChain(parsed), 'filter.chain')?.tokens[1]).toBe(beforeVf)
   })

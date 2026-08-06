@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { PresetService } from '@ffcodec/workbench/features/presets/preset-service'
 import { getBuiltinPresets } from '@ffcodec/workbench/features/presets/preset-service'
 import { createDefaultProjectConfig } from '@ffcodec/domain/config/defaults'
+import { CURRENT_SCHEMA_VERSION } from '@ffcodec/domain/migration/migration-registry'
 import { projectConfigSchema } from '@ffcodec/domain/config/config-schema'
 import { calculateTargetSize } from '@ffcodec/domain/tools/target-size'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
@@ -74,7 +75,7 @@ describe('PresetService', () => {
     const saved = service.save({ name: 'Legacy v2', config: legacy })
 
     const loaded = service.load(saved.id)
-    expect(loaded?.config.schemaVersion).toBe(8)
+    expect(loaded?.config.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
     expect(loaded?.config.input.decode).toEqual({})
     expect(loaded?.config.video.color).toEqual({ operation: 'metadata-only', filter: 'zscale', toneMap: 'none' })
     expect(loaded?.config.frame.filters?.denoise.enabled).toBe(false)

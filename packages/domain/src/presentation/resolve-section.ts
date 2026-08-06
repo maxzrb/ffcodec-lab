@@ -50,7 +50,7 @@ const GENERIC_CODEC_ARG_NAMES = new Set([
 export function resolveInputSection(
   config: ProjectConfig,
   fieldStates: Record<string, FieldState>,
-  catalog: Catalog,
+  _catalog: Catalog,
 ): ResolvedSection {
   const streamIndexOptions = Array.from({ length: 16 }, (_, index) => ({
     value: index,
@@ -143,84 +143,6 @@ export function resolveInputSection(
         sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
         commandOrigins: [], diagnostics: [],
       })
-      if (entry.codecMode === 'encode' && videoEncMode) {
-        const encOpts = Object.keys(catalog.encoders.video).map((id) => ({ value: id, label: id }))
-        const overrideEncoderId = entry.video?.encoderId
-        const hasOverride = !!overrideEncoderId
-        // 从 catalog 读取该编码器的 preset / profile / tune / pixelFormat 选项
-        const ovEncoder = overrideEncoderId ? catalog.encoders.video[overrideEncoderId] : undefined
-        const presetOpts = ovEncoder?.preset?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
-        const profileOpts = ovEncoder?.profile?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
-        const tuneOpts = ovEncoder?.tune?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
-        const pixFmtOpts = ovEncoder?.pixelFormat?.options?.map((o) => ({ value: String(o.value), label: String(o.label) })) ?? []
-        // 质量控制：取编码器的第一个 quality mode 的 controls 中 label 含 CRF/QP 的项
-        const qMode = ovEncoder?.qualityModes[0]
-        const qCtrlLabel = qMode?.controls?.[0]?.label ?? '质量'
-        const prefix = `视频流 ${entry.index}`
-
-        acc.push(
-          {
-            id: `streams.videoStreams.${i}.video.encoderId`,
-            label: `${prefix} 编码器`,
-            controlType: 'select' as const,
-            value: overrideEncoderId ?? '',
-            options: [{ value: '', label: '（使用全局设置）' }, ...encOpts],
-            visible: true, disabled: false,
-            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-            commandOrigins: [], diagnostics: [],
-          },
-          {
-            id: `streams.videoStreams.${i}.video.crf`,
-            label: `${prefix} ${qCtrlLabel}`,
-            controlType: 'text' as const,
-            value: entry.video?.crf != null ? String(entry.video.crf) : '',
-            placeholder: '（使用全局设置）',
-            visible: hasOverride, disabled: false,
-            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-            commandOrigins: [], diagnostics: [],
-          },
-        )
-        if (presetOpts.length > 0) acc.push({
-          id: `streams.videoStreams.${i}.video.preset`,
-          label: `${prefix} Preset`,
-          controlType: 'select' as const,
-          value: entry.video?.preset != null ? String(entry.video.preset) : '',
-          options: [{ value: '', label: '（使用全局设置）' }, ...presetOpts],
-          visible: hasOverride, disabled: false,
-          sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-          commandOrigins: [], diagnostics: [],
-        })
-        if (profileOpts.length > 0) acc.push({
-          id: `streams.videoStreams.${i}.video.profile`,
-          label: `${prefix} Profile`,
-          controlType: 'select' as const,
-          value: entry.video?.profile ?? '',
-          options: [{ value: '', label: '（使用全局设置）' }, ...profileOpts],
-          visible: hasOverride, disabled: false,
-          sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-          commandOrigins: [], diagnostics: [],
-        })
-        if (tuneOpts.length > 0) acc.push({
-          id: `streams.videoStreams.${i}.video.tune`,
-          label: `${prefix} Tune`,
-          controlType: 'select' as const,
-          value: entry.video?.tune ?? '',
-          options: [{ value: '', label: '（使用全局设置）' }, ...tuneOpts],
-          visible: hasOverride, disabled: false,
-          sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-          commandOrigins: [], diagnostics: [],
-        })
-        if (pixFmtOpts.length > 0) acc.push({
-          id: `streams.videoStreams.${i}.video.pixelFormat`,
-          label: `${prefix} 像素格式`,
-          controlType: 'select' as const,
-          value: entry.video?.pixelFormat ?? '',
-          options: [{ value: '', label: '（使用全局设置）' }, ...pixFmtOpts],
-          visible: hasOverride, disabled: false,
-          sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-          commandOrigins: [], diagnostics: [],
-        })
-      }
       return acc
     }, []) : []),
     // -- 保留全部音频流开关 ------------------------------------------------
@@ -258,73 +180,6 @@ export function resolveInputSection(
         sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
         commandOrigins: [], diagnostics: [],
       })
-      if (entry.codecMode === 'encode' && audioEncMode) {
-        const aEncOpts = Object.keys(catalog.encoders.audio).map((id) => ({ value: id, label: id }))
-        const hasOverride = !!entry.audio?.encoderId
-        const prefix = `音频流 ${entry.index}`
-        acc.push(
-          {
-            id: `streams.audioStreams.${i}.audio.encoderId`,
-            label: `${prefix} 编码器`,
-            controlType: 'select' as const,
-            value: entry.audio?.encoderId ?? '',
-            options: [{ value: '', label: '（使用全局设置）' }, ...aEncOpts],
-            visible: true, disabled: false,
-            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-            commandOrigins: [], diagnostics: [],
-          },
-          {
-            id: `streams.audioStreams.${i}.audio.bitrate`,
-            label: `${prefix} 比特率`,
-            controlType: 'bitrate' as const,
-            value: entry.audio?.bitrate ?? '',
-            placeholder: '（使用全局设置）',
-            visible: hasOverride, disabled: false,
-            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-            commandOrigins: [], diagnostics: [],
-          },
-          {
-            id: `streams.audioStreams.${i}.audio.sampleRate`,
-            label: `${prefix} 采样率`,
-            controlType: 'select' as const,
-            value: entry.audio?.sampleRate != null ? String(entry.audio.sampleRate) : '',
-            options: [
-              { value: '0', label: '（使用全局设置）' },
-              { value: '8000', label: '8000 Hz（电话语音）' },
-              { value: '11025', label: '11025 Hz' },
-              { value: '16000', label: '16000 Hz（语音）' },
-              { value: '22050', label: '22050 Hz' },
-              { value: '32000', label: '32000 Hz' },
-              { value: '44100', label: '44100 Hz' },
-              { value: '48000', label: '48000 Hz' },
-              { value: '96000', label: '96000 Hz' },
-              { value: '192000', label: '192000 Hz' },
-            ],
-            visible: hasOverride, disabled: false,
-            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-            commandOrigins: [], diagnostics: [],
-          },
-          {
-            id: `streams.audioStreams.${i}.audio.channelLayout`,
-            label: `${prefix} 声道`,
-            controlType: 'select' as const,
-            value: entry.audio?.channelLayout ?? '',
-            options: [
-              { value: '', label: '（使用全局设置）' },
-              { value: 'mono', label: '单声道 (mono)' },
-              { value: 'stereo', label: '立体声 (stereo)' },
-              { value: '2.1', label: '2.1 声道' },
-              { value: '4.0', label: '4.0 声道 (quad)' },
-              { value: '5.1', label: '5.1 声道' },
-              { value: '5.1(side)', label: '5.1 侧环绕' },
-              { value: '7.1', label: '7.1 声道' },
-            ],
-            visible: hasOverride, disabled: false,
-            sourceRefs: [], verificationLevel: 'project-derived' as const, needsCrossVerification: false,
-            commandOrigins: [], diagnostics: [],
-          },
-        )
-      }
       return acc
     }, []) : []),
     // -- 保留全部字幕流开关（默认关闭，不强制保留字幕）----------------------

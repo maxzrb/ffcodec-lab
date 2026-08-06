@@ -2,6 +2,10 @@ import type { Catalog, EncoderDefinition } from '@ffcodec/domain/catalog/catalog
 import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 import type { Locale } from '../features/i18n/i18n'
 import { translateText } from '../features/i18n/i18n'
+import {
+  resolveEffectiveAudioStreamPlans,
+  resolveEffectiveVideoStreamPlans,
+} from '@ffcodec/domain/streams'
 
 interface EncodingOverviewProps {
   config: ProjectConfig
@@ -18,6 +22,8 @@ export function EncodingOverview({ config, catalog, locale, invocationCount }: E
   const rcMode = videoEncoder?.qualityModes.find((mode) => mode.id === config.video.rateControl?.mode)
   const outputName = displayPath(config.output.path)
   const inputName = displayPath(config.input.path)
+  const videoPlans = resolveEffectiveVideoStreamPlans(config)
+  const audioPlans = resolveEffectiveAudioStreamPlans(config)
 
   return (
     <div className="encoding-overview" aria-label={isZh ? '编码总览' : 'Encoding overview'}>
@@ -64,6 +70,50 @@ export function EncodingOverview({ config, catalog, locale, invocationCount }: E
         ] as [string, string][] : []),
       ]} />
 
+      <section className="encoding-overview__section encoding-overview__stream-plans">
+        <h3>{isZh ? '逐流编码方案' : 'Per-stream encoding plans'}</h3>
+        <div className="encoding-overview__stream-list">
+          {videoPlans.map((plan) => {
+            const encoder = plan.video.encoderId ? catalog.encoders.video[plan.video.encoderId] : undefined
+            const mode = encoder?.qualityModes.find((candidate) => candidate.id === plan.video.rateControl?.mode)
+            return (
+              <OverviewStreamCard
+                key={`v-${plan.inputIndex}`}
+                label={plan.inputIndex < 0 ? 'v:*' : `v:${plan.inputIndex}`}
+                kind="video"
+                status={streamPlanStatus(plan.source, plan.codecMode, isZh)}
+                rows={plan.codecMode === 'copy' ? [] : [
+                  [isZh ? '编码器' : 'Encoder', describeEncoder(encoder, plan.video.encoderId, locale)],
+                  [isZh ? '质量' : 'Quality', describeVideoRateControl(plan.video, mode, locale)],
+                  [isZh ? '预设' : 'Preset', valueOrUnset(plan.video.preset, isZh)],
+                  [isZh ? '像素格式' : 'Pixel format', valueOrUnset(plan.video.pixelFormat, isZh)],
+                  [isZh ? '分辨率' : 'Resolution', formatResolutionParts(plan.frame.resolution, isZh)],
+                  [isZh ? '滤镜' : 'Filters', formatVideoPlanFilters(plan.frame, plan.customVideoFilters, isZh)],
+                ]}
+              />
+            )
+          })}
+          {audioPlans.map((plan) => {
+            const encoder = plan.audio.encoderId ? catalog.encoders.audio[plan.audio.encoderId] : undefined
+            return (
+              <OverviewStreamCard
+                key={`a-${plan.inputIndex}`}
+                label={plan.inputIndex < 0 ? 'a:*' : `a:${plan.inputIndex}`}
+                kind="audio"
+                status={streamPlanStatus(plan.source, plan.codecMode, isZh)}
+                rows={plan.codecMode === 'copy' ? [] : [
+                  [isZh ? '编码器' : 'Encoder', describeEncoder(encoder, plan.audio.encoderId, locale)],
+                  [isZh ? '码率' : 'Bitrate', valueOrUnset(plan.audio.bitrate, isZh)],
+                  [isZh ? '声道' : 'Channels', valueOrUnset(plan.audio.channelLayout, isZh)],
+                  [isZh ? '采样率' : 'Sample rate', plan.audio.sampleRate ? `${plan.audio.sampleRate} Hz` : '—'],
+                  [isZh ? '处理' : 'Processing', formatAudioPlanProcessing(plan.audio, plan.customAudioFilters, isZh)],
+                ]}
+              />
+            )
+          })}
+        </div>
+      </section>
+
       <OverviewSection title={isZh ? '流与工具' : 'Streams and tools'} rows={[
         [isZh ? '视频流' : 'Video streams', streamSummary(config.streams.videoStreams.length, config.streams.preserveAllVideoStreams, isZh)],
         [isZh ? '音频流' : 'Audio streams', streamSummary(config.streams.audioStreams.length, config.streams.preserveAllAudioStreams, isZh)],
@@ -73,6 +123,27 @@ export function EncodingOverview({ config, catalog, locale, invocationCount }: E
           : (isZh ? '未启用' : 'Disabled')],
       ]} />
     </div>
+  )
+}
+
+function OverviewStreamCard({
+  label,
+  kind,
+  status,
+  rows,
+}: {
+  label: string
+  kind: 'video' | 'audio'
+  status: string
+  rows: [string, string][]
+}) {
+  return (
+    <article className={`encoding-overview__stream-card encoding-overview__stream-card--${kind}`}>
+      <div><strong>{label}</strong><span>{status}</span></div>
+      {rows.length > 0 ? (
+        <dl>{rows.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+      ) : <p>Stream copy</p>}
+    </article>
   )
 }
 
@@ -105,8 +176,19 @@ function describeRateControl(config: ProjectConfig, mode: { label: string } | un
   return value === undefined ? label : `${label} ${value}`
 }
 
+function describeVideoRateControl(video: ProjectConfig['video'], mode: { label: string } | undefined, locale: Locale) {
+  const rc = video.rateControl
+  if (!rc) return locale === 'zh-CN' ? '未设置' : 'Unset'
+  const label = mode ? translateText(mode.label, locale) : rc.mode
+  const value = rc.qualityValue ?? rc.bitrate
+  return value === undefined ? label : `${label} ${value}`
+}
+
 function formatResolution(config: ProjectConfig, isZh: boolean) {
-  const resolution = config.frame.resolution
+  return formatResolutionParts(config.frame.resolution, isZh)
+}
+
+function formatResolutionParts(resolution: ProjectConfig['frame']['resolution'], isZh: boolean) {
   const automatic = isZh ? '自动偶数' : 'Auto even'
   if (resolution.mode === 'source') return isZh ? '跟随源视频' : 'Source'
   if (resolution.mode === 'size') {
@@ -116,8 +198,34 @@ function formatResolution(config: ProjectConfig, isZh: boolean) {
   return `${isZh ? '高度' : 'Height'} ${resolution.height ?? automatic}`
 }
 
+function formatVideoPlanFilters(frame: ProjectConfig['frame'], customFilters: string[], isZh: boolean) {
+  const controlled = formatFrameFilters(frame, isZh)
+  const custom = customFilters.length > 0 ? `${customFilters.length} ${isZh ? '条自定义' : 'custom'}` : ''
+  return [controlled === (isZh ? '无' : 'None') ? '' : controlled, custom].filter(Boolean).join(isZh ? '、' : ', ') || (isZh ? '无' : 'None')
+}
+
+function formatAudioPlanProcessing(audio: ProjectConfig['audio'], customFilters: string[], isZh: boolean) {
+  const loudness = Object.entries(audio.loudnessNormalization).some(([key, value]) => key.endsWith('Enabled') && value === true)
+  const parts = [
+    loudness ? (isZh ? '响度标准化' : 'Loudness normalization') : '',
+    customFilters.length > 0 ? `${customFilters.length} ${isZh ? '条自定义滤镜' : 'custom filter(s)'}` : '',
+  ].filter(Boolean)
+  return parts.join(isZh ? '、' : ', ') || (isZh ? '无' : 'None')
+}
+
+function streamPlanStatus(source: 'global' | 'snapshot' | 'legacy-override', mode: 'encode' | 'copy', isZh: boolean) {
+  if (mode === 'copy') return isZh ? '复制' : 'Copy'
+  if (source === 'snapshot') return isZh ? '独立快照' : 'Snapshot'
+  if (source === 'legacy-override') return isZh ? '已迁移覆写' : 'Migrated override'
+  return isZh ? '继承全局' : 'Inherits global'
+}
+
 function formatFilters(config: ProjectConfig, isZh: boolean) {
-  const filters = config.frame.filters
+  return formatFrameFilters(config.frame, isZh)
+}
+
+function formatFrameFilters(frame: ProjectConfig['frame'], isZh: boolean) {
+  const filters = frame.filters
   if (!filters) return isZh ? '无' : 'None'
   const active: string[] = []
   if (filters.crop.enabled) active.push(isZh ? '裁剪' : 'Crop')

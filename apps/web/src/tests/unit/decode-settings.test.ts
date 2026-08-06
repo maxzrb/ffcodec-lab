@@ -128,7 +128,7 @@ describe('主输入解码设置', () => {
     delete (legacy.input as Record<string, unknown>).decode
     const before = commandFor(createDefaultProjectConfig())
     const migrated = migrateConfig(6, CURRENT_SCHEMA_VERSION, legacy, [...ALL_MIGRATION_STEPS]).config
-    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
     expect((migrated.input as Record<string, unknown>).decode).toEqual({})
     expect(commandFor(migrated as unknown as ReturnType<typeof createDefaultProjectConfig>)).toBe(before)
   })
