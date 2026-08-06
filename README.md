@@ -12,7 +12,7 @@ FFCodec Lab 把主输入解码、视频与音频编码、画面滤镜、字幕�
 
 > 字体声明：本软件使用 HarmonyOS Sans 字体，详见 [`packages/workbench/src/assets/fonts/LICENSE_HarmonyOS_Sans.txt`](packages/workbench/src/assets/fonts/LICENSE_HarmonyOS_Sans.txt)。
 
-当前版本：`1.7.3（16）`
+当前版本：`1.8.0（17）`
 
 版本号采用“语义版本号（版本序号）”格式：小更新或小修复增加修订号，大更新或大修复增加次版本号，重构类型或破坏性变更增加主版本号；版本序号从 1 开始，每次正式发布递增。完整规则见 [VERSIONING.md](VERSIONING.md)。
 
@@ -22,19 +22,19 @@ Windows 10/11 x64 用户请前往 [GitHub Releases](https://github.com/maxzrb/ff
 
 | 包 | 适用场景 | FFmpeg |
 | --- | --- | --- |
-| [Full 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.7.3/FFCodec-Lab-Setup-Full-1.7.3.exe) | 安装后直接使用 | 内置 `ffmpeg`、`ffprobe`、`ffplay` |
-| [Base 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.7.3/FFCodec-Lab-Setup-Base-1.7.3.exe) | 已有 FFmpeg，或自行管理版本 | 不包含 |
-| [Onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.7.3/FFCodec-Lab-Onedir-1.7.3.zip) | 免安装、解压即用 | 不包含 |
+| [Full 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.8.0/FFCodec-Lab-Setup-Full-1.8.0.exe) | 安装后直接使用 | 内置 `ffmpeg`、`ffprobe`、`ffplay` |
+| [Base 安装版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.8.0/FFCodec-Lab-Setup-Base-1.8.0.exe) | 已有 FFmpeg，或自行管理版本 | 不包含 |
+| [Onedir 目录版](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.8.0/FFCodec-Lab-Onedir-1.8.0.zip) | 免安装、解压即用 | 不包含 |
 
-下载后可使用 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.7.3/SHA256SUMS.txt) 校验文件完整性。Base 和 Onedir 会自动搜索系统 PATH、同目录和常见目录中的 FFmpeg，也可以在设置中选择自定义文件夹。Full 包会严格确认候选程序的身份，避免把 `ffprobe.exe` 当作 FFmpeg 而显示 `unknown`。
+下载后可使用 [SHA256SUMS.txt](https://github.com/maxzrb/ffcodec-lab/releases/download/v1.8.0/SHA256SUMS.txt) 校验文件完整性。Base 和 Onedir 会自动搜索系统 PATH、同目录和常见目录中的 FFmpeg，也可以在设置中选择自定义文件夹。Full 包会严格确认候选程序的身份，避免把 `ffprobe.exe` 当作 FFmpeg 而显示 `unknown`。
 
 > Windows 发布包目前未配置代码签名证书，首次下载或运行时可能出现 SmartScreen 提示。
 
 ## 主要能力
 
-- 独立“解码”面板支持 `-hwaccel`、输入侧 `-threads`、`-hwaccel_output_format` 和硬件设备参数，并明确提示 FFmpeg 构建、GPU、驱动、输入格式和硬件帧滤镜链风险。
+- 独立“解码”面板支持 `-hwaccel`、输入侧 `-threads`、`-hwaccel_output_format`（含 CUDA 硬件帧）和硬件设备参数；D3D11/CUDA CPU 链会按媒体探针建立安全的下载与像素格式边界。
 - 覆盖 `libx264`、`libx265`、SVT-AV1、libaom、VVenC、NVENC、QSV、AMF、VideoToolbox 等视频编码路径，以及 29 个音频编码器。
-- 按视频、音频和字幕逐流选择编码或复制，支持保留全部流和精确的 FFmpeg `-map` 生成。
+- 按视频、音频和字幕逐流选择编码或复制，支持保留全部流和精确的 FFmpeg `-map` 生成；视频/音频完整方案可冻结为指定流的独立快照，并支持重新应用、复制和恢复继承。
 - 使用媒体探测读取格式、时长和流信息，可将探测结果联动到流选择和目标文件大小计算。
 - 目标大小工具会扣除音频与封装开销，并按裁剪、缩放、旋转和显式帧率评估视频码率、bit/frame 与 bpppf。
 - 双遍编码以同一任务串行执行，统一处理进度、取消、日志、历史和临时 passlog 清理。
@@ -43,7 +43,7 @@ Windows 10/11 x64 用户请前往 [GitHub Releases](https://github.com/maxzrb/ff
 - 滤镜处理格式支持兼容协商、自动高精度和完整自定义：可控制 10/12/16-bit 或浮点工作精度、4:2:0/4:2:2/4:4:4、YUV/RGB、Alpha、最终降位抖动及不兼容滤镜策略；自动模式会尽量保持输入采样结构并阻止已知的静默 8-bit 降级。
 - “自定义参数”提供独立的视频/音频滤镜折叠卡片；每行填写一个完整表达式并通过行顺序排序，分别与受控 CPU 滤镜合并为唯一 `-vf` / `-filter:a`，程序不修改或猜测未知滤镜语义。
 - 检查器包含命令、编码总览和诊断三栏；移动竖屏页面保持自然纵向滚动。
-- Desktop 切换 FFmpeg 后会重新核验 encoder、AAC 选项、NMR 和媒体探测工具状态，不沿用旧版本能力。
+- Desktop 切换 FFmpeg 后会重新核验 encoder、filter、编码器私有 AVOptions、通用视频编码选项和媒体探测工具状态，不沿用旧版本能力；默认以 FFmpeg 9.0 能力为基线并兼容 8.x。
 
 ## Web 与 Desktop
 
@@ -104,9 +104,10 @@ Full 构建需要仓库根目录的 `ffmpeg-full.7z` 和可调用的 `7z`。也�
 ```powershell
 pnpm check
 pnpm verify:filter-formats
+pnpm verify:real-media
 ```
 
-`pnpm check` 执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`pnpm verify:filter-formats` 优先调用 PATH 中的 FFmpeg，并在 Windows 仓库中交叉检查随附构建，实证验证高精度候选格式、采样/Alpha 保持、字幕、画面调整、降位抖动及已知 8-bit-only 滤镜。`v1.7.3` 发布门禁包括 Web/Desktop 全量测试、目录审计、双端 production build、两套 FFmpeg 高精度格式验证、Windows 三种包型构建、安装器内层资源检查、Onedir ZIP 完整性测试和 SHA-256 校验。
+`pnpm check` 执行全部 TypeScript 类型检查、Web/Desktop Vitest 测试和 ESLint。`pnpm verify:filter-formats` 实证验证高精度候选格式、采样/Alpha 保持、字幕、画面调整、降位抖动及已知 8-bit-only 滤镜；`pnpm verify:real-media` 通过产品配置、诊断、命令和执行计划链路实际编码并严格解码输出。`v1.8.0` 发布门禁为 Web 668/668、Desktop 38/38、Catalog 0 error、RTX 3060 三构建 PASS 100/115 与 NVENC multipass 18/18、RX 6600 双构建 PASS 43/79 且 FAIL 0、Windows Full/Base/Onedir 构建、资源边界、两个 NSIS 与 83 文件 ZIP 完整性及 SHA-256 校验。
 
 ## 项目结构
 
