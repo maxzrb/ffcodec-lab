@@ -2,6 +2,8 @@ export type {
   PlatformCapabilities,
   PlatformAdapter,
   StorageAdapter,
+  PresetFileStore,
+  PresetFileScope,
   WorkbenchExtensions,
   InspectorTabExtension,
   CommandActionExtension,

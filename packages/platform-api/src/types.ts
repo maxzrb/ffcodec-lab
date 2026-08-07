@@ -21,6 +21,8 @@ export interface PlatformCapabilities {
   revealInFolder: boolean
   /** Encoding history can be persisted locally (electron-store). */
   persistentEncodingHistory: boolean
+  /** 预设以独立 JSON 文件存放在软件预设目录（仅 Desktop）。 */
+  filePresetStore: boolean
 }
 
 // ---- Storage abstraction ----
@@ -30,6 +32,26 @@ export interface StorageAdapter {
   setItem(key: string, value: string): void
   removeItem(key: string): void
   keys(): string[]
+}
+
+// ---- 文件型预设存储（Desktop 外挂 JSON 预设）----
+
+/** 预设文件所属子目录：内置预设 / 用户预设。 */
+export type PresetFileScope = 'builtin' | 'user'
+
+export interface PresetFileStore {
+  /** 列出 builtin/ 与 user/ 两个子目录中的全部 JSON 文件（文件名 + 原始内容 + 所属子目录）。 */
+  listAll(): Promise<Array<{ fileName: string; content: string; scope: PresetFileScope }>>
+  /** 读取单个预设文件（scope 缺省时按 user/ 查找），不存在返回 null。 */
+  read(fileName: string, scope?: PresetFileScope): Promise<string | null>
+  /** 写入单个预设文件（scope 缺省写入 user/，创建或覆盖）。 */
+  write(fileName: string, content: string, scope?: PresetFileScope): Promise<{ ok: true } | { ok: false; error: string }>
+  /** 删除单个预设文件（scope 缺省时按 user/ 查找）。 */
+  delete(fileName: string, scope?: PresetFileScope): Promise<{ ok: boolean; error?: string }>
+  /** 返回预设目录绝对路径；不可用时返回 null。 */
+  getDirectory(): Promise<string | null>
+  /** 在系统文件管理器中打开预设目录。 */
+  revealDirectory(): Promise<boolean>
 }
 
 // ---- Platform adapter (provided by each host) ----
@@ -132,4 +154,6 @@ export interface WorkbenchExtensions {
   onFFmpegSelectionChange?: (listener: () => void) => () => void
   getAudioCapabilityOverride?: () => boolean
   onAudioCapabilityOverrideChange?: (listener: (enabled: boolean) => void) => () => void
+  /** 外挂 JSON 预设文件存储（Web 不提供）。 */
+  presetFileStore?: PresetFileStore
 }
