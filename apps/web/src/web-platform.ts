@@ -54,6 +54,7 @@ export const webPlatform: PlatformAdapter = {
     localFFmpegExecution: false,
     revealInFolder: false,
     persistentEncodingHistory: false,
+    filePresetStore: false,
   },
   storage: new WebStorageAdapter(),
 }

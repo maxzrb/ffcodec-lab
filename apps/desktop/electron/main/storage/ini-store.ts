@@ -91,17 +91,59 @@ function writeFileAtomic(filePath: string, content: string): void {
 // Mode persistence
 // -----------------------------------------------------------
 
+/**
+ * 模式标记文件跟随程序目录：便携包整体拷贝到其他电脑后，
+ * 模式与预设/INI 都继续跟随程序目录（“真·全便携”）。
+ * 旧版本标记文件存放在 AppData，读取时自动迁移一次。
+ */
 function modeFilePath(): string {
+  return path.join(portableDir(), MODE_FILENAME)
+}
+
+/** 旧版本（标记存 AppData）的标记文件路径。 */
+function legacyModeFilePath(): string {
   return path.join(app.getPath('userData'), MODE_FILENAME)
 }
 
-function readMode(): StorageMode {
-  const raw = readFileSafe(modeFilePath())
-  if (!raw) return 'user' // default
+/** 读取标记文件内容并校验，非法/不存在返回 null。 */
+function readModeFile(filePath: string): StorageMode | null {
+  const raw = readFileSafe(filePath)
+  if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as { mode?: string }
     if (parsed.mode === 'portable') return 'portable'
+    if (parsed.mode === 'user') return 'user'
   } catch { /* fall through */ }
+  return null
+}
+
+function readMode(): StorageMode {
+  // 1. 程序目录标记优先
+  const portable = readModeFile(modeFilePath())
+  if (portable) return portable
+
+  // 2. 旧版 AppData 标记一次性迁移到程序目录（程序目录不可写时保留原位置继续使用）
+  const legacy = readModeFile(legacyModeFilePath())
+  if (legacy) {
+    try {
+      writeMode(legacy)
+    } catch {
+      // 忽略：安装版程序目录可能不可写
+    }
+    return legacy
+  }
+
+  // 3. 程序目录已存在便携数据文件（如整体拷贝的便携包）→ 自动进入便携模式
+  if (readFileSafe(path.join(portableDir(), INI_FILENAME)) !== null) {
+    try {
+      writeMode('portable')
+    } catch {
+      // 忽略：写入失败不阻断自动便携判定
+    }
+    return 'portable'
+  }
+
+  // 4. 默认用户模式
   return 'user'
 }
 
@@ -134,6 +176,15 @@ export function getIniPathForMode(mode: StorageMode): string {
   return mode === 'portable'
     ? path.join(portableDir(), INI_FILENAME)
     : path.join(appDataDir(), INI_FILENAME)
+}
+
+/** 预设 JSON 文件目录：位于偏好存储根目录下的 presets 子目录。 */
+export function getPresetsDir(): string {
+  return path.join(path.dirname(getIniPath()), 'presets')
+}
+
+export function getPresetsDirForMode(mode: StorageMode): string {
+  return path.join(path.dirname(getIniPathForMode(mode)), 'presets')
 }
 
 export function getItem(key: string): string | null {

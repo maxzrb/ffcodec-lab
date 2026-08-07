@@ -43,8 +43,8 @@ export function StorageModeSetting() {
     const confirmed = await dialog.confirm({
       title: isZh ? '切换偏好存储位置？' : 'Switch preference storage?',
       message: isZh
-        ? `从「${modeLabel(modeInfo.mode)}」→「${modeLabel(newMode)}」\n当前：${modeInfo.path}\n切换后数据会自动迁移，旧文件保留 .old 备份。`
-        : `From "${modeLabel(modeInfo.mode)}" → "${modeLabel(newMode)}"\nCurrent: ${modeInfo.path}\nData will be migrated; the old file is kept as .old backup.`,
+        ? `从「${modeLabel(modeInfo.mode)}」→「${modeLabel(newMode)}」\n当前：${modeInfo.path}\n切换后数据会自动迁移，旧文件保留 .old 备份。\n模式标记会写入程序目录，便携包拷贝到其他电脑后仍保持该模式。`
+        : `From "${modeLabel(modeInfo.mode)}" → "${modeLabel(newMode)}"\nCurrent: ${modeInfo.path}\nData will be migrated; the old file is kept as .old backup.\nThe mode marker is stored in the app directory, so a copied portable package keeps the same mode.`,
       confirmLabel: isZh ? '确认切换' : 'Switch',
       cancelLabel: isZh ? '取消' : 'Cancel',
       tone: 'warning',

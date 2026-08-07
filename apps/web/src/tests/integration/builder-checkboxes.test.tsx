@@ -39,7 +39,7 @@ function TestWrapper() {
 function makeTestPlatform(): PlatformAdapter {
   testStorage = new MemoryStorage()
   testPlatform = {
-    capabilities: { desktop: false, nativeFileDialog: false, ffmpegDetect: false, localFFmpegExecution: false, revealInFolder: false, persistentEncodingHistory: false },
+    capabilities: { desktop: false, nativeFileDialog: false, ffmpegDetect: false, localFFmpegExecution: false, revealInFolder: false, persistentEncodingHistory: false, filePresetStore: false },
     storage: testStorage,
   }
   return testPlatform

@@ -84,6 +84,12 @@ interface EncodingHistoryItem {
   snapshot: FFmpegJobSnapshot
 }
 
+interface PresetFileRecord {
+  fileName: string
+  content: string
+  scope: 'builtin' | 'user'
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform as 'win32' | 'darwin' | 'linux',
   versions: {
@@ -277,6 +283,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeListener('storage:mode-changed', handler)
     }
   },
+
+  // 外挂 JSON 预设文件
+  presetListAll: () =>
+    ipcRenderer.invoke('preset:listAll') as Promise<PresetFileRecord[]>,
+  presetRead: (fileName: string, scope?: 'builtin' | 'user') =>
+    ipcRenderer.invoke('preset:read', fileName, scope) as Promise<string | null>,
+  presetWrite: (fileName: string, content: string, scope?: 'builtin' | 'user') =>
+    ipcRenderer.invoke('preset:write', fileName, content, scope) as Promise<{ ok: true } | { ok: false; error: string }>,
+  presetDelete: (fileName: string, scope?: 'builtin' | 'user') =>
+    ipcRenderer.invoke('preset:delete', fileName, scope) as Promise<{ ok: boolean; error?: string }>,
+  presetGetDirectory: () =>
+    ipcRenderer.invoke('preset:getDirectory') as Promise<string>,
+  presetRevealDirectory: () =>
+    ipcRenderer.invoke('preset:revealDirectory') as Promise<boolean>,
 })
 
 // Type declaration for the renderer — keep in sync with apps/desktop/renderer/vite-env.d.ts
@@ -354,6 +374,14 @@ declare global {
       storageSetMode: (mode: string) => Promise<{ ok: boolean; error?: string }>
       storageImport: (entries: [string, string][]) => Promise<void>
       onStorageModeChanged: (callback: (result: { mode: 'portable' | 'user'; path: string }) => void) => () => void
+
+      // 外挂 JSON 预设文件
+      presetListAll: () => Promise<PresetFileRecord[]>
+      presetRead: (fileName: string, scope?: 'builtin' | 'user') => Promise<string | null>
+      presetWrite: (fileName: string, content: string, scope?: 'builtin' | 'user') => Promise<{ ok: true } | { ok: false; error: string }>
+      presetDelete: (fileName: string, scope?: 'builtin' | 'user') => Promise<{ ok: boolean; error?: string }>
+      presetGetDirectory: () => Promise<string>
+      presetRevealDirectory: () => Promise<boolean>
     }
   }
 }

@@ -4,7 +4,7 @@
 // Phase 5: extensions for desktop-specific UI (path fields, etc.).
 // ============================================================
 
-import type { PlatformAdapter, StorageAdapter, WorkbenchExtensions } from '@ffcodec/platform-api'
+import type { PlatformAdapter, PresetFileScope, PresetFileStore, StorageAdapter, WorkbenchExtensions } from '@ffcodec/platform-api'
 import { DesktopPathField } from './components/DesktopPathField'
 import { desktopCommandActions } from './components/DesktopCommandActions'
 import { desktopSettingsSections } from './components/DesktopSettingsSection'
@@ -71,6 +71,36 @@ class ElectronStorageAdapter implements StorageAdapter {
   }
 }
 
+/** 基于主进程 IPC 的外挂 JSON 预设存储。 */
+class ElectronPresetFileStore implements PresetFileStore {
+  async listAll() {
+    return (await window.electronAPI?.presetListAll()) ?? []
+  }
+
+  async read(fileName: string, scope?: PresetFileScope) {
+    return (await window.electronAPI?.presetRead(fileName, scope)) ?? null
+  }
+
+  async write(fileName: string, content: string, scope?: PresetFileScope) {
+    const result = await window.electronAPI?.presetWrite(fileName, content, scope)
+    if (!result) return { ok: false as const, error: '预设文件存储不可用' }
+    return result
+  }
+
+  async delete(fileName: string, scope?: PresetFileScope) {
+    const result = await window.electronAPI?.presetDelete(fileName, scope)
+    return result ?? { ok: false, error: '预设文件存储不可用' }
+  }
+
+  async getDirectory() {
+    return (await window.electronAPI?.presetGetDirectory()) ?? null
+  }
+
+  async revealDirectory() {
+    return (await window.electronAPI?.presetRevealDirectory()) ?? false
+  }
+}
+
 const desktopExtensions: WorkbenchExtensions = {
   headerItems: [<AudioCapabilityUnlockButton key="audio-capability-unlock" />],
   inputOutputSection: {
@@ -110,6 +140,7 @@ const desktopExtensions: WorkbenchExtensions = {
   onFFmpegSelectionChange: onPreferredFFmpegPathChange,
   getAudioCapabilityOverride,
   onAudioCapabilityOverrideChange,
+  presetFileStore: new ElectronPresetFileStore(),
 }
 
 /** Full desktop platform adapter. Capabilities declare what desktop can do. */
@@ -121,6 +152,7 @@ export const desktopPlatform: PlatformAdapter = {
     localFFmpegExecution: true,      // Phase 9 ✅
     revealInFolder: true,            // Phase 6 ✅
     persistentEncodingHistory: true,  // Phase 11 ✅
+    filePresetStore: true,            // 外挂 JSON 预设
   },
   storage: new ElectronStorageAdapter(),
   extensions: desktopExtensions,

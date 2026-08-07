@@ -24,9 +24,12 @@ import {
   keys as storageKeys,
   getMode as storageGetMode,
   getIniPath as storageGetIniPath,
+  getPresetsDir as storageGetPresetsDir,
+  getPresetsDirForMode as storageGetPresetsDirForMode,
   switchMode as storageSwitchMode,
   importFromMap as storageImportFromMap,
 } from './storage/ini-store'
+import { PresetFileStore, migratePresetsDir } from './storage/preset-store'
 import {
   launchJob,
   cancelActiveJob,
@@ -407,13 +410,44 @@ function registerStorageIpcHandlers(): void {
     if (newMode !== 'portable' && newMode !== 'user') {
       return { ok: false, error: `Unknown mode: ${newMode}` }
     }
-    return storageSwitchMode(newMode)
+    // 切换前记录新旧预设目录，成功后迁移预设 JSON 文件
+    const oldPresetsDir = storageGetPresetsDirForMode(storageGetMode())
+    const newPresetsDir = storageGetPresetsDirForMode(newMode as 'portable' | 'user')
+    const result = storageSwitchMode(newMode)
+    if (result.ok) {
+      migratePresetsDir(oldPresetsDir, newPresetsDir)
+    }
+    return result
   })
 
   // One-time import from localStorage
   ipcMain.handle('storage:import', (_event, entries: [string, string][]) => {
     storageImportFromMap(entries)
   })
+}
+
+// ---- 外挂 JSON 预设文件（Desktop 专属）----
+
+function registerPresetFileHandlers(): void {
+  const createStore = () => new PresetFileStore(storageGetPresetsDir())
+
+  ipcMain.handle('preset:listAll', () => createStore().listAll())
+  ipcMain.handle('preset:read', (_event, fileName: string, scope?: 'builtin' | 'user') => {
+    if (typeof fileName !== 'string') return null
+    return createStore().read(fileName, scope)
+  })
+  ipcMain.handle('preset:write', (_event, fileName: string, content: string, scope?: 'builtin' | 'user') => {
+    if (typeof fileName !== 'string' || typeof content !== 'string') {
+      return { ok: false as const, error: '无效的预设写入参数' }
+    }
+    return createStore().write(fileName, content, scope)
+  })
+  ipcMain.handle('preset:delete', (_event, fileName: string, scope?: 'builtin' | 'user') => {
+    if (typeof fileName !== 'string') return { ok: false as const, error: '无效的预设文件名' }
+    return createStore().delete(fileName, scope)
+  })
+  ipcMain.handle('preset:getDirectory', () => createStore().getDirectory())
+  ipcMain.handle('preset:revealDirectory', () => createStore().reveal())
 }
 
 // ---- LibreHardwareMonitor 性能采集 ----
@@ -445,5 +479,6 @@ export function registerIpcHandlers(): void {
   registerHistoryHandlers()
   registerUsageStatsHandler()
   registerStorageIpcHandlers()
+  registerPresetFileHandlers()
   registerHardwareMonitorHandlers()
 }
