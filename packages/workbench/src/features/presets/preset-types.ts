@@ -19,6 +19,10 @@ export interface UserPreset {
   updatedAt: string
   /** 用户自定义排序位置，越小越靠前 */
   order?: number
+  /** 是否为内置种子预设（外挂 JSON 文件中的标记，Web 内置预设同样携带） */
+  builtin?: boolean
+  /** 文件模式下该预设 JSON 所在的子目录（内置/用户） */
+  fileScope?: 'builtin' | 'user'
   config: ProjectConfig
 }
 
@@ -31,6 +35,8 @@ export const userPresetSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   order: z.number().int().optional(),
+  builtin: z.boolean().optional(),
+  fileScope: z.enum(['builtin', 'user']).optional(),
   config: projectConfigSchema,
 })
 
@@ -43,6 +49,8 @@ export const userPresetImportSchema = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
   order: z.number().int().optional(),
+  builtin: z.boolean().optional(),
+  fileScope: z.enum(['builtin', 'user']).optional(),
   config: projectConfigSchema,
 })
 

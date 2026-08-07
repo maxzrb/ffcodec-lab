@@ -9,7 +9,7 @@ import { resolvePresetSummary } from './resolve-preset-summary'
 import { useI18n } from '../i18n/i18n'
 
 interface PresetListProps {
-  builtinPresets: Array<Omit<UserPreset, 'id' | 'createdAt' | 'updatedAt'>>
+  builtinPresets: Array<Omit<UserPreset, 'createdAt' | 'updatedAt'>>
   userPresets: UserPreset[]
   builtinOrder: number[]
   catalog: Catalog
@@ -26,7 +26,7 @@ interface PresetListProps {
   onMoveBuiltinDown: (index: number) => void
 }
 
-type BuiltinPreset = Omit<UserPreset, 'id' | 'createdAt' | 'updatedAt'>
+type BuiltinPreset = Omit<UserPreset, 'createdAt' | 'updatedAt'>
 type PresetScope = 'all' | 'builtin' | 'user'
 type PresetEntry =
   | { kind: 'builtin'; index: number; preset: BuiltinPreset }
@@ -67,6 +67,7 @@ export function PresetList({
   ]
 
   const matchingBuiltins = useMemo(() => {
+    if (scope === 'user') return []
     const orderToUse = sortBy === 'custom' && builtinOrder.length === builtinPresets.length ? builtinOrder : builtinPresets.map((_, i) => i)
     const builtins = orderToUse.map((origIdx) => {
       const preset = builtinPresets[origIdx]
@@ -75,9 +76,13 @@ export function PresetList({
       return { kind: 'builtin' as const, index: origIdx, preset }
     }).filter(Boolean) as { kind: 'builtin'; index: number; preset: typeof builtinPresets[number] }[]
     return builtins
-  }, [builtinPresets, builtinOrder, sortBy, normalizedQuery, text])
+  }, [builtinPresets, builtinOrder, sortBy, normalizedQuery, text, scope])
   const matchingUsers = useMemo(() => {
-    let sorted = [...userPresets].filter((preset) => matchesQuery(preset.name, preset.description ?? '', normalizedQuery))
+    let sorted = [...userPresets].filter((preset) => {
+      if (scope === 'builtin' && !preset.builtin) return false
+      if (scope === 'user' && preset.builtin) return false
+      return matchesQuery(preset.name, preset.description ?? '', normalizedQuery)
+    })
     switch (sortBy) {
       case 'custom':
         sorted.sort((a, b) => ((a as any).order ?? 0) - ((b as any).order ?? 0) || a.name.localeCompare(b.name))
@@ -96,11 +101,8 @@ export function PresetList({
         break
     }
     return sorted.map((preset) => ({ kind: 'user' as const, preset }))
-  }, [normalizedQuery, userPresets, sortBy])
-  const entries: PresetEntry[] = [
-    ...(scope === 'user' ? [] : matchingBuiltins),
-    ...(scope === 'builtin' ? [] : matchingUsers),
-  ]
+  }, [normalizedQuery, userPresets, sortBy, scope])
+  const entries: PresetEntry[] = [...matchingBuiltins, ...matchingUsers]
   const pageCount = Math.max(1, Math.ceil(entries.length / PRESETS_PER_PAGE))
   const activePage = Math.min(page, pageCount)
   const visibleEntries = entries.slice(
@@ -195,6 +197,7 @@ export function PresetList({
             name={preset.name}
             description={preset.description}
             summary={summary}
+            badge={preset.builtin ? (isZh ? '内置' : 'Built-in') : undefined}
             meta={`${isZh ? '更新于' : 'Updated'} ${new Date(preset.updatedAt).toLocaleString(isZh ? 'zh-CN' : 'en')}`}
             actions={
               <>
@@ -291,12 +294,14 @@ function PresetCard({
   description,
   summary,
   meta,
+  badge,
   actions,
 }: {
   name: string
   description?: string
   summary: { video: string; audio: string; container: string; subtitles: string }
   meta?: string
+  badge?: string
   actions: React.ReactNode
 }) {
   return (
@@ -313,6 +318,22 @@ function PresetCard({
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
         <div style={{ flex: '1 1 240px', minWidth: 0, paddingTop: 2 }}>
           <strong style={{ fontSize: 13 }}>{name}</strong>
+          {badge && (
+            <span
+              style={{
+                marginLeft: 6,
+                padding: '1px 6px',
+                fontSize: 10,
+                borderRadius: 3,
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-dim)',
+                verticalAlign: 'middle',
+              }}
+            >
+              {badge}
+            </span>
+          )}
           {description && (
             <span style={{ color: 'var(--text-dim)', marginLeft: 8, fontSize: 11 }}>
               — {description}

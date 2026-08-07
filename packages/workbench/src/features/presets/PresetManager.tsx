@@ -3,9 +3,10 @@
 // Modal overlay with preset list, editor, and import dialogs.
 // ============================================================
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { ProjectConfig } from '@ffcodec/domain/config/project-config'
 import { loadCatalog } from '@ffcodec/catalog/catalog-loader'
+import { usePlatform } from '@ffcodec/platform-api'
 import type { UserPreset } from './preset-types'
 import { getPresetService, getBuiltinPresets } from './preset-service'
 import { BUILTIN_ORDER_KEY } from './preset-storage'
@@ -27,22 +28,39 @@ interface PresetManagerProps {
 }
 
 const catalog = loadCatalog()
-const presetService = getPresetService()
 
 export function PresetManager({ onApply, onReset, currentConfig, onClose }: PresetManagerProps) {
   const { locale, text } = useI18n()
   const dialog = useAppDialog()
+  const platform = usePlatform()
   const isZh = locale === 'zh-CN'
-  const [userPresets, setUserPresets] = useState<UserPreset[]>(() => presetService.list())
+  // Desktop 注入外挂 JSON 预设文件存储；Web 不提供则保持内置 + localStorage
+  const presetService = getPresetService(platform.extensions?.presetFileStore ?? null)
+  const fileMode = presetService.hasFileStore()
+  const [userPresets, setUserPresets] = useState<UserPreset[]>([])
+  const [presetDirectory, setPresetDirectory] = useState<string | null>(null)
   const [showEditor, setShowEditor] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [editingPreset, setEditingPreset] = useState<UserPreset | null>(null)
   const [saveAsMode, setSaveAsMode] = useState(false)
   const [notices, setNotices] = useState<string[]>([])
 
-  const builtinPresets = getBuiltinPresets()
+  // 文件模式下内置预设也来自 JSON 文件（含 builtin 标记），不再单独传硬编码
+  const builtinPresets = fileMode ? [] : getBuiltinPresets()
+
+  useEffect(() => {
+    let cancelled = false
+    void presetService.list().then((list) => {
+      if (!cancelled) setUserPresets(list)
+    }).catch(() => {})
+    void presetService.getDirectory().then((dir) => {
+      if (!cancelled) setPresetDirectory(dir)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [presetService])
 
   const [builtinOrder, setBuiltinOrder] = useState<number[]>(() => {
+    if (fileMode) return []
     try {
       const raw = localStorage.getItem(BUILTIN_ORDER_KEY)
       if (raw) {
@@ -74,9 +92,14 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
     saveBuiltinOrder(next)
   }, [builtinOrder])
 
-  const refreshList = useCallback(() => {
-    setUserPresets(presetService.list())
-  }, [])
+  const refreshList = useCallback(async () => {
+    try {
+      const list = await presetService.list()
+      setUserPresets(list)
+    } catch (e) {
+      setNotices([isZh ? `读取预设失败: ${String(e)}` : `Failed to load presets: ${String(e)}`])
+    }
+  }, [presetService, isZh])
 
   const handleApply = useCallback(
     (preset: UserPreset) => {
@@ -116,18 +139,18 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
   }, [])
 
   const handleEditorSave = useCallback(
-    (name: string, description: string) => {
+    async (name: string, description: string) => {
       try {
         if (saveAsMode) {
           // Save-as: create new preset from current config
-          presetService.save({
+          await presetService.save({
             name,
             description,
             config: currentConfig,
           })
         } else if (editingPreset) {
           // Editing existing: update name/description
-          const updated = presetService.save({
+          const updated = await presetService.save({
             id: editingPreset.id,
             name,
             description,
@@ -138,13 +161,13 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
           }
         } else {
           // Create new from current config
-          presetService.save({
+          await presetService.save({
             name,
             description,
             config: currentConfig,
           })
         }
-        refreshList()
+        await refreshList()
         setShowEditor(false)
       } catch (e) {
         setNotices([isZh ? `保存失败: ${String(e)}` : `Save failed: ${String(e)}`])
@@ -163,8 +186,8 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
         tone: 'danger',
       })) return
       try {
-        presetService.delete(id)
-        refreshList()
+        await presetService.delete(id)
+        await refreshList()
         setNotices([isZh ? '预设已删除' : 'Preset deleted'])
       } catch (e) {
         setNotices([isZh ? `删除失败: ${String(e)}` : `Delete failed: ${String(e)}`])
@@ -183,15 +206,15 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
         tone: 'warning',
       })) return
       try {
-        const existing = presetService.load(id)
+        const existing = await presetService.load(id)
         if (existing) {
-          presetService.save({
+          await presetService.save({
             id,
             name: existing.name,
             description: existing.description,
             config: currentConfig,
           })
-          refreshList()
+          await refreshList()
           setNotices([isZh ? `预设 "${existing.name}" 已覆盖` : `Preset "${existing.name}" overwritten`])
         }
       } catch (e) {
@@ -202,10 +225,10 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
   )
 
   const handleRename = useCallback(
-    (id: string, newName: string) => {
+    async (id: string, newName: string) => {
       try {
-        presetService.rename(id, newName)
-        refreshList()
+        await presetService.rename(id, newName)
+        await refreshList()
         setNotices([isZh ? `已重命名为 "${newName}"` : `Renamed to "${newName}"`])
       } catch (e) {
         setNotices([isZh ? `重命名失败: ${String(e)}` : `Rename failed: ${String(e)}`])
@@ -214,14 +237,14 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
     [refreshList, isZh],
   )
 
-  const handleExport = useCallback((id: string) => {
+  const handleExport = useCallback(async (id: string) => {
     try {
-      const json = presetService.export(id)
+      const json = await presetService.export(id)
       if (!json) {
         setNotices([isZh ? '导出失败：预设不存在' : 'Export failed: preset not found'])
         return
       }
-      const preset = presetService.load(id)
+      const preset = await presetService.load(id)
       const filename = preset ? `${preset.name.replace(/\s+/g, '_')}.ffcodec.json` : 'preset.ffcodec.json'
       const blob = new Blob([json], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
@@ -237,9 +260,9 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
   }, [isZh])
 
   const handleImport = useCallback(
-    (json: string) => {
-      const { preset, warnings } = presetService.importAndSave(json)
-      refreshList()
+    async (json: string) => {
+      const { preset, warnings } = await presetService.importAndSave(json)
+      await refreshList()
       setNotices([
         isZh ? `已导入预设 "${preset.name}"` : `Imported preset "${preset.name}"`,
         ...warnings.map(text),
@@ -297,6 +320,32 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
           </div>
         )}
 
+        {fileMode && (
+          <div
+            className="modal-notice preset-file-hint"
+            style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}
+          >
+            <span style={{ flex: '1 1 260px', fontSize: 12 }}>
+              {isZh
+                ? '预设以独立 JSON 文件存放于预设文件夹：内置预设放在 builtin/ 子文件夹，用户预设与新建预设放在 user/ 子文件夹。可直接编辑、新增或删除 JSON 文件（删除内置文件后不会自动恢复），然后点「刷新」。'
+                : 'Presets are stored as individual JSON files: built-in presets live in the builtin/ subfolder, user presets in user/. You can edit, add, or delete JSON files directly (deleted built-in files are not restored), then click "Refresh".'}
+              {presetDirectory && (
+                <code style={{ display: 'block', fontSize: 11, opacity: 0.7, wordBreak: 'break-all', marginTop: 4 }}>
+                  {presetDirectory}
+                </code>
+              )}
+            </span>
+            <ToolbarButton
+              label={isZh ? '刷新' : 'Refresh'}
+              onClick={() => { void refreshList().then(() => setNotices([isZh ? '已重新读取预设文件夹' : 'Presets reloaded'])) }}
+            />
+            <ToolbarButton
+              label={isZh ? '打开预设文件夹' : 'Open presets folder'}
+              onClick={() => { void presetService.revealDirectory() }}
+            />
+          </div>
+        )}
+
         <div className="modal-actions">
           <ToolbarButton label={isZh ? '+ 新建预设' : '+ New preset'} onClick={handleCreate} />
           <ToolbarButton label={isZh ? '另存当前为…' : 'Save current as…'} onClick={handleSaveAs} />
@@ -318,8 +367,8 @@ export function PresetManager({ onApply, onReset, currentConfig, onClose }: Pres
             onOverwrite={handleOverwrite}
             onRename={handleRename}
             onExport={handleExport}
-            onMoveUp={(id) => { presetService.moveOrder(id, 'up'); refreshList() }}
-            onMoveDown={(id) => { presetService.moveOrder(id, 'down'); refreshList() }}
+            onMoveUp={(id) => { void presetService.moveOrder(id, 'up').then(refreshList).catch(() => {}) }}
+            onMoveDown={(id) => { void presetService.moveOrder(id, 'down').then(refreshList).catch(() => {}) }}
             onMoveBuiltinUp={handleMoveBuiltinUp}
             onMoveBuiltinDown={handleMoveBuiltinDown}
           />

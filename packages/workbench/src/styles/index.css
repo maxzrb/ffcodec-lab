@@ -2207,6 +2207,12 @@ code {
   font-size: 11px;
 }
 
+/* 预设文件夹提示：整体上移一点，并与下方工具栏/列表保持间距 */
+.modal-notice.preset-file-hint {
+  margin-top: -4px;
+  margin-bottom: 12px;
+}
+
 .modal-actions {
   display: flex;
   flex-wrap: wrap;
